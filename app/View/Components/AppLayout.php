@@ -12,8 +12,10 @@ class AppLayout extends Component
      */
     public function render(): View
     {
-        // FIX: Apuntamos al layout correcto en minúscula.
-        // Esto corrige las vistas de Breeze (como el perfil).
+        // --- ¡CORRECCIÓN! ---
+        // Estaba buscando 'layouts.app' (que no existe).
+        // Lo apuntamos a 'layouts.dashboard', que es el layout
+        // que estás usando en el resto de tu aplicación Jetstream.
         return view('layouts.dashboard');
     }
 }

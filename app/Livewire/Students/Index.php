@@ -45,6 +45,30 @@ class Index extends Component
     // public $isOpen = false; 
     public $modalTitle = '';
 
+    // --- ¡AÑADIDO! ---
+    // Propiedad para capturar el ID de edición desde la URL
+    public $editing = null;
+
+    // --- ¡AÑADIDO! ---
+    // Registra la propiedad 'editing' para que se sincronice con la URL
+    protected $queryString = [
+        'search' => ['except' => ''],
+        'editing' => ['except' => null]
+    ];
+
+    /**
+     * --- ¡AÑADIDO! ---
+     * Se ejecuta cuando el componente se carga por primera vez.
+     * Comprueba si se pasó un ID de estudiante en la URL para editarlo.
+     */
+    public function mount()
+    {
+        if ($this->editing) {
+            // Llama a la función 'edit' existente si se encuentra un ID en la URL
+            $this->edit($this->editing);
+        }
+    }
+
     /**
      * Reglas de Validación (¡CORREGIDAS!)
      *
@@ -284,5 +308,6 @@ class Index extends Component
         $this->tutor_phone = '';
         $this->tutor_relationship = '';
         $this->modalTitle = '';
+        $this->editing = null; // <-- ¡AÑADIDO! Limpia el parámetro de la URL
     }
 }
