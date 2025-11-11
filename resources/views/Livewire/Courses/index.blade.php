@@ -1,6 +1,6 @@
 <div>
     {{-- Mensajes de Sesión (Flash) --}}
-    <div class="fixed top-24 right-6 z-50">
+    <div classV="fixed top-24 right-6 z-50">
         @if (session()->has('message'))
             <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show" 
                  class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg" role="alert">
@@ -22,7 +22,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
             <h1 class="text-xl font-semibold text-gray-900">Gestión Académica</h1>
             <div class="w-1/3">
-                <input wire:model.debounce.300ms="search" type="text" placeholder="Buscar cursos por nombre o código..." class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                <input wire:model.live.debounce.300ms="search" type="text" placeholder="Buscar cursos por nombre o código..." class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
             </div>
         </div>
     </header>
@@ -48,7 +48,8 @@
                                 <div class="flex justify-between items-center">
                                     <div>
                                         <span class="block font-medium text-gray-900">{{ $course->name }}</span>
-                                        <span class="block text-sm text-gray-500">{{ $course->code }} | {{ $course->credits }} Créditos</span>
+                                        {{-- MODIFICADO: Eliminada la referencia a 'credits' --}}
+                                        <span class="block text-sm text-gray-500">{{ $course->code }}</span>
                                     </div>
                                     <button wire:click.stop="editCourse({{ $course->id }})" class="text-gray-400 hover:text-indigo-600 text-xs">
                                         <i class="fas fa-pencil-alt"></i>
@@ -81,7 +82,11 @@
                                 <li wire:click="selectModule({{ $module->id }})"
                                     class="p-3 cursor-pointer hover:bg-gray-100 rounded-lg {{ $selectedModule == $module->id ? 'bg-indigo-100 border-l-4 border-indigo-500' : '' }}">
                                     <div class="flex justify-between items-center">
-                                        <span class="block font-medium text-gray-900">{{ $module->name }}</span>
+                                        <div>
+                                            <span class="block font-medium text-gray-900">{{ $module->name }}</span>
+                                            {{-- MODIFICADO: Añadido el precio --}}
+                                            <span class="block text-sm text-gray-500">Precio: ${{ number_format($module->price, 2) }}</span>
+                                        </div>
                                         <button wire:click.stop="editModule({{ $module->id }})" class="text-gray-400 hover:text-indigo-600 text-xs">
                                             <i class="fas fa-pencil-alt"></i>
                                         </button>
@@ -118,10 +123,9 @@
                                     <div class="flex justify-between items-center">
                                         <div>
                                             <span class="block font-medium text-gray-900">{{ $schedule->section_name ?? ('Sección ' . $schedule->id) }}</span>
-                                            <span class="block text-sm text-gray-500">Prof: {{ $schedule->teacher->name ?? 'No asignado' }}</span>
+                                            <span classD="block text-sm text-gray-500">Prof: {{ $schedule->teacher->name ?? 'No asignado' }}</span>
                                             <span class="block text-sm text-gray-500">
-                                                {{-- ¡¡¡CORRECCIÓN!!! Leer de 'days_of_week' --}}
-                                                {{ implode(', ', $schedule->days_of_week ?? []) }} | {{ \Carbon\Carbon::parse($schedule->start_time)->format('h:i A') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') }}
+                                                {{ implode(', ', $schedule->days_of_week ?? []) }} | {{ $schedule->start_time ? \Carbon\Carbon::parse($schedule->start_time)->format('h:i A') : 'N/A' }} - {{ $schedule->end_time ? \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') : 'N/A' }}
                                             </span>
                                         </div>
                                         <button wire:click.stop="editSchedule({{ $schedule->id }})" class="text-gray-400 hover:text-indigo-600 text-xs">
@@ -135,7 +139,7 @@
                         </ul>
                     </div>
                 @else
-                    <div class="p-4 border-b border-gray-200">
+                    <div classD="p-4 border-b border-gray-200">
                         <h2 class="text-lg font-semibold text-gray-800">Secciones</h2>
                     </div>
                     <div class="p-4 text-center text-gray-500">
@@ -156,25 +160,20 @@
             <form wire:submit.prevent="saveCourse">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label for="course_code" class="block text-sm font-medium text-gray-700">Código</label>
-                        <input id="course_code" wire:model.defer="course_code" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        <x-input-label for="course_code" value="Código" />
+                        <x-text-input wire:model="course_code" id="course_code" class="block mt-1 w-full" type="text" />
                         @error('course_code') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
-                    <div>
-                        <label for="course_credits" class="block text-sm font-medium text-gray-700">Créditos</label>
-                        <input id="course_credits" wire:model.defer="course_credits" type="number" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                        @error('course_credits') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    {{-- MODIFICADO: Eliminado el campo 'credits' --}}
                 </div>
                 <div class="mt-4">
-                    <label for="course_name" class="block text-sm font-medium text-gray-700">Nombre</label>
-                    <input id="course_name" wire:model.defer="course_name" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    <x-input-label for="course_name" value="Nombre" />
+                    <x-text-input wire:model="course_name" id="course_name" class="block mt-1 w-full" type="text" />
                     @error('course_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
                 
                 <div class="flex justify-end mt-6">
-                    {{-- --- ¡CORRECCIÓN! --- --}}
-                    <button type="button" wire:click="$dispatch('close-modal', 'course-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
+                    <button type="button" x-on:click="$dispatch('close-modal', 'course-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
                     <button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">Guardar Curso</button>
                 </div>
             </form>
@@ -183,18 +182,24 @@
 
     <!-- Modal de Módulo -->
     <x-modal name="module-modal">
-        <div class="p-6">
+        <div class_ ="p-6">
             <h2 class="text-lg font-medium text-gray-900 mb-4">{{ $moduleModalTitle }}</h2>
             <form wire:submit.prevent="saveModule">
                 <div class="mt-4">
                     <label for="module_name" class="block text-sm font-medium text-gray-700">Nombre del Módulo</label>
-                    <input id="module_name" wire:model.defer="module_name" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    <input id="module_name" wire:model="module_name" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                     @error('module_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+
+                {{-- MODIFICADO: Añadido campo de precio --}}
+                <div class="mt-4">
+                    <label for="module_price" class="block text-sm font-medium text-gray-700">Precio</label>
+                    <input id="module_price" wire:model="module_price" type="number" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    @error('module_price') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
                 
                 <div class="flex justify-end mt-6">
-                    {{-- --- ¡CORRECCIÓN! --- --}}
-                    <button type="button" wire:click="$dispatch('close-modal', 'module-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
+                    <button type="button" x-on:click="$dispatch('close-modal', 'module-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
                     <button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">Guardar Módulo</button>
                 </div>
             </form>
@@ -210,12 +215,12 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="section_name" class="block text-sm font-medium text-gray-700">Nombre/Código de Sección (Opcional)</label>
-                        <input id="section_name" wire:model.defer="section_name" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        <input id="section_name" wire:model="section_name" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                         @error('section_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
                     <div>
                         <label for="teacher_id" class="block text-sm font-medium text-gray-700">Profesor</label>
-                        <select id="teacher_id" wire:model.defer="teacher_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        <select id="teacher_id" wire:model="teacher_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                             <option value="">Seleccione un profesor</option>
                             @foreach($teachers as $teacher)
                                 <option value="{{ $teacher->id }}">{{ $teacher->name }}</option>
@@ -227,47 +232,46 @@
 
                 {{-- Campos de fecha --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    <div>
-                        <label for="start_date" class="block text-sm font-medium text-gray-700">Fecha de Inicio</label>
-                        <input id="start_date" wire:model.defer="start_date" type="date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                        @error('start_date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
-                    <div>
-                        <label for="end_date" class="block text-sm font-medium text-gray-700">Fecha de Fin</label>
-                        <input id="end_date" wire:model.defer="end_date" type="date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                        @error('end_date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
-                </div>
+    <div>
+        <label for="start_date" class="block text-sm font-medium text-gray-700">Fecha de Inicio</Sabel>
+        <input id="start_date" wire:model="start_date" type="date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+        @error('start_date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+    </div>
+    <div>
+        <label for="end_date" class="block text-sm font-medium text-gray-700">Fecha de Fin</label>
+        <input id="end_date" wire:model="end_date" type="date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+        @error('end_date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+    </div>
+</div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    <div>
-                        <label for="start_time" class="block text-sm font-medium text-gray-700">Hora de Inicio</label>
-                        <input id="start_time" wire:model.defer="start_time" type="time" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                        @error('start_time') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
-                    <div>
-                        <label for="end_time" class="block text-sm font-medium text-gray-700">Hora de Fin</label>
-                        <input id="end_time" wire:model.defer="end_time" type="time" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                        @error('end_time') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
-                </div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <div>
+        <label for="start_time" class="block text-sm font-medium text-gray-700">Hora de Inicio</label>
+        <input id="start_time" wire:model="start_time" type="time" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+        @error('start_time') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+    </div>
+    <div>
+        <label for="end_time" class="block text-sm font-medium text-gray-700">Hora de Fin</label>
+        <input id="end_time" wire:model="end_time" type="time" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+        @error('end_time') <span class="text-red-500 text-xs">{{ $message }}</span> @endError
+    </div>
+</div>
 
-                <div class="mt-4">
-                    <label class="block text-sm font-medium text-gray-700">Días de la Semana</label>
-                    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 mt-2">
-                        @foreach(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] as $day)
-                            <label class="flex items-center space-x-2 p-2 border rounded-md hover:bg-gray-50">
-                                <input type="checkbox" wire:model.defer="days" value="{{ $day }}" class="rounded text-indigo-600">
-                                <span class="text-sm">{{ $day }}</span>
-                            </label>
-                        @endforeach
-                    </div>
-                    @error('days') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                </div>
+<div class="mt-4">
+    <label class="block text-sm font-medium text-gray-700">Días de la Semana</label>
+    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 mt-2">
+        @foreach(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] as $day)
+            <label class="flex items-center space-x-2 p-2 border rounded-md hover:bg-gray-50">
+                <input type="checkbox" wire:model.defer="days" value="{{ $day }}" class="rounded text-indigo-600">
+                <span class="text-sm">{{ $day }}</span>
+            </aabel>
+        @endforeach
+    </div>
+    @error('days') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+</div>
 
                 <div class="flex justify-end mt-6">
-                    {{-- --- ¡CORRECCIÓN! --- --}}
-                    <button type="button" wire:click="$dispatch('close-modal', 'schedule-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
+                    <button type="button" x-on:click="$dispatch('close-modal', 'schedule-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
                     <button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">Guardar Sección</button>
                 </div>
             </form>

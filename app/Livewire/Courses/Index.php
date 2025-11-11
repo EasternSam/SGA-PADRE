@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule; // Para validación 'unique'
 use Carbon\Carbon; // Para manejar fechas/horas
 
-#[Layout('app')]
+#[Layout('layouts.app')]
 class Index extends Component
 {
     use WithPagination;
@@ -23,11 +23,11 @@ class Index extends Component
     public $selectedModule;
     
     // --- Propiedades para el modal de Cursos (Ajustadas a la DB) ---
-    public $course_id, $course_name, $course_credits, $course_code;
+    public $course_id, $course_name, $course_code;
     public $courseModalTitle = '';
 
     // --- Propiedades para el modal de Módulos (Ajustadas a la DB) ---
-    public $module_id, $module_name;
+    public $module_id, $module_name, $module_price; // Se añadió module_price
     public $moduleModalTitle = '';
     
     // --- Propiedades para el modal de Horarios (Ajustadas a la DB) ---
@@ -118,7 +118,6 @@ class Index extends Component
     {
         return [
             'course_name' => 'required|string|max:255',
-            'course_credits' => 'required|integer|min:0',
             'course_code' => [
                 'required',
                 'string',
@@ -142,7 +141,7 @@ class Index extends Component
             $course = Course::findOrFail($courseId);
             $this->course_id = $course->id;
             $this->course_name = $course->name;
-            $this->course_credits = $course->credits;
+            // $this->course_credits = $course->credits; // Se elimina esta línea
             $this->course_code = $course->code;
             
             $this->courseModalTitle = 'Editar Curso: ' . $course->name;
@@ -161,7 +160,7 @@ class Index extends Component
             ['id' => $this->course_id],
             [
                 'name' => $this->course_name,
-                'credits' => $this->course_credits,
+                // 'credits' => $this->course_credits, // Se elimina esta línea
                 'code' => $this->course_code,
             ]
         );
@@ -177,7 +176,7 @@ class Index extends Component
     {
         $this->course_id = null;
         $this->course_name = '';
-        $this->course_credits = 0; // Default
+        // $this->course_credits = 0; // Se elimina esta línea
         $this->course_code = '';
     }
 
@@ -190,6 +189,7 @@ class Index extends Component
     {
         return [
             'module_name' => 'required|string|max:255',
+            'module_price' => 'required|numeric|min:0', // Añadida validación para precio
         ];
     }
 
@@ -212,6 +212,7 @@ class Index extends Component
             $module = Module::findOrFail($moduleId);
             $this->module_id = $module->id;
             $this->module_name = $module->name;
+            $this->module_price = $module->price; // Cargar el precio
 
             $this->moduleModalTitle = 'Editar Módulo: ' . $module->name;
             $this->dispatch('open-modal', 'module-modal'); 
@@ -230,6 +231,7 @@ class Index extends Component
             [
                 'course_id' => $this->selectedCourse,
                 'name' => $this->module_name,
+                'price' => $this->module_price, // Guardar el precio
             ]
         );
 
@@ -244,6 +246,7 @@ class Index extends Component
     {
         $this->module_id = null;
         $this->module_name = '';
+        $this->module_price = 0.00; // Resetear precio
     }
     
     // --- MÉTODOS PARA MODAL DE HORARIO (SECCIÓN) ---
