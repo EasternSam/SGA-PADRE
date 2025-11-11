@@ -88,21 +88,15 @@
             text-align: center;
             margin-bottom: 25px;
         }
+        
+        /* --- ¡CSS DEL LOGO MODIFICADO! --- */
+        /* Ahora se aplica al IMG */
         header .logo {
-            /* Si tienes un logo, pon la URL absoluta aquí.
-            Ejemplo: background-image: url('https://tu-sitio.com/logo.png');
-            */
-            width: 100px;
-            height: 100px;
-            background-color: #e5e7eb;
+            width: 120px; /* Ajusta el ancho según necesites */
+            height: auto; /* Altura automática para mantener proporción */
             margin: 0 auto 10px auto;
-            border-radius: 50%;
-            text-align: center;
-            line-height: 100px;
-            font-weight: bold;
-            font-size: 12pt;
-            color: #6b7280;
         }
+
         footer {
             position: fixed;
             bottom: -20mm; /* Posicionar fuera del área de impresión inicial */
@@ -124,7 +118,11 @@
 <body>
 
     <header>
-        <div class="logo">Logo</div>
+        {{-- --- ¡MODIFICACIÓN! Usando 'centuu.png' --- --}}
+        {{-- Asegúrate de que 'centuu.png' exista en tu carpeta 'public' --}}
+        <img src="{{ public_path('centuu.png') }}" class="logo">
+        {{-- --- FIN DE LA MODIFICACIÓN --- --}}
+        
         <h1>Expediente Académico</h1>
     </header>
 
@@ -174,11 +172,6 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {{-- 
-                      - ¡¡¡ESTA ES LA CORRECCIÓN!!! 
-                      - Usamos la variable $enrollments que pasamos desde el controlador,
-                      - no la relación $student->enrollments que no estaba cargada.
-                    --}}
                     @forelse ($enrollments as $enrollment)
                         <tr>
                             <td>{{ $enrollment->courseSchedule->module->course->name ?? 'N/A' }}</td>
@@ -209,14 +202,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {{-- 
-                      - ¡¡¡ESTA ES LA CORRECCIÓN!!! 
-                      - Usamos $student->payments, que SÍ cargamos en el controlador.
-                    --}}
-                    @forelse ($student->payments as $payment)
+                    @forelse ($payments as $payment)
                         <tr>
                             <td>{{ $payment->created_at->format('d/m/Y') }}</td>
-                            <td>{{ $payment->concept->name ?? 'N/A' }}</td>
+                            <td>{{ $payment->paymentConcept->name ?? $payment->description ?? 'N/A' }}</td>
                             <td class="text-right">${{ number_format($payment->amount, 2) }}</td>
                             <td>{{ $payment->payment_method ?? 'N/A' }}</td>
                             <td>{{ $payment->user->name ?? 'Sistema' }}</td>

@@ -8,16 +8,16 @@ use App\Models\Module;
 use App\Models\CourseSchedule;
 use App\Models\Payment;
 use App\Models\User;
-use App\Models\Student; // <-- Añadido
-use Illuminate\Support\Facades\Auth; // <-- Corregido
-use Illuminate\Support\Facades\Log; // <-- Añadido
-use Illuminate\Validation\Rule; // <-- Añadido
+use App\Models\Student;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log; // <-- Asegúrate de que este 'use' esté
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Carbon\Carbon; // <-- Añadido
-use Livewire\Attributes\Layout; // <-- ¡AÑADIDO! Importa el atributo de Layout
+use Carbon\Carbon;
+use Livewire\Attributes\Layout;
 
-#[Layout('layouts.dashboard')] // <-- ¡AÑADIDO! Especifica el layout correcto
+#[Layout('layouts.dashboard')]
 class Index extends Component
 {
     use WithPagination;
@@ -56,21 +56,23 @@ class Index extends Component
     public $enrollmentStatusFilter = 'all';
 
     // Propiedad para la pestaña activa
-    public $activeTab = 'enrollments';
-
+    // public $activeTab = 'enrollments'; // Se maneja con Alpine en la vista
+    
     // Propiedades para la paginación de pagos
     public $paymentsPage = 1;
 
     // --- ¡AÑADIDO! ---
     // Escucha el evento 'paymentCreated' del modal y refresca el componente
-    protected $listeners = ['paymentCreated' => '$refresh'];
+    // Y 'studentUpdated' para refrescar cuando se guarda el modal de edición
+    protected $listeners = ['paymentCreated' => '$refresh', 'studentUpdated' => '$refresh'];
+
 
     protected $queryString = [
         'search' => ['except' => ''],
         'selectedCourse' => ['except' => null],
         'selectedModule' => ['except' => null],
         'enrollmentStatusFilter' => ['except' => 'all'],
-        'activeTab' => ['except' => 'enrollments'],
+        // 'activeTab' => ['except' => 'enrollments'], // Se maneja con Alpine
     ];
 
     public function mount(Student $student)
@@ -89,12 +91,15 @@ class Index extends Component
         $this->resetPage('enrollmentsPage');
     }
 
+    /*
+    // Este método ya no es necesario si se usa Alpine.js para las pestañas
     public function setTab($tab)
     {
         $this->activeTab = $tab;
         $this->resetPage('page'); // Restablece la paginación de cursos/módulos
         $this->resetPage('paymentsPage'); // Restablece la paginación de pagos
     }
+    */
 
     public function render()
     {
@@ -103,7 +108,7 @@ class Index extends Component
         if ($this->search) {
             $coursesQuery->where(function ($q) {
                 $q->where('name', 'like', '%' . $this->search . '%')
-                  ->orWhere('code', 'like', '%' . $this->search . '%');
+                    ->orWhere('code', 'like', '%' . $this->search . '%');
             });
         }
 
@@ -146,8 +151,28 @@ class Index extends Component
         ]);
     }
 
-    // ... (otros métodos como createCourse, editCourse, saveCourse, createModule, editModule, saveModule, createSchedule, editSchedule, saveSchedule, selectCourse, selectModule, clearFilters) ...
-    // Asegúrate de que los métodos save/close modal reseteen la paginación si es necesario o usen $this->dispatch('refreshComponent')
+    // --- ¡¡¡MÉTODO PARA REPORTE!!! ---
+    /**
+     * Prepara y emite el evento para abrir el reporte en una nueva pestaña.
+     */
+    public function generateReport()
+    {
+        // --- ¡¡¡MODIFICACIÓN PARA DEPURAR!!! ---
+        Log::info('El método generateReport FUE LLAMADO.');
+        // --- FIN DE LA MODIFICACIÓN ---
+        
+        // Obtiene la URL de la ruta del reporte (definida en routes/web.php)
+        // --- ¡CORRECCIÓN! El nombre de la ruta es 'reports.student-report' ---
+        $url = route('reports.student-report', $this->student->id);
+        
+        Log::info('URL Generada para el Reporte: ' . $url);
+
+        // --- ¡¡¡LA CORRECCIÓN ESTÁ AQUÍ!!! ---
+        // Usamos parámetros nombrados (sintaxis de Livewire 3)
+        $this->dispatch('open-pdf-modal', url: $url);
+    }
+    // --- FIN DEL MÉTODO DE REPORTE ---
+
 
     // --- Métodos de Inscripción (Enrollment) ---
 
@@ -171,10 +196,10 @@ class Index extends Component
                 $query->where('section_name', 'like', '%' . $this->searchAvailableCourse . '%')
                     ->orWhereHas('module', function ($q) {
                         $q->where('name', 'like', '%' . $this->searchAvailableCourse . '%')
-                          ->orWhereHas('course', function ($sq) {
-                              $sq->where('name', 'like', '%' . $this->searchAvailableCourse . '%')
-                                 ->orWhere('code', 'like', '%' . $this->searchAvailableCourse . '%');
-                          });
+                            ->orWhereHas('course', function ($sq) {
+                                $sq->where('name', 'like', '%' . $this->searchAvailableCourse . '%')
+                                    ->orWhere('code', 'like', '%' . $this->searchAvailableCourse . '%');
+                            });
                     });
             })
             ->whereDoesntHave('enrollments', function ($q) {
@@ -305,7 +330,7 @@ class Index extends Component
         );
 
         session()->flash('message', $this->course_id ? 'Curso actualizado.' : 'Curso creado.');
-        $this->dispatch('close-modal', 'course-modal'); // <-- Corregido 'thiss'
+        $this->dispatch('close-modal', 'course-modal');
     }
 
     private function resetCourseFields()
@@ -393,13 +418,13 @@ class Index extends Component
             $schedule = CourseSchedule::findOrFail($scheduleId);
             $this->schedule_id = $schedule->id;
             $this->teacher_id = $schedule->teacher_id;
-            $this->days = $schedule->days_of_week ?? []; // <-- Corregido
+            $this->days = $schedule->days_of_week ?? [];
             $this->section_name = $schedule->section_name;
             $this->start_time = $schedule->start_time ? Carbon::parse($schedule->start_time)->format('H:i') : null;
             $this->end_time = $schedule->end_time ? Carbon::parse($schedule->end_time)->format('H:i') : null;
             $this->start_date = $schedule->start_date ? Carbon::parse($schedule->start_date)->format('Y-m-d') : null;
             $this->end_date = $schedule->end_date ? Carbon::parse($schedule->end_date)->format('Y-m-d') : null;
-           
+            
             $this->scheduleModalTitle = 'Editar Sección';
             $this->dispatch('open-modal', 'schedule-modal'); 
         } catch (\Exception $e) {
@@ -425,7 +450,7 @@ class Index extends Component
             [
                 'module_id' => $this->selectedModule,
                 'teacher_id' => $this->teacher_id,
-                'days_of_week' => $this->days, // <-- Corregido
+                'days_of_week' => $this->days,
                 'section_name' => $this->section_name,
                 'start_time' => $this->start_time,
                 'end_time' => $this->end_time,
@@ -449,4 +474,206 @@ class Index extends Component
         $this->start_date = '';
         $this->end_date = '';
     }
+
+    // --- ¡¡¡INICIO CÓDIGO AÑADIDO PARA MODAL DE ESTUDIANTE!!! ---
+
+    // Propiedades para el modal de Estudiante (Copiadas de Students/Index.php)
+    public $student_id;
+    public $first_name = '';
+    public $last_name = '';
+    public $cedula = ''; // o dni
+    public $email = '';
+    public $mobile_phone = ''; // Teléfono móvil (principal)
+    public $home_phone = ''; // Teléfono casa
+    public $address = '';
+    public $city = '';
+    public $sector = '';
+    public $birth_date; // Fecha de nacimiento
+    public $gender = '';
+    public $nationality = '';
+    public $how_found = '';
+    
+    // Propiedades del Tutor (si es menor)
+    public $is_minor = false;
+    public $tutor_name = '';
+    public $tutor_cedula = '';
+    public $tutor_phone = '';
+    public $tutor_relationship = '';
+    
+    // Propiedades de la UI
+    public $modalTitle = '';
+
+    /**
+     * Reglas de validación para el Estudiante
+     */
+    protected function studentRules()
+    {
+        return [
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('students')->ignore($this->student_id),
+            ],
+            'cedula' => [
+                'nullable',
+                'string',
+                'max:20',
+                Rule::unique('students')->ignore($this->student_id),
+            ],
+            'mobile_phone' => 'required|string|max:20',
+            'home_phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:100',
+            'sector' => 'nullable|string|max:100',
+            'birth_date' => 'required|date',
+            'gender' => 'nullable|string|max:50',
+            'nationality' => 'nullable|string|max:100',
+            'how_found' => 'nullable|string|max:255',
+            'is_minor' => 'boolean',
+            'tutor_name' => 'required_if:is_minor,true|nullable|string|max:255',
+            'tutor_cedula' => 'nullable|string|max:20',
+            'tutor_phone' => 'required_if:is_minor,true|nullable|string|max:20',
+            'tutor_relationship' => 'nullable|string|max:100',
+        ];
+    }
+
+    /**
+     * Mensajes de validación personalizados para Estudiante
+     */
+    protected $studentMessages = [
+        'first_name.required' => 'El nombre es obligatorio.',
+        'last_name.required' => 'El apellido es obligatorio.',
+        'email.required' => 'El correo es obligatorio.',
+        'email.email' => 'El formato del correo no es válido.',
+        'email.unique' => 'Este correo ya está registrado.',
+        'cedula.unique' => 'Esta cédula ya está registrada.',
+        'mobile_phone.required' => 'El teléfono móvil es obligatorio.',
+        'birth_date.required' => 'La fecha de nacimiento es obligatoria.',
+        'tutor_name.required_if' => 'El nombre del tutor es obligatorio si el estudiante es menor de edad.',
+        'tutor_phone.required_if' => 'El teléfono del tutor es obligatorio si el estudiante es menor de edad.',
+    ];
+
+    /**
+     * Abre el modal para editar el estudiante actual del perfil.
+     */
+    public function editStudent()
+    {
+        $this->resetValidation(); // Limpiar errores previos
+        $this->student_id = $this->student->id; // Carga el ID del estudiante del perfil
+        
+        // Cargar los datos del estudiante (ya cargado en $this->student) en las propiedades del formulario
+        $this->first_name = $this->student->first_name;
+        $this->last_name = $this->student->last_name;
+        $this->cedula = $this->student->cedula;
+        $this->email = $this->student->email;
+        $this->mobile_phone = $this->student->mobile_phone;
+        $this->home_phone = $this->student->home_phone;
+        $this->address = $this->student->address;
+        $this->city = $this->student->city;
+        $this->sector = $this->student->sector;
+        // Formatear la fecha para el input 'date'
+        $this->birth_date = $this->student->birth_date ? Carbon::parse($this->student->birth_date)->format('Y-m-d') : null;
+        $this->gender = $this->student->gender;
+        $this->nationality = $this->student->nationality;
+        $this->how_found = $this->student->how_found;
+        $this->is_minor = (bool)$this->student->is_minor; // Asegurar que sea booleano
+        $this->tutor_name = $this->student->tutor_name;
+        $this->tutor_cedula = $this->student->tutor_cedula;
+        $this->tutor_phone = $this->student->tutor_phone;
+        $this->tutor_relationship = $this->student->tutor_relationship;
+
+        $this->modalTitle = 'Editar Estudiante: ' . $this->student->fullName;
+        
+        // Dispara el evento para abrir el modal (el HTML debe estar en la vista)
+        $this->dispatch('open-modal', 'student-form-modal');
+    }
+
+    /**
+     * Guarda los cambios del estudiante.
+     */
+    public function saveStudent()
+    {
+        // Valida usando las reglas y mensajes de estudiante
+        $this->validate($this->studentRules(), $this->studentMessages);
+
+        try {
+            // Busca al estudiante (asegura que sea el del perfil)
+            $student = Student::findOrFail($this->student_id);
+            
+            // Actualiza los datos
+            $student->update([
+                'first_name' => $this->first_name,
+                'last_name' => $this->last_name,
+                'cedula' => $this->cedula,
+                'email' => $this->email,
+                'mobile_phone' => $this->mobile_phone,
+                'home_phone' => $this->home_phone,
+                'address' => $this->address,
+                'city' => $this->city,
+                'sector' => $this->sector,
+                'birth_date' => $this->birth_date,
+                'gender' => $this->gender,
+                'nationality' => $this->nationality,
+                'how_found' => $this->how_found,
+                'is_minor' => $this->is_minor,
+                'tutor_name' => $this->is_minor ? $this->tutor_name : null,
+                'tutor_cedula' => $this->is_minor ? $this->tutor_cedula : null,
+                'tutor_phone' => $this->is_minor ? $this->tutor_phone : null,
+                'tutor_relationship' => $this->is_minor ? $this->tutor_relationship : null,
+            ]);
+
+            session()->flash('message', 'Estudiante actualizado exitosamente.');
+            $this->closeStudentModal(); // Cierra el modal
+            
+            // Emite un evento para refrescar el componente del perfil
+            $this->dispatch('studentUpdated'); 
+            
+            // Recarga los datos del estudiante en la propiedad $student
+            $this->student = $student->fresh();
+
+        } catch (\Exception $e) {
+            Log::error('Error al guardar estudiante: ' . $e->getMessage());
+            session()->flash('error', 'Ocurrió un error al guardar el estudiante: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Cierra el modal de estudiante y resetea los campos.
+     */
+    public function closeStudentModal()
+    {
+        $this->dispatch('close-modal', 'student-form-modal');
+        $this->resetStudentInputFields();
+        $this->resetValidation(); // Limpia los errores de validación
+    }
+
+    /**
+     * Resetea todos los campos del formulario de estudiante.
+     */
+    private function resetStudentInputFields()
+    {
+        $this->student_id = null;
+        $this->first_name = '';
+        $this->last_name = '';
+        $this->cedula = '';
+        $this->email = '';
+        $this->mobile_phone = '';
+        $this->home_phone = '';
+        $this->address = '';
+        $this->city = '';
+        $this->sector = '';
+        $this->birth_date = null;
+        $this->gender = '';
+        $this->nationality = '';
+        $this->how_found = '';
+        $this->is_minor = false;
+        $this->tutor_name = '';
+        $this->tutor_cedula = '';
+        $this->tutor_phone = '';
+        $this->tutor_relationship = '';
+        $this->modalTitle = '';
+    }
+    // --- ¡¡¡FIN CÓDIGO AÑADIDO!!! ---
 }

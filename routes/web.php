@@ -83,7 +83,8 @@ Route::middleware(['auth', 'role:Profesor'])->prefix('teacher')->group(function 
 // --- RUTAS DE REPORTES ---
 Route::middleware(['auth'])->group(function () {
     // Asegurarse de que el parámetro coincida con el controlador (student)
-    Route::get('/reports/student-report/{student}', [ReportController::class, 'studentReport'])->name('reports.student-report');
+    // --- ¡¡¡CORRECCIÓN!!! El método se llama 'generateStudentReport' en el controlador ---
+    Route::get('/reports/student-report/{student}', [ReportController::class, 'generateStudentReport'])->name('reports.student-report');
 });
 
 
