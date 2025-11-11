@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule; // Para validación 'unique'
 use Carbon\Carbon; // Para manejar fechas/horas
 
-#[Layout('layouts.app')]
+#[Layout('Layouts.dashboard')]
 class Index extends Component
 {
     use WithPagination;
