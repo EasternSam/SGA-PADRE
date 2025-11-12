@@ -31,8 +31,8 @@
          class="fixed top-24 right-6 z-50 px-4 py-3 rounded-lg shadow-lg"
          role="alert"
          style="display: none;">
-        <strong class="font-bold" x-text="type === 'success' ? '¡Éxito!' : '¡Error!'"></strong>
-        <span class="block sm:inline" x-text="message"></span>
+       <strong class="font-bold" x-text="type === 'success' ? '¡Éxito!' : '¡Error!'"></strong>
+       <span class="block sm:inline" x-text="message"></span>
     </div>
 
 

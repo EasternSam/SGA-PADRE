@@ -64,7 +64,13 @@ class Index extends Component
     // --- ¡AÑADIDO! ---
     // Escucha el evento 'paymentCreated' del modal y refresca el componente
     // Y 'studentUpdated' para refrescar cuando se guarda el modal de edición
-    protected $listeners = ['paymentCreated' => '$refresh', 'studentUpdated' => '$refresh'];
+    // --- ¡MODIFICACIÓN! Se añade 'flashMessage' ---
+    // --- ¡MODIFICACIÓN CLAVE! Cambiamos '$refresh' por 'refreshPaymentList' ---
+    protected $listeners = [
+        'paymentCreated' => 'refreshPaymentList', // <--- AQUÍ ESTÁ EL CAMBIO
+        'studentUpdated' => '$refresh',
+        'flashMessage' // Escucha el evento de flash message
+    ];
 
 
     protected $queryString = [
@@ -149,6 +155,16 @@ class Index extends Component
             'enrollments' => $enrollments, // Pasar inscripciones paginadas
             'payments' => $payments,       // Pasar pagos paginados
         ]);
+    }
+
+    // --- ¡MÉTODO AÑADIDO! ---
+    /**
+     * Escucha el evento 'paymentCreated' y resetea la paginación de pagos.
+     * Esto fuerza a Livewire a recargar la consulta de pagos desde la página 1.
+     */
+    public function refreshPaymentList()
+    {
+        $this->resetPage('paymentsPage');
     }
 
     // --- ¡¡¡MÉTODO PARA REPORTE!!! ---
