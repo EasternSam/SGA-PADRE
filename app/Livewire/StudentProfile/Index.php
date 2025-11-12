@@ -10,12 +10,13 @@ use App\Models\Payment;
 use App\Models\User;
 use App\Models\Student;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log; // <-- Asegúrate de que este 'use' esté
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Carbon\Carbon;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On; // <-- ¡¡¡IMPORTANTE: AÑADIR ESTE 'USE'!!!
 
 #[Layout('layouts.dashboard')]
 class Index extends Component
@@ -61,18 +62,6 @@ class Index extends Component
     // Propiedades para la paginación de pagos
     public $paymentsPage = 1;
 
-    // --- ¡AÑADIDO! ---
-    // Escucha el evento 'paymentCreated' del modal y refresca el componente
-    // Y 'studentUpdated' para refrescar cuando se guarda el modal de edición
-    // --- ¡MODIFICACIÓN! Se añade 'flashMessage' ---
-    // --- ¡MODIFICACIÓN CLAVE! Cambiamos '$refresh' por 'refreshPaymentList' ---
-    protected $listeners = [
-        'paymentCreated' => 'refreshPaymentList', // <--- AQUÍ ESTÁ EL CAMBIO
-        'studentUpdated' => '$refresh',
-        'flashMessage' // Escucha el evento de flash message
-    ];
-
-
     protected $queryString = [
         'search' => ['except' => ''],
         'selectedCourse' => ['except' => null],
@@ -96,16 +85,6 @@ class Index extends Component
     {
         $this->resetPage('enrollmentsPage');
     }
-
-    /*
-    // Este método ya no es necesario si se usa Alpine.js para las pestañas
-    public function setTab($tab)
-    {
-        $this->activeTab = $tab;
-        $this->resetPage('page'); // Restablece la paginación de cursos/módulos
-        $this->resetPage('paymentsPage'); // Restablece la paginación de pagos
-    }
-    */
 
     public function render()
     {
@@ -142,7 +121,9 @@ class Index extends Component
 
         // Lógica para el historial de pagos del estudiante
         $payments = $this->student->payments()
-            ->with('paymentConcept', 'user') // Cargar relaciones
+            // --- ¡¡¡ CORRECCIÓN DE ESTE TURNO !!! ---
+            // Eliminamos 'user' porque la relación no existe en la tabla 'payments'
+            ->with('paymentConcept') // Cargar relaciones
             ->orderBy('created_at', 'desc')
             ->paginate(5, ['*'], 'paymentsPage'); // Paginar pagos
 
@@ -157,37 +138,50 @@ class Index extends Component
         ]);
     }
 
-    // --- ¡MÉTODO AÑADIDO! ---
     /**
-     * Escucha el evento 'paymentCreated' y resetea la paginación de pagos.
+     * Escucha el evento 'paymentAdded' y resetea la paginación de pagos.
      * Esto fuerza a Livewire a recargar la consulta de pagos desde la página 1.
      */
+    #[On('paymentAdded')] // <-- ¡¡¡ESTA ES LA NUEVA FORMA!!!
     public function refreshPaymentList()
     {
         $this->resetPage('paymentsPage');
     }
 
-    // --- ¡¡¡MÉTODO PARA REPORTE!!! ---
+    /**
+     * Escucha el evento 'studentUpdated' y refresca el componente.
+     */
+    #[On('studentUpdated')]
+    public function refreshOnStudentUpdate()
+    {
+        $this->student = $this->student->fresh();
+    }
+
+    /**
+     * Escucha el evento 'flashMessage'.
+     */
+    #[On('flashMessage')]
+    public function handleFlashMessage()
+    {
+        // Este método existe para "atrapar" el evento.
+    }
+
+
     /**
      * Prepara y emite el evento para abrir el reporte en una nueva pestaña.
      */
     public function generateReport()
     {
-        // --- ¡¡¡MODIFICACIÓN PARA DEPURAR!!! ---
         Log::info('El método generateReport FUE LLAMADO.');
-        // --- FIN DE LA MODIFICACIÓN ---
         
         // Obtiene la URL de la ruta del reporte (definida en routes/web.php)
-        // --- ¡CORRECCIÓN! El nombre de la ruta es 'reports.student-report' ---
         $url = route('reports.student-report', $this->student->id);
         
         Log::info('URL Generada para el Reporte: ' . $url);
 
-        // --- ¡¡¡LA CORRECCIÓN ESTÁ AQUÍ!!! ---
         // Usamos parámetros nombrados (sintaxis de Livewire 3)
         $this->dispatch('open-pdf-modal', url: $url);
     }
-    // --- FIN DEL MÉTODO DE REPORTE ---
 
 
     // --- Métodos de Inscripción (Enrollment) ---
@@ -357,7 +351,7 @@ class Index extends Component
         $this->course_code = '';
     }
 
-    // --- MÉTODOS PARA MODAL DE MÓDULO ---
+// --- MÉTODOS PARA MODAL DE MÓDULO ---
     protected function moduleRules()
     {
         return [
@@ -646,9 +640,6 @@ class Index extends Component
             // Emite un evento para refrescar el componente del perfil
             $this->dispatch('studentUpdated'); 
             
-            // Recarga los datos del estudiante en la propiedad $student
-            $this->student = $student->fresh();
-
         } catch (\Exception $e) {
             Log::error('Error al guardar estudiante: ' . $e->getMessage());
             session()->flash('error', 'Ocurrió un error al guardar el estudiante: ' . $e->getMessage());
@@ -665,7 +656,7 @@ class Index extends Component
         $this->resetValidation(); // Limpia los errores de validación
     }
 
-    /**
+/**
      * Resetea todos los campos del formulario de estudiante.
      */
     private function resetStudentInputFields()

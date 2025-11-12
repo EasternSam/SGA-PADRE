@@ -4,43 +4,51 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Payment extends Model
 {
     use HasFactory;
-    protected $guarded = []; // Permitir asignación masiva
 
     /**
-     * Un pago pertenece a un estudiante.
+     * Los atributos que se pueden asignar masivamente.
+     *
+     * @var array<int, string>
      */
-    public function student()
+    protected $fillable = [
+        'student_id',
+        'enrollment_id',
+        'payment_concept_id',
+        'amount',
+        'currency',
+        'status',
+        'gateway',
+        'transaction_id',
+        // No incluimos 'user_id' porque no está en la migración
+    ];
+
+    /**
+     * Obtiene el estudiante al que pertenece el pago.
+     */
+    public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class);
     }
 
     /**
-     * Un pago pertenece a una inscripción (opcional).
+     * Obtiene el concepto del pago.
+     * ¡ESTA ES LA RELACIÓN QUE FALTABA!
      */
-    public function enrollment()
+    public function paymentConcept(): BelongsTo
+    {
+        return $this->belongsTo(PaymentConcept::class);
+    }
+
+    /**
+     * Obtiene la inscripción (opcional) a la que pertenece el pago.
+     */
+    public function enrollment(): BelongsTo
     {
         return $this->belongsTo(Enrollment::class);
-    }
-
-    /**
-     * Un pago pertenece a un concepto de pago (opcional).
-     */
-    public function concept()
-    {
-        return $this->belongsTo(PaymentConcept::class, 'payment_concept_id');
-    }
-
-    /**
-     * NUEVA RELACIÓN:
-     * Un pago fue registrado por un Usuario (Admin).
-     * Esta es la corrección que soluciona el error.
-     */
-    public function user()
-    {
-        return $this->belongsTo(User::class);
     }
 }

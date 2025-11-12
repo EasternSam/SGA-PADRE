@@ -21,7 +21,7 @@ class PaymentModal extends Component
     public $amount = 0.00; // Inicializar con un valor
     public $payment_method = 'Efectivo'; // Valor por defecto
     public $status = 'Completado'; // Valor por defecto
-    public $description;
+    // public $description; // <-- ELIMINADO: Esta columna no existe en la DB
 
     public Collection $payment_concepts; // Tipado para mejor autocompletado
     public bool $isAmountDisabled = false; // Controla si el campo de monto está deshabilitado
@@ -36,9 +36,9 @@ class PaymentModal extends Component
             'payment_concept_id' => 'required|exists:payment_concepts,id',
             // El monto es requerido y debe ser numérico, mínimo 0.01
             'amount' => 'required|numeric|min:0.01', 
-            'payment_method' => 'required|string|max:100',
+            'payment_method' => 'required|string|max:100', // Esto valida la propiedad, está bien
             'status' => 'required|string|max:50',
-            'description' => 'nullable|string|max:500',
+            // 'description' => 'nullable|string|max:500', // <-- ELIMINADO
         ];
     }
     
@@ -90,12 +90,12 @@ class PaymentModal extends Component
                 $this->isAmountDisabled = true;
             } else {
                 // Si no es fijo (o es 'Otro'), resetea el monto y habilita el input
-                $this->amount = 0.00;
+                $this->amount = 0.00; // <- Cambiado a 0.00 para que coincida con el tipo
                 $this->isAmountDisabled = false;
             }
         } else {
             // Si se deselecciona (e.g., "Seleccione un concepto..."), resetea
-            $this->amount = 0.00;
+            $this->amount = 0.00; // <- Cambiado a 0.00 para que coincida con el tipo
             $this->isAmountDisabled = false;
         }
     }
@@ -111,14 +111,17 @@ class PaymentModal extends Component
 
         try {
             // Crear el pago en la base de datos
-            Payment::create([
+            $payment = Payment::create([
                 'student_id' => $this->student_id,
                 'payment_concept_id' => $this->payment_concept_id,
                 'amount' => $this->amount,
-                'payment_method' => $this->payment_method,
+                // La columna en la DB se llama 'gateway', pero la propiedad es 'payment_method'
+                'gateway' => $this->payment_method, 
                 'status' => $this->status,
-                'description' => $this->description,
-                'user_id' => Auth::id(), // Asigna el usuario autenticado que registra el pago
+                // 'description' => $this->description, // <-- ELIMINADO: Esta columna no existe
+                
+                // --- ¡¡¡ CORRECCIÓN DE ESTE TURNO !!! ---
+                // 'user_id' => Auth::id(), // <-- ELIMINADO: Esta columna no existe en tu migración
             ]);
 
             // Cierra el modal
@@ -130,9 +133,8 @@ class PaymentModal extends Component
             // Envía evento para el mensaje flash (toast) en la página principal
             $this->dispatch('flashMessage', ['message' => '¡Pago registrado exitosamente!', 'type' => 'success']);
             
-            // --- ¡MODIFICACIÓN! ---
-            // Envía el evento 'paymentCreated' que 'Index.php' está escuchando
-            $this->dispatch('paymentCreated'); 
+            // Envía el evento 'paymentAdded' que 'Index.php' está escuchando
+            $this->dispatch('paymentAdded'); 
 
         } catch (\Exception $e) {
             Log::error("Error al guardar el pago: " . $e->getMessage());
@@ -152,7 +154,7 @@ class PaymentModal extends Component
             'amount',
             'payment_method',
             'status',
-            'description',
+            // 'description', // <-- ELIMINADO
             'isAmountDisabled'
         ]);
         
