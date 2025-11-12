@@ -8,6 +8,7 @@ use App\Models\Enrollment;
 use App\Models\Attendance as AttendanceModel; // <-- Alias para el Modelo
 use Illuminate\Contracts\View\View;
 use Carbon\Carbon;
+use Livewire\Attributes\Computed; // <-- ¡AÑADIDO! Para la lista de fechas
 
 class Attendance extends Component // <-- Clase correcta (Component)
 {
@@ -15,6 +16,8 @@ class Attendance extends Component // <-- Clase correcta (Component)
     public $enrollments = [];
     public $attendanceDate;
     public $attendanceData = []; // ['enrollment_id' => 'status']
+
+    public $isLocked = false; // <-- ¡AÑADIDO! Para bloquear la edición
 
     /**
      * Carga la sección y los estudiantes.
@@ -42,8 +45,18 @@ class Attendance extends Component // <-- Clase correcta (Component)
             ->get()
             ->keyBy('enrollment_id');
 
+        // --- ¡LÓGICA AÑADIDA! ---
+        // Si se encontraron asistencias, bloquea la edición
+        $this->isLocked = $attendances->isNotEmpty();
+        // --- FIN LÓGICA AÑADIDA ---
+
         foreach ($this->enrollments as $enrollment) {
-            $this->attendanceData[$enrollment->id] = $attendances->get($enrollment->id)->status ?? 'Presente';
+            // Si está bloqueado, usa el status guardado. Si no, default a 'Presente'
+            if ($this->isLocked) {
+                 $this->attendanceData[$enrollment->id] = $attendances->get($enrollment->id)->status;
+            } else {
+                 $this->attendanceData[$enrollment->id] = $attendances->get($enrollment->id)->status ?? 'Presente';
+            }
         }
     }
 
@@ -60,6 +73,12 @@ class Attendance extends Component // <-- Clase correcta (Component)
      */
     public function saveAttendance()
     {
+        // Si por alguna razón trata de guardar en un día bloqueado, lo evitamos.
+        if ($this->isLocked) {
+             session()->flash('error', 'La asistencia para este día ya está guardada y bloqueada.');
+             return;
+        }
+
         $date = Carbon::parse($this->attendanceDate);
 
         foreach ($this->attendanceData as $enrollmentId => $status) {
@@ -78,7 +97,44 @@ class Attendance extends Component // <-- Clase correcta (Component)
         }
 
         session()->flash('message', 'Asistencia guardada para el ' . $date->format('d/m/Y'));
+        
+        // --- ¡AÑADIDO! ---
+        // Recargamos la asistencia, lo que ahora también la bloqueará
+        $this->loadAttendance();
+        
+        // Limpiamos la caché de la lista de fechas completadas
+        unset($this->completedDates);
     }
+
+    /**
+     * ¡NUEVA PROPIEDAD COMPUTADA!
+     * Obtiene la lista de fechas donde ya se pasó lista.
+     */
+    #[Computed(persist: true)] // Persiste para no consultar la DB en cada render
+    public function completedDates()
+    {
+        return AttendanceModel::where('course_schedule_id', $this->section->id)
+            ->select('attendance_date')
+            ->distinct()
+            ->orderBy('attendance_date', 'desc')
+            ->get()
+            ->pluck('attendance_date'); // Solo queremos las fechas
+    }
+
+    // --- ¡¡¡NUEVO MÉTODO AÑADIDO!!! ---
+    /**
+     * Prepara y emite el evento para abrir el reporte en el modal.
+     */
+    public function generateReport()
+    {
+        // Obtiene la URL de la nueva ruta del reporte
+        $url = route('reports.attendance-report', $this->section);
+        
+        // Dispara el evento que el modal de Alpine.js está escuchando
+        $this->dispatch('open-pdf-modal', url: $url);
+    }
+    // --- FIN DEL NUEVO MÉTODO ---
+
 
     public function render(): View
     {

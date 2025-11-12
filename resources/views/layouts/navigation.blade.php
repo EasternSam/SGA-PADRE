@@ -63,6 +63,20 @@
                     <span>{{ __('Estudiantes') }}</span>
                 </x-responsive-nav-link>
 
+                <!-- --- INICIO: ENLACE DE DOCENTES AÑADIDO --- -->
+                <x-responsive-nav-link :href="route('admin.teachers.index')"
+                    :active="request()->routeIs(['admin.teachers.index', 'admin.teachers.profile'])"
+                    wire:navigate>
+                    <!-- Icono: Briefcase -->
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M20.25 14.15v4.075c0 1.313-.964 2.411-2.206 2.597l-5.464.794a2.625 2.625 0 0 1-2.16 0l-5.464-.794A2.57 2.57 0 0 1 2.25 18.225V14.15M3.375 13.5v-3.375A2.25 2.25 0 0 1 5.625 7.875h12.75c1.24 0 2.25 1.01 2.25 2.25V13.5m0-3.375l-5.91-.86a2.625 2.625 0 0 0-2.18 0l-5.91.86" />
+                    </svg>
+                    <span>{{ __('Docentes') }}</span>
+                </x-responsive-nav-link>
+                <!-- --- FIN: ENLACE DE DOCENTES AÑADIDO --- -->
+
                 <x-responsive-nav-link :href="route('admin.courses.index')" :active="request()->routeIs('admin.courses.index')" wire:navigate>
                     <!-- Icono: Academic Cap -->
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"

@@ -55,6 +55,12 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
     Route::get('/courses', \App\Livewire\Courses\Index::class)->name('admin.courses.index');
     Route::get('/finance/payment-concepts', \App\Livewire\Finance\PaymentConcepts::class)->name('admin.finance.concepts');
     
+    // --- RUTAS GESTIÓN DE PROFESORES (ACTUALIZADAS) ---
+    // Ruta para la lista de profesores
+    Route::get('/teachers', \App\Livewire\Teachers\Index::class)->name('admin.teachers.index');
+    // Ruta para el perfil de un profesor (pasando el 'user' como 'teacher')
+    Route::get('/teachers/profile/{teacher}', \App\Livewire\TeacherProfile\Index::class)->name('admin.teachers.profile');
+
     // Alias para que 'admin.profile.edit' apunte a la ruta de perfil genérica.
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
 });
@@ -68,7 +74,9 @@ Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->group(functio
 });
 
 // --- RUTAS DE PROFESOR ---
-Route::middleware(['auth', 'role:Profesor'])->prefix('teacher')->group(function () { // Cambiado de 'Teacher'
+// --- ¡¡¡CORRECCIÓN DE PERMISOS!!! ---
+// Se añade 'Admin' para que el administrador pueda ver las secciones de asistencia y notas
+Route::middleware(['auth', 'role:Profesor|Admin'])->prefix('teacher')->group(function () { // Cambiado de 'Teacher'
     Route::get('/dashboard', \App\Livewire\TeacherPortal\Dashboard::class)->name('teacher.dashboard');
     // --- ¡CORRECCIÓN! ---
     // Las rutas de 'grades' y 'attendance' deben aceptar el ID de la sección
@@ -85,6 +93,10 @@ Route::middleware(['auth'])->group(function () {
     // Asegurarse de que el parámetro coincida con el controlador (student)
     // --- ¡¡¡CORRECCIÓN!!! El método se llama 'generateStudentReport' en el controlador ---
     Route::get('/reports/student-report/{student}', [ReportController::class, 'generateStudentReport'])->name('reports.student-report');
+
+    // --- ¡¡¡RUTA AÑADIDA!!! ---
+    // Ruta para el nuevo reporte de asistencia
+    Route::get('/reports/attendance-report/{section}', [ReportController::class, 'generateAttendanceReport'])->name('reports.attendance-report');
 });
 
 
