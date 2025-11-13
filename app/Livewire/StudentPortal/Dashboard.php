@@ -3,92 +3,77 @@
 namespace App\Livewire\StudentPortal;
 
 use Livewire\Component;
+use App\Models\Student;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Student; // Importar Student
 use Illuminate\Contracts\View\View;
-use Livewire\Attributes\Layout; // Importar Layout
-use Illuminate\Support\Facades\Log; // Importar Log
+use Livewire\Attributes\Layout;
 
-// ¡¡¡REPARACIÓN #1!!!
-// Se corrige el layout a 'app' para ser consistente con tus
-// otros componentes (Profile, Courses) y asegurar que carga
-// el layout correcto.
-#[Layout('app')]
+#[Layout('layouts.dashboard')]
 class Dashboard extends Component
 {
-    public $student;
+    public Student $student;
+    
+    // Almacenaremos las colecciones aquí
+    public $activeEnrollments;
+    public $completedEnrollments;
+    public $payments;
 
     /**
-     * Mount the component.
-     * Carga el perfil del estudiante basado en el usuario autenticado.
+     * Carga el perfil del estudiante logueado y sus relaciones.
      */
     public function mount(): void
     {
-        $user = Auth::user();
+        // Obtenemos el usuario autenticado y cargamos su perfil de estudiante
+        // Tu middleware 'role:Estudiante' ya protege esta ruta.
+        $student = Auth::user()->student;
 
-        if (!$user) {
-            // Si no hay usuario (sesión expirada, etc.), redirigir al login
-            redirect()->route('login');
-            return;
+        if (!$student) {
+            // Esto no debería pasar si la lógica de registro es correcta
+            abort(404, 'Perfil de estudiante no encontrado.');
         }
 
-        // Nos aseguramos de cargar las relaciones necesarias
-        try {
-            // Esta es la consulta que fallaba (Línea 25)
-            $studentProfile = $user->student()->with(
-                'enrollments.courseSchedule.module.course',
-                'enrollments.courseSchedule.teacher', // Añadido para consistencia
-                'payments.concept',
-                'payments.user'
-            )->first();
+        // Cargar todas las relaciones necesarias de una sola vez
+        $student->load([
+            'enrollments' => function ($query) {
+                // Ordenar las inscripciones por la fecha de inicio del curso
+                $query->with([
+                    'courseSchedule.module.course', 
+                    'courseSchedule.teacher'
+                ])->join('course_schedules', 'enrollments.course_schedule_id', '=', 'course_schedules.id')
+                  ->orderBy('course_schedules.start_date', 'desc');
+            },
+            'payments.paymentConcept'
+        ]);
 
-            // Si por alguna razón el usuario "Estudiante" no tiene un perfil vinculado,
-            // (lo cual sería un error de datos), mostramos un error.
-            if (!$studentProfile) {
-                Log::warning("Usuario Estudiante (ID: {$user->id}, Email: {$user->email}) no tiene perfil de estudiante vinculado.");
-                // Asignamos null y salimos; el render() manejará el estado vacío
-                $this->student = null;
-                session()->flash('error', 'Perfil de estudiante no encontrado para este usuario.');
-                return;
-            }
+        $this->student = $student;
 
-            $this->student = $studentProfile;
+        // --- ¡¡¡INICIO DE LA CORRECCIÓN!!! ---
+        // Obtenemos todas las inscripciones cargadas
+        $allEnrollments = $this->student->enrollments;
 
-        } catch (\Exception $e) {
-            // Si las relaciones fallan (como pasaba antes), esto lo capturaría
-            Log::error("Error al cargar dashboard de estudiante para User ID {$user->id}: " . $e->getMessage());
-            $this->student = null;
-            session()->flash('error', 'Ocurrió un error al cargar tu perfil. Contacta a soporte.');
-        }
+        // Cursos Completados: Son los que tienen el estado 'completed'.
+        $this->completedEnrollments = $allEnrollments->filter(function ($enrollment) {
+            return $enrollment->status === 'completed';
+        });
+
+        // Cursos Activos: Son todos los demás que NO estén 'completed' NI 'cancelled'.
+        // Esto incluirá 'active', 'Enrolled', 'pending', etc.
+        $this->activeEnrollments = $allEnrollments->filter(function ($enrollment) {
+            return $enrollment->status !== 'completed' && $enrollment->status !== 'cancelled';
+        });
+        // --- ¡¡¡FIN DE LA CORRECCIÓN!!! ---
+        
+        // Cargar los 5 pagos más recientes
+        $this->payments = $this->student->payments->sortByDesc('created_at')->take(5);
     }
 
+    /**
+     * Renderiza la vista del dashboard del estudiante.
+     */
     public function render(): View
     {
-        // ¡¡¡REPARACIÓN #2!!!
-        // La vista (dashboard.blade.php) espera una variable '$enrollments'.
-        // Ya la tenemos cargada en '$this->student->enrollments', así que
-        // la extraemos y la pasamos explícitamente a la vista.
-
-        // Filtramos solo las inscripciones activas para el dashboard principal
-        // Usamos el 'optional helper' por si $this->student es null
-        $enrollments = optional($this->student)->enrollments
-            ? $this->student->enrollments->where('status', 'active')
-            : collect(); // Si no hay estudiante o inscripciones, colección vacía
-
-        // ¡¡¡REPARACIÓN #3!!! (La solución a tu error)
-        // La vista también espera '$pendingPayments'. Los filtramos de la
-        // colección que ya cargamos en mount().
-        $allPayments = optional($this->student)->payments;
-
-        $pendingPayments = $allPayments
-            ? $allPayments->where('status', 'pending')
-            : collect(); // Colección vacía si no hay estudiante o pagos
-
-        // El nombre de la vista debe ser 'livewire.student-portal.dashboard'
         return view('livewire.student-portal.dashboard', [
-            'enrollments' => $enrollments,
-            'pendingPayments' => $pendingPayments // <-- ¡¡¡AÑADIDO!!!
-            // $student ya es público, así que la vista también tiene acceso a él.
-        ]);
+            'title' => 'Mi Expediente'
+        ])->layout('layouts.dashboard');
     }
 }
