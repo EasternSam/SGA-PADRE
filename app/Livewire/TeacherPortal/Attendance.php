@@ -51,12 +51,17 @@ class Attendance extends Component // <-- Clase correcta (Component)
         // --- FIN LÓGICA AÑADIDA ---
 
         foreach ($this->enrollments as $enrollment) {
-            // Si está bloqueado, usa el status guardado. Si no, default a 'Presente'
-            if ($this->isLocked) {
-                 $this->attendanceData[$enrollment->id] = $attendances->get($enrollment->id)->status;
-            } else {
-                 $this->attendanceData[$enrollment->id] = $attendances->get($enrollment->id)->status ?? 'Presente';
-            }
+            // --- ¡¡¡ESTA ES LA CORRECCIÓN!!! ---
+            // 1. Obtenemos la asistencia existente. Puede ser 'null' si no hay registro para hoy.
+            $existingAttendance = $attendances->get($enrollment->id);
+
+            // 2. Usamos el 'optional chaining operator' (?->) para leer 'status' de forma segura.
+            //    Si $existingAttendance es null, $existingAttendance?->status devolverá null.
+            // 3. Usamos el 'null coalescing operator' (??) para asignar 'Presente' si el resultado es null.
+            //    Esto soluciona el error 'Attempt to read property "status" on null'
+            
+            // Esta única línea reemplaza y corrige la lógica 'if/else' anterior (líneas 55-60)
+            $this->attendanceData[$enrollment->id] = $existingAttendance?->status ?? 'Presente';
         }
     }
 

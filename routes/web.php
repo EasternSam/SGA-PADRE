@@ -1,9 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ReportController; // Para el reporte
-use App\Http\Controllers\ProfileController; // <-- ¡AÑADIDO! Necesario para las rutas de perfil
-use Illuminate\Support\Facades\Auth; // <-- ¡AÑADIDO! Necesario para la ruta 'dashboard'
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ProfileController; 
+use Illuminate\Support\Facades\Auth; 
 
 /*
 |--------------------------------------------------------------------------
@@ -66,11 +66,16 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
 });
 
 // --- RUTAS DE ESTUDIANTE ---
-Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->group(function () { // Cambiado de 'Student'
-    Route::get('/dashboard', \App\Livewire\StudentPortal\Dashboard::class)->name('student.dashboard');
+Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student.')->group(function () { // Cambiado de 'Student' y añadido prefijo de nombre
+    Route::get('/dashboard', \App\Livewire\StudentPortal\Dashboard::class)->name('dashboard');
+    
+    // --- ¡¡¡CORRECCIÓN DE RUTA!!! ---
+    // Cambiamos el parámetro {enrollment} a {enrollmentId}
+    // para que coincida con la variable del método mount()
+    Route::get('/course/{enrollmentId}', \App\Livewire\StudentPortal\CourseDetail::class)->name('course.detail');
     
     // Alias para que 'student.profile.edit' apunte a la ruta de perfil genérica.
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('student.profile.edit');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
 });
 
 // --- RUTAS DE PROFESOR ---

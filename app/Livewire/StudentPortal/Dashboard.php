@@ -3,77 +3,91 @@
 namespace App\Livewire\StudentPortal;
 
 use Livewire\Component;
-use App\Models\Student;
+use App\Models\Student; // Asegúrate de importar Student
+use App\Models\Enrollment;
+use App\Models\Payment;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Contracts\View\View;
-use Livewire\Attributes\Layout;
+use Livewire\Attributes\Layout; // Opcional, pero buena práctica
 
-#[Layout('layouts.dashboard')]
+#[Layout('layouts.dashboard')] // Define el layout aquí
 class Dashboard extends Component
 {
-    public Student $student;
-    
-    // Almacenaremos las colecciones aquí
-    public $activeEnrollments;
-    public $completedEnrollments;
-    public $payments;
+    // Propiedades públicas que se pasarán a la vista
+    // Hacemos $student anulable (nullable) por si falla la carga
+    public ?Student $student;
+    public $activeEnrollments = [];
+    public $completedEnrollments = [];
+    public $payments = [];
 
     /**
-     * Carga el perfil del estudiante logueado y sus relaciones.
+     * Mounta el componente y carga todos los datos del estudiante.
      */
-    public function mount(): void
+    public function mount()
     {
-        // Obtenemos el usuario autenticado y cargamos su perfil de estudiante
-        // Tu middleware 'role:Estudiante' ya protege esta ruta.
-        $student = Auth::user()->student;
+        // 1. Obtener el estudiante de forma segura
+        $student = Auth::user()?->student; // Usamos la relación que ya existe
 
+        // 2. Verificar si el estudiante existe
         if (!$student) {
-            // Esto no debería pasar si la lógica de registro es correcta
-            abort(404, 'Perfil de estudiante no encontrado.');
+            // Si no existe, es el problema de datos.
+            // Registramos el error y redirigimos a la página de perfil
+            // para evitar un 'Invalid route action' y un bucle.
+            
+            if (!request()->routeIs('profile.edit')) {
+                session()->flash('error', 'Su cuenta de usuario no está enlazada a un perfil de estudiante. Por favor, contacte a soporte.');
+                return redirect()->route('profile.edit');
+            }
+            
+            $this->student = null; // Se queda nulo
+            return;
         }
 
-        // Cargar todas las relaciones necesarias de una sola vez
-        $student->load([
-            'enrollments' => function ($query) {
-                // Ordenar las inscripciones por la fecha de inicio del curso
-                $query->with([
-                    'courseSchedule.module.course', 
-                    'courseSchedule.teacher'
-                ])->join('course_schedules', 'enrollments.course_schedule_id', '=', 'course_schedules.id')
-                  ->orderBy('course_schedules.start_date', 'desc');
-            },
-            'payments.paymentConcept'
-        ]);
-
+        // 3. Si existe, asignamos las propiedades
         $this->student = $student;
 
-        // --- ¡¡¡INICIO DE LA CORRECCIÓN!!! ---
-        // Obtenemos todas las inscripciones cargadas
-        $allEnrollments = $this->student->enrollments;
 
-        // Cursos Completados: Son los que tienen el estado 'completed'.
-        $this->completedEnrollments = $allEnrollments->filter(function ($enrollment) {
-            return $enrollment->status === 'completed';
-        });
-
-        // Cursos Activos: Son todos los demás que NO estén 'completed' NI 'cancelled'.
-        // Esto incluirá 'active', 'Enrolled', 'pending', etc.
-        $this->activeEnrollments = $allEnrollments->filter(function ($enrollment) {
-            return $enrollment->status !== 'completed' && $enrollment->status !== 'cancelled';
-        });
-        // --- ¡¡¡FIN DE LA CORRECCIÓN!!! ---
+        // --- ¡DIAGNÓSTICO ELIMINADO! ---
+        // Se quitó el 'dd()' para que la página cargue.
         
-        // Cargar los 5 pagos más recientes
-        $this->payments = $this->student->payments->sortByDesc('created_at')->take(5);
+        // Se crea una consulta base para reutilizar
+        $baseQuery = Enrollment::with([
+                'courseSchedule.module.course',
+                'courseSchedule.teacher'
+            ])
+            ->where('student_id', $this->student->id);
+
+        // --- ¡¡¡ESTA ES LA SOLUCIÓN!!! ---
+        // Consulta para Cursos Activos (ahora incluye "Enrolled")
+        $this->activeEnrollments = (clone $baseQuery) // Clonamos la consulta base
+            ->whereIn('status', [
+                'Cursando', 'Pendiente', // Original
+                'cursando', 'pendiente', // Failsafe para minúsculas
+                'Enrolled', 'enrolled'   // ¡AÑADIDO GRACIAS A TU DIAGNÓSTICO!
+            ])
+            ->get();
+
+        // Consulta para Cursos Completados (ahora incluye minúsculas)
+        $this->completedEnrollments = (clone $baseQuery) // Clonamos la consulta base
+            ->whereIn('status', [
+                'Completado', // Original
+                'completado'  // Failsafe para minúsculas
+            ])
+            ->get();
+
+
+        // Cargar los pagos
+        $this->payments = Payment::with('paymentConcept')
+            ->where('student_id', $this->student->id)
+            ->orderBy('created_at', 'desc')
+            ->take(5) // Tomar solo los últimos 5
+            ->get();
     }
 
     /**
-     * Renderiza la vista del dashboard del estudiante.
+     * Renderiza la vista.
      */
-    public function render(): View
+    public function render()
     {
-        return view('livewire.student-portal.dashboard', [
-            'title' => 'Mi Expediente'
-        ])->layout('layouts.dashboard');
+        return view('livewire.student-portal.dashboard');
     }
 }

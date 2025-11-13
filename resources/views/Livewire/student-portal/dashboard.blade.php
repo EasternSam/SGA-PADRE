@@ -6,6 +6,23 @@
         </h2>
     </x-slot>
 
+    <!-- ¡¡¡NUEVO!!! Bloque de Mensajes Flash -->
+    <!-- Esto mostrará los errores cuando seas redirigido aquí -->
+    @if (session()->has('message'))
+        <div class="mb-6 rounded-lg border border-green-400 bg-green-100 px-4 py-3 text-green-700 shadow" role="alert">
+            <strong class="font-bold">¡Éxito!</strong>
+            <span class="block sm:inline">{{ session('message') }}</span>
+        </div>
+    @endif
+    @if (session()->has('error'))
+        <div class="mb-6 rounded-lg border border-red-400 bg-red-100 px-4 py-3 text-red-700 shadow" role="alert">
+            <strong class="font-bold">¡Error!</strong>
+            <span class="block sm:inline">{{ session('error') }}</span>
+        </div>
+    @endif
+    <!-- Fin de Mensajes Flash -->
+
+
     <!-- Contenido de la Página -->
     <div class="space-y-6">
 
@@ -14,7 +31,7 @@
             <div class="p-4 sm:p-6 md:flex">
                 <!-- Avatar -->
                 <div class="md:w-1/4 md:flex-shrink-0 md:text-center">
-                    <img class="h-24 w-24 rounded-full mx-auto md:mx-0 md:mr-6 shadow-md"
+                    <img class="h-32 w-32 rounded-full mx-auto md:mx-0 md:mr-6 shadow-md"
                          src="https://placehold.co/100x100/e2e8f0/64748b?text={{ substr($student->first_name, 0, 1) }}{{ substr($student->last_name, 0, 1) }}"
                          alt="Avatar de {{ $student->fullName }}">
                 </div>
@@ -27,16 +44,16 @@
                     
                     <div class="mt-4 grid grid-cols-1 gap-4 border-t border-sga-gray pt-4 text-sm sm:grid-cols-3">
                         <div>
-                            <strong class="block text-sga-text-light">Nombre Completo:</strong>
-                            <span class="text-sga-text">{{ $student->fullName }}</span>
+                            <strong class="text-sga-text-light block">Nombre Completo:</strong>
+                            <span class_alias="text-sga-text">{{ $student->fullName }}</span>
                         </div>
                         <div>
-                            <strong class="block text-sga-text-light">Correo Electrónico:</strong>
+                            <strong class="text-sga-text-light block">Correo Electrónico:</strong>
                             <span class="text-sga-text">{{ $student->email }}</span>
                         </div>
                         <div>
-                            <strong class="block text-sga-text-light">Teléfono Móvil:</strong>
-                            <span class="text-sga-text">{{ $student->mobile_phone ?? 'N/A' }}</span>
+                            <strong class="text-sga-text-light block">Teléfono Móvil:</strong>
+                            <span class="text-sga-text">{{ $student->mobile_phone ?? $student->phone ?? 'N/A' }}</span>
                         </div>
                     </div>
                 </div>
@@ -64,11 +81,14 @@
                                             <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-sga-text sm:pl-6">Curso / Módulo</th>
                                             <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-sga-text">Profesor</th>
                                             <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-sga-text">Horario</th>
+                                            <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                                                <span class="sr-only">Ver</span>
+                                            </th>
                                         </tr>
                                     </thead>
-                                    <tbody class="divide-y divide-sga-gray bg-sga-card">
+                                    <tbody class="bg-sga-card divide-y divide-sga-gray">
                                         @forelse ($activeEnrollments as $enrollment)
-                                            <tr wire:key="active-{{ $enrollment->id }}">
+                                            <tr wire:key="active-{{ $enrollment->id }}" class="hover:bg-sga-bg">
                                                 <td class="py-4 pl-4 pr-3 text-sm sm:pl-6">
                                                     <div class="font-medium text-sga-text">{{ $enrollment->courseSchedule->module->course->name ?? 'N/A' }}</div>
                                                     <div class="text-sga-text-light">{{ $enrollment->courseSchedule->module->name ?? 'N/A' }}</div>
@@ -80,10 +100,16 @@
                                                     <div>{{ implode(', ', $enrollment->courseSchedule->days_of_week ?? []) }}</div>
                                                     <div>{{ \Carbon\Carbon::parse($enrollment->courseSchedule->start_time)->format('h:i A') }} - {{ \Carbon\Carbon::parse($enrollment->courseSchedule->end_time)->format('h:i A') }}</div>
                                                 </td>
+                                                <td class="whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                                    {{-- ¡CAMBIO! Se eliminó wire:navigate para forzar una recarga de página completa --}}
+                                                    <a href="{{ route('student.course.detail', $enrollment->id) }}" class="text-sga-secondary hover:text-sga-primary font-semibold">
+                                                        Ver Detalles <span aria-hidden="true">&rarr;</span>
+                                                    </a>
+                                                </td>
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="3" class="whitespace-nowrap px-3 py-4 text-center text-sm text-sga-text-light">
+                                                <td colspan="4" class="whitespace-nowrap px-3 py-4 text-center text-sm text-sga-text-light">
                                                     No estás inscrito en ningún curso actualmente.
                                                 </td>
                                             </tr>
@@ -143,7 +169,7 @@
                                         <p class="text-xs text-sga-text-light">{{ $payment->created_at->format('d/m/Y') }}</p>
                                     </div>
                                     <div class="flex-shrink-0">
-                                        <span class="text-sm font-medium text-sga-text">${{ number_format($payment->amount, 2) }}</span>
+                                        <span classs="text-sm font-medium text-sga-text">${{ number_format($payment->amount, 2) }}</span>
                                     </div>
                                 </li>
                             @empty
