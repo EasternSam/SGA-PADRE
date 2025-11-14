@@ -27,6 +27,18 @@ class Payment extends Model
         // No incluimos 'user_id' porque no está en la migración
     ];
 
+    // --- ¡¡¡AÑADIDO!!! ---
+    /**
+     * Los atributos que deben ser casteados.
+     * Esto asegura que el 'amount' se trate como un número decimal.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'amount' => 'decimal:2',
+    ];
+    // --- FIN DE LA ACTUALIZACIÓN ---
+
     /**
      * Obtiene el estudiante al que pertenece el pago.
      */

@@ -4,8 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Casts\Attribute; // <-- IMPORTANTE: Para Atributos
-use Carbon\Carbon;
 
 class Student extends Model
 {
@@ -13,60 +11,57 @@ class Student extends Model
 
     /**
      * The attributes that are mass assignable.
-     * (¡CORREGIDO! Alineado con tus migraciones y formularios)
+     *
      * @var array<int, string>
      */
     protected $fillable = [
-        'user_id',
+        'user_id', // <-- AÑADIDO: Para vincular con el User
+        'student_code', // Este será la "matrícula"
         'first_name',
         'last_name',
         'cedula',
         'email',
+        'gender',
+        'birth_date',
+        'nationality',
+        'address',
+        'sector',
+        'city',
         'home_phone',
         'mobile_phone',
-        'phone', // Añadido de la migración ...013
-        'address',
-        'city',
-        'sector',
-        'birth_date',
-        'gender',
-        'nationality',
-        'how_found',
+        'how_found', // (Ej. Redes Sociales, referido, etc.)
+        'status', // (Ej. Activo, Inactivo, Graduado, Prospecto)
+        'balance', // (Balance financiero pendiente)
+
+        // Campos de Tutor (si es menor)
         'is_minor',
-        'status',
-        'wp_student_post_id',
         'tutor_name',
         'tutor_cedula',
         'tutor_phone',
         'tutor_relationship',
-        'student_code', // Añadido para el reporte
-        'admission_date', // Añadido para el reporte
-        'dni', // Añadido para el reporte (aunque 'cedula' parece ser el correcto)
     ];
 
     /**
-     * The attributes that should be cast.
-     * (¡CORREGIDO!)
-     * @var array<string, string>
+     * Los atributos que deben ser casteados.
+     *
+     * @var array
      */
     protected $casts = [
-        'birth_date' => 'datetime',
-        'admission_date' => 'datetime',
+        'birth_date' => 'date',
         'is_minor' => 'boolean',
+        'balance' => 'decimal:2',
     ];
 
-    // --- Relación Inversa ---
     /**
-     * Un Estudiante (perfil) pertenece a un Usuario (login).
+     * Un estudiante (Student) pertenece a un usuario (User).
      */
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    // --- Relaciones ---
     /**
-     * Un Estudiante tiene muchas Matrículas.
+     * Un estudiante tiene muchas inscripciones (Enrollments).
      */
     public function enrollments()
     {
@@ -74,40 +69,18 @@ class Student extends Model
     }
 
     /**
-     * Un Estudiante tiene muchos Pagos.
+     * Un estudiante tiene muchos pagos (Payments).
      */
     public function payments()
     {
         return $this->hasMany(Payment::class);
     }
 
-    // --- ACCESORS (Atributos Calculados) ---
-
     /**
-     * OBTENER EL NOMBRE COMPLETO.
-     * (¡AÑADIDO! Esto soluciona los errores #3 y #4)
+     * Obtiene el nombre completo del estudiante.
      */
-    protected function fullName(): Attribute
+    public function getFullNameAttribute()
     {
-        return Attribute::make(
-            get: fn () => trim($this->first_name . ' ' . $this->last_name),
-        );
-    }
-
-    /**
-     * Obtener la edad del estudiante.
-     * (¡ACTUALIZADO! Usa birth_date)
-     */
-    protected function age(): Attribute
-    {
-        return Attribute::make(
-            get: function () {
-                if ($this->birth_date) {
-                    // Gracias a $casts, $this->birth_date ya es un objeto Carbon
-                    return Carbon::parse($this->birth_date)->age;
-                }
-                return null;
-            },
-        );
+        return $this->first_name . ' ' . $this->last_name;
     }
 }

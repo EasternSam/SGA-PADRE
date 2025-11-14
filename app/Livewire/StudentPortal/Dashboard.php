@@ -8,78 +8,84 @@ use App\Models\Enrollment;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout; // Opcional, pero buena práctica
+use Illuminate\Support\Collection; // <-- IMPORTADO
 
 #[Layout('layouts.dashboard')] // Define el layout aquí
 class Dashboard extends Component
 {
-    // Propiedades públicas que se pasarán a la vista
-    // Hacemos $student anulable (nullable) por si falla la carga
+    // --- Propiedades Actualizadas ---
     public ?Student $student;
-    public $activeEnrollments = [];
-    public $completedEnrollments = [];
-    public $payments = [];
+    public Collection $activeEnrollments;    // Cursos 'Cursando' o 'Activo'
+    public Collection $pendingEnrollments;   // Inscripciones 'Pendiente' (de pago)
+    public Collection $completedEnrollments; // Cursos 'Completado'
+    public Collection $pendingPayments;      // Pagos 'Pendiente'
 
     /**
      * Mounta el componente y carga todos los datos del estudiante.
      */
     public function mount()
     {
-        // 1. Obtener el estudiante de forma segura
-        $student = Auth::user()?->student; // Usamos la relación que ya existe
+        // 1. Obtener el estudiante de forma segura (Tu lógica original)
+        $student = Auth::user()?->student; 
 
-        // 2. Verificar si el estudiante existe
+        // 2. Verificar si el estudiante existe (Tu lógica original)
         if (!$student) {
-            // Si no existe, es el problema de datos.
-            // Registramos el error y redirigimos a la página de perfil
-            // para evitar un 'Invalid route action' y un bucle.
-            
             if (!request()->routeIs('profile.edit')) {
                 session()->flash('error', 'Su cuenta de usuario no está enlazada a un perfil de estudiante. Por favor, contacte a soporte.');
                 return redirect()->route('profile.edit');
             }
             
-            $this->student = null; // Se queda nulo
+            $this->student = null; 
+            // Inicializar colecciones vacías
+            $this->activeEnrollments = collect();
+            $this->pendingEnrollments = collect();
+            $this->completedEnrollments = collect();
+            $this->pendingPayments = collect();
             return;
         }
 
         // 3. Si existe, asignamos las propiedades
         $this->student = $student;
-
-
-        // --- ¡DIAGNÓSTICO ELIMINADO! ---
-        // Se quitó el 'dd()' para que la página cargue.
         
-        // Se crea una consulta base para reutilizar
+        // Se crea una consulta base para reutilizar (Tu lógica original)
         $baseQuery = Enrollment::with([
                 'courseSchedule.module.course',
                 'courseSchedule.teacher'
             ])
             ->where('student_id', $this->student->id);
 
-        // --- ¡¡¡ESTA ES LA SOLUCIÓN!!! ---
-        // Consulta para Cursos Activos (ahora incluye "Enrolled")
-        $this->activeEnrollments = (clone $baseQuery) // Clonamos la consulta base
+        // --- Lógica de Carga ACTUALIZADA ---
+
+        // Cursos Activos (Solo Cursando o Activo)
+        $this->activeEnrollments = (clone $baseQuery)
             ->whereIn('status', [
-                'Cursando', 'Pendiente', // Original
-                'cursando', 'pendiente', // Failsafe para minúsculas
-                'Enrolled', 'enrolled'   // ¡AÑADIDO GRACIAS A TU DIAGNÓSTICO!
+                'Cursando', 'cursando', 
+                'Activo', 'activo'
+                // Se quita 'Pendiente' y 'Enrolled' de esta lista
             ])
             ->get();
 
-        // Consulta para Cursos Completados (ahora incluye minúsculas)
-        $this->completedEnrollments = (clone $baseQuery) // Clonamos la consulta base
+        // Inscripciones Pendientes (NUEVO)
+        $this->pendingEnrollments = (clone $baseQuery)
             ->whereIn('status', [
-                'Completado', // Original
-                'completado'  // Failsafe para minúsculas
+                'Pendiente', 'pendiente',
+                'Enrolled', 'enrolled' // Mantenemos 'Enrolled' como un estado pendiente
             ])
             ->get();
 
+        // Cursos Completados (Tu lógica original)
+        $this->completedEnrollments = (clone $baseQuery)
+            ->whereIn('status', [
+                'Completado', 'completado'
+            ])
+            ->get();
 
-        // Cargar los pagos
-        $this->payments = Payment::with('paymentConcept')
+        // Pagos Pendientes (NUEVO)
+        // Cargar los pagos que están pendientes para mostrar alerta
+        $this->pendingPayments = Payment::with(['paymentConcept', 'enrollment.courseSchedule.module'])
             ->where('student_id', $this->student->id)
+            ->where('status', 'Pendiente')
             ->orderBy('created_at', 'desc')
-            ->take(5) // Tomar solo los últimos 5
             ->get();
     }
 

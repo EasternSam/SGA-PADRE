@@ -2,7 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\EnrollmentController;
+use App\Http\Controllers\EnrollmentController; // <-- IMPORTAR
 
 /*
 |--------------------------------------------------------------------------
@@ -20,8 +20,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 /**
- * RUTA PÚBLICA PARA LA SINCRONIZACIÓN CON WORDPRESS
- * * Esta es la URL que recibirá los datos de las nuevas inscripciones
- * desde el plugin de WordPress (Fluent Forms).
+ * Ruta pública para recibir inscripciones desde la página web (Fluent Forms, etc.)
  */
 Route::post('/enroll', [EnrollmentController::class, 'store']);

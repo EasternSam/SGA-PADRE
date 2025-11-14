@@ -6,17 +6,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Spatie\Permission\Traits\HasRoles; // Asumiendo que usas Spatie
-use Laravel\Sanctum\HasApiTokens; // ¡Añadido!
-use Illuminate\Database\Eloquent\Relations\HasOne; // ¡Añadido!
-use Illuminate\Database\Eloquent\Relations\HasMany; // ¡Añadido!
-use App\Models\Student; // ¡Añadido!
-use App\Models\CourseSchedule; // ¡Añadido!
-use App\Models\Payment; // ¡Añadido!
+use Spatie\Permission\Traits\HasRoles;
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Student;
+use App\Models\CourseSchedule;
+use App\Models\Payment;
+use Carbon\Carbon; // <-- IMPORTAR CARBON
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles; // 'HasApiTokens' añadido
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -27,6 +28,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'access_expires_at', // <-- AÑADIDO: Para permitir asignación masiva
     ];
 
     /**
@@ -49,36 +51,31 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'access_expires_at' => 'datetime', // <-- AÑADIDO: Para castear a Carbon
         ];
     }
 
     /**
      * Relación: Un Usuario (Estudiante) tiene un perfil de Estudiante.
      */
-    public function student(): HasOne // Tipo de retorno añadido
+    public function student(): HasOne
     {
-        // Un usuario (tipo estudiante) tiene UN perfil de estudiante
-        // Se mantiene tu lógica original con la clave foránea
         return $this->hasOne(Student::class, 'user_id');
     }
 
     /**
      * Relación: Un Usuario (Profesor) tiene muchas secciones/horarios asignados.
      */
-    public function schedules(): HasMany // Tipo de retorno añadido
+    public function schedules(): HasMany
     {
-        // Un usuario (tipo profesor) tiene MUCHOS horarios asignados
-        // Se mantiene tu lógica original con la clave foránea
         return $this->hasMany(CourseSchedule::class, 'teacher_id');
     }
 
     /**
      * Relación: Un Usuario (Admin) ha registrado muchos pagos.
      */
-    public function payments(): HasMany // Tipo de retorno añadido
+    public function payments(): HasMany
     {
-        // Un usuario (tipo admin) ha registrado MUCHOS pagos
-        // Se mantiene tu lógica original con la clave foránea
         return $this->hasMany(Payment::class, 'user_id');
     }
 }

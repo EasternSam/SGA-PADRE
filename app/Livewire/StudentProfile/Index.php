@@ -16,78 +16,161 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Carbon\Carbon;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\On; // <-- ¡¡¡IMPORTANTE: AÑADIR ESTE 'USE'!!!
+use Livewire\Attributes\On;
+use Illuminate\Support\Collection;
+use Illuminate\Pagination\LengthAwarePaginator; // Mantenemos la importación por si acaso
 
 #[Layout('layouts.dashboard')]
 class Index extends Component
 {
     use WithPagination;
 
-    public $student;
+    // --- Propiedades del Estudiante y Datos ---
+    public Student $student;
+    public ?User $user; // <-- AÑADIDO: Para la cuenta de usuario
+    public Collection $pendingEnrollments; // <-- AÑADIDO
+    public Collection $activeEnrollments; // <-- AÑADIDO
+    public Collection $completedEnrollments; // <-- AÑADIDO
+    // public LengthAwarePaginator $allPayments; // <-- ¡¡¡ELIMINADO!!! Esta era la causa del error.
+
+    // --- Propiedades de Filtro y Búsqueda (Originales) ---
     public $search = '';
     public $selectedCourse;
     public $selectedModule;
+    public $enrollmentStatusFilter = 'all'; 
+    public $paymentsPage = 1; // El 'name' de la paginación de pagos
 
-    // Propiedades para el modal de Cursos (Ajustadas a la DB)
+    // --- Propiedades del Modal de Cursos (Originales) ---
     public $course_id, $course_name, $course_credits, $course_code;
     public $courseModalTitle = '';
 
-    // Propiedades para el modal de Módulos (Ajustadas a la DB)
+    // --- Propiedades del Modal de Módulos (Originales) ---
     public $module_id, $module_name;
     public $moduleModalTitle = '';
 
-    // Propiedades para el modal de Horarios (Sección)
+    // --- Propiedades del Modal de Horarios (Originales) ---
     public $schedule_id, $teacher_id, $days = [], $start_time, $end_time, $section_name, $start_date, $end_date;
     public $scheduleModalTitle = '';
-    public $teachers = []; // Para el dropdown de profesores
+    public $teachers = [];
 
-    // Propiedades para el modal de inscripción
+    // --- Propiedades del Modal de Inscripción (Originales) ---
     public $isEnrollModalOpen = false;
     public $availableSchedules = [];
     public $searchAvailableCourse = '';
     public $selectedScheduleId;
     public $selectedScheduleInfo;
 
-    // Propiedades para el modal de anulación
+    // --- Propiedades del Modal de Anulación (Originales) ---
     public $isUnenrollModalOpen = false;
     public $enrollmentToCancel;
     public $enrollmentToCancelId = null;
 
-    // Propiedades para el filtro de la vista
-    public $enrollmentStatusFilter = 'all';
-
-    // Propiedad para la pestaña activa
-    // public $activeTab = 'enrollments'; // Se maneja con Alpine en la vista
-    
-    // Propiedades para la paginación de pagos
-    public $paymentsPage = 1;
+    // --- Propiedades del Modal de Estudiante (Originales) ---
+    public $student_id;
+    public $first_name = '';
+    public $last_name = '';
+    public $cedula = '';
+    public $email = '';
+    public $mobile_phone = '';
+    public $home_phone = '';
+    public $address = '';
+    public $city = '';
+    public $sector = '';
+    public $birth_date;
+    public $gender = '';
+    public $nationality = '';
+    public $how_found = '';
+    public $is_minor = false;
+    public $tutor_name = '';
+    public $tutor_cedula = '';
+    public $tutor_phone = '';
+    public $tutor_relationship = '';
+    public $modalTitle = '';
 
     protected $queryString = [
         'search' => ['except' => ''],
         'selectedCourse' => ['except' => null],
         'selectedModule' => ['except' => null],
         'enrollmentStatusFilter' => ['except' => 'all'],
-        // 'activeTab' => ['except' => 'enrollments'], // Se maneja con Alpine
     ];
 
+    /**
+     * Carga inicial del componente.
+     */
     public function mount(Student $student)
     {
-        $this->student = $student->load('user');
-        $this->teachers = User::role('Profesor')->orderBy('name')->get(); // Asumiendo que tienes un rol 'Teacher'
+        $this->teachers = User::role('Profesor')->orderBy('name')->get();
+        $this->loadStudentData($student->id); // Cargar todos los datos
+    }
+
+    /**
+     * (NUEVO) Carga/Recarga todos los datos del estudiante.
+     */
+    public function loadStudentData($studentId)
+    {
+        try {
+            $student = Student::with('user')->findOrFail($studentId);
+            $this->student = $student;
+            $this->user = $student->user; // Cargar el usuario vinculado
+
+            // Cargar y separar inscripciones
+            $allEnrollments = $student->enrollments()
+                ->with('courseSchedule.module.course', 'courseSchedule.teacher', 'payment')
+                ->orderBy('created_at', 'desc')
+                ->get();
+            
+            // Separar por estado (usando la nueva lógica)
+            $this->pendingEnrollments = $allEnrollments->whereIn('status', ['Pendiente', 'pendiente', 'Enrolled', 'enrolled']);
+            $this->activeEnrollments = $allEnrollments->whereIn('status', ['Cursando', 'cursando', 'Activo', 'activo']);
+            $this->completedEnrollments = $allEnrollments->whereIn('status', ['Completado', 'completado']);
+
+            // --- ¡¡¡ELIMINADO!!! ---
+            // La consulta de pagos se mueve al método render()
+            // para que la paginación funcione correctamente.
+
+        } catch (\Exception $e) {
+            Log::error("Error cargando datos del estudiante: " . $e->getMessage());
+            session()->flash('error', 'No se pudieron cargar los datos del estudiante.');
+        }
+    }
+    
+    /**
+     * (ACTUALIZADO) Se dispara cuando se añade un pago o se actualiza el estudiante.
+     * Recarga toda la data.
+     */
+    #[On('paymentAdded')]
+    #[On('studentUpdated')]
+    public function refreshData()
+    {
+        $this->loadStudentData($this->student->id); // Recarga las inscripciones
+        $this->resetPage('paymentsPage'); // Refresca la paginación de pagos (que está en render())
+    }
+    
+    /**
+     * (ORIGINAL) Escucha el evento 'flashMessage'.
+     */
+    #[On('flashMessage')]
+    public function handleFlashMessage()
+    {
+        // Este método existe para "atrapar" el evento.
     }
 
     public function updatingSearch()
     {
         $this->resetPage();
     }
-
+    
     public function updatingEnrollmentStatusFilter()
     {
         $this->resetPage('enrollmentsPage');
     }
 
+    /**
+     * (ACTUALIZADO) Renderiza la vista.
+     */
     public function render()
     {
+        // --- Lógica de Gestión Académica (Original) ---
         $coursesQuery = Course::query();
 
         if ($this->search) {
@@ -107,25 +190,28 @@ class Index extends Component
             : collect();
         
         $selectedModuleName = $this->selectedModule ? Module::find($this->selectedModule)?->name : null;
+        // --- Fin Lógica Gestión Académica ---
 
-        // Lógica para las inscripciones del estudiante
-        $enrollmentsQuery = $this->student->enrollments()
-            ->with('courseSchedule.module.course', 'courseSchedule.teacher')
-            ->orderBy('created_at', 'desc');
+        
+        // (ACTUALIZADO) Filtrar inscripciones si se usa el filtro
+        $filteredEnrollments = $this->student ? $this->student->enrollments()
+             ->with('courseSchedule.module.course', 'courseSchedule.teacher')
+             ->orderBy('created_at', 'desc')
+             ->when($this->enrollmentStatusFilter !== 'all', function ($query) {
+                 return $query->where('status', $this->enrollmentStatusFilter);
+             })
+             ->paginate(5, ['*'], 'enrollmentsPage')
+             : collect();
 
-        if ($this->enrollmentStatusFilter !== 'all') {
-            $enrollmentsQuery->where('status', $this->enrollmentStatusFilter);
-        }
-
-        $enrollments = $enrollmentsQuery->paginate(5, ['*'], 'enrollmentsPage'); // Paginar inscripciones
-
-        // Lógica para el historial de pagos del estudiante
-        $payments = $this->student->payments()
-            // --- ¡¡¡ CORRECCIÓN DE ESTE TURNO !!! ---
-            // Eliminamos 'user' porque la relación no existe en la tabla 'payments'
-            ->with('paymentConcept') // Cargar relaciones
+        // --- ¡¡¡CORRECCIÓN!!! ---
+        // La consulta de pagos se mueve aquí, dentro de render(),
+        // para que WithPagination funcione correctamente.
+        $payments = $this->student ? $this->student->payments()
+            ->with('paymentConcept', 'enrollment.courseSchedule.module.course') // Añadida la relación completa
             ->orderBy('created_at', 'desc')
-            ->paginate(5, ['*'], 'paymentsPage'); // Paginar pagos
+            ->paginate(5, ['*'], 'paymentsPage') // Nombre de la página: 'paymentsPage'
+            : collect();
+
 
         return view('livewire.student-profile.index', [
             'courses' => $courses,
@@ -133,59 +219,31 @@ class Index extends Component
             'schedules' => $schedules,
             'selectedCourseName' => $selectedCourseObject?->name,
             'selectedModuleName' => $selectedModuleName,
-            'enrollments' => $enrollments, // Pasar inscripciones paginadas
-            'payments' => $payments,       // Pasar pagos paginados
+            
+            'enrollments' => $filteredEnrollments, // Para la pestaña de Inscripciones
+            'payments' => $payments, // <-- ¡¡¡CORREGIDO!!! Pasar la variable local
+            
+            // Las propiedades públicas $pendingEnrollments, $activeEnrollments,
+            // $completedEnrollments, $user y $student están disponibles
+            // automáticamente en la vista.
         ]);
     }
 
-    /**
-     * Escucha el evento 'paymentAdded' y resetea la paginación de pagos.
-     * Esto fuerza a Livewire a recargar la consulta de pagos desde la página 1.
-     */
-    #[On('paymentAdded')] // <-- ¡¡¡ESTA ES LA NUEVA FORMA!!!
-    public function refreshPaymentList()
-    {
-        $this->resetPage('paymentsPage');
-    }
 
     /**
-     * Escucha el evento 'studentUpdated' y refresca el componente.
-     */
-    #[On('studentUpdated')]
-    public function refreshOnStudentUpdate()
-    {
-        $this->student = $this->student->fresh();
-    }
-
-    /**
-     * Escucha el evento 'flashMessage'.
-     */
-    #[On('flashMessage')]
-    public function handleFlashMessage()
-    {
-        // Este método existe para "atrapar" el evento.
-    }
-
-
-    /**
-     * Prepara y emite el evento para abrir el reporte en una nueva pestaña.
+     * (ORIGINAL) Prepara y emite el evento para abrir el reporte en una nueva pestaña.
      */
     public function generateReport()
     {
         Log::info('El método generateReport FUE LLAMADO.');
-        
-        // Obtiene la URL de la ruta del reporte (definida en routes/web.php)
         $url = route('reports.student-report', $this->student->id);
-        
         Log::info('URL Generada para el Reporte: ' . $url);
-
-        // Usamos parámetros nombrados (sintaxis de Livewire 3)
         $this->dispatch('open-pdf-modal', url: $url);
     }
 
-
     // --- Métodos de Inscripción (Enrollment) ---
 
+    // (ORIGINAL)
     public function openEnrollmentModal()
     {
         $this->resetEnrollmentSelection();
@@ -194,6 +252,7 @@ class Index extends Component
         $this->dispatch('open-modal', 'enroll-student-modal');
     }
 
+    // (ORIGINAL)
     public function updatedSearchAvailableCourse()
     {
         if (strlen($this->searchAvailableCourse) < 3) {
@@ -218,7 +277,7 @@ class Index extends Component
             ->get();
     }
     
-    // Función helper para resetear el modal de inscripción
+    // (ORIGINAL)
     private function resetEnrollmentSelection()
     {
         $this->searchAvailableCourse = '';
@@ -228,50 +287,105 @@ class Index extends Component
         $this->resetErrorBag();
     }
 
+    /**
+     * (ACTUALIZADO) Inscribir estudiante
+     * Ahora crea la inscripción como 'Pendiente' y genera un pago pendiente.
+     */
     public function enrollStudent()
     {
         $this->validate([
             'selectedScheduleId' => 'required|exists:course_schedules,id',
         ]);
 
-        $schedule = CourseSchedule::find($this->selectedScheduleId);
+        try {
+            $schedule = CourseSchedule::with('module')->findOrFail($this->selectedScheduleId);
 
-        // Verificar si ya está inscrito
-        $isAlreadyEnrolled = Enrollment::where('student_id', $this->student->id)
-            ->where('course_schedule_id', $this->selectedScheduleId)
-            ->exists();
+            // Validar reglas de negocio (Cupos, Balance, Fecha)
+            // (Reutilizamos la lógica del EnrollmentController)
+            
+            // 1. Balance
+            if ($this->student->balance > 0) {
+                throw new \Exception('El estudiante tiene un balance pendiente y no puede inscribirse.');
+            }
 
-        if ($isAlreadyEnrolled) {
-            session()->flash('error', 'El estudiante ya está inscrito en esta sección.');
+            // 2. Cupos
+            $enrolledCount = Enrollment::where('course_schedule_id', $schedule->id)
+                                        ->whereIn('status', ['Activo', 'Cursando', 'Pendiente'])
+                                        ->count();
+            if ($schedule->capacity !== null && $schedule->capacity > 0 && $enrolledCount >= $schedule->capacity) {
+                throw new \Exception('La sección está llena. No hay cupos disponibles.');
+            }
+
+            // 3. Fecha de inicio
+            if ($schedule->start_date && Carbon::now()->gt($schedule->start_date)) {
+                throw new \Exception('Este curso ya ha comenzado. No se permiten nuevas inscripciones.');
+            }
+
+            // 4. Verificar si ya está inscrito
+            $isAlreadyEnrolled = Enrollment::where('student_id', $this->student->id)
+                ->where('course_schedule_id', $this->selectedScheduleId)
+                ->exists();
+
+            if ($isAlreadyEnrolled) {
+                throw new \Exception('El estudiante ya está inscrito en esta sección.');
+            }
+
+            // Crear la inscripción como PENDIENTE
+            $enrollment = Enrollment::create([
+                'student_id' => $this->student->id,
+                'course_schedule_id' => $this->selectedScheduleId,
+                'status' => 'Pendiente', // <-- ACTUALIZADO
+            ]);
+
+            // Crear el PAGO PENDIENTE
+            Payment::create([
+                'student_id' => $this->student->id,
+                'enrollment_id' => $enrollment->id,
+                'payment_concept_id' => $schedule->module->payment_concept_id ?? null,
+                'amount' => $schedule->module->price ?? 0,
+                'currency' => 'DOP',
+                'status' => 'Pendiente', // <-- ACTUALIZADO
+                'gateway' => 'Por Pagar',
+            ]);
+
+            session()->flash('message', 'Inscripción pendiente de pago creada exitosamente.');
             $this->dispatch('close-modal', 'enroll-student-modal');
-            return;
+            $this->refreshData(); // Recargar todos los datos
+
+        } catch (\Exception $e) {
+            Log::error('Error al inscribir estudiante: ' . $e->getMessage());
+            // Mostrar el error de la regla de negocio
+            $this->addError('selectedScheduleId', $e->getMessage());
+            // No cerramos el modal si hay error
         }
-
-        // Crear la inscripción
-        Enrollment::create([
-            'student_id' => $this->student->id,
-            'course_schedule_id' => $this->selectedScheduleId,
-            'status' => 'Enrolled', // O el estado por defecto que manejes
-        ]);
-
-        session()->flash('message', 'Estudiante inscrito exitosamente.');
-        $this->dispatch('close-modal', 'enroll-student-modal');
-        $this->resetPage('enrollmentsPage'); // Refrescar la lista de inscripciones
     }
 
+
     // --- Métodos para Desinscribir (Unenroll) ---
+    // (ORIGINAL)
     public function confirmUnenroll($enrollmentId)
     {
         $this->enrollmentToCancelId = $enrollmentId;
         $this->dispatch('open-modal', 'confirm-unenroll-modal');
     }
 
+    /**
+     * (ACTUALIZADO) Desinscribir estudiante.
+     * Ahora también borra el pago pendiente si existe.
+     */
     public function unenroll()
     {
         if ($this->enrollmentToCancelId) {
             try {
-                $enrollment = Enrollment::find($this->enrollmentToCancelId);
+                $enrollment = Enrollment::with('payment')->find($this->enrollmentToCancelId);
+                
                 if ($enrollment && $enrollment->student_id == $this->student->id) {
+                    
+                    // Si la inscripción tiene un pago asociado Y está pendiente, bórralo también
+                    if ($enrollment->payment && $enrollment->payment->status == 'Pendiente') {
+                        $enrollment->payment->delete();
+                    }
+                    
                     $enrollment->delete();
                     session()->flash('message', 'Inscripción eliminada.');
                 } else {
@@ -283,11 +397,12 @@ class Index extends Component
             }
         }
         $this->dispatch('close-modal', 'confirm-unenroll-modal');
-        $this->resetPage('enrollmentsPage'); // Refrescar la lista de inscripciones
+        $this->refreshData(); // Recargar todos los datos
         $this->enrollmentToCancelId = null;
     }
 
     // --- Métodos para Modal de Curso ---
+    // (ORIGINAL)
     protected function courseRules()
     {
         return [
@@ -301,6 +416,7 @@ class Index extends Component
         ];
     }
 
+    // (ORIGINAL)
     public function createCourse()
     {
         $this->resetCourseFields();
@@ -309,6 +425,7 @@ class Index extends Component
         $this->dispatch('open-modal', 'course-modal'); 
     }
 
+    // (ORIGINAL)
     public function editCourse($courseId)
     {
         $this->resetValidation();
@@ -316,7 +433,7 @@ class Index extends Component
             $course = Course::findOrFail($courseId);
             $this->course_id = $course->id;
             $this->course_name = $course->name;
-            $this->course_credits = $course->credits;
+            $this->course_credits = $course->credits ?? 0;
             $this->course_code = $course->code;
             
             $this->courseModalTitle = 'Editar Curso: ' . $course->name;
@@ -326,6 +443,7 @@ class Index extends Component
         }
     }
 
+    // (ORIGINAL)
     public function saveCourse()
     {
         $this->validate($this->courseRules());
@@ -343,6 +461,7 @@ class Index extends Component
         $this->dispatch('close-modal', 'course-modal');
     }
 
+    // (ORIGINAL)
     private function resetCourseFields()
     {
         $this->course_id = null;
@@ -351,7 +470,8 @@ class Index extends Component
         $this->course_code = '';
     }
 
-// --- MÉTODOS PARA MODAL DE MÓDULO ---
+    // --- MÉTODOS PARA MODAL DE MÓDULO ---
+    // (ORIGINAL)
     protected function moduleRules()
     {
         return [
@@ -359,6 +479,7 @@ class Index extends Component
         ];
     }
 
+    // (ORIGINAL)
     public function createModule()
     {
         if (!$this->selectedCourse) {
@@ -367,10 +488,12 @@ class Index extends Component
         }
         $this->resetModuleFields();
         $this->resetValidation();
-        $this->moduleModalTitle = 'Nuevo Módulo para ' . Course::find($this->selectedCourse)->name;
+        $courseName = Course::find($this->selectedCourse)->name ?? 'Curso';
+        $this->moduleModalTitle = 'Nuevo Módulo para ' . $courseName;
         $this->dispatch('open-modal', 'module-modal'); 
     }
 
+    // (ORIGINAL)
     public function editModule($moduleId)
     {
         $this->resetValidation();
@@ -386,6 +509,7 @@ class Index extends Component
         }
     }
 
+    // (ORIGINAL)
     public function saveModule()
     {
         $this->validate($this->moduleRules());
@@ -402,6 +526,7 @@ class Index extends Component
         $this->dispatch('close-modal', 'module-modal'); 
     }
 
+    // (ORIGINAL)
     private function resetModuleFields()
     {
         $this->module_id = null;
@@ -409,6 +534,7 @@ class Index extends Component
     }
     
     // --- MÉTODOS PARA MODAL DE HORARIO (SECCIÓN) ---
+    // (ORIGINAL)
     public function createSchedule()
     {
         if (!$this->selectedModule) {
@@ -417,10 +543,12 @@ class Index extends Component
         }
         $this->resetScheduleFields();
         $this->resetValidation();
-        $this->scheduleModalTitle = 'Nueva Sección para ' . Module::find($this->selectedModule)->name;
+        $moduleName = Module::find($this->selectedModule)->name ?? 'Módulo';
+        $this->scheduleModalTitle = 'Nueva Sección para ' . $moduleName;
         $this->dispatch('open-modal', 'schedule-modal'); 
     }
 
+    // (ORIGINAL)
     public function editSchedule($scheduleId)
     {
         $this->resetValidation();
@@ -443,6 +571,7 @@ class Index extends Component
         }
     }
 
+    // (ORIGINAL)
     public function saveSchedule()
     {
         $this->validate([
@@ -473,6 +602,7 @@ class Index extends Component
         $this->dispatch('close-modal', 'schedule-modal'); 
     }
 
+    // (ORIGINAL)
     private function resetScheduleFields()
     {
         $this->schedule_id = null;
@@ -485,37 +615,8 @@ class Index extends Component
         $this->end_date = '';
     }
 
-    // --- ¡¡¡INICIO CÓDIGO AÑADIDO PARA MODAL DE ESTUDIANTE!!! ---
-
-    // Propiedades para el modal de Estudiante (Copiadas de Students/Index.php)
-    public $student_id;
-    public $first_name = '';
-    public $last_name = '';
-    public $cedula = ''; // o dni
-    public $email = '';
-    public $mobile_phone = ''; // Teléfono móvil (principal)
-    public $home_phone = ''; // Teléfono casa
-    public $address = '';
-    public $city = '';
-    public $sector = '';
-    public $birth_date; // Fecha de nacimiento
-    public $gender = '';
-    public $nationality = '';
-    public $how_found = '';
-    
-    // Propiedades del Tutor (si es menor)
-    public $is_minor = false;
-    public $tutor_name = '';
-    public $tutor_cedula = '';
-    public $tutor_phone = '';
-    public $tutor_relationship = '';
-    
-    // Propiedades de la UI
-    public $modalTitle = '';
-
-    /**
-     * Reglas de validación para el Estudiante
-     */
+    // --- Métodos para Modal de Estudiante ---
+    // (ORIGINAL)
     protected function studentRules()
     {
         return [
@@ -549,9 +650,7 @@ class Index extends Component
         ];
     }
 
-    /**
-     * Mensajes de validación personalizados para Estudiante
-     */
+    // (ORIGINAL)
     protected $studentMessages = [
         'first_name.required' => 'El nombre es obligatorio.',
         'last_name.required' => 'El apellido es obligatorio.',
@@ -565,15 +664,12 @@ class Index extends Component
         'tutor_phone.required_if' => 'El teléfono del tutor es obligatorio si el estudiante es menor de edad.',
     ];
 
-    /**
-     * Abre el modal para editar el estudiante actual del perfil.
-     */
+    // (ORIGINAL)
     public function editStudent()
     {
-        $this->resetValidation(); // Limpiar errores previos
-        $this->student_id = $this->student->id; // Carga el ID del estudiante del perfil
+        $this->resetValidation(); 
+        $this->student_id = $this->student->id;
         
-        // Cargar los datos del estudiante (ya cargado en $this->student) en las propiedades del formulario
         $this->first_name = $this->student->first_name;
         $this->last_name = $this->student->last_name;
         $this->cedula = $this->student->cedula;
@@ -583,12 +679,11 @@ class Index extends Component
         $this->address = $this->student->address;
         $this->city = $this->student->city;
         $this->sector = $this->student->sector;
-        // Formatear la fecha para el input 'date'
         $this->birth_date = $this->student->birth_date ? Carbon::parse($this->student->birth_date)->format('Y-m-d') : null;
         $this->gender = $this->student->gender;
         $this->nationality = $this->student->nationality;
         $this->how_found = $this->student->how_found;
-        $this->is_minor = (bool)$this->student->is_minor; // Asegurar que sea booleano
+        $this->is_minor = (bool)$this->student->is_minor;
         $this->tutor_name = $this->student->tutor_name;
         $this->tutor_cedula = $this->student->tutor_cedula;
         $this->tutor_phone = $this->student->tutor_phone;
@@ -596,49 +691,58 @@ class Index extends Component
 
         $this->modalTitle = 'Editar Estudiante: ' . $this->student->fullName;
         
-        // Dispara el evento para abrir el modal (el HTML debe estar en la vista)
         $this->dispatch('open-modal', 'student-form-modal');
     }
 
     /**
-     * Guarda los cambios del estudiante.
+     * (ACTUALIZADO) Guarda los cambios del estudiante.
+     * Ahora también actualiza el 'User' asociado.
      */
     public function saveStudent()
     {
-        // Valida usando las reglas y mensajes de estudiante
         $this->validate($this->studentRules(), $this->studentMessages);
 
         try {
-            // Busca al estudiante (asegura que sea el del perfil)
-            $student = Student::findOrFail($this->student_id);
-            
-            // Actualiza los datos
-            $student->update([
-                'first_name' => $this->first_name,
-                'last_name' => $this->last_name,
-                'cedula' => $this->cedula,
-                'email' => $this->email,
-                'mobile_phone' => $this->mobile_phone,
-                'home_phone' => $this->home_phone,
-                'address' => $this->address,
-                'city' => $this->city,
-                'sector' => $this->sector,
-                'birth_date' => $this->birth_date,
-                'gender' => $this->gender,
-                'nationality' => $this->nationality,
-                'how_found' => $this->how_found,
-                'is_minor' => $this->is_minor,
-                'tutor_name' => $this->is_minor ? $this->tutor_name : null,
-                'tutor_cedula' => $this->is_minor ? $this->tutor_cedula : null,
-                'tutor_phone' => $this->is_minor ? $this->tutor_phone : null,
-                'tutor_relationship' => $this->is_minor ? $this->tutor_relationship : null,
-            ]);
+            DB::transaction(function() {
+                $student = Student::findOrFail($this->student_id);
+                
+                $student->update([
+                    'first_name' => $this->first_name,
+                    'last_name' => $this->last_name,
+                    'cedula' => $this->cedula,
+                    'email' => $this->email,
+                    'mobile_phone' => $this->mobile_phone,
+                    'home_phone' => $this->home_phone,
+                    'address' => $this->address,
+                    'city' => $this->city,
+                    'sector' => $this->sector,
+                    'birth_date' => $this->birth_date,
+                    'gender' => $this->gender,
+                    'nationality' => $this->nationality,
+                    'how_found' => $this->how_found,
+                    'is_minor' => $this->is_minor,
+                    'tutor_name' => $this->is_minor ? $this->tutor_name : null,
+                    'tutor_cedula' => $this->is_minor ? $this->tutor_cedula : null,
+                    'tutor_phone' => $this->is_minor ? $this->tutor_phone : null,
+                    'tutor_relationship' => $this->is_minor ? $this->tutor_relationship : null,
+                ]);
+
+                // (ACTUALIZADO) Actualizar el 'User' asociado también
+                if ($student->user) {
+                    $student->user->name = $this->first_name . ' ' . $this->last_name;
+                    
+                    // Solo actualiza el email del usuario si NO es una matrícula
+                    if (!Str::endsWith($student->user->email, '@centu.edu.do')) {
+                         $student->user->email = $this->email;
+                    }
+                    $student->user->save();
+                }
+            }); // Fin de la transacción
 
             session()->flash('message', 'Estudiante actualizado exitosamente.');
-            $this->closeStudentModal(); // Cierra el modal
+            $this->closeStudentModal();
             
-            // Emite un evento para refrescar el componente del perfil
-            $this->dispatch('studentUpdated'); 
+            $this->dispatch('studentUpdated'); // <-- Esto disparará 'refreshData()'
             
         } catch (\Exception $e) {
             Log::error('Error al guardar estudiante: ' . $e->getMessage());
@@ -646,19 +750,15 @@ class Index extends Component
         }
     }
 
-    /**
-     * Cierra el modal de estudiante y resetea los campos.
-     */
+    // (ORIGINAL)
     public function closeStudentModal()
     {
         $this->dispatch('close-modal', 'student-form-modal');
         $this->resetStudentInputFields();
-        $this->resetValidation(); // Limpia los errores de validación
+        $this->resetValidation();
     }
 
-/**
-     * Resetea todos los campos del formulario de estudiante.
-     */
+    // (ORIGINAL)
     private function resetStudentInputFields()
     {
         $this->student_id = null;
@@ -682,5 +782,4 @@ class Index extends Component
         $this->tutor_relationship = '';
         $this->modalTitle = '';
     }
-    // --- ¡¡¡FIN CÓDIGO AÑADIDO!!! ---
 }

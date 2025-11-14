@@ -31,8 +31,8 @@
          class="fixed top-24 right-6 z-50 px-4 py-3 rounded-lg shadow-lg"
          role="alert"
          style="display: none;">
-       <strong class="font-bold" x-text="type === 'success' ? '¡Éxito!' : '¡Error!'"></strong>
-       <span class="block sm:inline" x-text="message"></span>
+      <strong class="font-bold" x-text="type === 'success' ? '¡Éxito!' : '¡Error!'"></strong>
+      <span class="block sm:inline" x-text="message"></span>
     </div>
 
 
@@ -49,10 +49,10 @@
                 <p class="text-sm text-gray-600">{{ $student->email }}</p>
                 <p class="text-sm text-gray-600">Cédula: {{ $student->cedula ?? 'N/A' }}</p>
                 <span @class([
-                        'mt-3 inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium',
-                        'bg-green-100 text-green-800' => $student->status === 'Activo',
-                        'bg-red-100 text-red-800' => $student->status !== 'Activo',
-                    ])>
+                            'mt-3 inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium',
+                            'bg-green-100 text-green-800' => $student->status === 'Activo',
+                            'bg-red-100 text-red-800' => $student->status !== 'Activo',
+                        ])>
                     {{ $student->status }}
                 </span>
             </div>
@@ -73,7 +73,24 @@
                     </div>
                 </div>
 
+                <!-- ============================================= -->
+                <!--     ACTUALIZADO: Detalles del Estudiante      -->
+                <!-- ============================================= -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <strong class="text-gray-500 block">Matrícula (Student Code):</strong>
+                        <span class="text-gray-900 font-semibold">{{ $student->student_code ?? 'Pendiente' }}</span>
+                    </div>
+                    <div>
+                        <strong class="text-gray-500 block">Estado de Cuenta:</strong>
+                        @if($user && $user->access_expires_at)
+                            <span class="text-yellow-700 font-semibold">Temporal (Expira: {{ $user->access_expires_at->format('d/m/Y') }})</span>
+                        @elseif($user)
+                            <span class="text-green-700 font-semibold">Permanente (Matriculado)</span>
+                        @else
+                            <span class="text-red-700 font-semibold">Sin Cuenta de Acceso</span>
+                        @endif
+                    </div>
                     <div>
                         <strong class="text-gray-500 block">Teléfono Móvil:</strong>
                         <span class="text-gray-900">{{ $student->mobile_phone ?? $student->phone ?? 'N/A' }}</span>
@@ -99,6 +116,9 @@
                         <span class="text-gray-900">{{ $student->sector ?? 'N/A' }}</span>
                     </div>
                 </div>
+                <!-- ============================================= -->
+                <!--        FIN DE LA ACTUALIZACIÓN                -->
+                <!-- ============================================= -->
 
                 <hr class="my-6 border-gray-200">
 
@@ -112,8 +132,9 @@
                         <i class="fas fa-file-pdf mr-2"></i>Generar Reporte
                     </button>
 
-                    {{-- Llama al modal 'payment-modal' que está en su propio componente --}}
-                    <button wire:click="$dispatch('open-modal', 'payment-modal')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
+                    {{-- ¡¡¡CORRECCIÓN #1!!! --}}
+                    {{-- Llama al evento 'openPaymentModal' que el componente PaymentModal está escuchando --}}
+                    <button wire:click="$dispatch('openPaymentModal')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
                         <i class="fas fa-dollar-sign mr-2"></i>Registrar Pago
                     </button>
                 </div>
@@ -145,82 +166,174 @@
             </nav>
         </div>
 
-        <!-- Contenido de Pestaña: Cursos Inscritos -->
-        <div class="p-6" x-show="activeTab === 'enrollments'" x-cloak>
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold text-gray-800">Matrículas</h3>
-                <div>
-                    <label for="enrollmentStatusFilter" class="text-sm font-medium text-gray-700">Filtrar por estado:</label>
-                    <select id="enrollmentStatusFilter" wire:model.live="enrollmentStatusFilter" class="ml-2 border-gray-300 rounded-md shadow-sm text-sm">
-                        <option value="all">Todos</option>
-                        <option value="active">Activo</option>
-                        <option value="completed">Completado</option>
-                        <option value="cancelled">Cancelado</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Tabla de Cursos Inscritos -->
-            <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Módulo</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Curso</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profesor</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Calificación</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @forelse ($enrollments as $enrollment)
-                            <tr class="hover:bg-gray-50" wire:key="enrollment-{{ $enrollment->id }}">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $enrollment->courseSchedule->module->name ?? 'N/A' }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $enrollment->courseSchedule->module->course->name ?? 'N/A' }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $enrollment->courseSchedule->teacher->name ?? 'No asignado' }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span @class([
-                                            'px-2 inline-flex text-xs leading-5 font-semibold rounded-full',
-                                            'bg-green-100 text-green-800' => $enrollment->status === 'active',
-                                            'bg-blue-100 text-blue-800' => $enrollment->status === 'completed',
-                                            'bg-yellow-100 text-yellow-800' => $enrollment->status === 'pending',
-                                            'bg-red-100 text-red-800' => $enrollment->status === 'cancelled',
-                                            'bg-gray-100 text-gray-800' => !in_array($enrollment->status, ['active', 'completed', 'pending', 'cancelled'])
-                                        ])>
-                                        {{ ucfirst($enrollment->status) }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-center">{{ $enrollment->final_grade ?? 'N/A' }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                                    @if($enrollment->status !== 'completed' && $enrollment->status !== 'cancelled')
+        <!-- ============================================= -->
+        <!--   ACTUALIZADO: Contenido Pestaña Inscripciones  -->
+        <!-- ============================================= -->
+        <div class="p-6 space-y-8" x-show="activeTab === 'enrollments'" x-cloak>
+            
+            <!-- 1. Inscripciones Pendientes de Pago -->
+            <div>
+                <h3 class="text-lg font-semibold text-yellow-700 mb-4">
+                    <i class="fas fa-exclamation-triangle mr-2"></i> Inscripciones Pendientes de Pago
+                </h3>
+                <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Módulo / Sección</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profesor</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto Pendiente</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @forelse ($pendingEnrollments as $enrollment)
+                                <tr class="hover:bg-gray-50" wire:key="pending-enrollment-{{ $enrollment->id }}">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ $enrollment->courseSchedule->module->name ?? 'N/A' }}</div>
+                                        <div class="text-sm text-gray-600">{{ $enrollment->courseSchedule->section_name ?? $enrollment->courseSchedule->id }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $enrollment->courseSchedule->teacher->name ?? 'No asignado' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                        ${{ number_format($enrollment->payment->amount ?? $enrollment->courseSchedule->module->price ?? 0, 2) }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                            Pendiente
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
+                                        
+                                        {{-- ¡¡¡CORRECCIÓN AQUÍ!!! --}}
+                                        {{-- Despachar el nuevo evento 'payEnrollment' con el ID --}}
+                                        <button 
+                                            wire:click="$dispatch('payEnrollment', { enrollmentId: {{ $enrollment->id }} })" 
+                                            class="text-yellow-600 hover:text-yellow-900 transition ease-in-out duration-150" 
+                                            title="Registrar Pago">
+                                            <i class="fas fa-dollar-sign"></i> Pagar
+                                        </button>
+                                        
                                         <button wire:click="confirmUnenroll({{ $enrollment->id }})" class="text-red-600 hover:text-red-900 transition ease-in-out duration-150" title="Anular Inscripción">
                                             <i class="fas fa-times-circle"></i> Anular
                                         </button>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="px-6 py-12 text-center text-gray-500">
-                                    No hay cursos inscritos que coincidan con el filtro.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                                        No hay inscripciones pendientes de pago.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div class="mt-4">
-                {{ $enrollments->links() }}
-            </div>
-        </div>
 
-        {{-- Historial de Pagos --}}
+            <!-- 2. Cursos Activos -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-book-open mr-2"></i> Cursos Activos
+                </h3>
+                <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Módulo / Sección</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profesor</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Calificación</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @forelse ($activeEnrollments as $enrollment)
+                                <tr class="hover:bg-gray-50" wire:key="active-enrollment-{{ $enrollment->id }}">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ $enrollment->courseSchedule->module->name ?? 'N/A' }}</div>
+                                        <div class="text-sm text-gray-600">{{ $enrollment->courseSchedule->section_name ?? $enrollment->courseSchedule->id }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $enrollment->courseSchedule->teacher->name ?? 'No asignado' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            {{ ucfirst($enrollment->status) }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-center">{{ $enrollment->final_grade ?? 'N/A' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
+                                        <button wire:click="confirmUnenroll({{ $enrollment->id }})" class="text-red-600 hover:text-red-900 transition ease-in-out duration-150" title="Anular Inscripción">
+                                            <i class="fas fa-times-circle"></i> Anular
+                                        </button>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                                        No hay cursos activos.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 3. Cursos Completados -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-graduation-cap mr-2"></i> Cursos Completados
+                </h3>
+                <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Módulo / Sección</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profesor</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Calificación Final</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @forelse ($completedEnrollments as $enrollment)
+                                <tr class="hover:bg-gray-50" wire:key="completed-enrollment-{{ $enrollment->id }}">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ $enrollment->courseSchedule->module->name ?? 'N/A' }}</div>
+                                        <div class="text-sm text-gray-600">{{ $enrollment->courseSchedule->section_name ?? $enrollment->courseSchedule->id }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $enrollment->courseSchedule->teacher->name ?? 'No asignado' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                            Completado
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center font-bold">{{ $enrollment->final_grade ?? 'N/A' }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="px-6 py-12 text-center text-gray-500">
+                                        No hay cursos completados.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+        <!-- ============================================= -->
+        <!--        FIN DE LA ACTUALIZACIÓN                -->
+        <!-- ============================================= -->
+
+
+        {{-- Historial de Pagos (Pestaña Original) --}}
         <div class="p-6" x-show="activeTab === 'payments'" x-cloak>
              <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-gray-800">Historial de Pagos</h3>
                 @can('create payments')
-                    <button wire:click="$dispatch('open-modal', 'payment-modal')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
+                    {{-- ¡¡¡CORRECCIÓN #3!!! --}}
+                    <button wire:click="$dispatch('openPaymentModal')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
                         <i class="fas fa-plus-circle mr-2"></i>Registrar Pago
                     </button>
                 @endcan
@@ -240,7 +353,7 @@
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        @forelse ($payments as $payment)
+                        @forelse ($payments as $payment) {{-- $payments es la variable paginada $allPayments --}}
                             <tr class="hover:bg-gray-50" wire:key="payment-{{ $payment->id }}">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $payment->created_at->format('d/m/Y') }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -251,7 +364,7 @@
                                     <span class="text-xs text-gray-400">({{ $payment->enrollment->courseSchedule->module->name ?? 'N/A' }})</span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${{ number_format($payment->amount, 2) }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $payment->payment_method ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $payment->gateway ?? 'N/A' }}</td> {{-- Corregido de payment_method a gateway --}}
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span @class([
                                             'px-2 inline-flex text-xs leading-5 font-semibold rounded-full',
@@ -280,7 +393,7 @@
              </div>
         </div>
 
-        {{-- Próximamente --}}
+        {{-- Próximamente (Pestaña Original) --}}
         <div class="p-6" x-show="activeTab === 'communication'" x-cloak>
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-medium leading-6 text-gray-900">
@@ -294,7 +407,7 @@
     </div>
 
 
-    {{-- Modal para Inscribir Estudiante (Añadir nuevo curso/sección) --}}
+    {{-- Modal para Inscribir Estudiante (Original) --}}
     <x-modal name="enroll-student-modal" maxWidth="3xl">
         <form wire:submit.prevent="enrollStudent">
             <div class="p-6 bg-white">
@@ -302,12 +415,8 @@
                     Inscribir Estudiante a Nueva Sección
                 </h2>
 
-                @if (session()->has('error'))
-                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg mb-4" role="alert">
-                        <strong class="font-bold">¡Error!</strong>
-                        <span class="block sm:inline">{{ session('error') }}</span>
-                    </div>
-                @endif
+                {{-- (ACTUALIZADO) Mostrar el error de validación de las reglas de negocio --}}
+                <x-input-error :messages="$errors->get('selectedScheduleId')" class="mt-2 mb-4" />
 
                 <div class="mb-4">
                     <x-input-label for="searchCourse" value="Buscar Curso o Módulo" />
@@ -379,7 +488,7 @@
         </form>
     </x-modal>
 
-    <!-- Modal de Confirmación de Anulación -->
+    <!-- Modal de Confirmación de Anulación (Original) -->
     <x-modal name="confirm-unenroll-modal" focusable>
         <div class="p-6 bg-white">
             <h2 class="text-lg font-medium text-gray-900">
@@ -399,10 +508,10 @@
         </div>
     </x-modal>
 
-    {{-- Incluir el modal de pago en la página --}}
+    {{-- Incluir el modal de pago en la página (Original) --}}
     @livewire('finance.payment-modal', ['student' => $student], key('payment-modal-'.$student->id))
 
-    {{-- Alinear esto con el resto de la página --}}
+    {{-- Alinear esto con el resto de la página (Original) --}}
     @can('view courses')
     <div class="mt-6 bg-white overflow-hidden shadow-xl sm:rounded-lg">
         {{-- Esto estaba causando que se renderizara la página de cursos aquí, lo comento --}}
@@ -411,8 +520,7 @@
     @endcan
 
     
-    {{-- --- ¡¡¡INICIO DEL CÓDIGO AÑADIDO PARA MODAL DE ESTUDIANTE!!! --- --}}
-    {{-- Este es el HTML del modal de edición, copiado de Students/index.blade.php --}}
+    {{-- Modal de Estudiante (Original) --}}
     <x-modal name="student-form-modal" maxWidth="4xl" focusable>
         <form wire:submit.prevent="saveStudent">
             <div class="p-6 bg-white">

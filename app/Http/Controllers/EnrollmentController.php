@@ -5,92 +5,115 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Student;
 use App\Models\Course;
-use App\Models\Module; // <-- Importar Module
+use App\Models\Module;
 use App\Models\CourseSchedule;
 use App\Models\Enrollment;
+use App\Models\Payment; // <-- IMPORTAR
+use App\Models\User; // <-- IMPORTAR
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash; // <-- IMPORTAR
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Carbon\Carbon; // <-- IMPORTAR
 
 class EnrollmentController extends Controller
 {
     /**
-     * Maneja la recepción de una nueva inscripción desde WordPress (Fluent Forms).
-     * Esta es la lógica principal de sincronización.
+     * Maneja la recepción de una nueva inscripción desde la API (página web).
+     * Este es el núcleo de la lógica que solicitaste.
      */
     public function store(Request $request): JsonResponse
     {
-        // 1. Validamos los datos
+        // 1. Validar datos básicos para identificar al estudiante
+        $preValidator = Validator::make($request->all(), [
+            'cedula' => 'required|string|max:20',
+            'email' => 'required|email|max:255',
+        ]);
+
+        if ($preValidator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'La cédula y el email son requeridos.',
+                'errors' => $preValidator->errors()
+            ], 422);
+        }
+
+        // 2. Regla especial: Si el estudiante YA existe (por cédula o email)
+        $existingStudent = Student::where('cedula', $request->cedula)->first();
+        $existingUser = User::where('email', $request->email)->first();
+
+        if ($existingStudent || $existingUser) {
+            // Si el estudiante ya existe, llamamos a la función separada
+            return $this->handleExistingStudentEnrollment($request, $existingStudent, $existingUser);
+        }
+
+        // 3. Validar datos completos para un estudiante NUEVO
         $validator = Validator::make($request->all(), [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'cedula' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'required|string|max:20',
+            'cedula' => 'required|string|max:20|unique:students,cedula', // Cédula única
+            'email' => 'required|email|max:255|unique:users,email', // Email único
+            'phone' => 'required|string|max:20', // 'phone' se usará para 'home_phone'
+            'mobile_phone' => 'nullable|string|max:20',
             'address' => 'nullable|string',
-            'is_minor_flag' => 'nullable|string',
-            'course_name' => 'required|string|max:255', // Esto ahora será el nombre del MÓDULO
-            'schedule_string' => 'required|string|max:255', // Esto ahora será la SECCIÓN
+            'course_name' => 'required|string|max:255', // Asumimos que es el NOMBRE DEL MÓDULO
+            'schedule_string' => 'required|string|max:255', // Asumimos que es el NOMBRE DE LA SECCIÓN
             
-            // Campos de estudiante
+            // Campos adicionales de tu validador
+            'is_minor_flag' => 'nullable|string',
             'city' => 'nullable|string|max:255',
             'sector' => 'nullable|string|max:255',
             'birth_date' => 'nullable|date',
             'gender' => 'nullable|string|max:50',
             'nationality' => 'nullable|string|max:100',
             'how_found' => 'nullable|string|max:100',
-            'mobile_phone' => 'nullable|string|max:20',
+
+            // Campos de tutor (si 'is_minor_flag' está presente)
+            'tutor_name' => 'nullable|string',
+            'tutor_cedula' => 'nullable|string',
+            'tutor_phone' => 'nullable|string',
+            'tutor_relationship' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Datos de entrada inválidos.',
+                'message' => 'Datos de entrada inválidos para nuevo estudiante.',
                 'errors' => $validator->errors()
             ], 422);
         }
 
         $data = $validator->validated();
-
-        // 2. Lógica de Menores (Regla 4 del plugin)
         $isMinor = !empty($data['is_minor_flag']) && $data['is_minor_flag'] !== 'No soy menor';
-        $cedulaToStore = $data['cedula'];
-        $cedulaToSearch = $data['cedula'];
 
-        if ($isMinor) {
-            $cedulaToStore = DB::transaction(function () use ($data) {
-                $optionKey = 'tutor_counter_' . $data['cedula'];
-                $counterRow = DB::table('system_options')->where('key', $optionKey)->lockForUpdate()->first();
-                $newCounter = 1;
-                if ($counterRow) {
-                    $newCounter = (int)$counterRow->value + 1;
-                    DB::table('system_options')->where('key', $optionKey)->update(['value' => $newCounter]);
-                } else {
-                    DB::table('system_options')->insert(['key' => $optionKey, 'value' => $newCounter]);
-                }
-                return $data['cedula'] . '-' . $newCounter;
-            });
-        }
-
-        // 3. Iniciar una transacción de base de datos
+        // 4. Lógica para Estudiante NUEVO
         try {
-            $result = DB::transaction(function () use ($data, $cedulaToSearch, $cedulaToStore, $isMinor) {
+            $result = DB::transaction(function () use ($data, $isMinor) {
                 
-                // 4. Buscar o Crear el Estudiante (Student)
-                // (Esta lógica no cambia)
-                $student = null;
-                if (!$isMinor) {
-                    $student = Student::where('cedula', $cedulaToSearch)->first();
-                }
+                // 5. Crear el Usuario (User) con acceso temporal
+                $user = User::create([
+                    'name' => $data['first_name'] . ' ' . $data['last_name'],
+                    'email' => $data['email'], // Email personal como login
+                    'password' => Hash::make($data['cedula']), // Usar la cédula como contraseña inicial
+                    'access_expires_at' => Carbon::now()->addMonths(3), // <-- ACCESO TEMPORAL
+                ]);
+                $user->assignRole('Estudiante');
 
-                $studentData = [
+                // 6. Crear el Estudiante (Student)
+                $student = Student::create([
+                    'user_id' => $user->id, // <-- VINCULAR AL USUARIO
                     'first_name' => $data['first_name'],
                     'last_name' => $data['last_name'],
-                    'cedula' => $cedulaToStore,
+                    'cedula' => $data['cedula'],
                     'email' => $data['email'],
-                    'home_phone' => $data['phone'],
+                    'home_phone' => $data['phone'], // Campo 'phone' del form
+                    'mobile_phone' => $data['mobile_phone'] ?? $data['phone'], // Celular o el 'phone'
                     'address' => $data['address'] ?? null,
+                    'status' => 'Activo', // Status del estudiante
+                    'balance' => 0, // Nuevo estudiante inicia con balance 0
+                    
+                    // Campos adicionales
                     'city' => $data['city'] ?? null,
                     'sector' => $data['sector'] ?? null,
                     'birth_date' => $data['birth_date'] ?? null,
@@ -98,99 +121,209 @@ class EnrollmentController extends Controller
                     'nationality' => $data['nationality'] ?? null,
                     'how_found' => $data['how_found'] ?? null,
                     'is_minor' => $isMinor,
-                    'mobile_phone' => $data['mobile_phone'] ?? $data['phone'],
-                    'status' => 'Activa',
+
+                    // Campos de tutor
+                    'tutor_name' => $data['tutor_name'] ?? null,
+                    'tutor_cedula' => $data['tutor_cedula'] ?? null,
+                    'tutor_phone' => $data['tutor_phone'] ?? null,
+                    'tutor_relationship' => $data['tutor_relationship'] ?? null,
+                ]);
+
+                // 7. Encontrar la sección del curso
+                $schedule = $this->findCourseSchedule($data['course_name'], $data['schedule_string']);
+
+                // 8. Validar reglas de negocio para la sección
+                $this->validateCourseRules($schedule, $student);
+                
+                // 9. Crear la Inscripción (Enrollment)
+                $enrollment = Enrollment::create([
+                    'student_id' => $student->id,
+                    'course_schedule_id' => $schedule->id,
+                    'status' => 'Pendiente', // <-- PENDIENTE DE PAGO
+                    'final_grade' => null,
+                ]);
+
+                // 10. Crear el registro de Pago (Payment) pendiente
+                Payment::create([
+                    'student_id' => $student->id,
+                    'enrollment_id' => $enrollment->id,
+                    'payment_concept_id' => $schedule->module->payment_concept_id ?? null,
+                    'amount' => $schedule->module->price ?? 0, // Asumimos precio del módulo
+                    'currency' => 'DOP',
+                    'status' => 'Pendiente', // <-- PAGO PENDIENTE
+                    'gateway' => 'Por Pagar',
+                ]);
+
+                return [
+                    'status' => 'success',
+                    'message' => 'Pre-inscripción realizada. Usuario temporal creado por 3 meses.',
+                    'student_id' => $student->id,
+                    'user_id' => $user->id,
+                    'enrollment_id' => $enrollment->id,
                 ];
+            });
 
-                if ($student) {
-                    unset($studentData['first_name'], $studentData['last_name'], $studentData['cedula']);
-                    $student->update($studentData);
-                } else {
-                    $student = Student::create($studentData);
-                }
+            return response()->json($result, 201); // 201 Created
 
-                // --- 5. LÓGICA ACADÉMICA ACTUALIZADA ---
+        } catch (\Exception $e) {
+            \Log::error("Error en EnrollmentController@store (Nuevo Estudiante): " . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage() // Devolver el mensaje de error de la regla de negocio
+            ], 400); // 400 Bad Request (falló la regla de negocio)
+        }
+    }
 
-                // La API de WP no envía el "Curso Padre" (ej. Informática),
-                // solo el módulo (ej. Excel). Crearemos un curso padre "General"
-                // para agrupar todos los módulos que lleguen por la API.
+    /**
+     * Maneja la lógica de inscripción para un estudiante que ya existe en el sistema.
+     */
+    private function handleExistingStudentEnrollment(Request $request, $existingStudent, $existingUser)
+    {
+        // Validar que el estudiante y el usuario coincidan si ambos existen
+        if ($existingStudent && $existingUser && $existingStudent->user_id != $existingUser->id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Conflicto de datos. La cédula y el email pertenecen a cuentas diferentes.'
+            ], 409); // 409 Conflict
+        }
+
+        // El estudiante es la fuente de verdad.
+        $student = $existingStudent ?? $existingUser->student;
+
+        if (!$student) {
+             return response()->json([
+                'status' => 'error',
+                'message' => 'No se pudo encontrar el perfil de estudiante asociado.'
+            ], 404); // 404 Not Found
+        }
+
+        // 1. Validar datos de la solicitud de inscripción
+         $validator = Validator::make($request->all(), [
+            'course_name' => 'required|string|max:255',
+            'schedule_string' => 'required|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Datos de inscripción inválidos.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        
+        $data = $validator->validated();
+
+        try {
+            $result = DB::transaction(function () use ($data, $student) {
+
+                // 2. Encontrar la sección del curso
+                $schedule = $this->findCourseSchedule($data['course_name'], $data['schedule_string']);
+
+                // 3. Validar reglas de negocio (Cupos, Balance, Fecha)
+                $this->validateCourseRules($schedule, $student);
                 
-                // 5a. Buscar o Crear el Curso Padre (Course)
-                $courseParent = Course::firstOrCreate(
-                    ['name' => 'Cursos Generales (API)'],
-                    ['description' => 'Categoría general para módulos creados por la API.', 'status' => 'Activo']
-                );
-
-                // 5b. Buscar o Crear el Módulo (Module)
-                // Asumimos que 'course_name' de la API es el nombre del MÓDULO.
-                $module = Module::firstOrCreate(
-                    [
-                        'course_id' => $courseParent->id,
-                        'name' => $data['course_name']
-                    ],
-                    [
-                        'code' => 'API-' . Str::slug($data['course_name']),
-                        'price' => 0, // La API no envía precio
-                        'status' => 'Activo'
-                    ]
-                );
-                
-                // 5c. Buscar o Crear la Sección (CourseSchedule)
-                // La API no envía días/horas separados. Guardamos el string en 'day_of_week'.
-                $schedule = CourseSchedule::firstOrCreate(
-                    [
-                        'module_id' => $module->id,
-                        'day_of_week' => $data['schedule_string'], // "Lunes 6-8pm"
-                    ],
-                    [
-                        'start_time' => '00:00:00', // No tenemos esta data
-                        'end_time' => '00:00:00',   // No tenemos esta data
-                        'status' => 'Abierta'
-                    ]
-                );
-
-                // 6. Manejar la Inscripción (Enrollment)
-                // Buscamos si el estudiante ya está en esta SECCIÓN.
+                // 4. Verificar si ya existe esta inscripción exacta
                 $existingEnrollment = Enrollment::where('student_id', $student->id)
                     ->where('course_schedule_id', $schedule->id)
                     ->first();
 
                 if ($existingEnrollment) {
-                    // Regla 1: Duplicado exacto. Descartar.
-                    return ['status' => 'duplicate', 'message' => 'Inscripción duplicada descartada.'];
+                    throw new \Exception('Este estudiante ya está inscrito en esta sección.');
                 }
 
-                // Regla 2 (Modificada): Si el estudiante ya está en otro horario
-                // del MISMO MÓDULO, ¿lo actualizamos o lo inscribimos en ambos?
-                // Por ahora, la lógica es inscribirlo, ya que el duplicado exacto ya se filtró.
-                
+                // 5. Crear la Inscripción (Enrollment)
                 $enrollment = Enrollment::create([
                     'student_id' => $student->id,
                     'course_schedule_id' => $schedule->id,
-                    'status' => 'Cursando',
-                    // 'wp_enrollment_key' => $student->id . ':' . $schedule->id . ':' . Str::random(4) // Opcional
+                    'status' => 'Pendiente', // <-- PENDIENTE DE PAGO
+                    'final_grade' => null,
                 ]);
-                $logMessage = 'Nueva inscripción creada en Laravel.';
+
+                // 6. Crear el registro de Pago (Payment) pendiente
+                Payment::create([
+                    'student_id' => $student->id,
+                    'enrollment_id' => $enrollment->id,
+                    'payment_concept_id' => $schedule->module->payment_concept_id ?? null,
+                    'amount' => $schedule->module->price ?? 0,
+                    'currency' => 'DOP',
+                    'status' => 'Pendiente', // <-- PAGO PENDIENTE
+                    'gateway' => 'Por Pagar',
+                ]);
 
                 return [
                     'status' => 'success',
-                    'message' => $logMessage,
-                    'student_id_laravel' => $student->id,
-                    'enrollment_id_laravel' => $enrollment->id,
-                    // 'wp_enrollment_key' => $enrollment->wp_enrollment_key
+                    'message' => 'Inscripción pendiente de pago registrada para estudiante existente.',
+                    'student_id' => $student->id,
+                    'enrollment_id' => $enrollment->id,
                 ];
+            });
 
-            }); // Fin de la transacción
-
-            return response()->json($result, $result['status'] == 'duplicate' ? 200 : 201);
+            return response()->json($result, 201); // 201 Created
 
         } catch (\Exception $e) {
-            // Si algo falla en la transacción, se revierte todo
+            \Log::error("Error en handleExistingStudentEnrollment: " . $e->getMessage());
             return response()->json([
                 'status' => 'error',
-                'message' => 'Error interno del servidor al procesar la inscripción.',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => $e->getMessage() // Devolver el mensaje de error
+            ], 400); // 400 Bad Request
+        }
+    }
+
+    /**
+     * Helper para buscar la sección (CourseSchedule)
+     * (No crea, solo busca)
+     */
+    private function findCourseSchedule(string $moduleName, string $sectionName): CourseSchedule
+    {
+        $module = Module::where('name', $moduleName)->first();
+        if (!$module) {
+            throw new \Exception("El módulo '{$moduleName}' no fue encontrado. Verifique el nombre.");
+        }
+
+        // Buscamos por 'section_name' (de la migración 2025_11_05_000018)
+        $schedule = CourseSchedule::where('module_id', $module->id)
+                                  ->where('section_name', $sectionName)
+                                  ->first();
+        
+        // Fallback por si 'schedule_string' se guarda en 'day_of_week'
+        if (!$schedule) {
+             $schedule = CourseSchedule::where('module_id', $module->id)
+                                  ->where('day_of_week', $sectionName)
+                                  ->first();
+        }
+
+        if (!$schedule) {
+            throw new \Exception("La sección '{$sectionName}' para '{$moduleName}' no fue encontrada.");
+        }
+        
+        // Cargar las relaciones necesarias para las reglas
+        $schedule->load('module');
+
+        return $schedule;
+    }
+
+    /**
+     * Helper para validar las 3 reglas de negocio.
+     */
+    private function validateCourseRules(CourseSchedule $schedule, Student $student): void
+    {
+        // 1. "En caso de ser estudiante existente, no debe tener balances pendientes."
+        // (Asumimos que balance > 0 es tener deuda)
+        if ($student->balance > 0) {
+            throw new \Exception('El estudiante tiene un balance pendiente y no puede inscribirse.');
+        }
+
+        // 2. "Deben haber cupos disponibles en el curso que se solicita."
+        $enrolledCount = Enrollment::where('course_schedule_id', $schedule->id)
+                                    ->whereIn('status', ['Activo', 'Cursando', 'Pendiente']) // Contar pendientes también
+                                    ->count();
+        if ($schedule->capacity > 0 && $enrolledCount >= $schedule->capacity) { // capacity > 0 para evitar bloqueo si es 0
+            throw new \Exception('La sección está llena. No hay cupos disponibles.');
+        }
+
+        // 3. "Una vez inicia el curso, no se puede inscribir"
+        if ($schedule->start_date && Carbon::now()->gt($schedule->start_date)) {
+            throw new \Exception('Este curso ya ha comenzado. No se permiten nuevas inscripciones.');
         }
     }
 }
