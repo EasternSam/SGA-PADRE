@@ -6,14 +6,14 @@ use Livewire\Component;
 use App\Models\Student;
 use App\Models\PaymentConcept;
 use App\Models\Payment;
-use App\Models\Enrollment;
+use App\Models\Enrollment; // <-- AÑADIDO: Importar el modelo Enrollment
 use App\Services\MatriculaService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Collection;
-use Livewire\Attributes\On; 
-use Illuminate\Support\Facades\DB; // <-- AÑADIDO para la transacción
+use Livewire\Attributes\On;
+use Illuminate\Support\Facades\DB; // <-- AÑADIDO: Importar DB para la transacción
 
 class PaymentModal extends Component
 {
@@ -26,16 +26,16 @@ class PaymentModal extends Component
     public $payment_concept_id;
     public $amount = 0.00;
     public $status = 'Completado';
-    public $gateway = 'Efectivo'; 
+    public $gateway = 'Efectivo';
     public $transaction_id = null; 
 
     // Propiedades de vinculación
     public $enrollment_id = null; 
-    public $payment_id_to_update = null; // <-- AÑADIDO: ID del pago PENDIENTE a actualizar
+    public $payment_id_to_update = null; 
     public Collection $studentEnrollments; 
     public Collection $payment_concepts;
     public bool $isAmountDisabled = false;
-    public bool $isConceptDisabled = false; // <-- AÑADIDO PARA LA LÓGICA DE DESHABILITAR
+    public bool $isConceptDisabled = false; 
 
     /**
      * Reglas de validación
@@ -44,16 +44,11 @@ class PaymentModal extends Component
     {
         return [
             'student_id' => 'required|exists:students,id',
-            
-            // --- ¡¡¡CORRECCIÓN DE LÓGICA DE VALIDACIÓN!!! ---
-            // payment_concept_id es requerido SÓLO SI enrollment_id está vacío
             'payment_concept_id' => [
                 Rule::requiredIf(empty($this->enrollment_id)),
                 'nullable',
                 'exists:payment_concepts,id'
             ],
-            // --- FIN DE LA CORRECCIÓN ---
-
             'enrollment_id' => 'nullable|exists:enrollments,id',
             'amount' => 'required|numeric|min:0.01',
             'gateway' => 'required|string|max:100',
@@ -79,6 +74,7 @@ class PaymentModal extends Component
     public function openModal()
     {
         $this->resetForm();
+        $this->loadInitialData(); // Cargar datos frescos al abrir
         $this->show = true;
     }
 
@@ -90,12 +86,12 @@ class PaymentModal extends Component
     public function openForEnrollment($enrollmentId)
     {
         $this->resetForm();
-        
+        $this->loadInitialData(); // Cargar datos frescos al abrir
+
         // Asignar el ID de la inscripción
         $this->enrollment_id = $enrollmentId; 
         
         // Forzar la lógica de auto-rellenado
-        // Esto ahora también buscará y establecerá $payment_id_to_update
         $this->updatedEnrollmentId($enrollmentId); 
         
         $this->show = true;
@@ -108,7 +104,14 @@ class PaymentModal extends Component
     {
         $this->student = $student;
         $this->student_id = $this->student->id;
-        
+        $this->loadInitialData();
+    }
+    
+    /**
+     * Carga los datos necesarios para el formulario (conceptos y matrículas pendientes)
+     */
+    public function loadInitialData()
+    {
         try {
             $this->payment_concepts = PaymentConcept::orderBy('name')->get();
         } catch (\Exception $e) {
@@ -116,14 +119,12 @@ class PaymentModal extends Component
             $this->payment_concepts = collect();
         }
 
-        // --- CORREGIDO ---
-        // Cargar las inscripciones Y sus pagos pendientes asociados
         try {
             $this->studentEnrollments = Enrollment::where('student_id', $this->student_id)
                 ->where('status', 'Pendiente')
                 ->with([
                     'courseSchedule.module', 
-                    'payment.paymentConcept' // <-- Cargar el pago pendiente y su concepto
+                    'payment' // Cargar el pago pendiente
                 ])
                 ->get();
         } catch (\Exception $e) {
@@ -134,38 +135,35 @@ class PaymentModal extends Component
 
     /**
      * Se dispara cuando el admin selecciona una inscripción pendiente.
-     * ¡¡¡ESTA ES LA LÓGICA CORREGIDA!!!
      */
     public function updatedEnrollmentId($value)
     {
         $this->resetErrorBag();
-        $this->payment_id_to_update = null; // Resetear
+        $this->payment_id_to_update = null;
 
         if (!empty($value)) {
             $selectedEnrollment = $this->studentEnrollments->firstWhere('id', (int)$value);
 
-            // Verificar si la inscripción tiene un pago pendiente asociado
             if ($selectedEnrollment && $selectedEnrollment->payment) {
                 
                 $pendingPayment = $selectedEnrollment->payment;
                 
-                // Auto-rellenar monto y concepto DESDE EL PAGO PENDIENTE
                 $this->amount = $pendingPayment->amount;
-                $this->payment_concept_id = $pendingPayment->payment_concept_id; // (Puede ser null)
-                
-                // Guardar el ID del pago que vamos a ACTUALIZAR
+                $this->payment_concept_id = $pendingPayment->payment_concept_id; 
                 $this->payment_id_to_update = $pendingPayment->id; 
                 
-                $this->isAmountDisabled = true; // El monto del curso es fijo
-
-                // --- ¡¡¡CORRECCIÓN DE LÓGICA DE UI!!! ---
-                // Si seleccionamos una inscripción, el concepto SIEMPRE debe estar deshabilitado.
+                $this->isAmountDisabled = true; 
                 $this->isConceptDisabled = true; 
-                // --- FIN DE LA CORRECCIÓN ---
 
+            } else if ($selectedEnrollment) { 
+                // Caso en que la inscripción exista pero el pago no (ej. se borró manually)
+                $this->amount = $selectedEnrollment->courseSchedule->module->price ?? 0.00;
+                $this->payment_concept_id = $selectedEnrollment->courseSchedule->module->payment_concept_id ?? null;
+                $this->payment_id_to_update = null; // No hay pago para actualizar, se creará uno nuevo
+                $this->isAmountDisabled = true;
+                $this->isConceptDisabled = true;
             } else {
-                // Fallback (si la inscripción no tiene pago, lo cual sería un error de datos)
-                Log::warning("La inscripción {$value} no tiene un pago pendiente asociado.");
+                // Si el valor no es válido o está vacío
                 $this->reset(['amount', 'payment_concept_id', 'isAmountDisabled', 'isConceptDisabled', 'payment_id_to_update']);
                 $this->amount = 0.00;
             }
@@ -181,12 +179,13 @@ class PaymentModal extends Component
      */
     public function updatedPaymentConceptId($value)
     {
+        // Si el usuario está cambiando el concepto manualmente, rompemos la vinculación con la inscripción.
+        if (!$this->isConceptDisabled) {
+             $this->enrollment_id = null;
+             $this->payment_id_to_update = null;
+        }
+       
         $this->resetErrorBag('amount');
-
-        // Des-seleccionar la inscripción y el pago a actualizar
-        $this->enrollment_id = null;
-        $this->payment_id_to_update = null; // <-- AÑADIDO
-        $this->isConceptDisabled = false; // <-- AÑADIDO (en modo manual, nunca está deshabilitado)
 
         if (!empty($value)) {
             $selectedConcept = $this->payment_concepts->firstWhere('id', (int)$value);
@@ -195,129 +194,156 @@ class PaymentModal extends Component
                 $this->amount = $selectedConcept->default_amount;
                 $this->isAmountDisabled = true;
             } else {
-                $this->amount = 0.00;
-                $this->isAmountDisabled = false;
+                // Si no es un monto fijo, pero estamos vinculados a una inscripción, no cambiar el monto.
+                if (!$this->enrollment_id) {
+                     $this->amount = 0.00;
+                     $this->isAmountDisabled = false;
+                }
             }
         } else {
-            $this->amount = 0.00;
-            $this->isAmountDisabled = false;
+            // Si se deselecciona el concepto y no hay inscripción, resetear monto.
+             if (!$this->enrollment_id) {
+                $this->amount = 0.00;
+                $this->isAmountDisabled = false;
+             }
         }
     }
 
 
     /**
-     * Guarda el nuevo pago.
-     * ¡¡¡ESTA ES LA LÓGICA CORREGIDA!!!
+     * Guarda el nuevo pago o actualiza uno existente.
      */
     public function savePayment(MatriculaService $matriculaService)
     {
         $this->validate();
-        $payment = null;
+        
+        // --- INICIO DE LA MODIFICACIÓN ---
+        // Determinar si el estudiante es nuevo ANTES de la transacción
+        $isNewStudent = !$this->student->student_code; // <-- CORRECCIÓN: $this.student cambiado a $this->student
+        // --- FIN DE LA MODIFICACIÓN ---
 
         try {
-            // Usamos una transacción por si falla la matriculación
-            DB::transaction(function () use (&$payment, $matriculaService) {
+            // Pasamos $isNewStudent al closure de la transacción
+            $payment = DB::transaction(function () use ($matriculaService, $isNewStudent) {
+                $payment = null;
 
-                // --- LÓGICA DE PAGO ACTUALIZADA ---
                 if ($this->payment_id_to_update) {
-                    
-                    // 1. ACTUALIZAR el pago pendiente existente
+                    // --- Caso 1: Actualizar un pago pendiente existente ---
                     $payment = Payment::find($this->payment_id_to_update);
                     if ($payment) {
                         $payment->update([
-                            'payment_concept_id' => $this->payment_concept_id, // (Guardará null si es null)
+                            'payment_concept_id' => $this->payment_concept_id,
+                            'amount' => $this->amount, // Asegurarse de actualizar el monto
                             'gateway' => $this->gateway,
                             'status' => $this->status,
                             'transaction_id' => $this->transaction_id,
-                            
-                            // --- ¡¡¡LA CORRECCIÓN MÁS IMPORTANTE ESTÁ AQUÍ!!! ---
-                            // Nos aseguramos de que el pago SÍ esté vinculado al enrollment_id del modal.
-                            'enrollment_id' => $this->enrollment_id
+                            'enrollment_id' => $this->enrollment_id, // Asegurarse de que esté vinculado
+                            'user_id' => Auth::id(), // Registrar quién procesó el pago
                         ]);
                     } else {
-                         throw new \Exception("Error: No se encontró el pago pendiente (ID: {$this->payment_id_to_update}) para actualizar.");
+                        // Esto no debería pasar si la UI funciona bien, pero es una salvaguarda
+                        throw new \Exception("Error: No se encontró el pago pendiente (ID: {$this->payment_id_to_update}) para actualizar.");
                     }
 
                 } else {
-                    
-                    // 2. CREAR un nuevo pago (modo manual)
+                    // --- Caso 2: Crear un nuevo registro de pago ---
                     $payment = Payment::create([
                         'student_id' => $this->student_id,
                         'payment_concept_id' => $this->payment_concept_id,
-                        'enrollment_id' => $this->enrollment_id, // (Será null si es manual)
+                        'enrollment_id' => $this->enrollment_id, // Puede ser null si no se seleccionó inscripción
                         'amount' => $this->amount,
-                        'gateway' => $this->gateway, 
+                        'currency' => 'DOP', // Asumiendo DOP, o tomar de config
                         'status' => $this->status,
+                        'gateway' => $this->gateway,
                         'transaction_id' => $this->transaction_id,
+                        'user_id' => Auth::id(), // Registrar quién procesó el pago
                     ]);
                 }
-                // --- FIN DE LA LÓGICA DE PAGO ---
+                
+                // Refrescar el objeto $payment desde la BBDD para asegurar que las relaciones
+                // (especialmente si se acaba de crear) estén cargadas.
+                $payment->refresh();
+                
+                // Cargar relaciones necesarias
+                $payment->load('student.user', 'enrollment.courseSchedule.module');
 
-                // --- INICIO DE LA LÓGICA DE MATRICULACIÓN ---
-                // Si el pago se acaba de marcar como "Completado"
-                if ($payment && $payment->status == 'Completado') {
+                // Si el pago se marcó como "Completado"
+                if ($payment->status == 'Completado') {
                     
-                    // --- ¡¡¡ESTA ES LA LÍNEA QUE FALTABA!!! ---
-                    // Debemos re-cargar el objeto $payment FRESCO de la BD
-                    // para asegurarnos de que el 'enrollment_id' (si se acaba de crear)
-                    // y todas sus relaciones estén disponibles para el servicio.
-                    $payment->refresh(); 
-                    // --- FIN DE LA CORRECCIÓN ---
+                    // --- INICIO DE NUEVOS LOGS PARA DEBUG ---
+                    Log::info("Pago {$payment->id} marcado como 'Completado'. Verificando inscripción. ID de inscripción asociado: " . ($payment->enrollment_id ?? 'NINGUNO'));
+                    Log::info("Relación 'enrollment' cargada: " . ($payment->enrollment ? 'SI' : 'NO'));
+                    // --- FIN DE NUEVOS LOGS PARA DEBUG ---
 
-                    // Cargar las relaciones necesarias que el servicio usará
-                    // (La línea $payment->load() de tu archivo original también es válida si 'enrollment' es una relación)
-                    $payment->load('student.user', 'enrollment'); 
+                    // --- INICIO DE LA LÓGICA MODIFICADA ---
+                    if ($isNewStudent) {
+                        // --- Lógica para Estudiante Nuevo ---
+                        // El servicio se encarga de todo: crear matrícula, activar usuario, activar inscripción.
+                        Log::info("Pago {$payment->id} completado. Ejecutando MatriculaService para nuevo estudiante ID: {$this->student_id}.");
+                        $matriculaService->generarMatricula($payment);
                     
-                    // Llamamos al servicio para que maneje la activación
-                    $matriculaService->generarMatricula($payment);
+                    } else {
+                        // --- Lógica para Estudiante Existente ---
+                        // Si el estudiante ya existe, solo activamos la inscripción (si hay una).
+                        if ($payment->enrollment) {
+                            $payment->enrollment->status = 'Cursando'; // O 'Activo'
+                            $payment->enrollment->save();
+                            Log::info("Pago {$payment->id} completado. Inscripción {$payment->enrollment->id} activada para estudiante existente ID: {$this->student_id}.");
+                        } else {
+                            // Pago completado sin inscripción asociada (ej. pago manual de un concepto)
+                            Log::info("Pago {$payment->id} completado (sin inscripción asociada) para estudiante existente ID: {$this->student_id}.");
+                        }
+                    }
+                    // --- FIN DE LA LÓGICA MODIFICADA ---
                 }
-                // --- FIN DE LA LÓGICA DE MATRICULACIÓN ---
+                
+                return $payment; // Devolver el pago procesado
+            });
 
-            }); // Fin de la transacción
-
-            // --- Lógica original (se mantiene) ---
-            $this->show = false; // <-- CERRAR EL MODAL
-            $this->resetForm();
-            $this->dispatch('flashMessage', ['message' => '¡Pago registrado exitosamente!', 'type' => 'success']);
-            $this->dispatch('paymentAdded'); // Este evento debe refrescar la data
+            session()->flash('message', 'Pago registrado exitosamente.');
+            $this->closeModal(); 
+            $this->dispatch('paymentAdded'); // Emitir evento para refrescar otros componentes (ej. StudentProfile)
+            
+            // Refrescar este componente para actualizar la lista de inscripciones pendientes
+            $this->dispatch('$refresh'); 
 
         } catch (\Exception $e) {
             Log::error("Error al guardar el pago: " . $e->getMessage());
-            $this->dispatch('flashMessage', ['message' => 'Error al registrar el pago: ' . $e->getMessage(), 'type' => 'error']);
+            // Mostramos el error en el modal en lugar de cerrarlo
+            $this->addError('general', 'Error al procesar el pago: ' . $e->getMessage());
         }
     }
 
     /**
-     * Resetea los campos del formulario.
+     * Cierra el modal.
      */
-    public function resetForm()
+    public function closeModal()
     {
-        $this->reset([
-            'payment_concept_id',
-            'enrollment_id',
-            'amount',
-            'gateway',
-            'status',
-            'transaction_id',
-            'isAmountDisabled',
-            'payment_id_to_update', // <-- AÑADIDO AL RESET
-            'isConceptDisabled' // <-- AÑADIDO AL RESET
-        ]);
-        
-        $this->amount = 0.00;
-        $this->gateway = 'Efectivo';
-        $this->status = 'Completado';
-        $this->isAmountDisabled = false;
-        $this->isConceptDisabled = false; // <-- AÑADIDO AL RESET
-
-        $this->resetErrorBag();
+        $this->show = false;
+        $this->resetForm();
     }
 
     /**
-     * Renderiza la vista del modal.
+     * Resetea todos los campos del formulario.
      */
-    public function render()
+    private function resetForm()
     {
-        return view('livewire.finance.payment-modal');
+        $this->reset([
+            'payment_id', 
+            'payment_concept_id', 
+            'amount', 
+            'gateway', 
+            'status', 
+            'transaction_id',
+            'enrollment_id',
+            'payment_id_to_update',
+            'isAmountDisabled',
+            'isConceptDisabled'
+        ]);
+
+        $this->amount = 0.00;
+        $this->gateway = 'Efectivo';
+        $this->status = 'Completado';
+        $this->resetErrorBag();
     }
 }

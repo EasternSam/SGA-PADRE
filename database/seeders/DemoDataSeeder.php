@@ -56,8 +56,8 @@ class DemoDataSeeder extends Seeder
         $this->command->info(count($teacherNames) . ' profesores creados.');
 
         // --- 3. Crear Estudiantes ---
-        // Bucle para crear 1000 estudiantes (AJUSTADO)
-        $totalStudents = 1000; // <--- CAMBIO REALIZADO AQUÍ
+        // Bucle para crear 50 estudiantes (AJUSTADO)
+        $totalStudents = 50; // <--- CAMBIO REALIZADO AQUÍ
         $this->command->getOutput()->progressStart($totalStudents); // Barra de progreso
 
         for ($i = 1; $i <= $totalStudents; $i++) {
@@ -110,7 +110,7 @@ class DemoDataSeeder extends Seeder
         $courseCount = 0;
         $moduleCount = 0;
         $scheduleCount = 0;
-        $totalCourses = 70;
+        $totalCourses = 70; // Mantenemos los 70 cursos
 
         $this->command->getOutput()->progressStart($totalCourses); // Barra de progreso
 
