@@ -57,7 +57,7 @@ HEMOS AÑADIDO EL DROPDOWN DE "INSCRIPCIONES PENDIENTES".
                             id="payment_concept_id" 
                             wire:model.live="payment_concept_id" 
                             class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            {{ $enrollment_id ? 'disabled' : '' }} {{-- Deshabilitado si se selecciona inscripción --}}
+                            {{ $isConceptDisabled ? 'disabled' : '' }} {{-- CORREGIDO: Usar la nueva variable --}}
                         >
                             <option value="">Seleccione un concepto...</option>
                             {{-- ¡¡¡CORRECCIÓN AQUÍ!!! $paymentConcepts -> $payment_concepts --}}
@@ -77,7 +77,7 @@ HEMOS AÑADIDO EL DROPDOWN DE "INSCRIPCIONES PENDIENTES".
                             id="amount" 
                             wire:model="amount" 
                             class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            {{ $isAmountDisabled || $enrollment_id ? 'readonly' : '' }} {{-- Deshabilitado si es monto fijo O si se selecciona inscripción --}}
+                            {{ $isAmountDisabled ? 'readonly' : '' }} {{-- CORREGIDO: Simplificado --}}
                         >
                         @error('amount') <span class="text-sm text-red-500">{{ $message }}</span> @enderror
                     </div>

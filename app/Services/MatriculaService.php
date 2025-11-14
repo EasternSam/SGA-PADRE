@@ -5,9 +5,11 @@ namespace App\Services;
 use App\Models\Payment;
 use App\Models\Student;
 use App\Models\User;
+use App\Models\Enrollment; // <-- AÑADIDO: Importar el modelo Enrollment
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log; // <-- AÑADIDO: Para Loguear
 
 /**
  * Servicio para manejar la lógica de generación de matrícula
@@ -26,6 +28,7 @@ class MatriculaService
     {
         // Asegurarse de que el pago esté completado y tenga un estudiante
         if ($payment->status !== 'Completado' || !$payment->student) {
+            Log::warning("MatriculaService: El pago {$payment->id} no está 'Completado' o no tiene estudiante.");
             return;
         }
 
@@ -34,6 +37,7 @@ class MatriculaService
 
         // Si el estudiante ya tiene matrícula, solo activamos la inscripción
         if ($student->student_code && $user && !$user->access_expires_at) {
+            Log::info("MatriculaService: Estudiante existente {$student->id}. Activando inscripción.");
             $this->activarInscripcion($payment);
             return;
         }
@@ -42,6 +46,8 @@ class MatriculaService
         try {
             DB::transaction(function () use ($payment, $student, $user) {
                 
+                Log::info("MatriculaService: Estudiante nuevo {$student->id}. Iniciando transacción de matrícula.");
+
                 // 1. Generar la matrícula (student_code) si no la tiene
                 if (!$student->student_code) {
                     $student->student_code = $this->generateUniqueStudentCode();
@@ -80,19 +86,34 @@ class MatriculaService
             }); // Fin de la transacción
 
         } catch (\Exception $e) {
-            \Log::error("Error al generar matrícula para estudiante ID {$student->id}: " . $e->getMessage());
+            Log::error("Error al generar matrícula para estudiante ID {$student->id}: " . $e->getMessage());
             // No revertir el pago, solo loguear el error de matriculación
         }
     }
 
     /**
      * Cambia el estado de la inscripción asociada al pago.
+     * ¡¡¡ESTA ES LA CORRECCIÓN!!!
      */
     private function activarInscripcion(Payment $payment)
     {
-        if ($payment->enrollment) {
-            $payment->enrollment->status = 'Cursando'; // O 'Activo'
-            $payment->enrollment->save();
+        // --- ¡¡¡CORRECCIÓN!!! ---
+        // En lugar de confiar en la relación '$payment->enrollment' (que puede perderse),
+        // buscamos la inscripción usando el 'enrollment_id' del pago.
+        
+        $enrollment = null;
+
+        if ($payment->enrollment_id) {
+            $enrollment = Enrollment::find($payment->enrollment_id);
+        }
+
+        // Si encontramos la inscripción, la actualizamos.
+        if ($enrollment) {
+            Log::info("MatriculaService: Encontrada enrollment {$enrollment->id}. Actualizando estado a 'Cursando'.");
+            $enrollment->status = 'Cursando'; // O 'Activo'
+            $enrollment->save();
+        } else {
+            Log::warning("MatriculaService: Pago {$payment->id} completado, pero no se encontró 'enrollment' asociado (enrollment_id: {$payment->enrollment_id}). No se activó ninguna inscripción.");
         }
     }
 
@@ -106,8 +127,8 @@ class MatriculaService
         
         // Buscar el último estudiante de este año para obtener el consecutivo
         $lastStudent = Student::where('student_code', 'LIKE', $year . '%')
-                              ->orderBy('student_code', 'desc')
-                              ->first();
+                             ->orderBy('student_code', 'desc')
+                             ->first();
         
         $nextNumber = 1;
         if ($lastStudent) {

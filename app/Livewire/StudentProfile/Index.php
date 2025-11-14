@@ -18,7 +18,8 @@ use Carbon\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Illuminate\Support\Collection;
-use Illuminate\Pagination\LengthAwarePaginator; // Mantenemos la importación por si acaso
+use Illuminate\Pagination\LengthAwarePaginator; 
+use Illuminate\Support\Str; 
 
 #[Layout('layouts.dashboard')]
 class Index extends Component
@@ -27,11 +28,13 @@ class Index extends Component
 
     // --- Propiedades del Estudiante y Datos ---
     public Student $student;
-    public ?User $user; // <-- AÑADIDO: Para la cuenta de usuario
-    public Collection $pendingEnrollments; // <-- AÑADIDO
-    public Collection $activeEnrollments; // <-- AÑADIDO
-    public Collection $completedEnrollments; // <-- AÑADIDO
-    // public LengthAwarePaginator $allPayments; // <-- ¡¡¡ELIMINADO!!! Esta era la causa del error.
+    public ?User $user; 
+    
+    // --- ¡¡¡ELIMINADO!!! ---
+    // Estas propiedades se calcularán en render()
+    // public Collection $pendingEnrollments; 
+    // public Collection $activeEnrollments; 
+    // public Collection $completedEnrollments; 
 
     // --- Propiedades de Filtro y Búsqueda (Originales) ---
     public $search = '';
@@ -100,11 +103,12 @@ class Index extends Component
     public function mount(Student $student)
     {
         $this->teachers = User::role('Profesor')->orderBy('name')->get();
-        $this->loadStudentData($student->id); // Cargar todos los datos
+        $this->loadStudentData($student->id); // Cargar solo datos del estudiante
     }
 
     /**
-     * (NUEVO) Carga/Recarga todos los datos del estudiante.
+     * (ACTUALIZADO) Carga/Recarga solo los datos del estudiante.
+     * Las inscripciones se manejan en render()
      */
     public function loadStudentData($studentId)
     {
@@ -112,21 +116,6 @@ class Index extends Component
             $student = Student::with('user')->findOrFail($studentId);
             $this->student = $student;
             $this->user = $student->user; // Cargar el usuario vinculado
-
-            // Cargar y separar inscripciones
-            $allEnrollments = $student->enrollments()
-                ->with('courseSchedule.module.course', 'courseSchedule.teacher', 'payment')
-                ->orderBy('created_at', 'desc')
-                ->get();
-            
-            // Separar por estado (usando la nueva lógica)
-            $this->pendingEnrollments = $allEnrollments->whereIn('status', ['Pendiente', 'pendiente', 'Enrolled', 'enrolled']);
-            $this->activeEnrollments = $allEnrollments->whereIn('status', ['Cursando', 'cursando', 'Activo', 'activo']);
-            $this->completedEnrollments = $allEnrollments->whereIn('status', ['Completado', 'completado']);
-
-            // --- ¡¡¡ELIMINADO!!! ---
-            // La consulta de pagos se mueve al método render()
-            // para que la paginación funcione correctamente.
 
         } catch (\Exception $e) {
             Log::error("Error cargando datos del estudiante: " . $e->getMessage());
@@ -142,8 +131,13 @@ class Index extends Component
     #[On('studentUpdated')]
     public function refreshData()
     {
-        $this->loadStudentData($this->student->id); // Recarga las inscripciones
-        $this->resetPage('paymentsPage'); // Refresca la paginación de pagos (que está en render())
+        // Recarga solo los datos base del estudiante (email, nombre, etc.)
+        $this->loadStudentData($this->student->id); 
+        
+        // Resetea las paginaciones. Esto forzará a render() a re-ejecutarse
+        // y re-consultar la BD para las inscripciones y pagos.
+        $this->resetPage('paymentsPage'); 
+        $this->resetPage('enrollmentsPage'); 
     }
     
     /**
@@ -192,25 +186,42 @@ class Index extends Component
         $selectedModuleName = $this->selectedModule ? Module::find($this->selectedModule)?->name : null;
         // --- Fin Lógica Gestión Académica ---
 
-        
-        // (ACTUALIZADO) Filtrar inscripciones si se usa el filtro
-        $filteredEnrollments = $this->student ? $this->student->enrollments()
-             ->with('courseSchedule.module.course', 'courseSchedule.teacher')
-             ->orderBy('created_at', 'desc')
-             ->when($this->enrollmentStatusFilter !== 'all', function ($query) {
-                 return $query->where('status', $this->enrollmentStatusFilter);
-             })
-             ->paginate(5, ['*'], 'enrollmentsPage')
-             : collect();
 
-        // --- ¡¡¡CORRECCIÓN!!! ---
-        // La consulta de pagos se mueve aquí, dentro de render(),
-        // para que WithPagination funcione correctamente.
-        $payments = $this->student ? $this->student->payments()
-            ->with('paymentConcept', 'enrollment.courseSchedule.module.course') // Añadida la relación completa
-            ->orderBy('created_at', 'desc')
-            ->paginate(5, ['*'], 'paymentsPage') // Nombre de la página: 'paymentsPage'
-            : collect();
+        // --- ¡¡¡NUEVA LÓGICA DE CARGA DE INSCRIPCIONES!!! ---
+        // Se mueven todas las consultas de inscripción aquí.
+        
+        $pendingEnrollments = collect();
+        $activeEnrollments = collect();
+        $completedEnrollments = collect();
+        $filteredEnrollments = collect();
+        $payments = collect();
+
+        if ($this->student) {
+            // 1. Cargar inscripciones para la VISTA GENERAL (Overview)
+            $allEnrollments = $this->student->enrollments()
+                ->with('courseSchedule.module.course', 'courseSchedule.teacher', 'payment')
+                ->orderBy('created_at', 'desc')
+                ->get();
+            
+            $pendingEnrollments = $allEnrollments->whereIn('status', ['Pendiente', 'pendiente', 'Enrolled', 'enrolled']);
+            $activeEnrollments = $allEnrollments->whereIn('status', ['Cursando', 'cursando', 'Activo', 'activo']);
+            $completedEnrollments = $allEnrollments->whereIn('status', ['Completado', 'completado']);
+
+            // 2. Cargar inscripciones para la PESTAÑA DE INSCRIPCIONES (Paginada)
+            $filteredEnrollments = $this->student->enrollments()
+                         ->with('courseSchedule.module.course', 'courseSchedule.teacher')
+                         ->orderBy('created_at', 'desc')
+                         ->when($this->enrollmentStatusFilter !== 'all', function ($query) {
+                             return $query->where('status', $this->enrollmentStatusFilter);
+                         })
+                         ->paginate(5, ['*'], 'enrollmentsPage');
+
+            // 3. Cargar PAGOS (Paginado)
+            $payments = $this->student->payments()
+                ->with('paymentConcept', 'enrollment.courseSchedule.module.course') 
+                ->orderBy('created_at', 'desc')
+                ->paginate(5, ['*'], 'paymentsPage');
+        }
 
 
         return view('livewire.student-profile.index', [
@@ -220,12 +231,12 @@ class Index extends Component
             'selectedCourseName' => $selectedCourseObject?->name,
             'selectedModuleName' => $selectedModuleName,
             
-            'enrollments' => $filteredEnrollments, // Para la pestaña de Inscripciones
-            'payments' => $payments, // <-- ¡¡¡CORREGIDO!!! Pasar la variable local
-            
-            // Las propiedades públicas $pendingEnrollments, $activeEnrollments,
-            // $completedEnrollments, $user y $student están disponibles
-            // automáticamente en la vista.
+            // Pasar las variables calculadas a la vista
+            'pendingEnrollments' => $pendingEnrollments,
+            'activeEnrollments' => $activeEnrollments,
+            'completedEnrollments' => $completedEnrollments,
+            'enrollments' => $filteredEnrollments, 
+            'payments' => $payments,
         ]);
     }
 
@@ -310,8 +321,8 @@ class Index extends Component
 
             // 2. Cupos
             $enrolledCount = Enrollment::where('course_schedule_id', $schedule->id)
-                                        ->whereIn('status', ['Activo', 'Cursando', 'Pendiente'])
-                                        ->count();
+                                         ->whereIn('status', ['Activo', 'Cursando', 'Pendiente'])
+                                         ->count();
             if ($schedule->capacity !== null && $schedule->capacity > 0 && $enrolledCount >= $schedule->capacity) {
                 throw new \Exception('La sección está llena. No hay cupos disponibles.');
             }

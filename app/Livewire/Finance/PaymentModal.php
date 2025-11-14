@@ -35,6 +35,7 @@ class PaymentModal extends Component
     public Collection $studentEnrollments; 
     public Collection $payment_concepts;
     public bool $isAmountDisabled = false;
+    public bool $isConceptDisabled = false; // <-- AÑADIDO PARA LA LÓGICA DE DESHABILITAR
 
     /**
      * Reglas de validación
@@ -43,7 +44,16 @@ class PaymentModal extends Component
     {
         return [
             'student_id' => 'required|exists:students,id',
-            'payment_concept_id' => 'required|exists:payment_concepts,id',
+            
+            // --- ¡¡¡CORRECCIÓN DE LÓGICA DE VALIDACIÓN!!! ---
+            // payment_concept_id es requerido SÓLO SI enrollment_id está vacío
+            'payment_concept_id' => [
+                Rule::requiredIf(empty($this->enrollment_id)),
+                'nullable',
+                'exists:payment_concepts,id'
+            ],
+            // --- FIN DE LA CORRECCIÓN ---
+
             'enrollment_id' => 'nullable|exists:enrollments,id',
             'amount' => 'required|numeric|min:0.01',
             'gateway' => 'required|string|max:100',
@@ -56,7 +66,9 @@ class PaymentModal extends Component
      * Mensajes de validación personalizados
      */
     protected $messages = [
-// ... (código existente sin cambios) ...
+        'payment_concept_id.required' => 'Debe seleccionar un concepto de pago.',
+        'amount.required' => 'El monto no puede estar vacío.',
+        'amount.numeric' => 'El monto debe ser un número.',
         'amount.min' => 'El monto debe ser al menos 0.01.',
     ];
 
@@ -100,7 +112,7 @@ class PaymentModal extends Component
         try {
             $this->payment_concepts = PaymentConcept::orderBy('name')->get();
         } catch (\Exception $e) {
-// ... (código existente sin cambios) ...
+            Log::error("Error al cargar conceptos de pago: " . $e->getMessage());
             $this->payment_concepts = collect();
         }
 
@@ -115,7 +127,7 @@ class PaymentModal extends Component
                 ])
                 ->get();
         } catch (\Exception $e) {
-// ... (código existente sin cambios) ...
+            Log::error("Error al cargar inscripciones pendientes: " . $e->getMessage());
             $this->studentEnrollments = collect();
         }
     }
@@ -139,21 +151,27 @@ class PaymentModal extends Component
                 
                 // Auto-rellenar monto y concepto DESDE EL PAGO PENDIENTE
                 $this->amount = $pendingPayment->amount;
-                $this->payment_concept_id = $pendingPayment->payment_concept_id;
+                $this->payment_concept_id = $pendingPayment->payment_concept_id; // (Puede ser null)
                 
                 // Guardar el ID del pago que vamos a ACTUALIZAR
                 $this->payment_id_to_update = $pendingPayment->id; 
                 
                 $this->isAmountDisabled = true; // El monto del curso es fijo
+
+                // --- ¡¡¡CORRECCIÓN DE LÓGICA DE UI!!! ---
+                // Si seleccionamos una inscripción, el concepto SIEMPRE debe estar deshabilitado.
+                $this->isConceptDisabled = true; 
+                // --- FIN DE LA CORRECCIÓN ---
+
             } else {
                 // Fallback (si la inscripción no tiene pago, lo cual sería un error de datos)
                 Log::warning("La inscripción {$value} no tiene un pago pendiente asociado.");
-                $this->reset(['amount', 'payment_concept_id', 'isAmountDisabled', 'payment_id_to_update']);
+                $this->reset(['amount', 'payment_concept_id', 'isAmountDisabled', 'isConceptDisabled', 'payment_id_to_update']);
                 $this->amount = 0.00;
             }
         } else {
             // Si deselecciona (modo manual)
-            $this->reset(['amount', 'payment_concept_id', 'isAmountDisabled', 'payment_id_to_update']);
+            $this->reset(['amount', 'payment_concept_id', 'isAmountDisabled', 'isConceptDisabled', 'payment_id_to_update']);
             $this->amount = 0.00;
         }
     }
@@ -163,25 +181,25 @@ class PaymentModal extends Component
      */
     public function updatedPaymentConceptId($value)
     {
-// ... (código existente sin cambios) ...
         $this->resetErrorBag('amount');
 
         // Des-seleccionar la inscripción y el pago a actualizar
         $this->enrollment_id = null;
         $this->payment_id_to_update = null; // <-- AÑADIDO
+        $this->isConceptDisabled = false; // <-- AÑADIDO (en modo manual, nunca está deshabilitado)
 
         if (!empty($value)) {
-// ... (código existente sin cambios) ...
             $selectedConcept = $this->payment_concepts->firstWhere('id', (int)$value);
 
             if ($selectedConcept && $selectedConcept->is_fixed_amount) {
-// ... (código existente sin cambios) ...
+                $this->amount = $selectedConcept->default_amount;
+                $this->isAmountDisabled = true;
             } else {
                 $this->amount = 0.00;
                 $this->isAmountDisabled = false;
             }
         } else {
-// ... (código existente sin cambios) ...
+            $this->amount = 0.00;
             $this->isAmountDisabled = false;
         }
     }
@@ -207,10 +225,14 @@ class PaymentModal extends Component
                     $payment = Payment::find($this->payment_id_to_update);
                     if ($payment) {
                         $payment->update([
-                            // El 'amount' y 'concept' ya son correctos
+                            'payment_concept_id' => $this->payment_concept_id, // (Guardará null si es null)
                             'gateway' => $this->gateway,
                             'status' => $this->status,
                             'transaction_id' => $this->transaction_id,
+                            
+                            // --- ¡¡¡LA CORRECCIÓN MÁS IMPORTANTE ESTÁ AQUÍ!!! ---
+                            // Nos aseguramos de que el pago SÍ esté vinculado al enrollment_id del modal.
+                            'enrollment_id' => $this->enrollment_id
                         ]);
                     } else {
                          throw new \Exception("Error: No se encontró el pago pendiente (ID: {$this->payment_id_to_update}) para actualizar.");
@@ -222,7 +244,7 @@ class PaymentModal extends Component
                     $payment = Payment::create([
                         'student_id' => $this->student_id,
                         'payment_concept_id' => $this->payment_concept_id,
-                        'enrollment_id' => $this->enrollment_id, // Será null si es manual
+                        'enrollment_id' => $this->enrollment_id, // (Será null si es manual)
                         'amount' => $this->amount,
                         'gateway' => $this->gateway, 
                         'status' => $this->status,
@@ -234,7 +256,16 @@ class PaymentModal extends Component
                 // --- INICIO DE LA LÓGICA DE MATRICULACIÓN ---
                 // Si el pago se acaba de marcar como "Completado"
                 if ($payment && $payment->status == 'Completado') {
+                    
+                    // --- ¡¡¡ESTA ES LA LÍNEA QUE FALTABA!!! ---
+                    // Debemos re-cargar el objeto $payment FRESCO de la BD
+                    // para asegurarnos de que el 'enrollment_id' (si se acaba de crear)
+                    // y todas sus relaciones estén disponibles para el servicio.
+                    $payment->refresh(); 
+                    // --- FIN DE LA CORRECCIÓN ---
+
                     // Cargar las relaciones necesarias que el servicio usará
+                    // (La línea $payment->load() de tu archivo original también es válida si 'enrollment' es una relación)
                     $payment->load('student.user', 'enrollment'); 
                     
                     // Llamamos al servicio para que maneje la activación
@@ -269,24 +300,23 @@ class PaymentModal extends Component
             'status',
             'transaction_id',
             'isAmountDisabled',
-            'payment_id_to_update' // <-- AÑADIDO AL RESET
+            'payment_id_to_update', // <-- AÑADIDO AL RESET
+            'isConceptDisabled' // <-- AÑADIDO AL RESET
         ]);
         
-// ... (código existente sin cambios) ...
         $this->amount = 0.00;
         $this->gateway = 'Efectivo';
         $this->status = 'Completado';
-// ... (código existente sin cambios) ...
+        $this->isAmountDisabled = false;
+        $this->isConceptDisabled = false; // <-- AÑADIDO AL RESET
 
         $this->resetErrorBag();
     }
 
     /**
-// ... (código existente sin cambios) ...
      * Renderiza la vista del modal.
      */
     public function render()
-// ... (código existente sin cambios) ...
     {
         return view('livewire.finance.payment-modal');
     }
