@@ -1,4 +1,4 @@
-<div class-="container mx-auto p-4 md:p-6 lg:p-8">
+<div class="container mx-auto p-4 md:p-6 lg:p-8"> {{-- Corregido 'class-=' a 'class=' --}}
 
     {{-- Slot del Encabezado (para que aparezca "Gestión de Profesores" en el layout) --}}
     <x-slot name="header">
@@ -10,15 +10,15 @@
     {{-- Alertas de Éxito o Error --}}
     <div class="fixed top-24 right-6 z-50">
         @if (session()->has('message'))
-            <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show" 
-                 class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg" role="alert">
+            <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show"
+                class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg" role="alert">
                 <strong class="font-bold">¡Éxito!</strong>
                 <span class="block sm:inline">{{ session('message') }}</span>
             </div>
         @endif
         @if (session()->has('error'))
-            <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show" 
-                 class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg" role="alert">
+            <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show"
+                class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg" role="alert">
                 <strong class="font-bold">¡Error!</strong>
                 <span class="block sm:inline">{{ session('error') }}</span>
             </div>
@@ -38,10 +38,10 @@
 
         {{-- Barra de Búsqueda --}}
         <div class="mt-6">
-            <input 
-                wire:model.live.debounce.300ms="search" 
-                type="text" 
-                placeholder="Buscar por nombre o email..." 
+            <input
+                wire:model.live.debounce.300ms="search"
+                type="text"
+                placeholder="Buscar por nombre o email..."
                 class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
         </div>
@@ -77,7 +77,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $teacher->email }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                                
+
                                 {{-- ENLACE AL PERFIL --}}
                                 <a href="{{ route('admin.teachers.profile', $teacher->id) }}" class="text-indigo-600 hover:text-indigo-900" title="Ver Perfil" wire:navigate>
                                     <i class="fas fa-eye"></i>
@@ -87,7 +87,7 @@
                                 <button wire:click="edit({{ $teacher->id }})" class="text-blue-600 hover:text-blue-900" title="Editar">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                
+
                                 {{-- Botón Eliminar --}}
                                 <button wire:click="delete({{ $teacher->id }})" wire:confirm="¿Está seguro que desea eliminar este profesor? Esta acción también eliminará su cuenta de usuario." class="text-red-600 hover:text-red-900" title="Eliminar">
                                     <i class="fas fa-trash"></i>
@@ -100,7 +100,7 @@
                                 No se encontraron profesores que coincidan con la búsqueda.
                             </td>
                         </tr>
-                    @endForesle
+                    @endforelse
                 </tbody>
             </table>
         </div>
@@ -112,11 +112,12 @@
     </div>
 
     {{-- Modal de Crear/Editar Profesor --}}
+    {{-- CORRECCIÓN: Quitamos :show y @close.window. El modal se gestionará solo por eventos. --}}
     <x-modal name="teacher-modal" focusable>
         <form wire:submit.prevent="save">
             <div class="p-6">
                 <h2 class="text-lg font-medium text-gray-900 mb-6">
-                    {{ $modalTitle }}
+                    {{ $modalTitle }} {{-- Variable $modalTitle conectada --}}
                 </h2>
 
                 <div class="space-y-4">
@@ -137,14 +138,14 @@
                     {{-- Contraseña --}}
                     <div>
                         <label for="password" class="block text-sm font-medium text-gray-700">Contraseña</label>
-                        <input id="password" type="password" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" wire:model="password" 
-                                 placeholder="{{ $userId ? 'Dejar en blanco para no cambiar' : '' }}" />
+                        <input id="password" type="password" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" wire:model="password"
+                                placeholder="{{ $userId ? 'Dejar en blanco para no cambiar' : '' }}" />
                         @error('password') <span class="text-sm text-red-600 mt-2">{{ $message }}</span> @enderror
                     </div>
 
                     {{-- Confirmar Contraseña --}}
                     <div>
-                        <label for="password_confirmation" class="block text-sm font-medium text-gray-700">Confirmar Contraseña</Flabel>
+                        <label for="password_confirmation" class="block text-sm font-medium text-gray-700">Confirmar Contraseña</label> {{-- Corregido '</Flabel>' a '</label>' --}}
                         <input id="password_confirmation" type="password" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" wire:model="password_confirmation" />
                     </div>
                 </div>
@@ -152,6 +153,7 @@
 
             {{-- Footer del modal con botones --}}
             <div class="flex justify-end mt-6 p-6 bg-gray-100 rounded-b-lg">
+                {{-- El wire:click="closeModal" es correcto, porque llama al método que resetea el form Y despacha el evento 'close' --}}
                 <button type="button" wire:click="closeModal" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2 transition ease-in-out duration-150">
                     Cancelar
                 </button>
@@ -160,6 +162,5 @@
                 </button>
             </div>
         </form>
-        @endif
     </x-modal>
 </div>

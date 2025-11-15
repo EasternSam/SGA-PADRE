@@ -3,9 +3,9 @@
 namespace App\Livewire\Teachers; // <-- CAMBIADO
 
 use Livewire\Component;
-use App\Models\User; 
+use App\Models\User;
 use Livewire\WithPagination;
-use Illuminate\Support\Facades\Hash; 
+use Illuminate\Support\Facades\Hash;
 // use Spatie\Permission\Models\Role; 
 
 class Index extends Component // <-- CAMBIADO
@@ -19,9 +19,10 @@ class Index extends Component // <-- CAMBIADO
     public $password_confirmation = '';
 
     // Propiedades de estado
-    public $userId = null; 
-    public $showModal = false;
+    public $userId = null;
+    public $showModal = false; // Dejamos esto por compatibilidad, aunque el control principal será por eventos
     public $search = '';
+    public $modalTitle = ''; // Propiedad agregada
 
     /**
      * Reglas de validación que dependen del estado.
@@ -37,7 +38,7 @@ class Index extends Component // <-- CAMBIADO
         // Reglas para crear
         if (!$this->userId) {
             $rules['password'] = 'required|min:8|confirmed';
-        } 
+        }
         // Reglas para editar (solo si se provee una nueva contraseña)
         elseif (!empty($this->password)) {
             $rules['password'] = 'min:8|confirmed';
@@ -69,7 +70,9 @@ class Index extends Component // <-- CAMBIADO
     public function create()
     {
         $this->resetForm();
-        $this->showModal = true;
+        $this->modalTitle = 'Crear Nuevo Profesor'; // Título agregado
+        // $this->showModal = true; // <-- ESTO NO FUNCIONA CON X-MODAL
+        $this->dispatch('open-modal', 'teacher-modal'); // <-- ESTA ES LA CORRECCIÓN
     }
 
     /**
@@ -84,9 +87,11 @@ class Index extends Component // <-- CAMBIADO
         // La contraseña se deja vacía a propósito por seguridad
         $this->password = '';
         $this->password_confirmation = '';
+        $this->modalTitle = 'Editar Profesor'; // Título agregado
 
         $this->resetValidation();
-        $this->showModal = true;
+        // $this->showModal = true; // <-- ESTO NO FUNCIONA CON X-MODAL
+        $this->dispatch('open-modal', 'teacher-modal'); // <-- ESTA ES LA CORRECCIÓN
     }
 
     /**
@@ -116,7 +121,7 @@ class Index extends Component // <-- CAMBIADO
             // Crear Usuario
             $user = User::create($data);
             // Asignar el rol de Profesor (asumiendo Spatie/Permission)
-            $user->assignRole('Profesor'); 
+            $user->assignRole('Profesor'); // Usando el rol de tu código
             session()->flash('message', 'Profesor creado exitosamente.');
         }
 
@@ -141,6 +146,7 @@ class Index extends Component // <-- CAMBIADO
     {
         $this->showModal = false;
         $this->resetForm();
+        $this->dispatch('close'); // <-- AGREGAMOS ESTO para asegurar que Alpine cierre el modal
     }
 
     /**
@@ -148,7 +154,7 @@ class Index extends Component // <-- CAMBIADO
      */
     public function resetForm()
     {
-        $this->reset(['name', 'email', 'password', 'password_confirmation', 'userId']);
+        $this->reset(['name', 'email', 'password', 'password_confirmation', 'userId', 'modalTitle']);
         $this->resetValidation();
     }
 
@@ -167,15 +173,15 @@ class Index extends Component // <-- CAMBIADO
     {
         // Asumiendo que usas Spatie/Permission
         // Busca solo usuarios que tengan el rol 'Profesor'
-        $teachers = User::role('Profesor') 
-            ->where(function($query) {
+        $teachers = User::role('Profesor') // Usando el rol de tu código
+            ->where(function ($query) {
                 $query->where('name', 'like', '%' . $this->search . '%')
-                      ->orWhere('email', 'like', '%' . $this->search . '%');
+                    ->orWhere('email', 'like', '%' . $this->search . '%');
             })
-            ->paginate(10); 
+            ->paginate(10);
 
         return view('livewire.teachers.index', [ // <-- CAMBIADO
             'teachers' => $teachers,
-        ])->layout('layouts.dashboard'); // Asumo que usas un layout 'app.blade.php'
+        ])->layout('layouts.dashboard'); // Usando el layout de tu código
     }
 }
