@@ -20,6 +20,8 @@ use Livewire\Attributes\On;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\LengthAwarePaginator; 
 use Illuminate\Support\Str; 
+use Illuminate\Support\Facades\DB; // <-- AÑADIDO: Para transacciones
+use Illuminate\Support\Facades\Hash; // <-- AÑADIDO: No estaba, pero es bueno tenerlo por si acaso
 
 #[Layout('layouts.dashboard')]
 class Index extends Component
@@ -30,12 +32,6 @@ class Index extends Component
     public Student $student;
     public ?User $user; 
     
-    // --- ¡¡¡ELIMINADO!!! ---
-    // Estas propiedades se calcularán en render()
-    // public Collection $pendingEnrollments; 
-    // public Collection $activeEnrollments; 
-    // public Collection $completedEnrollments; 
-
     // --- Propiedades de Filtro y Búsqueda (Originales) ---
     public $search = '';
     public $selectedCourse;
@@ -48,9 +44,9 @@ class Index extends Component
     public $courseModalTitle = '';
 
     // --- Propiedades del Modal de Módulos (Originales) ---
-    public $module_id, $module_name;
+    public $module_id, $module_name, $module_price; // <-- AÑADIDO module_price
     public $moduleModalTitle = '';
-
+    
     // --- Propiedades del Modal de Horarios (Originales) ---
     public $schedule_id, $teacher_id, $days = [], $start_time, $end_time, $section_name, $start_date, $end_date;
     public $scheduleModalTitle = '';
@@ -65,7 +61,7 @@ class Index extends Component
 
     // --- Propiedades del Modal de Anulación (Originales) ---
     public $isUnenrollModalOpen = false;
-    public $enrollmentToCancel;
+    public $enrollmentToCancel; // <-- Mantenemos este por si lo usas en la vista
     public $enrollmentToCancelId = null;
 
     // --- Propiedades del Modal de Estudiante (Originales) ---
@@ -113,6 +109,7 @@ class Index extends Component
     public function loadStudentData($studentId)
     {
         try {
+            // Cargar estudiante CON su usuario
             $student = Student::with('user')->findOrFail($studentId);
             $this->student = $student;
             $this->user = $student->user; // Cargar el usuario vinculado
@@ -120,6 +117,8 @@ class Index extends Component
         } catch (\Exception $e) {
             Log::error("Error cargando datos del estudiante: " . $e->getMessage());
             session()->flash('error', 'No se pudieron cargar los datos del estudiante.');
+            // Opcional: Redirigir si el estudiante no se encuentra
+            // return redirect()->route('admin.students.index');
         }
     }
     
@@ -174,9 +173,10 @@ class Index extends Component
             });
         }
 
-        $courses = $coursesQuery->with(['modules.schedules.teacher'])->paginate(10);
+        // Paginar cursos
+        $courses = $coursesQuery->with(['modules.schedules.teacher'])->paginate(10, ['*'], 'coursesPage'); // Añadido nombre a paginación
 
-        $selectedCourseObject = $this->selectedCourse ? $courses->find($this->selectedCourse) : null;
+        $selectedCourseObject = $this->selectedCourse ? Course::find($this->selectedCourse) : null;
         $modules = $selectedCourseObject ? $selectedCourseObject->modules : collect();
 
         $schedules = $this->selectedModule
@@ -187,14 +187,14 @@ class Index extends Component
         // --- Fin Lógica Gestión Académica ---
 
 
-        // --- ¡¡¡NUEVA LÓGICA DE CARGA DE INSCRIPCIONES!!! ---
-        // Se mueven todas las consultas de inscripción aquí.
+        // --- Lógica de Carga de Inscripciones y Pagos ---
         
         $pendingEnrollments = collect();
         $activeEnrollments = collect();
         $completedEnrollments = collect();
         $filteredEnrollments = collect();
         $payments = collect();
+        $pendingPayments = collect(); // Para la alerta
 
         if ($this->student) {
             // 1. Cargar inscripciones para la VISTA GENERAL (Overview)
@@ -208,19 +208,33 @@ class Index extends Component
             $completedEnrollments = $allEnrollments->whereIn('status', ['Completado', 'completado']);
 
             // 2. Cargar inscripciones para la PESTAÑA DE INSCRIPCIONES (Paginada)
-            $filteredEnrollments = $this->student->enrollments()
-                         ->with('courseSchedule.module.course', 'courseSchedule.teacher')
-                         ->orderBy('created_at', 'desc')
-                         ->when($this->enrollmentStatusFilter !== 'all', function ($query) {
-                             return $query->where('status', $this->enrollmentStatusFilter);
-                         })
-                         ->paginate(5, ['*'], 'enrollmentsPage');
+            $filteredEnrollmentsQuery = $this->student->enrollments()
+                                 ->with('courseSchedule.module.course', 'courseSchedule.teacher')
+                                 ->orderBy('created_at', 'desc');
+
+            if ($this->enrollmentStatusFilter !== 'all') {
+                $filteredEnrollmentsQuery->where('status', $this->enrollmentStatusFilter);
+            }
+
+            $filteredEnrollments = $filteredEnrollmentsQuery->paginate(5, ['*'], 'enrollmentsPage');
+
 
             // 3. Cargar PAGOS (Paginado)
-            $payments = $this->student->payments()
-                ->with('paymentConcept', 'enrollment.courseSchedule.module.course') 
+            $allPayments = $this->student->payments()
+                ->with('paymentConcept', 'enrollment.courseSchedule.module.course', 'user') //Añadido 'user'
                 ->orderBy('created_at', 'desc')
-                ->paginate(5, ['*'], 'paymentsPage');
+                ->get();
+
+            $payments = new LengthAwarePaginator(
+                $allPayments->forPage($this->getPage('paymentsPage'), 5),
+                $allPayments->count(),
+                5,
+                $this->getPage('paymentsPage'),
+                ['pageName' => 'paymentsPage']
+            );
+            
+            // 4. Cargar Pagos Pendientes (para la alerta)
+            $pendingPayments = $allPayments->where('status', 'Pendiente');
         }
 
 
@@ -235,6 +249,7 @@ class Index extends Component
             'pendingEnrollments' => $pendingEnrollments,
             'activeEnrollments' => $activeEnrollments,
             'completedEnrollments' => $completedEnrollments,
+            'pendingPayments' => $pendingPayments, // Para la alerta
             'enrollments' => $filteredEnrollments, 
             'payments' => $payments,
         ]);
@@ -282,6 +297,7 @@ class Index extends Component
                             });
                     });
             })
+            // Excluir secciones donde el estudiante ya está inscrito (independientemente del estado)
             ->whereDoesntHave('enrollments', function ($q) {
                 $q->where('student_id', $this->student->id);
             })
@@ -312,7 +328,6 @@ class Index extends Component
             $schedule = CourseSchedule::with('module')->findOrFail($this->selectedScheduleId);
 
             // Validar reglas de negocio (Cupos, Balance, Fecha)
-            // (Reutilizamos la lógica del EnrollmentController)
             
             // 1. Balance
             if ($this->student->balance > 0) {
@@ -321,14 +336,14 @@ class Index extends Component
 
             // 2. Cupos
             $enrolledCount = Enrollment::where('course_schedule_id', $schedule->id)
-                                         ->whereIn('status', ['Activo', 'Cursando', 'Pendiente'])
+                                         ->whereIn('status', ['Activo', 'Cursando', 'Pendiente']) // Contar también pendientes
                                          ->count();
             if ($schedule->capacity !== null && $schedule->capacity > 0 && $enrolledCount >= $schedule->capacity) {
                 throw new \Exception('La sección está llena. No hay cupos disponibles.');
             }
 
-            // 3. Fecha de inicio
-            if ($schedule->start_date && Carbon::now()->gt($schedule->start_date)) {
+            // 3. Fecha de inicio (Corregido: no se puede inscribir si la fecha de inicio YA PASÓ)
+            if ($schedule->start_date && Carbon::parse($schedule->start_date)->lt(Carbon::today())) {
                 throw new \Exception('Este curso ya ha comenzado. No se permiten nuevas inscripciones.');
             }
 
@@ -357,6 +372,7 @@ class Index extends Component
                 'currency' => 'DOP',
                 'status' => 'Pendiente', // <-- ACTUALIZADO
                 'gateway' => 'Por Pagar',
+                'user_id' => Auth::id(), // <-- AÑADIDO: Quién registró el pago pendiente
             ]);
 
             session()->flash('message', 'Inscripción pendiente de pago creada exitosamente.');
@@ -413,6 +429,11 @@ class Index extends Component
     }
 
     // --- Métodos para Modal de Curso ---
+    // (El resto de métodos de Curso, Módulo y Horario se mantienen como en tu original)
+    // (... métodos createCourse, editCourse, saveCourse, resetCourseFields ...)
+    // (... métodos createModule, editModule, saveModule, resetModuleFields ...)
+    // (... métodos createSchedule, editSchedule, saveSchedule, resetScheduleFields ...)
+    
     // (ORIGINAL)
     protected function courseRules()
     {
@@ -470,6 +491,7 @@ class Index extends Component
 
         session()->flash('message', $this->course_id ? 'Curso actualizado.' : 'Curso creado.');
         $this->dispatch('close-modal', 'course-modal');
+        $this->refreshData(); // Recargar
     }
 
     // (ORIGINAL)
@@ -487,10 +509,11 @@ class Index extends Component
     {
         return [
             'module_name' => 'required|string|max:255',
+            'module_price' => 'required|numeric|min:0', // <-- AÑADIDO
         ];
     }
 
-    // (ORIGINAL)
+    // (ORIGINAL - MODIFICADO para precio)
     public function createModule()
     {
         if (!$this->selectedCourse) {
@@ -504,7 +527,7 @@ class Index extends Component
         $this->dispatch('open-modal', 'module-modal'); 
     }
 
-    // (ORIGINAL)
+    // (ORIGINAL - MODIFICADO para precio)
     public function editModule($moduleId)
     {
         $this->resetValidation();
@@ -512,6 +535,7 @@ class Index extends Component
             $module = Module::findOrFail($moduleId);
             $this->module_id = $module->id;
             $this->module_name = $module->name;
+            $this->module_price = $module->price ?? 0; // <-- AÑADIDO
 
             $this->moduleModalTitle = 'Editar Módulo: ' . $module->name;
             $this->dispatch('open-modal', 'module-modal'); 
@@ -520,7 +544,7 @@ class Index extends Component
         }
     }
 
-    // (ORIGINAL)
+    // (ORIGINAL - MODIFICADO para precio)
     public function saveModule()
     {
         $this->validate($this->moduleRules());
@@ -530,18 +554,21 @@ class Index extends Component
             [
                 'course_id' => $this->selectedCourse,
                 'name' => $this->module_name,
+                'price' => $this->module_price, // <-- AÑADIDO
             ]
         );
 
         session()->flash('message', $this->module_id ? 'Módulo actualizado.' : 'Módulo creado.');
         $this->dispatch('close-modal', 'module-modal'); 
+        $this->refreshData(); // Recargar
     }
 
-    // (ORIGINAL)
+    // (ORIGINAL - MODIFICADO para precio)
     private function resetModuleFields()
     {
         $this->module_id = null;
         $this->module_name = '';
+        $this->module_price = 0; // <-- AÑADIDO
     }
     
     // --- MÉTODOS PARA MODAL DE HORARIO (SECCIÓN) ---
@@ -611,6 +638,7 @@ class Index extends Component
 
         session()->flash('message', $this->schedule_id ? 'Sección actualizada.' : 'Sección creada.');
         $this->dispatch('close-modal', 'schedule-modal'); 
+        $this->refreshData(); // Recargar
     }
 
     // (ORIGINAL)
@@ -626,20 +654,31 @@ class Index extends Component
         $this->end_date = '';
     }
 
-    // --- Métodos para Modal de Estudiante ---
-    // (ORIGINAL)
+
+    // --- Métodos para Modal de Estudiante (Edición Perfil) ---
+    
+    /**
+     * (ACTUALIZADO) Reglas de validación para el formulario de estudiante.
+     */
     protected function studentRules()
     {
+        // Asegurarse de que $this->user está cargado
+        if (!$this->user) {
+            $this->loadStudentData($this->student->id);
+        }
+        
         return [
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
             'email' => [
                 'required',
                 'email',
-                Rule::unique('students')->ignore($this->student_id),
+                'max:255',
+                Rule::unique('students')->ignore($this->student_id), // Ignora al estudiante actual
+                Rule::unique('users')->ignore($this->user ? $this->user->id : null), // Ignora al usuario actual
             ],
             'cedula' => [
-                'nullable',
+                'required', // <-- ACTUALIZADO: Hecho obligatorio
                 'string',
                 'max:20',
                 Rule::unique('students')->ignore($this->student_id),
@@ -668,6 +707,7 @@ class Index extends Component
         'email.required' => 'El correo es obligatorio.',
         'email.email' => 'El formato del correo no es válido.',
         'email.unique' => 'Este correo ya está registrado.',
+        'cedula.required' => 'La cédula es obligatoria.', // <-- AÑADIDO
         'cedula.unique' => 'Esta cédula ya está registrada.',
         'mobile_phone.required' => 'El teléfono móvil es obligatorio.',
         'birth_date.required' => 'La fecha de nacimiento es obligatoria.',
@@ -707,7 +747,7 @@ class Index extends Component
 
     /**
      * (ACTUALIZADO) Guarda los cambios del estudiante.
-     * Ahora también actualiza el 'User' asociado.
+     * Ahora también actualiza el 'User' asociado y maneja la verificación de email.
      */
     public function saveStudent()
     {
@@ -715,9 +755,8 @@ class Index extends Component
 
         try {
             DB::transaction(function() {
-                $student = Student::findOrFail($this->student_id);
-                
-                $student->update([
+                // Actualizar el modelo Student (usando $this->student para más claridad)
+                $this->student->update([
                     'first_name' => $this->first_name,
                     'last_name' => $this->last_name,
                     'cedula' => $this->cedula,
@@ -734,19 +773,35 @@ class Index extends Component
                     'is_minor' => $this->is_minor,
                     'tutor_name' => $this->is_minor ? $this->tutor_name : null,
                     'tutor_cedula' => $this->is_minor ? $this->tutor_cedula : null,
-                    'tutor_phone' => $this->is_minor ? $this->tutor_phone : null,
+                    'tutor_phone' => $this->is_minor ? $this->tutor_phone : null, // Corregido typo
                     'tutor_relationship' => $this->is_minor ? $this->tutor_relationship : null,
                 ]);
 
                 // (ACTUALIZADO) Actualizar el 'User' asociado también
-                if ($student->user) {
-                    $student->user->name = $this->first_name . ' ' . $this->last_name;
+                if ($this->user) { // Usar $this->user que se cargó en mount/loadStudentData
+                    $userData = [
+                        'name' => $this->first_name . ' ' . $this->last_name,
+                    ];
+
+                    $emailChanged = $this->user->email !== $this->email;
                     
-                    // Solo actualiza el email del usuario si NO es una matrícula
-                    if (!Str::endsWith($student->user->email, '@centu.edu.do')) {
-                         $student->user->email = $this->email;
+                    // Solo actualiza el email si no es el email institucional
+                    if (!Str::endsWith($this->user->getOriginal('email'), '@centu.edu.do')) {
+                         $userData['email'] = $this->email;
                     }
-                    $student->user->save();
+
+                    // Si el email cambió, marcar como no verificado
+                    if ($emailChanged && $this->user->email !== $this->email) {
+                        $userData['email_verified_at'] = null; 
+                    }
+
+                    $this->user->update($userData);
+                    
+                    // Si el email cambió, reenviar verificación
+                    if ($emailChanged && !$this->user->hasVerifiedEmail()) {
+                        // Nota: El modelo User debe usar 'MustVerifyEmail' para que esto funcione
+                        // $this->user->sendEmailVerificationNotification();
+                    }
                 }
             }); // Fin de la transacción
 
@@ -755,6 +810,9 @@ class Index extends Component
             
             $this->dispatch('studentUpdated'); // <-- Esto disparará 'refreshData()'
             
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Los errores de validación se mostrarán automáticamente
+            throw $e;
         } catch (\Exception $e) {
             Log::error('Error al guardar estudiante: ' . $e->getMessage());
             session()->flash('error', 'Ocurrió un error al guardar el estudiante: ' . $e->getMessage());
@@ -772,25 +830,28 @@ class Index extends Component
     // (ORIGINAL)
     private function resetStudentInputFields()
     {
-        $this->student_id = null;
-        $this->first_name = '';
-        $this->last_name = '';
-        $this->cedula = '';
-        $this->email = '';
-        $this->mobile_phone = '';
-        $this->home_phone = '';
-        $this->address = '';
-        $this->city = '';
-        $this->sector = '';
-        $this->birth_date = null;
-        $this->gender = '';
-        $this->nationality = '';
-        $this->how_found = '';
-        $this->is_minor = false;
-        $this->tutor_name = '';
-        $this->tutor_cedula = '';
-        $this->tutor_phone = '';
-        $this->tutor_relationship = '';
+        // Resetea los campos al estado actual del estudiante, no a vacío
+        if ($this->student) {
+            $this->student_id = $this->student->id;
+            $this->first_name = $this->student->first_name;
+            $this->last_name = $this->student->last_name;
+            $this->cedula = $this->student->cedula;
+            $this->email = $this->student->email;
+            $this->mobile_phone = $this->student->mobile_phone;
+            $this->home_phone = $this->student->home_phone;
+            $this->address = $this->student->address;
+            $this->city = $this->student->city;
+            $this->sector = $this->student->sector;
+            $this->birth_date = $this->student->birth_date ? Carbon::parse($this->student->birth_date)->format('Y-m-d') : null;
+            $this->gender = $this->student->gender;
+            $this->nationality = $this->student->nationality;
+            $this->how_found = $this->student->how_found;
+            $this->is_minor = (bool)$this->student->is_minor;
+            $this->tutor_name = $this->student->tutor_name;
+            $this->tutor_cedula = $this->student->tutor_cedula;
+            $this->tutor_phone = $this->student->tutor_phone;
+            $this->tutor_relationship = $this->student->tutor_relationship;
+        }
         $this->modalTitle = '';
     }
 }

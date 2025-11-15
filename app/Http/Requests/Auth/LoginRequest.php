@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use App\Models\Student; // AÑADIDO: Asegúrate de que el modelo Student está importado
+use Carbon\Carbon; // AÑADIDO: Para la lógica de ->isPast()
 
 class LoginRequest extends FormRequest
 {
@@ -47,48 +48,39 @@ class LoginRequest extends FormRequest
         $login = $this->input('login');
         $password = $this->input('password');
 
-        // --- INICIO DE MODIFICACIÓN ---
-        // Intentar encontrar al usuario por email, student_code o cédula
-        
-        // 1. Intentar por email (en la tabla 'users')
-        $user = User::where('email', $login)->first();
-
-        // 2. Si no se encuentra por email, intentar por student_code (en la tabla 'students')
-        if (!$user) {
-            $student = Student::where('student_code', $login)->first();
-            if ($student) {
-                $user = $student->user; // Obtener el usuario asociado
-            }
-        }
-
-        // 3. Si sigue sin encontrarse, intentar por cédula (en la tabla 'students')
-        if (!$user) {
-            $student = Student::where('cedula', $login)->first();
-            if ($student) {
-                $user = $student->user; // Obtener el usuario asociado
-            }
-        }
+        // --- INICIO DE MODIFICACIÓN (Versión Optimizada) ---
+        // 1. Encontrar al usuario por email, cédula o matrícula en UNA sola consulta
+        $user = User::where('email', $login)
+            ->orWhereHas('student', function ($query) use ($login) {
+                $query->where('cedula', $login)
+                      ->orWhere('student_code', $login);
+            })
+            ->first();
         // --- FIN DE MODIFICACIÓN ---
 
-        // 4. Verificar si el usuario existe y la contraseña es correcta
+        // 2. Verificar si el usuario existe y la contraseña es correcta
         if (! $user || ! Hash::check($password, $user->password)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'login' => trans('auth.failed'), // MODIFICADO: de 'email' a 'login'
+                'login' => trans('auth.failed'), // Usamos 'login'
             ]);
         }
 
-        // 5. Verificar si la cuenta temporal ha expirado
+        // 3. Verificar si la cuenta temporal ha expirado (¡MEJORA!)
+        // Esta comprobación se hace DESPUÉS de validar la contraseña.
+        // No se penaliza (RateLimiter) a un usuario válido.
         if ($user->access_expires_at && $user->access_expires_at->isPast()) {
-            RateLimiter::hit($this->throttleKey());
+            
+            // ¡No se llama a RateLimiter::hit() aquí!
 
             throw ValidationException::withMessages([
-                'login' => 'Esta cuenta temporal ha expirado. Por favor, complete el pago de su inscripción.', // MODIFICADO: de 'email' a 'login'
+                // Mensaje personalizado más claro que 'auth.failed'
+                'login' => 'Tu acceso temporal ha expirado. Por favor, realiza el pago de tu inscripción para reactivar el acceso.',
             ]);
         }
 
-        // 6. Autenticar al usuario
+        // 4. Autenticar al usuario
         Auth::login($user, $this->boolean('remember'));
         RateLimiter::clear($this->throttleKey());
     }

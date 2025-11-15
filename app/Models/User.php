@@ -78,4 +78,18 @@ class User extends Authenticatable
     {
         return $this->hasMany(Payment::class, 'user_id');
     }
+
+    /**
+     * Verifica si el usuario tiene acceso (no ha expirado)
+     * ESTA ES LA MEJORA AÑADIDA
+     */
+    public function hasActiveAccess(): bool
+    {
+        // Si no tiene fecha de expiración (null), tiene acceso (ej. ya pagó)
+        if (is_null($this->access_expires_at)) {
+            return true;
+        }
+        // Si tiene fecha, verifica que no haya pasado
+        return $this->access_expires_at->isFuture();
+    }
 }

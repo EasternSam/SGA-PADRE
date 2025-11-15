@@ -184,7 +184,7 @@ class PaymentModal extends Component
              $this->enrollment_id = null;
              $this->payment_id_to_update = null;
         }
-       
+        
         $this->resetErrorBag('amount');
 
         if (!empty($value)) {
@@ -203,8 +203,8 @@ class PaymentModal extends Component
         } else {
             // Si se deselecciona el concepto y no hay inscripción, resetear monto.
              if (!$this->enrollment_id) {
-                $this->amount = 0.00;
-                $this->isAmountDisabled = false;
+                 $this->amount = 0.00;
+                 $this->isAmountDisabled = false;
              }
         }
     }

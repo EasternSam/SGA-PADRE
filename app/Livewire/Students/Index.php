@@ -2,20 +2,23 @@
 
 namespace App\Livewire\Students;
 
-use Livewire\Component;
 use App\Models\Student;
+use App\Models\User; // <-- AÑADIDO: Para crear el usuario
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB; // <-- AÑADIDO: Para transacciones
+use Illuminate\Support\Facades\Hash; // <-- AÑADIDO: Para hashear la clave
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule; // <-- AÑADIDO: Para reglas de validación avanzadas
+use Livewire\Component;
 use Livewire\WithPagination;
-use Livewire\Attributes\Layout; // Para el layout
-use Illuminate\Support\Facades\Log; // Para depuración
-use Carbon\Carbon; // <-- ¡¡¡CORRECCIÓN ERROR #2!!! Clase importada
+use Livewire\Attributes\Layout;
 
-#[Layout('Layouts.dashboard')] // Respetamos tu layout
+#[Layout('layouts.dashboard')]
 class Index extends Component
 {
     use WithPagination;
 
-    // --- Propiedades para el Formulario (¡CORREGIDAS!) ---
-    // Deben coincidir con tu migración y el modelo student.php
+    // --- Propiedades del Formulario (Coinciden con tu original) ---
     public $student_id;
     public $first_name = '';
     public $last_name = '';
@@ -37,19 +40,18 @@ class Index extends Component
     public $tutor_cedula = '';
     public $tutor_phone = '';
     public $tutor_relationship = '';
+
+    // --- AÑADIDO: Campos para el Usuario (SOLO PARA EDITAR) ---
+    public $password = '';
+    public $password_confirmation = '';
     
     // Propiedades de la UI
     public $search = '';
-    // --- ¡¡¡REPARACIÓN!!! ---
-    // Ya no usaremos 'isOpen'. Lo cambiaremos por 'dispatch'
-    // public $isOpen = false; 
     public $modalTitle = '';
 
-    // --- ¡AÑADIDO! ---
     // Propiedad para capturar el ID de edición desde la URL
     public $editing = null;
 
-    // --- ¡AÑADIDO! ---
     // Registra la propiedad 'editing' para que se sincronice con la URL
     protected $queryString = [
         'search' => ['except' => ''],
@@ -57,7 +59,6 @@ class Index extends Component
     ];
 
     /**
-     * --- ¡AÑADIDO! ---
      * Se ejecuta cuando el componente se carga por primera vez.
      * Comprueba si se pasó un ID de estudiante en la URL para editarlo.
      */
@@ -70,23 +71,38 @@ class Index extends Component
     }
 
     /**
-     * Reglas de Validación (¡CORREGIDAS!)
+     * Reglas de Validación (¡ACTUALIZADAS!)
      *
      * @return array
      */
     protected function rules()
     {
-        // El email debe ser único en la tabla 'students', ignorando el ID actual
-        $emailRule = 'required|email|unique:students,email';
+        // Obtener el user_id SÓLO si estamos editando un estudiante existente
+        $userId = null;
         if ($this->student_id) {
-            $emailRule .= ',' . $this->student_id;
+            $student = Student::find($this->student_id);
+            if ($student) {
+                $userId = $student->user_id;
+            }
         }
 
         $rules = [
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
-            'email' => $emailRule,
-            'cedula' => 'nullable|string|max:20|unique:students,cedula' . ($this->student_id ? ',' . $this->student_id : ''),
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('students')->ignore($this->student_id),
+                Rule::unique('users')->ignore($userId), // Validar contra la tabla de usuarios
+            ],
+            'cedula' => [
+                'required', // La cédula debe ser obligatoria
+                'string',
+                'max:20',
+                // La cédula debe ser única en la tabla de estudiantes
+                Rule::unique('students')->ignore($this->student_id), 
+            ],
             'mobile_phone' => 'required|string|max:20',
             'home_phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:255',
@@ -97,15 +113,18 @@ class Index extends Component
             'nationality' => 'nullable|string|max:100',
             'how_found' => 'nullable|string|max:255',
             'is_minor' => 'boolean',
+            'tutor_name' => 'required_if:is_minor,true|nullable|string|max:255',
+            'tutor_cedula' => 'nullable|string|max:20',
+            'tutor_phone' => 'required_if:is_minor,true|nullable|string|max:20',
+            'tutor_relationship' => 'nullable|string|max:100',
         ];
 
-        // Si es menor, los campos del tutor son requeridos
-        if ($this->is_minor) {
-            $rules['tutor_name'] = 'required|string|max:255';
-            $rules['tutor_cedula'] = 'nullable|string|max:20';
-            $rules['tutor_phone'] = 'required|string|max:20';
-            $rules['tutor_relationship'] = 'nullable|string|max:100';
+        // --- CAMBIO LÓGICA DE CONTRASEÑA ---
+        // La contraseña solo se pide si se está EDITANDO y si el admin la escribe
+        if ($this->student_id && !empty($this->password)) {
+            $rules['password'] = 'nullable|string|min:8|confirmed';
         }
+        // Ya no se pide contraseña al CREAR, se usará la cédula
 
         return $rules;
     }
@@ -119,11 +138,14 @@ class Index extends Component
         'email.required' => 'El correo es obligatorio.',
         'email.email' => 'El formato del correo no es válido.',
         'email.unique' => 'Este correo ya está registrado.',
+        'cedula.required' => 'La cédula es obligatoria.',
         'cedula.unique' => 'Esta cédula ya está registrada.',
         'mobile_phone.required' => 'El teléfono móvil es obligatorio.',
         'birth_date.required' => 'La fecha de nacimiento es obligatoria.',
-        'tutor_name.required' => 'El nombre del tutor es obligatorio.',
-        'tutor_phone.required' => 'El teléfono del tutor es obligatorio.',
+        'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+        'password.confirmed' => 'La confirmación de la contraseña no coincide.',
+        'tutor_name.required_if' => 'El nombre del tutor es obligatorio si el estudiante es menor de edad.',
+        'tutor_phone.required_if' => 'El teléfono del tutor es obligatorio si el estudiante es menor de edad.',
     ];
 
     /**
@@ -139,14 +161,15 @@ class Index extends Component
                 $q->where('first_name', 'like', '%' . $this->search . '%')
                     ->orWhere('last_name', 'like', '%' . $this->search . '%')
                     ->orWhere('email', 'like', '%' . $this->search . '%')
-                    ->orWhere('cedula', 'like', '%' . $this->search . '%');
+                    ->orWhere('cedula', 'like', '%' . $this->search . '%')
+                    ->orWhere('student_code', 'like', '%' . $this->search . '%'); // Añadido student_code
             });
         }
 
-        // Usamos 'fullName' (el accesor) para ordenar por nombre completo
-        // ¡Esto requiere más lógica si se quiere ordenar por 'first_name' y 'last_name'!
-        // Simplificamos ordenando por first_name
-        $students = $query->orderBy('first_name', 'asc')->paginate(10);
+        // Usamos 'with' para Eager Loading y optimizar la consulta
+        $students = $query->with('user')
+            ->orderBy('first_name', 'asc')
+            ->paginate(10);
 
         return view('livewire.students.index', [
             'students' => $students,
@@ -159,10 +182,9 @@ class Index extends Component
     public function create()
     {
         $this->resetInputFields();
+        $this->resetValidation(); // <-- AÑADIDO: Limpiar validaciones previas
         $this->modalTitle = 'Registrar Nuevo Estudiante';
         
-        // --- ¡¡¡REPARACIÓN!!! ---
-        // $this->isOpen = true; // Ya no se usa
         $this->dispatch('open-modal', 'student-form-modal');
     }
 
@@ -187,41 +209,43 @@ class Index extends Component
             $this->address = $student->address;
             $this->city = $student->city;
             $this->sector = $student->sector;
-            // Formatear la fecha para el input 'date'
-            // ¡ESTA LÍNEA (161) YA FUNCIONA GRACIAS AL 'use Carbon\Carbon;' DE ARRIBA!
             $this->birth_date = $student->birth_date ? Carbon::parse($student->birth_date)->format('Y-m-d') : null;
             $this->gender = $student->gender;
             $this->nationality = $student->nationality;
             $this->how_found = $student->how_found;
-            $this->is_minor = $student->is_minor;
+            $this->is_minor = (bool)$student->is_minor; // Asegurarse de que sea boolean
             $this->tutor_name = $student->tutor_name;
             $this->tutor_cedula = $student->tutor_cedula;
             $this->tutor_phone = $student->tutor_phone;
             $this->tutor_relationship = $student->tutor_relationship;
 
+            // Limpiar campos de contraseña al editar
+            $this->password = '';
+            $this->password_confirmation = '';
+
             $this->modalTitle = 'Editar Estudiante: ' . $student->fullName; // Usamos el accesor
+            $this->resetValidation(); // <-- AÑADIDO: Limpiar validaciones previas
             
-            // --- ¡¡¡REPARACIÓN!!! ---
-            // $this->isOpen = true; // Ya no se usa
             $this->dispatch('open-modal', 'student-form-modal');
 
         } catch (\Exception $e) {
             session()->flash('error', 'Estudiante no encontrado.');
-            Log::error('Error al editar estudiante: ' . $e->getMessage()); // <-- LÍNEA COMPLETADA
+            Log::error('Error al editar estudiante: ' . $e->getMessage());
         }
     }
 
     /**
      * Guarda el estudiante (nuevo o existente).
+     * ¡¡¡MÉTODO ACTUALIZADO!!!
      */
     public function saveStudent()
     {
-        $this->validate(); // Usa las 'rules'
+        // Validar usando las reglas actualizadas
+        $this->validate($this->rules(), $this->messages);
 
         try {
-            Student::updateOrCreate(
-                ['id' => $this->student_id],
-                [
+            DB::transaction(function () {
+                $studentData = [
                     'first_name' => $this->first_name,
                     'last_name' => $this->last_name,
                     'cedula' => $this->cedula,
@@ -240,18 +264,82 @@ class Index extends Component
                     'tutor_cedula' => $this->is_minor ? $this->tutor_cedula : null,
                     'tutor_phone' => $this->is_minor ? $this->tutor_phone : null,
                     'tutor_relationship' => $this->is_minor ? $this->tutor_relationship : null,
-                    // 'user_id' se podría manejar aquí si se crea un usuario al mismo tiempo
-                ]
-            );
+                ];
 
-            session()->flash('message', $this->student_id ? 'Estudiante actualizado exitosamente.' : 'Estudiante creado exitosamente.');
-            $this->closeModal(); // Esta función ahora dispara el evento correcto
+                if ($this->student_id) {
+                    // --- ACTUALIZAR ESTUDIANTE Y USUARIO ---
+                    $student = Student::findOrFail($this->student_id);
+                    $student->update($studentData);
 
+                    // Actualizar usuario asociado
+                    if ($student->user) {
+                        $userData = [
+                            'name' => $this->first_name . ' ' . $this->last_name,
+                        ];
+
+                        $user = $student->user;
+                        $emailChanged = $user->email !== $this->email;
+
+                        // Solo actualiza el email del usuario si NO es una matrícula
+                        if (!\Illuminate\Support\Str::endsWith($user->getOriginal('email'), '@centu.edu.do')) {
+                            $userData['email'] = $this->email;
+                        }
+
+                        if (!empty($this->password)) {
+                            $userData['password'] = Hash::make($this->password);
+                        }
+                        
+                        // Si el email cambió, marcar como no verificado
+                        if ($emailChanged && $user->email !== $this->email) {
+                            $userData['email_verified_at'] = null; 
+                        }
+
+                        $user->update($userData);
+                        
+                        // Si el email cambió, reenviar verificación
+                        if ($emailChanged && $user->email !== $this->email && $user->hasVerifiedEmail()) {
+                            // Nota: El usuario debe tener implementado MustVerifyEmail para que esto funcione
+                            // $user->sendEmailVerificationNotification();
+                        }
+                    }
+
+                    session()->flash('message', 'Estudiante actualizado exitosamente.');
+
+                } else {
+                    // --- CREAR NUEVO ESTUDIANTE Y USUARIO ---
+                    
+                    // 1. Crear Usuario
+                    // ¡CAMBIO! La contraseña ahora es la CÉDULA
+                    $user = User::create([
+                        'name' => $this->first_name . ' ' . $this->last_name,
+                        'email' => $this->email, // Email personal
+                        'password' => Hash::make($this->cedula), // <-- CONTRASEÑA ES LA CÉDULA
+                        'access_expires_at' => Carbon::now()->addMonths(3), // <-- ACCESO TEMPORAL
+                    ]);
+
+                    // 2. Asignar Rol
+                    $user->assignRole('Estudiante'); // Asumiendo que el rol 'Estudiante' existe
+
+                    // 3. Crear Estudiante
+                    $studentData['user_id'] = $user->id;
+                    $studentData['status'] = 'Activo'; // O 'Prospecto' si se requiere pago                    
+                    Student::create($studentData);
+
+                    session()->flash('message', 'Estudiante creado exitosamente.');
+                }
+            }); // End transaction
+
+            $this->closeModal();
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Los errores de validación se mostrarán automáticamente
+            throw $e;
         } catch (\Exception $e) {
-            Log::error('Error al guardar estudiante: ' . $e->getMessage());
+            Log::error('Error al guardar estudiante: Línea ' . $e->getLine() . ' ' . $e->getMessage());
             session()->flash('error', 'Ocurrió un error al guardar el estudiante: ' . $e->getMessage());
         }
     }
+
 
     /**
      * Elimina un estudiante.
@@ -261,12 +349,25 @@ class Index extends Component
     public function delete($id)
     {
         try {
-            // (Podrías añadir lógica para verificar si tiene matrículas)
-            Student::find($id)->delete();
-            session()->flash('message', 'Estudiante eliminado.');
+            $student = Student::with('user')->find($id);
+            if ($student) {
+                // Opcional: Eliminar el usuario asociado.
+                // Es más seguro hacerlo con una transacción y verificar dependencias.
+                DB::transaction(function() use ($student) {
+                    // Primero borramos el estudiante
+                    $student->delete();
+                    // Luego el usuario (si existe)
+                    if ($student->user) {
+                        $student->user->delete();
+                    }
+                });
+                session()->flash('message', 'Estudiante y usuario asociado eliminados.');
+            } else {
+                session()->flash('error', 'Estudiante no encontrado.');
+            }
         } catch (\Exception $e) {
             Log::error('Error al eliminar estudiante: ' . $e->getMessage());
-            session()->flash('error', 'No se pudo eliminar al estudiante. Verifique si tiene matrículas activas.');
+            session()->flash('error', 'No se pudo eliminar al estudiante. Verifique si tiene matrículas u otros datos asociados.');
         }
     }
 
@@ -275,12 +376,9 @@ class Index extends Component
      */
     public function closeModal()
     {
-        // --- ¡¡¡REPARACIÓN!!! ---
-        // $this->isOpen = false; // Ya no se usa
         $this->dispatch('close-modal', 'student-form-modal');
-        
         $this->resetInputFields();
-        $this->resetErrorBag(); // Limpia los errores de validación
+        $this->resetValidation(); // <-- AÑADIDO: Limpiar errores
     }
 
     /**
@@ -299,7 +397,7 @@ class Index extends Component
         $this->city = '';
         $this->sector = '';
         $this->birth_date = null;
-        $this->gender = ''; // Corregido de $this.gender a $this->gender
+        $this->gender = ''; // Corregido
         $this->nationality = '';
         $this->how_found = '';
         $this->is_minor = false;
@@ -308,6 +406,19 @@ class Index extends Component
         $this->tutor_phone = '';
         $this->tutor_relationship = '';
         $this->modalTitle = '';
-        $this->editing = null; // <-- ¡AÑADIDO! Limpia el parámetro de la URL
+        $this->editing = null;
+        $this->password = ''; // Limpiar siempre
+        $this->password_confirmation = ''; // Limpiar siempre
+    }
+
+    /**
+     * Validar en tiempo real
+     */
+    public function updated($propertyName)
+    {
+        // Validar solo los campos que lo necesitan para evitar sobrecarga
+        if (in_array($propertyName, ['email', 'cedula', 'password', 'password_confirmation'])) {
+            $this->validateOnly($propertyName, $this->rules(), $this->messages);
+        }
     }
 }
