@@ -82,7 +82,7 @@ class DemoDataSeeder extends Seeder
 
             // Crear el perfil de estudiante asociado
             Student::firstOrCreate(
-                ['user_id' => $user->id],
+                ['user_id' => $user->id], // Usamos user_id como clave única para el perfil
                 [
                     'first_name' => $firstName,
                     'last_name' => $lastName,
@@ -117,18 +117,27 @@ class DemoDataSeeder extends Seeder
         // Bucle para crear 70 cursos
         for ($c = 1; $c <= $totalCourses; $c++) {
             
+            // --- INICIO DE LA CORRECCIÓN ---
+            $courseCode = 'C-' . str_pad($c, 3, '0', STR_PAD_LEFT); // "C-001", "C-002"...
+
             // Generar nombre de curso ficticio
-            $courseName = $faker->bs; // Nombres como "Plataforma Interactiva" o "Sinergia de Mercado"
-            $courseName = 'Curso de ' . $courseName; // "Curso de Plataforma Interactiva"
+            $courseBaseName = $faker->bs; // Nombres como "Plataforma Interactiva"
+            
+            // Añadir el código al nombre para GARANTIZAR que sea único
+            $courseName = 'Curso de ' . $courseBaseName . ' (' . $courseCode . ')'; 
+            // Resultado: "Curso de iterate B2C architectures (C-030)"
+            // --- FIN DE LA CORRECCIÓN ---
 
             $course = Course::firstOrCreate(
-                ['code' => 'C-' . str_pad($c, 3, '0', STR_PAD_LEFT)], // Código único C-001, C-002...
+                ['code' => $courseCode], // Usamos el código como clave única
                 [
-                    'name' => $courseName,
+                    'name' => $courseName, // El nombre ahora es único
                     'credits' => rand(3, 5),
                 ]
             );
             $courseCount++;
+            // --- FIN DE LA CORRECCIÓN ---
+
 
             // Crear entre 3 y 5 módulos por curso
             $numModules = rand(3, 5);

@@ -18,6 +18,12 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
+
+                        // --- INICIO DE LA CORRECCIÓN ---
+            // Columna que faltaba y que el MatriculaService necesita
+            $table->timestamp('access_expires_at')->nullable();
+            // --- FIN DE LA CORRECCIÓN ---
+            
             $table->timestamps();
         });
 

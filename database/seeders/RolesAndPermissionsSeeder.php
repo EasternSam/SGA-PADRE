@@ -69,7 +69,12 @@ class RolesAndPermissionsSeeder extends Seeder
                 'first_name' => 'Estudiante',
                 'last_name' => 'Prueba',
                 'email' => $estudiante->email,
-                'phone' => '809-000-0000',
+                
+                // --- INICIO DE LA CORRECCIÓN ---
+                // 'phone' => '809-000-0000', // <-- ESTA COLUMNA NO EXISTE
+                'mobile_phone' => '809-000-0000', // <-- ESTA SÍ EXISTE
+                // --- FIN DE LA CORRECCIÓN ---
+
                 'birth_date' => '2000-01-01',
                 'gender' => 'Otro',
                 'address' => 'Dirección de prueba',

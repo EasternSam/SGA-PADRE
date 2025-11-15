@@ -4,22 +4,20 @@ namespace App\Http\Requests\Auth;
 
 use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Foundation\Http\FormRequest;
-use App\Models\Student; // Asegúrate de importar el modelo Student
+use App\Models\Student; // AÑADIDO: Asegúrate de que el modelo Student está importado
 
 class LoginRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool
      */
-    public function authorize()
+    public function authorize(): bool
     {
         return true;
     }
@@ -32,9 +30,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Cambiamos 'email' a 'login' para que acepte email, username o cédula
-            // Ya no validamos como 'email' aquí, lo haremos en el método authenticate
-            'login' => ['required', 'string'],
+            'login' => ['required', 'string'], // MODIFICADO: de 'email' a 'login'
             'password' => ['required', 'string'],
         ];
     }
@@ -51,36 +47,48 @@ class LoginRequest extends FormRequest
         $login = $this->input('login');
         $password = $this->input('password');
 
-        // 1. Intentar encontrar al usuario por email o matrícula
+        // --- INICIO DE MODIFICACIÓN ---
+        // Intentar encontrar al usuario por email, student_code o cédula
+        
+        // 1. Intentar por email (en la tabla 'users')
         $user = User::where('email', $login)->first();
 
-        // 2. Si no se encuentra, intentar buscar por cédula en la tabla de estudiantes
+        // 2. Si no se encuentra por email, intentar por student_code (en la tabla 'students')
         if (!$user) {
-            $student = Student::where('cedula', $login)->first();
-            if ($student && $student->user) {
-                $user = $student->user;
+            $student = Student::where('student_code', $login)->first();
+            if ($student) {
+                $user = $student->user; // Obtener el usuario asociado
             }
         }
 
-        // 3. Verificar si el usuario existe y la contraseña es correcta
+        // 3. Si sigue sin encontrarse, intentar por cédula (en la tabla 'students')
+        if (!$user) {
+            $student = Student::where('cedula', $login)->first();
+            if ($student) {
+                $user = $student->user; // Obtener el usuario asociado
+            }
+        }
+        // --- FIN DE MODIFICACIÓN ---
+
+        // 4. Verificar si el usuario existe y la contraseña es correcta
         if (! $user || ! Hash::check($password, $user->password)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'login' => trans('auth.failed'),
+                'login' => trans('auth.failed'), // MODIFICADO: de 'email' a 'login'
             ]);
         }
 
-        // 4. Verificar si la cuenta temporal ha expirado
+        // 5. Verificar si la cuenta temporal ha expirado
         if ($user->access_expires_at && $user->access_expires_at->isPast()) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'login' => 'Esta cuenta temporal ha expirado. Por favor, complete el pago de su inscripción.',
+                'login' => 'Esta cuenta temporal ha expirado. Por favor, complete el pago de su inscripción.', // MODIFICADO: de 'email' a 'login'
             ]);
         }
 
-        // 5. Autenticar al usuario
+        // 6. Autenticar al usuario
         Auth::login($user, $this->boolean('remember'));
         RateLimiter::clear($this->throttleKey());
     }
@@ -101,7 +109,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'login' => trans('auth.throttle', [
+            'login' => trans('auth.throttle', [ // MODIFICADO: de 'email' a 'login'
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),
@@ -113,7 +121,7 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        // Usar 'login' en lugar de 'email' para el throttle key
+        // MODIFICADO: Usar 'login' en lugar de 'email' para el throttle key
         return Str::transliterate(Str::lower($this->input('login')).'|'.$this->ip());
     }
 }
