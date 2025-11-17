@@ -22,6 +22,7 @@ use App\Models\ScheduleMapping; // <-- Importar el nuevo modelo
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash; // <-- IMPORTAR
+use Illuminate\Support\Facades\Log; // <-- AÑADIDO PARA LOGGING
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Carbon\Carbon; // <-- IMPORTAR
@@ -34,6 +35,11 @@ class EnrollmentController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        // --- LOG DE DIAGNÓSTICO ELIMINADO ---
+        // Log::info('EnrollmentController@store: Datos crudos recibidos.', $request->all());
+        // --- FIN DE LOG DE DIAGNÓSTICO ---
+
+
         // 1. Validar datos básicos para identificar al estudiante
         $preValidator = Validator::make($request->all(), [
             'cedula' => 'required|string|max:20',
@@ -41,6 +47,8 @@ class EnrollmentController extends Controller
         ]);
 
         if ($preValidator->fails()) {
+            // LOG AÑADIDO
+            Log::warning('EnrollmentController: Falló el PreValidator (cédula/email).', ['errors' => $preValidator->errors()]);
             return response()->json([
                 'status' => 'error',
                 'message' => 'La cédula y el email son requeridos.',
@@ -71,7 +79,11 @@ class EnrollmentController extends Controller
             // --- INICIO DE LA MODIFICACIÓN (Laravel) ---
             'wp_course_id' => 'required|integer', // ID de WP ahora es requerido
             'course_name_from_wp' => 'nullable|string', // Nombre de WP para logs
-            'schedule_string_from_wp' => 'required|string|max:255', // String crudo de WP
+            
+            // CORRECCIÓN DE TYPO: Se alinea con el campo enviado por WP
+            'wp_schedule_string' => 'required|string|max:255', // String crudo de WP
+            
+            // 'schedule_string_from_wp' => 'required|string|max:255', // <-- ANTERIOR (INCORRECTO)
             // 'course_name' => 'required|string|max:255', // <-- ELIMINADO
             // 'schedule_string' => 'required|string|max:255', // <-- ELIMINADO
             // --- FIN DE LA MODIFICACIÓN (Laravel) ---
@@ -93,6 +105,8 @@ class EnrollmentController extends Controller
         ]);
 
         if ($validator->fails()) {
+            // LOG AÑADIDO
+            Log::warning('EnrollmentController: Falló el validador de nuevo estudiante.', ['errors' => $validator->errors()]);
             return response()->json([
                 'status' => 'error',
                 'message' => 'Datos de entrada inválidos para nuevo estudiante.',
@@ -155,12 +169,14 @@ class EnrollmentController extends Controller
                 $course = $this->findCourseFromWpId($data['wp_course_id'], $data['course_name_from_wp'] ?? null);
 
                 // 8. Encontrar el Horario (CourseSchedule) usando el mapeo
-                $schedule = $this->findScheduleFromWpString($data['schedule_string_from_wp']);
+                // CORRECCIÓN DE TYPO: Usar el campo correcto de $data
+                $schedule = $this->findScheduleFromWpString($data['wp_schedule_string']);
                 
                 // 9. VERIFICACIÓN: Asegurarse de que el horario pertenece al curso
                 $course_modules_ids = $course->modules()->pluck('id');
                 if (!$course_modules_ids->contains($schedule->module_id)) {
-                    throw new \Exception("Conflicto de Mapeo: El horario '{$data['schedule_string_from_wp']}' (ID: {$schedule->id}) no pertenece al curso '{$course->name}'.");
+                    // CORRECCIÓN DE TYPO: Mostrar el valor correcto en el error
+                    throw new \Exception("Conflicto de Mapeo: El horario '{$data['wp_schedule_string']}' (ID: {$schedule->id}) no pertenece al curso '{$course->name}'.");
                 }
 
                 // 10. Validar reglas de negocio para la sección
@@ -171,7 +187,7 @@ class EnrollmentController extends Controller
                 $enrollment = Enrollment::create([
                     'student_id' => $student->id,
                     'course_schedule_id' => $schedule->id, 
-                    'status' => 'Inscrito', // <-- Usar 'Inscrito' como estado base
+                    'status' => 'Pendiente', // <-- CORREGIDO: Debe estar pendiente, igual que el pago
                     'final_grade' => null,
                 ]);
 
@@ -237,13 +253,19 @@ class EnrollmentController extends Controller
             // --- INICIO DE LA MODIFICACIÓN (Laravel) ---
             'wp_course_id' => 'required|integer', // ID de WP ahora es requerido
             'course_name_from_wp' => 'nullable|string', // Nombre de WP para logs
-            'schedule_string_from_wp' => 'required|string|max:255', // String crudo de WP
+            
+            // CORRECCIÓN DE TYPO: Se alinea con el campo enviado por WP
+            'wp_schedule_string' => 'required|string|max:255', // String crudo de WP
+            
+            // 'schedule_string_from_wp' => 'required|string|max:255', // <-- ANTERIOR (INCORRECTO)
             // 'course_name' => 'required|string|max:255', // <-- ELIMINADO
             // 'schedule_string' => 'required|string|max:255', // <-- ELIMINADO
             // --- FIN DE LA MODIFICACIÓN (Laravel) ---
         ]);
 
         if ($validator->fails()) {
+            // LOG AÑADIDO
+            Log::warning('EnrollmentController: Falló el validador de estudiante existente.', ['errors' => $validator->errors()]);
             return response()->json([
                 'status' => 'error',
                 'message' => 'Datos de inscripción inválidos.',
@@ -262,12 +284,14 @@ class EnrollmentController extends Controller
                 $course = $this->findCourseFromWpId($data['wp_course_id'], $data['course_name_from_wp'] ?? null);
 
                 // 3. Encontrar el Horario (CourseSchedule) usando el mapeo
-                $schedule = $this->findScheduleFromWpString($data['schedule_string_from_wp']);
+                // CORRECCIÓN DE TYPO: Usar el campo correcto de $data
+                $schedule = $this->findScheduleFromWpString($data['wp_schedule_string']);
                 
                 // 4. VERIFICACIÓN: Asegurarse de que el horario pertenece al curso
                 $course_modules_ids = $course->modules()->pluck('id');
                 if (!$course_modules_ids->contains($schedule->module_id)) {
-                    throw new \Exception("Conflicto de Mapeo: El horario '{$data['schedule_string_from_wp']}' (ID: {$schedule->id}) no pertenece al curso '{$course->name}'.");
+                    // CORRECCIÓN DE TYPO: Mostrar el valor correcto en el error
+                    throw new \Exception("Conflicto de Mapeo: El horario '{$data['wp_schedule_string']}' (ID: {$schedule->id}) no pertenece al curso '{$course->name}'.");
                 }
 
                 // 5. Validar reglas de negocio (Cupos, Balance, Fecha)
@@ -286,7 +310,7 @@ class EnrollmentController extends Controller
                 $enrollment = Enrollment::create([
                     'student_id' => $student->id,
                     'course_schedule_id' => $schedule->id,
-                    'status' => 'Inscrito', // <-- Usar 'Inscrito' como estado base
+                    'status' => 'Pendiente', // <-- CORREGIDO: Debe estar pendiente, igual que el pago
                     'final_grade' => null,
                 ]);
 
@@ -391,8 +415,8 @@ class EnrollmentController extends Controller
         
         // 1. Buscamos por 'section_name' (de la migración 2025_11_05_000018)
         $schedule = CourseSchedule::where('module_id', $module->id)
-                                    ->where('section_name', $sectionName)
-                                    ->first();
+                                     ->where('section_name', $sectionName)
+                                     ->first();
         
         // 2. Fallback por si se guardó en 'days_of_week' (de la migración 2025_11_05_000015)
         if (!$schedule) {
