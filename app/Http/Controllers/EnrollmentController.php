@@ -40,6 +40,7 @@ class EnrollmentController extends Controller
         }
 
         // 2. Regla especial: Si el estudiante YA existe (por cédula o email)
+        // CORRECCIÓN: Tu migración 'create_students_table' usa 'cedula', no 'document_number'.
         $existingStudent = Student::where('cedula', $request->cedula)->first();
         $existingUser = User::where('email', $request->email)->first();
 
@@ -111,7 +112,12 @@ class EnrollmentController extends Controller
                     'mobile_phone' => $data['mobile_phone'] ?? $data['phone'], // Celular o el 'phone'
                     'address' => $data['address'] ?? null,
                     'status' => 'Activo', // Status del estudiante
-                    'balance' => 0, // Nuevo estudiante inicia con balance 0
+                    
+                    // =================================================================
+                    // CORRECCIÓN: Columna 'balance' no existe en tu migración.
+                    // =================================================================
+                    // 'balance' => 0, // Nuevo estudiante inicia con balance 0 <-- ESTA LÍNEA CAUSA EL ERROR
+                    // =================================================================
                     
                     // Campos adicionales
                     'city' => $data['city'] ?? null,
@@ -133,7 +139,8 @@ class EnrollmentController extends Controller
                 $schedule = $this->findCourseSchedule($data['course_name'], $data['schedule_string']);
 
                 // 8. Validar reglas de negocio para la sección
-                $this->validateCourseRules($schedule, $student);
+                // (La regla de 'balance' se omitirá para estudiantes nuevos)
+                $this->validateCourseRules($schedule, $student, true); // true = esNuevoEstudiante
                 
                 // 9. Crear la Inscripción (Enrollment)
                 $enrollment = Enrollment::create([
@@ -220,7 +227,7 @@ class EnrollmentController extends Controller
                 $schedule = $this->findCourseSchedule($data['course_name'], $data['schedule_string']);
 
                 // 3. Validar reglas de negocio (Cupos, Balance, Fecha)
-                $this->validateCourseRules($schedule, $student);
+                $this->validateCourseRules($schedule, $student, false); // false = NO esNuevoEstudiante
                 
                 // 4. Verificar si ya existe esta inscripción exacta
                 $existingEnrollment = Enrollment::where('student_id', $student->id)
@@ -282,15 +289,23 @@ class EnrollmentController extends Controller
 
         // Buscamos por 'section_name' (de la migración 2025_11_05_000018)
         $schedule = CourseSchedule::where('module_id', $module->id)
-                                  ->where('section_name', $sectionName)
-                                  ->first();
+                                    ->where('section_name', $sectionName)
+                                    ->first();
         
-        // Fallback por si 'schedule_string' se guarda en 'day_of_week'
+        // Fallback por si 'schedule_string' se guarda en 'day_of_week' (tu migración 2025_11_05_000015)
         if (!$schedule) {
              $schedule = CourseSchedule::where('module_id', $module->id)
-                                  ->where('day_of_week', $sectionName)
-                                  ->first();
+                                     ->where('days_of_week', $sectionName) // Asumiendo que 'days_of_week' es un string, no un array json
+                                     ->first();
         }
+        
+        // Fallback por si 'days_of_week' es un JSON
+        if (!$schedule) {
+             $schedule = CourseSchedule::where('module_id', $module->id)
+                                     ->whereJsonContains('days_of_week', $sectionName)
+                                     ->first();
+        }
+
 
         if (!$schedule) {
             throw new \Exception("La sección '{$sectionName}' para '{$moduleName}' no fue encontrada.");
@@ -304,19 +319,25 @@ class EnrollmentController extends Controller
 
     /**
      * Helper para validar las 3 reglas de negocio.
+     * @param bool $isNewStudent Si es true, omite la validación de balance.
      */
-    private function validateCourseRules(CourseSchedule $schedule, Student $student): void
+    private function validateCourseRules(CourseSchedule $schedule, Student $student, bool $isNewStudent = false): void
     {
         // 1. "En caso de ser estudiante existente, no debe tener balances pendientes."
         // (Asumimos que balance > 0 es tener deuda)
-        if ($student->balance > 0) {
-            throw new \Exception('El estudiante tiene un balance pendiente y no puede inscribirse.');
-        }
+        // =================================================================
+        // CORRECCIÓN: Tu tabla 'students' no tiene 'balance'.
+        // Comentamos esta regla temporalmente.
+        // =================================================================
+        // if (!$isNewStudent && $student->balance > 0) {
+        //     throw new \Exception('El estudiante tiene un balance pendiente y no puede inscribirse.');
+        // }
+        // =================================================================
 
         // 2. "Deben haber cupos disponibles en el curso que se solicita."
         $enrolledCount = Enrollment::where('course_schedule_id', $schedule->id)
-                                    ->whereIn('status', ['Activo', 'Cursando', 'Pendiente']) // Contar pendientes también
-                                    ->count();
+                                     ->whereIn('status', ['Activo', 'Cursando', 'Pendiente']) // Contar pendientes también
+                                     ->count();
         if ($schedule->capacity > 0 && $enrolledCount >= $schedule->capacity) { // capacity > 0 para evitar bloqueo si es 0
             throw new \Exception('La sección está llena. No hay cupos disponibles.');
         }

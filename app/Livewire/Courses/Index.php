@@ -13,7 +13,16 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule; // Para validación 'unique'
 use Carbon\Carbon; // Para manejar fechas/horas
 
-#[Layout('Layouts.dashboard')]
+// ====================================================================
+// IMPORTS AÑADIDOS PARA ENLACE CON WP (PUNTO 3)
+// ====================================================================
+use App\Models\CourseMapping;
+use App\Services\WordpressApiService;
+// ====================================================================
+// FIN DE IMPORTS AÑADIDOS
+// ====================================================================
+
+#[Layout('layouts.dashboard')] // Tuve que corregir 'Layouts.dashboard' a 'layouts.dashboard'
 class Index extends Component
 {
     use WithPagination;
@@ -34,6 +43,44 @@ class Index extends Component
     public $schedule_id, $teacher_id, $days = [], $start_time, $end_time, $section_name, $start_date, $end_date;
     public $scheduleModalTitle = '';
     public $teachers = []; // Para el dropdown de profesores
+
+    // ====================================================================
+    // NUEVAS PROPIEDADES PARA MODAL DE ENLACE (PUNTO 3)
+    // ====================================================================
+    
+    /**
+     * Almacena el curso que se está enlazando (el objeto completo).
+     * @var Course|null
+     */
+    public $currentLinkingCourse;
+
+    /**
+     * Almacena la lista de cursos obtenidos desde WordPress.
+     * @var array
+     */
+    public $wpCourses = [];
+
+    /**
+     * Vinculado al <select> del modal, almacena el ID del curso de WP seleccionado.
+     * @var string|int|null
+     */
+    public $selectedWpCourseId = '';
+
+    /**
+     * Mensaje de feedback dentro del modal de enlace.
+     * @var string
+     */
+    public $linkFeedbackMessage = '';
+
+    /**
+     * Mensaje de error dentro del modal de enlace.
+     * @var string
+     */
+    public $linkErrorMessage = '';
+    // ====================================================================
+    // FIN DE NUEVAS PROPIEDADES
+    // ====================================================================
+
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -66,8 +113,14 @@ class Index extends Component
             });
         }
 
-        // Cargamos cursos CON sus módulos
-        $courses = $query->with('modules.schedules.teacher')->paginate(10);
+        // ====================================================================
+        // MODIFICACIÓN PARA EAGER LOADING (PUNTO 3)
+        // ====================================================================
+        // Cargamos cursos CON sus módulos Y su enlace de WP
+        $courses = $query->with('modules.schedules.teacher', 'mapping')->paginate(10);
+        // ====================================================================
+        // FIN DE MODIFICACIÓN
+        // ====================================================================
 
         // 1. Encontramos el curso seleccionado DE LA COLECCIÓN que ya cargamos (sin consultar la DB de nuevo)
         $selectedCourseObject = $this->selectedCourse ? $courses->find($this->selectedCourse) : null;
@@ -162,6 +215,7 @@ class Index extends Component
                 'name' => $this->course_name,
                 // 'credits' => $this->course_credits, // Se elimina esta línea
                 'code' => $this->course_code,
+                // 'description' no está en tu formulario, así que no se incluye aquí
             ]
         );
 
@@ -282,7 +336,7 @@ class Index extends Component
             
             $this->start_date = $schedule->start_date ? Carbon::parse($schedule->start_date)->format('Y-m-d') : null;
             $this->end_date = $schedule->end_date ? Carbon::parse($schedule->end_date)->format('Y-m-d') : null;
-           
+            
             $this->scheduleModalTitle = 'Editar Sección';
             $this->dispatch('open-modal', 'schedule-modal'); 
         } catch (\Exception $e) {
@@ -338,4 +392,113 @@ class Index extends Component
         $this->start_date = '';
         $this->end_date = '';
     }
+
+
+    // ====================================================================
+    // NUEVAS FUNCIONES PARA ENLACE CON WP (PUNTO 3)
+    // ====================================================================
+
+    /**
+     * Cierra el modal de enlace y resetea sus propiedades.
+     */
+    public function closeLinkModal()
+    {
+        $this->reset(['currentLinkingCourse', 'wpCourses', 'selectedWpCourseId', 'linkFeedbackMessage', 'linkErrorMessage']);
+        // No disparamos 'close-modal' aquí, lo hacemos desde el botón "Cancelar" en la vista (x-on:click)
+    }
+
+    /**
+     * Abre el modal de enlace para un curso específico.
+     * Carga el curso actual y obtiene la lista de cursos de WP.
+     *
+     * @param int $courseId
+     * @param WordpressApiService $wpService // Inyección de dependencias de Livewire
+     */
+    public function openLinkModal($courseId, WordpressApiService $wpService)
+    {
+        $this->closeLinkModal(); // Resetea por si estaba abierto
+        
+        try {
+            $this->currentLinkingCourse = Course::with('mapping')->findOrFail($courseId);
+        } catch (\Exception $e) {
+            session()->flash('error', 'No se encontró el curso.');
+            return;
+        }
+
+        // Valor actual (si ya existe un enlace)
+        $this->selectedWpCourseId = $this->currentLinkingCourse->mapping->wp_course_id ?? '';
+
+        try {
+            // Llama al servicio para obtener los cursos de WP
+            $this->wpCourses = $wpService->getSgaCourses();
+            
+            if (empty($this->wpCourses)) {
+                $this->linkErrorMessage = 'No se pudieron cargar los cursos de WordPress. Revisa la configuración de la API o la conexión.';
+                Log::warning('No se recibieron cursos del endpoint de WP.', ['curso_id' => $courseId]);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error al llamar a WordpressApiService', ['exception' => $e->getMessage()]);
+            $this->linkErrorMessage = 'Error fatal al conectar con WordPress. Revisa los logs.';
+        }
+
+        // Disparamos el evento para abrir el modal (que definimos en la vista)
+        $this->dispatch('open-modal', 'link-wp-modal');
+    }
+
+    /**
+     * Guarda o actualiza el enlace del curso de Laravel con el curso de WP.
+     */
+    public function saveLink()
+    {
+        $this->reset(['linkFeedbackMessage', 'linkErrorMessage']);
+
+        if (empty($this->selectedWpCourseId)) {
+            // Si el usuario selecciona "Ninguno", borramos el enlace
+            if ($this->currentLinkingCourse->mapping) {
+                $this->currentLinkingCourse->mapping->delete();
+                session()->flash('message', 'Enlace eliminado correctamente.');
+                $this->currentLinkingCourse->refresh(); // Refresca la relación
+            }
+            $this->dispatch('close-modal', 'link-wp-modal');
+            $this->closeLinkModal(); // Resetea las propiedades
+            return;
+        }
+
+        // Buscar el nombre del curso de WP en el array que ya tenemos
+        $selectedWpCourseName = 'Nombre no encontrado';
+        foreach ($this->wpCourses as $wpCourse) {
+            if ($wpCourse['wp_course_id'] == $this->selectedWpCourseId) {
+                $selectedWpCourseName = $wpCourse['wp_course_name'];
+                break;
+            }
+        }
+
+        // Usamos updateOrCreate para insertar o actualizar el enlace basado en el course_id
+        try {
+            CourseMapping::updateOrCreate(
+                [
+                    'course_id' => $this->currentLinkingCourse->id, // Condición de búsqueda
+                ],
+                [
+                    'wp_course_id' => $this->selectedWpCourseId, // Valores a insertar/actualizar
+                    'wp_course_name' => $selectedWpCourseName,
+                ]
+            );
+
+            session()->flash('message', 'Curso enlazado exitosamente.');
+            $this->currentLinkingCourse->refresh(); // Refresca la relación
+            $this->dispatch('close-modal', 'link-wp-modal'); // Cierra el modal al guardar
+            $this->closeLinkModal(); // Resetea las propiedades
+
+        } catch (\Exception $e) {
+            Log::error('Error al guardar el CourseMapping', ['exception' => $e->getMessage()]);
+            $this->linkErrorMessage = 'Error al guardar el enlace en la base de datos.';
+        }
+    }
+
+    // ====================================================================
+    // FIN DE NUEVAS FUNCIONES
+    // ====================================================================
+
 }

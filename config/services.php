@@ -35,4 +35,19 @@ return [
         ],
     ],
 
+    // ====================================================================
+    // NUEVA CONFIGURACIÓN PARA LA API DE WORDPRESS (PUNTO 3)
+    // ====================================================================
+    'wordpress' => [
+        // La URL base de tu API de WP. Ej: https://tudominio.com/wp-json/
+        'base_uri' => env('WP_API_BASE_URI'),
+        
+        // La clave secreta que pusiste en WP (Ajustes > SGA Settings > API Key)
+        // Esta es la clave que WP espera en el header 'X-SGA-Signature'
+        'secret' => env('WP_API_SECRET'),
+    ],
+    // ====================================================================
+    // FIN DE NUEVA CONFIGURACIÓN
+    // ====================================================================
+
 ];

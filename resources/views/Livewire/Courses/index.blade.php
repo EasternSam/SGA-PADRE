@@ -1,6 +1,6 @@
 <div>
     {{-- Mensajes de Sesión (Flash) --}}
-    <div classV="fixed top-24 right-6 z-50">
+    <div class="fixed top-24 right-6 z-50">
         @if (session()->has('message'))
             <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show" 
                  class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg" role="alert">
@@ -50,10 +50,38 @@
                                         <span class="block font-medium text-gray-900">{{ $course->name }}</span>
                                         {{-- MODIFICADO: Eliminada la referencia a 'credits' --}}
                                         <span class="block text-sm text-gray-500">{{ $course->code }}</span>
+                                        
+                                        <!-- ================================================= -->
+                                        <!-- NUEVO BLOQUE DE ESTADO DE ENLACE (PUNTO 3) -->
+                                        <!-- ================================================= -->
+                                        @if($course->mapping)
+                                            <span class="block text-xs text-green-600" title="ID de WP: {{ $course->mapping->wp_course_id }}">
+                                                <i class="fas fa-check-circle mr-1"></i>Enlazado: {{ $course->mapping->wp_course_name }}
+                                            </span>
+                                        @else
+                                            <span class="block text-xs text-gray-400 italic">
+                                                <i class="fas fa-times-circle mr-1"></i>No enlazado
+                                            </span>
+                                        @endif
+                                        <!-- ================================================= -->
+                                        <!-- FIN DE NUEVO BLOQUE -->
+                                        <!-- ================================================= -->
+
                                     </div>
-                                    <button wire:click.stop="editCourse({{ $course->id }})" class="text-gray-400 hover:text-indigo-600 text-xs">
-                                        <i class="fas fa-pencil-alt"></i>
-                                    </button>
+                                    <div class="flex items-center">
+                                        <!-- ================================================= -->
+                                        <!-- NUEVO BOTÓN PARA ENLAZAR (PUNTO 3) -->
+                                        <!-- ================================================= -->
+                                        <button wire:click.stop="openLinkModal({{ $course->id }})" class="text-gray-400 hover:text-blue-600 text-xs mr-2" title="Enlazar con WordPress">
+                                            <i class="fas fa-link"></i>
+                                        </button>
+                                        <!-- ================================================= -->
+                                        <!-- FIN DE NUEVO BOTÓN -->
+                                        <!-- ================================================= -->
+                                        <button wire:click.stop="editCourse({{ $course->id }})" class="text-gray-400 hover:text-indigo-600 text-xs">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </li>
                         @empty
@@ -123,7 +151,7 @@
                                     <div class="flex justify-between items-center">
                                         <div>
                                             <span class="block font-medium text-gray-900">{{ $schedule->section_name ?? ('Sección ' . $schedule->id) }}</span>
-                                            <span classD="block text-sm text-gray-500">Prof: {{ $schedule->teacher->name ?? 'No asignado' }}</span>
+                                            <span class="block text-sm text-gray-500">Prof: {{ $schedule->teacher->name ?? 'No asignado' }}</span>
                                             <span class="block text-sm text-gray-500">
                                                 {{ implode(', ', $schedule->days_of_week ?? []) }} | {{ $schedule->start_time ? \Carbon\Carbon::parse($schedule->start_time)->format('h:i A') : 'N/A' }} - {{ $schedule->end_time ? \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') : 'N/A' }}
                                             </span>
@@ -139,7 +167,7 @@
                         </ul>
                     </div>
                 @else
-                    <div classD="p-4 border-b border-gray-200">
+                    <div class="p-4 border-b border-gray-200">
                         <h2 class="text-lg font-semibold text-gray-800">Secciones</h2>
                     </div>
                     <div class="p-4 text-center text-gray-500">
@@ -182,7 +210,7 @@
 
     <!-- Modal de Módulo -->
     <x-modal name="module-modal">
-        <div class_ ="p-6">
+        <div class="p-6">
             <h2 class="text-lg font-medium text-gray-900 mb-4">{{ $moduleModalTitle }}</h2>
             <form wire:submit.prevent="saveModule">
                 <div class="mt-4">
@@ -232,43 +260,43 @@
 
                 {{-- Campos de fecha --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-    <div>
-        <label for="start_date" class="block text-sm font-medium text-gray-700">Fecha de Inicio</Sabel>
-        <input id="start_date" wire:model="start_date" type="date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-        @error('start_date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-    </div>
-    <div>
-        <label for="end_date" class="block text-sm font-medium text-gray-700">Fecha de Fin</label>
-        <input id="end_date" wire:model="end_date" type="date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-        @error('end_date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-    </div>
-</div>
+                    <div>
+                        <label for="start_date" class="block text-sm font-medium text-gray-700">Fecha de Inicio</label>
+                        <input id="start_date" wire:model="start_date" type="date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        @error('start_date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label for="end_date" class="block text-sm font-medium text-gray-700">Fecha de Fin</label>
+                        <input id="end_date" wire:model="end_date" type="date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        @error('end_date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+                </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-    <div>
-        <label for="start_time" class="block text-sm font-medium text-gray-700">Hora de Inicio</label>
-        <input id="start_time" wire:model="start_time" type="time" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-        @error('start_time') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-    </div>
-    <div>
-        <label for="end_time" class="block text-sm font-medium text-gray-700">Hora de Fin</label>
-        <input id="end_time" wire:model="end_time" type="time" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-        @error('end_time') <span class="text-red-500 text-xs">{{ $message }}</span> @endError
-    </div>
-</div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <label for="start_time" class="block text-sm font-medium text-gray-700">Hora de Inicio</label>
+                        <input id="start_time" wire:model="start_time" type="time" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        @error('start_time') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label for="end_time" class="block text-sm font-medium text-gray-700">Hora de Fin</label>
+                        <input id="end_time" wire:model="end_time" type="time" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        @error('end_time') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+                </div>
 
-<div class="mt-4">
-    <label class="block text-sm font-medium text-gray-700">Días de la Semana</label>
-    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 mt-2">
-        @foreach(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] as $day)
-            <label class="flex items-center space-x-2 p-2 border rounded-md hover:bg-gray-50">
-                <input type="checkbox" wire:model.defer="days" value="{{ $day }}" class="rounded text-indigo-600">
-                <span class="text-sm">{{ $day }}</span>
-            </aabel>
-        @endforeach
-    </div>
-    @error('days') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-</div>
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700">Días de la Semana</label>
+                    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 mt-2">
+                        @foreach(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] as $day)
+                            <label class="flex items-center space-x-2 p-2 border rounded-md hover:bg-gray-50">
+                                <input type="checkbox" wire:model.defer="days" value="{{ $day }}" class="rounded text-indigo-600">
+                                <span class="text-sm">{{ $day }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('days') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
 
                 <div class="flex justify-end mt-6">
                     <button type="button" x-on:click="$dispatch('close-modal', 'schedule-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
@@ -277,5 +305,70 @@
             </form>
         </div>
     </x-modal>
+
+
+    <!-- ================================================= -->
+    <!-- NUEVO MODAL PARA ENLACE WP (PUNTO 3) -->
+    <!-- ================================================= -->
+    <x-modal name="link-wp-modal" maxWidth="lg">
+        <div class="p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-2">Enlazar Curso con WordPress</h2>
+            
+            @if($currentLinkingCourse)
+                <p class="text-sm text-gray-600 mb-4">
+                    Estás enlazando el curso: <strong class="text-gray-900">{{ $currentLinkingCourse->name }}</strong>
+                </p>
+            @endif
+            
+            {{-- Indicador de Carga y Mensajes de Error/Feedback --}}
+            <div wire:loading wire:target="openLinkModal, saveLink" class="w-full">
+                <div class="flex items-center p-3 text-sm text-blue-700 bg-blue-50 rounded-lg" role="alert">
+                    <svg class="w-4 h-4 mr-2 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="font-medium">Cargando cursos de WordPress...</span>
+                </div>
+            </div>
+
+            @if($linkFeedbackMessage)
+                <div class="p-3 text-sm text-green-700 bg-green-50 rounded-lg mb-4" role="alert">
+                    {{ $linkFeedbackMessage }}
+                </div>
+            @endif
+            @if($linkErrorMessage)
+                <div class="p-3 text-sm text-red-700 bg-red-50 rounded-lg mb-4" role="alert">
+                    <span class="font-medium">Error:</span> {{ $linkErrorMessage }}
+                </div>
+            @endif
+
+            {{-- Solo muestra el selector si no hay error y no está cargando --}}
+            <div wire:loading.remove wire:target="openLinkModal">
+                @if(!$linkErrorMessage && !empty($wpCourses))
+                    <div class="mt-4">
+                        <label for="wp_course_select" class="block text-sm font-medium text-gray-700">Selecciona el curso de WordPress</label>
+                        <select id="wp_course_select" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm mt-1 block w-full" wire:model="selectedWpCourseId">
+                            <option value="">-- Ninguno (Quitar enlace) --</option>
+                            @foreach($wpCourses as $wpCourse)
+                                <option value="{{ $wpCourse['wp_course_id'] }}">
+                                    {{ $wpCourse['wp_course_name'] }} (ID: {{ $wpCourse['wp_course_id'] }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                @elseif(!$linkErrorMessage)
+                    <p class="mt-4 text-sm text-gray-500 italic">No se encontraron cursos en WordPress.</p>
+                @endif
+            </div>
+
+            <div class="flex justify-end mt-6">
+                <button type="button" x-on:click="$dispatch('close-modal', 'link-wp-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
+                <button type="button" wire:click="saveLink()" wire:loading.attr="disabled" wire:target="saveLink" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">Guardar Enlace</button>
+            </div>
+        </div>
+    </x-modal>
+    <!-- ================================================= -->
+    <!-- FIN DE NUEVO MODAL -->
+    <!-- ================================================= -->
 
 </div>

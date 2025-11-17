@@ -5,6 +5,13 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EnrollmentController; // <-- Tu import original
 use App\Models\Course; // <-- Import para el ejemplo de cursos
 
+// ====================================================================
+// IMPORT DEL NUEVO CONTROLADOR (PUNTO 1)
+// ====================================================================
+use App\Http\Controllers\Api\V1\WordpressIntegrationController;
+// ====================================================================
+
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -66,6 +73,18 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
             ], 500);
         }
     });
+
+    // ====================================================================
+    // NUEVO ENDPOINT PARA RECIBIR INSCRIPCIONES (PUNTO 1)
+    // ====================================================================
+    /**
+     * Endpoint para recibir nuevas inscripciones desde Fluent Forms (WP).
+     * Este SÍ usa el CourseMapping (Punto 3).
+     * URL: /api/v1/wordpress/new-inscription
+     */
+    Route::post('/wordpress/new-inscription', [WordpressIntegrationController::class, 'handleNewInscription']);
+    // ====================================================================
+
 
     /**
      * Endpoint de ejemplo para OBTENER ESTUDIANTES
