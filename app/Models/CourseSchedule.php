@@ -48,4 +48,14 @@ class CourseSchedule extends Model
     {
         return $this->hasMany(Enrollment::class, 'course_schedule_id');
     }
+
+    // INICIO: Relación añadida para mapeo de secciones
+    /**
+     * Obtiene el mapeo de horario de WordPress para esta sección.
+     */
+    public function mapping()
+    {
+        return $this->hasOne(ScheduleMapping::class, 'course_schedule_id');
+    }
+    // FIN: Relación añadida
 }

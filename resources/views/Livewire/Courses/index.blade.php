@@ -155,10 +155,42 @@
                                             <span class="block text-sm text-gray-500">
                                                 {{ implode(', ', $schedule->days_of_week ?? []) }} | {{ $schedule->start_time ? \Carbon\Carbon::parse($schedule->start_time)->format('h:i A') : 'N/A' }} - {{ $schedule->end_time ? \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') : 'N/A' }}
                                             </span>
+                                            
+                                            <!-- INICIO: Indicador de enlace de sección -->
+                                            @if($schedule->mapping)
+                                                <span class="block text-xs text-green-600" title="WP Horario: {{ $schedule->mapping->wp_schedule_data }}">
+                                                    <i class="fas fa-check-circle mr-1"></i>Sección Enlazada
+                                                </span>
+                                            @endif
+                                            <!-- FIN: Indicador de enlace de sección -->
+
                                         </div>
-                                        <button wire:click.stop="editSchedule({{ $schedule->id }})" class="text-gray-400 hover:text-indigo-600 text-xs">
-                                            <i class="fas fa-pencil-alt"></i>
-                                        </button>
+                                        
+                                        <!-- INICIO: Botones de acción de sección modificados -->
+                                        <div class="flex items-center">
+                                            <!-- Botón de Enlace de Sección -->
+                                            @if($selectedCourseObject?->mapping)
+                                                @php
+                                                    $scheduleMapping = $schedule->mapping; // 'mapping' fue cargado en render()
+                                                @endphp
+                                                <button wire:click.stop="openMapSectionModal({{ $schedule->id }})" 
+                                                        class="text-gray-400 hover:text-blue-600 text-xs mr-2 {{ $scheduleMapping ? 'text-blue-600' : '' }}" 
+                                                        title="{{ $scheduleMapping ? 'Modificar Enlace WP de Sección' : 'Enlazar Sección con WP' }}">
+                                                    <i class="fas fa-link"></i>
+                                                </button>
+                                            @else
+                                                <button class="text-gray-300 text-xs mr-2 cursor-not-allowed" disabled title="Enlace el curso principal primero">
+                                                    <i class="fas fa-link"></i>
+                                                </button>
+                                            @endif
+
+                                            <!-- Botón de Editar (existente) -->
+                                            <button wire:click.stop="editSchedule({{ $schedule->id }})" class="text-gray-400 hover:text-indigo-600 text-xs">
+                                                <i class="fas fa-pencil-alt"></i>
+                                            </button>
+                                        </div>
+                                        <!-- FIN: Botones de acción de sección modificados -->
+
                                     </div>
                                 </li>
                             @empty
@@ -370,5 +402,69 @@
     <!-- ================================================= -->
     <!-- FIN DE NUEVO MODAL -->
     <!-- ================================================= -->
+
+    <!-- INICIO: Modal para Mapear Sección (Horario) -->
+    <x-modal name="link-section-modal" maxWidth="lg">
+        <div class="p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-2">Enlazar Sección con WordPress</h2>
+
+            @if($currentLinkingSection)
+                <p class="text-sm text-gray-600 mb-4">
+                    Estás enlazando la sección: <strong class="text-gray-900">{{ $currentLinkingSection->section_name ?? 'Sección ' . $currentLinkingSection->id }}</strong>
+                </p>
+            @endif
+
+            {{-- Indicador de Carga y Mensajes de Error --}}
+            <div wire:loading wire:target="openMapSectionModal, saveSectionLink" class="w-full">
+                <div class="flex items-center p-3 text-sm text-blue-700 bg-blue-50 rounded-lg" role="alert">
+                    <svg class="w-4 h-4 mr-2 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="font-medium">Cargando horarios de WordPress...</span>
+                </div>
+            </div>
+            
+            @if($sectionLinkErrorMessage)
+                <div class="p-3 text-sm text-red-700 bg-red-50 rounded-lg mb-4" role="alert">
+                    <span class="font-medium">Error:</span> {{ $sectionLinkErrorMessage }}
+                </div>
+            @endif
+
+            {{-- Selector de Horarios --}}
+            <div wire:loading.remove wire:target="openMapSectionModal">
+                @if(!$sectionLinkErrorMessage && !empty($wpSchedules))
+                    <div class="mt-4">
+                        <label for="wp_schedule_select" class="block text-sm font-medium text-gray-700">Selecciona el horario de WordPress</label>
+                        <select id="wp_schedule_select" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm mt-1 block w-full" wire:model="selectedWpScheduleId">
+                            <option value="">-- Ninguno (Quitar enlace) --</option>
+                            @foreach($wpSchedules as $wpSchedule)
+                                @php
+                                    // Formatear para mostrar
+                                    $day = $wpSchedule['day'] ?? 'Día no def.';
+                                    $start = isset($wpSchedule['start_time']) ? \Carbon\Carbon::parse($wpSchedule['start_time'])->format('h:i A') : 'N/A';
+                                    $end = isset($wpSchedule['end_time']) ? \Carbon\Carbon::parse($wpSchedule['end_time'])->format('h:i A') : 'N/A';
+                                    $displayText = ucfirst($day) . " de {$start} a {$end}";
+                                @endphp
+                                <option value="{{ $wpSchedule['id'] }}">
+                                    {{ $displayText }} (ID: {{ $wpSchedule['id'] }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                @elseif(!$sectionLinkErrorMessage)
+                    <p class="mt-4 text-sm text-gray-500 italic">No se encontraron horarios definidos en WordPress para el curso enlazado.</p>
+                @endif
+            </div>
+
+            <div class="flex justify-end mt-6">
+                <button type="button" x-on:click="$dispatch('close-modal', 'link-section-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
+                @if(!empty($wpSchedules) || !empty($selectedWpScheduleId))
+                <button type="button" wire:click="saveSectionLink()" wire:loading.attr="disabled" wire:target="saveSectionLink" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">Guardar Enlace</button>
+                @endif
+            </div>
+        </div>
+    </x-modal>
+    <!-- FIN: Modal para Mapear Sección (Horario) -->
 
 </div>

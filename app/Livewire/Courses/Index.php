@@ -18,6 +18,9 @@ use Carbon\Carbon; // Para manejar fechas/horas
 // ====================================================================
 use App\Models\CourseMapping;
 use App\Services\WordpressApiService;
+// INICIO: Import añadido para mapeo de secciones
+use App\Models\ScheduleMapping;
+// FIN: Import añadido
 // ====================================================================
 // FIN DE IMPORTS AÑADIDOS
 // ====================================================================
@@ -81,6 +84,32 @@ class Index extends Component
     // FIN DE NUEVAS PROPIEDADES
     // ====================================================================
 
+    // INICIO: Propiedades añadidas para el modal de mapeo de secciones
+    /**
+     * Almacena la sección (CourseSchedule) que se está enlazando.
+     * @var CourseSchedule|null
+     */
+    public $currentLinkingSection;
+
+    /**
+     * Almacena la lista de horarios obtenidos desde WordPress para el curso enlazado.
+     * @var array
+     */
+    public $wpSchedules = [];
+
+    /**
+     * Vinculado al <select> del modal de secciones, almacena el ID del horario de WP seleccionado.
+     * @var string|null
+     */
+    public $selectedWpScheduleId = '';
+
+    /**
+     * Mensaje de error dentro del modal de enlace de sección.
+     * @var string
+     */
+    public $sectionLinkErrorMessage = '';
+    // FIN: Propiedades añadidas
+
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -123,15 +152,20 @@ class Index extends Component
         // ====================================================================
 
         // 1. Encontramos el curso seleccionado DE LA COLECCIÓN que ya cargamos (sin consultar la DB de nuevo)
+        // INICIO: Modificación para Eager Loading
+        // Necesitamos $selectedCourseObject para la Columna 3 (Secciones), así que lo cargamos aquí
         $selectedCourseObject = $this->selectedCourse ? $courses->find($this->selectedCourse) : null;
+        // FIN: Modificación
         
         // 2. Obtenemos los módulos de ese objeto (ya están cargados por el ->with('modules...'))
         $modules = $selectedCourseObject ? $selectedCourseObject->modules : collect();
 
         // Cargar los horarios (secciones) para el módulo seleccionado
+        // INICIO: Modificación para Eager Loading de mapeo de sección
         $schedules = $this->selectedModule
-            ? CourseSchedule::where('module_id', $this->selectedModule)->with('teacher')->get()
+            ? CourseSchedule::where('module_id', $this->selectedModule)->with('teacher', 'mapping')->get()
             : collect(); // Retorna una colección vacía
+        // FIN: Modificación
 
         return view('livewire.courses.index', [
             'courses' => $courses,
@@ -139,6 +173,9 @@ class Index extends Component
             'schedules' => $schedules,
             'selectedCourseName' => $selectedCourseObject?->name, // Usamos el objeto para el nombre
             'selectedModuleName' => $this->selectedModule ? Module::find($this->selectedModule)?->name : null,
+            // INICIO: Pasar el objeto de curso seleccionado a la vista
+            'selectedCourseObject' => $selectedCourseObject // Necesario para el botón de enlace de sección
+            // FIN: Pasar el objeto
         ]);
     }
 
@@ -456,8 +493,16 @@ class Index extends Component
         if (empty($this->selectedWpCourseId)) {
             // Si el usuario selecciona "Ninguno", borramos el enlace
             if ($this->currentLinkingCourse->mapping) {
+                
+                // INICIO: Borrar también mapeos de secciones hijas
+                $course = $this->currentLinkingCourse;
+                $moduleIds = $course->modules()->pluck('id');
+                $scheduleIds = CourseSchedule::whereIn('module_id', $moduleIds)->pluck('id');
+                ScheduleMapping::whereIn('course_schedule_id', $scheduleIds)->delete();
+                // FIN: Borrar también mapeos de secciones hijas
+                
                 $this->currentLinkingCourse->mapping->delete();
-                session()->flash('message', 'Enlace eliminado correctamente.');
+                session()->flash('message', 'Enlace de curso y secciones asociadas eliminado.');
                 $this->currentLinkingCourse->refresh(); // Refresca la relación
             }
             $this->dispatch('close-modal', 'link-wp-modal');
@@ -500,5 +545,110 @@ class Index extends Component
     // ====================================================================
     // FIN DE NUEVAS FUNCIONES
     // ====================================================================
+
+    // INICIO: Métodos añadidos para mapeo de secciones
+    /**
+     * Resetea las propiedades del modal de enlace de sección.
+     */
+    public function closeSectionLinkModal()
+    {
+        $this->reset(['currentLinkingSection', 'wpSchedules', 'selectedWpScheduleId', 'sectionLinkErrorMessage']);
+    }
+
+    /**
+     * Abre el modal de enlace para una sección (CourseSchedule) específica.
+     *
+     * @param int $scheduleId
+     * @param WordpressApiService $wpService
+     */
+    public function openMapSectionModal($scheduleId, WordpressApiService $wpService)
+    {
+        $this->closeSectionLinkModal(); // Resetea estado anterior
+
+        try {
+            // Cargamos la sección con su módulo, curso y el mapeo del curso
+            $this->currentLinkingSection = CourseSchedule::with('module.course.mapping')->findOrFail($scheduleId);
+        } catch (\Exception $e) {
+            session()->flash('error', 'No se encontró la sección.');
+            return;
+        }
+
+        // Validar que el curso padre esté mapeado
+        if (!$this->currentLinkingSection->module?->course?->mapping) {
+            session()->flash('error', 'El curso principal de esta sección no está mapeado. Por favor, enlace el curso primero.');
+            return;
+        }
+
+        $wpCourseId = $this->currentLinkingSection->module->course->mapping->wp_course_id;
+
+        try {
+            // Llama al servicio para obtener los horarios de WP
+            $this->wpSchedules = $wpService->getSchedulesForWpCourse($wpCourseId);
+            
+            if (empty($this->wpSchedules)) {
+                $this->sectionLinkErrorMessage = 'No se encontraron horarios definidos en WordPress para este curso. (Asegúrate de haberlos guardado en el metabox del curso en WP).';
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error al llamar a getSchedulesForWpCourse', ['exception' => $e->getMessage()]);
+            $this->sectionLinkErrorMessage = 'Error fatal al conectar con WordPress para obtener horarios. Revisa los logs.';
+        }
+
+        // Buscar el mapeo existente para esta sección
+        // INICIO: CORRECCIÓN DE TYPO
+        $existingMapping = ScheduleMapping::where('course_schedule_id', $scheduleId)->first();
+        $this->selectedWpScheduleId = $existingMapping->wp_schedule_string ?? ''; // Corregido de wp_schedule_data
+        // FIN: CORRECCIÓN DE TYPO
+
+        // Disparamos el evento para abrir el nuevo modal
+        $this->dispatch('open-modal', 'link-section-modal');
+    }
+
+    /**
+     * Guarda o actualiza el enlace de la sección de Laravel con el horario de WP.
+     */
+    public function saveSectionLink()
+    {
+        $this->reset(['sectionLinkErrorMessage']);
+
+        if (!$this->currentLinkingSection || !$this->currentLinkingSection->module?->course?->mapping) {
+            $this->sectionLinkErrorMessage = 'Error: No se pudo encontrar la sección o el mapeo del curso padre.';
+            return;
+        }
+
+        // Si el usuario selecciona "Ninguno", borramos el enlace
+        if (empty($this->selectedWpScheduleId)) {
+            ScheduleMapping::where('course_schedule_id', $this->currentLinkingSection->id)->delete();
+            session()->flash('message', 'Enlace de sección eliminado.');
+            $this->dispatch('close-modal', 'link-section-modal');
+            $this->closeSectionLinkModal();
+            return;
+        }
+
+        try {
+            $wpCourseId = $this->currentLinkingSection->module->course->mapping->wp_course_id;
+
+            ScheduleMapping::updateOrCreate(
+                [
+                    'course_schedule_id' => $this->currentLinkingSection->id, // Condición de búsqueda
+                ],
+                [
+                    'wp_course_id' => $wpCourseId,
+                    // INICIO: CORRECCIÓN DE TYPO
+                    'wp_schedule_string' => $this->selectedWpScheduleId, // Corregido de wp_schedule_data
+                    // FIN: CORRECCIÓN DE TYPO
+                ]
+            );
+
+            session()->flash('message', 'Sección enlazada exitosamente.');
+            $this->dispatch('close-modal', 'link-section-modal');
+            $this->closeSectionLinkModal();
+
+        } catch (\Exception $e) {
+            Log::error('Error al guardar el ScheduleMapping', ['exception' => $e->getMessage()]);
+            $this->sectionLinkErrorMessage = 'Error al guardar el enlace en la base de datos.';
+        }
+    }
+    // FIN: Métodos añadidos
 
 }

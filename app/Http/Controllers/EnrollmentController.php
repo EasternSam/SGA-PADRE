@@ -1,10 +1,15 @@
 <?php
 
-namespace App\HttpControllers;
+namespace App\Http\Controllers;
+
+// INICIO DE LA CORRECCIÓN
+use Illuminate\Routing\Controller; // <-- ESTA LÍNEA FALTABA
+// FIN DE LA CORRECCIÓN
 
 use Illuminate\Http\Request;
 use App\Models\Student;
 use App\Models\Course;
+// ... (el resto de tus 'use' statements) ...
 use App\Models\Module;
 use App\Models\CourseSchedule;
 use App\Models\Enrollment;

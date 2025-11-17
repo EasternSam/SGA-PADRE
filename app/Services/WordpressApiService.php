@@ -103,5 +103,43 @@ class WordpressApiService
         return [];
     }
 
+    // INICIO: Método añadido para obtener horarios
+    /**
+     * Obtiene los horarios de un curso específico de WordPress.
+     *
+     * @param int $wpCourseId
+     * @return array
+     */
+    public function getSchedulesForWpCourse(int $wpCourseId): array
+    {
+        // Llama al nuevo endpoint que creamos en class-sga-api.php
+        $endpoint = "sga/v1/course/{$wpCourseId}/schedules";
+        $response = $this->makeGetRequest($endpoint);
+
+        // INICIO: DEBUG AÑADIDO
+        Log::info("DEBUG: Respuesta de API para horarios", [
+            'wp_course_id' => $wpCourseId,
+            'endpoint_llamado' => $endpoint,
+            'respuesta_completa' => $response // <-- ESTO ES LO MÁS IMPORTANTE
+        ]);
+        // FIN: DEBUG AÑADIDO
+
+        // Espera el mismo formato de respuesta: ['success' => true, 'data' => [...]]
+        if (isset($response['success']) && $response['success'] === true && isset($response['data'])) {
+            // INICIO: DEBUG AÑADIDO
+            Log::info("DEBUG: API devolvió éxito.", [
+                'data_recibida' => $response['data']
+            ]);
+            // FIN: DEBUG AÑADIDO
+            return $response['data'];
+        }
+
+        Log::warning("WordpressApiService: No se pudieron obtener horarios para WP Course ID: {$wpCourseId}", [
+            'response' => $response
+        ]);
+        return [];
+    }
+    // FIN: Método añadido
+
     // Aquí se añadirán más métodos (como 'updateStudentStatusInWp') en el futuro
 }

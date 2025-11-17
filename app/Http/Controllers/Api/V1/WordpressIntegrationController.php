@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Http\Controllers\Controller;
+// INICIO DE LA CORRECCIÓN:
+// Se cambió 'App\Http\Controllers\Controller' por el controlador base de Laravel
+use Illuminate\Routing\Controller; 
+// FIN DE LA CORRECCIÓN
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +18,8 @@ use App\Models\User;
 use App\Models\CourseMapping;
 use App\Models\Enrollment;
 use App\Models\Payment; // Importar Payment
+use App\Models\ScheduleMapping; // <-- INCLUIR MODELO DE MAPEO DE SECCIÓN
+use App\Models\CourseSchedule; // <-- INCLUIR MODELO DE SECCIÓN
 
 class WordpressIntegrationController extends Controller
 {
@@ -35,6 +41,10 @@ class WordpressIntegrationController extends Controller
             'phone'        => 'nullable|string|max:20',
             'wp_course_id' => 'required|integer', // <-- El ID del CPT 'curso' de WP
             
+            // INICIO: CAMBIO REQUERIDO
+            'wp_schedule_string' => 'required|string|max:255', // <-- El ID del horario de WP (ej: sabado_0900_1200)
+            // FIN: CAMBIO REQUERIDO
+
             // Campos opcionales que enviaremos desde WP
             'address'      => 'nullable|string',
             'city'         => 'nullable|string|max:255',
@@ -71,11 +81,26 @@ class WordpressIntegrationController extends Controller
 
             $laravelCourse = $mapping->course; // El objeto Course de Laravel
             
-            // Lógica para encontrar el módulo (asumimos el primer módulo si existe)
-            // O, si Enrollment puede depender de 'course_id' directamente, mejor aún.
-            // Voy a asumir que Enrollment PUEDE depender de 'course_id' directamente.
+            // INICIO: Buscar la sección (schedule) usando el mapeo
+            $scheduleMapping = ScheduleMapping::where('wp_course_id', $data['wp_course_id'])
+                                              ->where('wp_schedule_string', $data['wp_schedule_string'])
+                                              ->first();
+
+            if (!$scheduleMapping) {
+                Log::error("API WP->Laravel (V1): No se encontró mapeo de SECCIÓN.", [
+                    'wp_course_id' => $data['wp_course_id'],
+                    'wp_schedule_string' => $data['wp_schedule_string']
+                ]);
+                return response()->json(['success' => false, 'message' => 'Sección (horario) de WordPress no enlazada en Laravel.'], 404);
+            }
             
-            $result = DB::transaction(function () use ($data, $isMinor, $laravelCourse) {
+            $laravel_schedule_id = $scheduleMapping->course_schedule_id;
+            // FIN: Buscar la sección
+            
+            // INICIO: CAMBIO DE LÓGICA DE TRANSACCIÓN
+            // Pasamos el $laravel_schedule_id a la transacción
+            $result = DB::transaction(function () use ($data, $isMinor, $laravelCourse, $laravel_schedule_id) {
+            // FIN: CAMBIO DE LÓGICA DE TRANSACCIÓN
 
                 // 3. Encontrar o Crear al Estudiante y Usuario
                 // (Lógica copiada de tu EnrollmentController)
@@ -135,16 +160,16 @@ class WordpressIntegrationController extends Controller
                 }
 
                 // 4. Crear la Inscripción (Enrollment) pendiente de pago
-                // Esta es la diferencia clave: usamos 'course_id' en lugar de 'course_schedule_id'
                 
-                // Verificamos si ya tiene una inscripción PENDIENTE para este curso
+                // INICIO: CAMBIO DE LÓGICA DE INSCRIPCIÓN
+                // Verificamos si ya tiene una inscripción PENDIENTE para esta SECCIÓN
                 $existingEnrollment = Enrollment::where('student_id', $student->id)
-                                                ->where('course_id', $laravelCourse->id)
+                                                ->where('course_schedule_id', $laravel_schedule_id) // <-- Buscamos por SECCIÓN
                                                 ->where('status', 'Pendiente') // Asumiendo 'Pendiente'
                                                 ->exists();
 
                 if ($existingEnrollment) {
-                    Log::warning("API WP->Laravel (V1): El estudiante ya tiene una inscripción pendiente para este curso.", $data);
+                    Log::warning("API WP->Laravel (V1): El estudiante ya tiene una inscripción pendiente para esta sección.", $data);
                     return [
                         'status' => 'success',
                         'message' => 'Inscripción pendiente ya registrada.',
@@ -155,18 +180,28 @@ class WordpressIntegrationController extends Controller
                 // Creamos la nueva inscripción como "pendiente"
                 $enrollment = Enrollment::create([
                     'student_id' => $student->id,
-                    'course_id' => $laravelCourse->id, // <-- Usamos el ID del CURSO
-                    // 'course_schedule_id' => null, // Dejamos que el schedule se asigne después
+                    'course_id' => $laravelCourse->id, // <-- Guardamos el curso padre
+                    'course_schedule_id' => $laravel_schedule_id, // <-- GUARDAMOS LA SECCIÓN CORRECTA
                     'status' => 'Pendiente', // 'Pendiente' de pago
                     'enrollment_date' => now(),
                 ]);
+                // FIN: CAMBIO DE LÓGICA DE INSCRIPCIÓN
 
                 // 5. Crear el Pago (Payment) pendiente
-                // Asumimos que el precio está en el Módulo.
-                // Si el curso tiene múltiples módulos, tomamos el primero.
-                $module = $laravelCourse->modules->first(); // Asunción: el precio se basa en el primer módulo
+                
+                // INICIO: CAMBIO DE LÓGICA DE PAGO
+                // Obtenemos el módulo (y el precio) desde la sección, no desde el curso.
+                $schedule = CourseSchedule::with('module')->find($laravel_schedule_id);
+                $module = $schedule->module;
+                
+                if (!$module) {
+                    // Esto no debería pasar si la data está bien
+                    throw new \Exception("La sección {$laravel_schedule_id} no está enlazada a un módulo.");
+                }
+
                 $amount = $module->price ?? 0;
-                $payment_concept_id = $module->payment_concept_id ?? null;
+                $payment_concept_id = $module->payment_concept_id ?? null; // Asumiendo que tienes esta columna en el módulo
+                // FIN: CAMBIO DE LÓGICA DE PAGO
 
                 Payment::create([
                     'student_id' => $student->id,

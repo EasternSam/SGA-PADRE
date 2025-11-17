@@ -12,6 +12,7 @@ class ScheduleMapping extends Model
     protected $fillable = [
         'wp_schedule_string',
         'course_schedule_id',
+        'wp_course_id', // <-- AÑADIDO: Faltaba este campo
     ];
 
     /**
