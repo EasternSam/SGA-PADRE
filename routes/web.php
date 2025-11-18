@@ -2,8 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ReportController;
-use App\Http\Controllers\ProfileController; 
-use Illuminate\Support\Facades\Auth; 
+use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Auth;
+
+// NO HAY 'use' para los componentes de Livewire aquí
 
 /*
 |--------------------------------------------------------------------------
@@ -24,7 +26,7 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
         $user = Auth::user();
-        
+
         // --- ¡¡¡CORRECCIÓN!!! ---
         // Se usan los roles en español
         if ($user->hasRole('Admin')) {
@@ -34,7 +36,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         } elseif ($user->hasRole('Profesor')) { // Cambiado de 'Teacher'
             return redirect()->route('teacher.dashboard');
         }
-        
+
         // Fallback por si no tiene rol (esto causa que se quede en 'perfil')
         return redirect()->route('profile.edit');
     })->name('dashboard');
@@ -54,12 +56,16 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
     Route::get('/students/profile/{student}', \App\Livewire\StudentProfile\Index::class)->name('admin.students.profile'); // Cambiado studentId a student
     Route::get('/courses', \App\Livewire\Courses\Index::class)->name('admin.courses.index');
     Route::get('/finance/payment-concepts', \App\Livewire\Finance\PaymentConcepts::class)->name('admin.finance.concepts');
-    
+
     // --- RUTAS GESTIÓN DE PROFESORES (ACTUALIZADAS) ---
     // Ruta para la lista de profesores
     Route::get('/teachers', \App\Livewire\Teachers\Index::class)->name('admin.teachers.index');
     // Ruta para el perfil de un profesor (pasando el 'user' como 'teacher')
     Route::get('/teachers/profile/{teacher}', \App\Livewire\TeacherProfile\Index::class)->name('admin.teachers.profile');
+
+    // --- RUTA AÑADIDA PARA GESTIÓN DE SOLICITUDES (ADMIN) ---
+    // ¡CORRECCIÓN! Usar el FQCN (Fully Qualified Class Name)
+    Route::get('/requests', \App\Livewire\Admin\RequestsManagement::class)->name('admin.requests');
 
     // Alias para que 'admin.profile.edit' apunte a la ruta de perfil genérica.
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
@@ -68,12 +74,16 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
 // --- RUTAS DE ESTUDIANTE ---
 Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student.')->group(function () { // Cambiado de 'Student' y añadido prefijo de nombre
     Route::get('/dashboard', \App\Livewire\StudentPortal\Dashboard::class)->name('dashboard');
-    
+
     // --- ¡¡¡CORRECCIÓN DE RUTA!!! ---
     // Cambiamos el parámetro {enrollment} a {enrollmentId}
     // para que coincida con la variable del método mount()
     Route::get('/course/{enrollmentId}', \App\Livewire\StudentPortal\CourseDetail::class)->name('course.detail');
-    
+
+    // --- RUTA AÑADIDA PARA SOLICITUDES (ESTUDIANTE) ---
+    // ¡CORRECCIÓN! Usar el FQCN (Fully Qualified Class Name)
+    Route::get('/requests', \App\Livewire\StudentPortal\Requests::class)->name('requests');
+
     // Alias para que 'student.profile.edit' apunte a la ruta de perfil genérica.
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
 });
@@ -83,11 +93,11 @@ Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student
 // Se añade 'Admin' para que el administrador pueda ver las secciones de asistencia y notas
 Route::middleware(['auth', 'role:Profesor|Admin'])->prefix('teacher')->group(function () { // Cambiado de 'Teacher'
     Route::get('/dashboard', \App\Livewire\TeacherPortal\Dashboard::class)->name('teacher.dashboard');
-    // --- ¡CORRECCIÓN! ---
+    // --- ¡CORRECIÓN! ---
     // Las rutas de 'grades' y 'attendance' deben aceptar el ID de la sección
     Route::get('/grades/{section}', \App\Livewire\TeacherPortal\Grades::class)->name('teacher.grades');
     Route::get('/attendance/{section}', \App\Livewire\TeacherPortal\Attendance::class)->name('teacher.attendance');
-    
+
     // Alias para que 'teacher.profile.edit' apunte a la ruta de perfil genérica.
     Route::get('/profile', [ProfileController::class, 'edit'])->name('teacher.profile.edit');
 });

@@ -97,6 +97,17 @@
                     </svg>
                     <span>{{ __('Conceptos de Pago') }}</span>
                 </x-responsive-nav-link>
+
+                <!-- --- INICIO: ENLACE AÑADIDO PARA SOLICITUDES (ADMIN) --- -->
+                <x-responsive-nav-link :href="route('admin.requests')" :active="request()->routeIs('admin.requests')" wire:navigate>
+                    <!-- Icono: Clipboard Document List -->
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375c.621 0 1.125.504 1.125 1.125v.375M10.125 2.25v3.375c0 .621.504 1.125 1.125 1.125h3.375M9 15l2.25 2.25L15 15m-6 6h6" />
+                    </svg>
+                    <span>{{ __('Solicitudes') }}</span>
+                </x-responsive-nav-link>
+                <!-- --- FIN: ENLACE AÑADIDO PARA SOLICITUDES (ADMIN) --- -->
+
             </div>
         @endrole
 
@@ -140,6 +151,17 @@
                     </svg>
                     <span>{{ __('Mi Expediente') }}</span>
                 </x-responsive-nav-link>
+
+                <!-- --- INICIO: ENLACE AÑADIDO PARA SOLICITUDES (ESTUDIANTE) --- -->
+                <x-responsive-nav-link :href="route('student.requests')" :active="request()->routeIs('student.requests')" wire:navigate>
+                    <!-- Icono: Clipboard Document List -->
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375c.621 0 1.125.504 1.125 1.125v.375M10.125 2.25v3.375c0 .621.504 1.125 1.125 1.125h3.375M9 15l2.25 2.25L15 15m-6 6h6" />
+                    </svg>
+                    <span>{{ __('Solicitudes') }}</span>
+                </x-responsive-nav-link>
+                <!-- --- FIN: ENLACE AÑADIDO PARA SOLICITUDES (ESTUDIANTE) --- -->
+
             </div>
         @endrole
     </nav>

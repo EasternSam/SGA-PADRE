@@ -83,4 +83,13 @@ class Student extends Model
     {
         return $this->first_name . ' ' . $this->last_name;
     }
+
+    /**
+     * Un estudiante puede tener muchas solicitudes.
+     * ESTA ES LA NUEVA FUNCIÓN AÑADIDA
+     */
+    public function requests()
+    {
+        return $this->hasMany(StudentRequest::class);
+    }
 }
