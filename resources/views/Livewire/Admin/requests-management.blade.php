@@ -39,7 +39,7 @@
                                     <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                                 </tr>
                             </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
+                            <tbody class="bg-white divide-y divide-gray-200">
                                 @forelse($requests as $request)
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $request->created_at->format('d/m/Y H:i') }}</td>
@@ -54,8 +54,8 @@
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <!-- El botón no cambia, ya pasa el ID correctamente -->
-                                            <x-primary-button wire:click="viewRequest({{ $request->id }})">
+                                            <!-- type="button" es crucial para prevenir submit accidental -->
+                                            <x-primary-button type="button" wire:click="viewRequest({{ $request->id }})">
                                                 {{ __('Ver / Gestionar') }}
                                             </x-primary-button>
                                         </td>
@@ -78,68 +78,66 @@
     </div>
 
     <!-- Modal para Gestionar Solicitud -->
-    
-    {{-- El modal se vincula a la propiedad $showingModal del componente Livewire. --}}
-    {{-- @close se encarga de poner $showingModal en `false` cuando se cierra desde el frontend (ej. con la tecla ESC). --}}
-    <x-modal :show="$showingModal" @close="showingModal = false" max-width="lg">
-        
-        @if($selectedRequest)
-            <div class="p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">
-                    {{ __('Detalles de la Solicitud') }}
-                </h3>
+    @if($showingModal)
+        <!-- Corrección: Usamos show="true" como string o variable PHP limpia para evitar conflictos de parsing -->
+        <x-modal name="request-modal" :show="$showingModal" max-width="lg" x-on:close="$wire.closeModal()">
+            
+            @if($selectedRequest)
+                <div class="p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">
+                        {{ __('Detalles de la Solicitud') }}
+                    </h3>
 
-                <div class="space-y-4">
-                    <div>
-                        <strong>{{ __('Estudiante') }}:</strong>
-                        <span>{{ $selectedRequest->student->user->name ?? 'N/A' }}</span>
-                    </div>
-                    <div>
-                        <strong>{{ __('Email') }}:</strong>
-                        <span>{{ $selectedRequest->student->user->email ?? 'N/A' }}</span>
-                    </div>
-                     <div>
-                        <strong>{{ __('Fecha') }}:</strong>
-                        <span>{{ $selectedRequest->created_at->format('d/m/Y H:i A') }}</span>
-                    </div>
-                    <div>
-                        <strong>{{ __('Tipo') }}:</strong>
-                        <span>{{ $selectedRequest->type }}</span>
-                    </div>
-                    <div>
-                        <strong>{{ __('Detalles del Estudiante') }}:</strong>
-                        {{-- Usamos {!! nl2br(e(...)) !!} para preservar saltos de línea de forma segura --}}
-                        <p class="mt-1 p-2 bg-gray-50 rounded-md border border-gray-200" style="white-space: pre-wrap; word-break: break-word;">{!! nl2br(e($selectedRequest->details)) !!}</p>
-                    </div>
-                    <div>
-                        <strong>{{ __('Estado Actual') }}:</strong>
-                        <span>{{ ucfirst($selectedRequest->status) }}</span>
+                    <div class="space-y-4">
+                        <div>
+                            <strong>{{ __('Estudiante') }}:</strong>
+                            <span>{{ $selectedRequest->student->user->name ?? 'N/A' }}</span>
+                        </div>
+                        <div>
+                            <strong>{{ __('Email') }}:</strong>
+                            <span>{{ $selectedRequest->student->user->email ?? 'N/A' }}</span>
+                        </div>
+                         <div>
+                            <strong>{{ __('Fecha') }}:</strong>
+                            <span>{{ $selectedRequest->created_at->format('d/m/Y H:i A') }}</span>
+                        </div>
+                        <div>
+                            <strong>{{ __('Tipo') }}:</strong>
+                            <span>{{ $selectedRequest->type }}</span>
+                        </div>
+                        <div>
+                            <strong>{{ __('Detalles del Estudiante') }}:</strong>
+                            <p class="mt-1 p-2 bg-gray-50 rounded-md border border-gray-200" style="white-space: pre-wrap; word-break: break-word;">{!! nl2br(e($selectedRequest->details)) !!}</p>
+                        </div>
+                        <div>
+                            <strong>{{ __('Estado Actual') }}:</strong>
+                            <span>{{ ucfirst($selectedRequest->status) }}</span>
+                        </div>
+
+                        <hr>
+
+                        <!-- Formulario de Admin -->
+                        <div>
+                            <x-input-label for="adminNotes" :value="__('Notas del Administrador (Respuesta)')" />
+                            <textarea wire:model="adminNotes" id="adminNotes" rows="4" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" placeholder="{{ __('Escriba aquí la respuesta o notas internas...') }}"></textarea>
+                        </div>
                     </div>
 
-                    <hr>
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <x-secondary-button type="button" wire:click="closeModal">
+                            {{ __('Cancelar') }}
+                        </x-secondary-button>
+                        
+                        <x-danger-button type="button" wire:click="updateRequest('rechazado')">
+                            {{ __('Rechazar') }}
+                        </x-danger-button>
 
-                    <!-- Formulario de Admin -->
-                    <div>
-                        <x-input-label for="adminNotes" :value="__('Notas del Administrador (Respuesta)')" />
-                        <textarea wire:model="adminNotes" id="adminNotes" rows="4" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" placeholder="{{ __('Escriba aquí la respuesta o notas internas...') }}"></textarea>
+                        <x-primary-button type="button" class="bg-green-600 hover:bg-green-700" wire:click="updateRequest('aprobado')">
+                            {{ __('Aprobar') }}
+                        </x-primary-button>
                     </div>
                 </div>
-
-                <div class="mt-6 flex justify-end space-x-3">
-                    <x-secondary-button @click="showingModal = false">
-                        {{ __('Cancelar') }}
-                    </x-secondary-button>
-                    
-                    <x-danger-button wire:click="updateRequest('rechazado')">
-                        {{ __('Rechazar') }}
-                    </x-danger-button>
-
-                    <x-primary-button class="bg-green-600 hover:bg-green-700" wire:click="updateRequest('aprobado')">
-                        {{ __('Aprobar') }}
-                    </x-primary-button>
-                </div>
-            </div>
-        @endif
-    </x-modal>
-
+            @endif
+        </x-modal>
+    @endif
 </div>

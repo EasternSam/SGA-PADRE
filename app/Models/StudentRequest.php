@@ -11,6 +11,7 @@ class StudentRequest extends Model
 
     protected $fillable = [
         'student_id',
+        'course_id', // Agregado para vincular la solicitud al curso
         'type',
         'details',
         'status',
@@ -23,5 +24,13 @@ class StudentRequest extends Model
     public function student()
     {
         return $this->belongsTo(Student::class);
+    }
+
+    /**
+     * Obtiene el curso relacionado (si aplica).
+     */
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
     }
 }

@@ -17,17 +17,23 @@
 
     <!-- Mensajes Flash (Toast) -->
     @if (session()->has('message'))
-        <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show" 
-             class="fixed top-24 right-6 z-50 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg" role="alert">
-            <strong class="font-bold">¡Éxito!</strong>
-            <span class="block sm:inline">{{ session('message') }}</span>
+        <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 5000)" x-show="show" 
+             class="fixed top-24 right-6 z-50 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2" role="alert">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            <div>
+                <strong class="font-bold">¡Solicitud Enviada!</strong>
+                <span class="block sm:inline text-sm">{{ session('message') }}</span>
+            </div>
         </div>
     @endif
     @if (session()->has('error'))
-        <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show" 
-             class="fixed top-24 right-6 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg" role="alert">
-            <strong class="font-bold">¡Error!</strong>
-            <span class="block sm:inline">{{ session('error') }}</span>
+        <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 5000)" x-show="show" 
+             class="fixed top-24 right-6 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2" role="alert">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+            <div>
+                <strong class="font-bold">¡Atención!</strong>
+                <span class="block sm:inline text-sm">{{ session('error') }}</span>
+            </div>
         </div>
     @endif
 
@@ -70,18 +76,11 @@
                     </div>
                 </div>
 
-                {{-- Botones de Acción --}}
-                @if($enrollment->status === 'Cursando')
-                <div class="mt-6 pt-4 border-t border-sga-gray flex gap-4">
-                    <x-secondary-button wire:click="requestSectionChange">
-                        Solicitar Cambio de Sección
-                    </x-secondary-button>
-                    
-                    <x-danger-button wire:click="requestWithdrawal">
-                        Retirar Materia
-                    </x-danger-button>
-                </div>
-                @endif
+                {{-- 
+                   Se han eliminado los botones de acción (Cambio de Sección / Retiro) 
+                   para simplificar la vista.
+                --}}
+
             </div>
         </div>
 
