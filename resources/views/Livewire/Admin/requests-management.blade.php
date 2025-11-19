@@ -79,15 +79,10 @@
 
     <!-- Modal para Gestionar Solicitud -->
     
-    {{-- --- CORRECCIONES AQUÍ --- --}}
-    {{-- 1. Cambiamos los comentarios de HTML (<!--) a comentarios de Blade ({{--). --}}
-    {{-- 2. Quitamos wire:model.live --}}
-    {{-- 3. Añadimos :show="$showingModal" --}}
-    {{-- 4. Añadimos @close="$set('showingModal', false)" para que el botón 'X' o el clic fuera del modal funcionen --}}
-    <x-modal :show="$showingModal" @close="$set('showingModal', false)" max-width="lg">
+    {{-- El modal se vincula a la propiedad $showingModal del componente Livewire. --}}
+    {{-- @close se encarga de poner $showingModal en `false` cuando se cierra desde el frontend (ej. con la tecla ESC). --}}
+    <x-modal :show="$showingModal" @close="showingModal = false" max-width="lg">
         
-        {{-- --- CORRECCIÓN EN ESTA LÍNEA --- --}}
-        {{-- 5. Añadimos un @if *dentro* del modal para evitar errores --}}
         @if($selectedRequest)
             <div class="p-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">
@@ -113,7 +108,7 @@
                     </div>
                     <div>
                         <strong>{{ __('Detalles del Estudiante') }}:</strong>
-                        {{-- CORRECCIÓN: Usar {!! nl2br(e($selectedRequest->details)) !!} para preservar saltos de línea y evitar XSS --}}
+                        {{-- Usamos {!! nl2br(e(...)) !!} para preservar saltos de línea de forma segura --}}
                         <p class="mt-1 p-2 bg-gray-50 rounded-md border border-gray-200" style="white-space: pre-wrap; word-break: break-word;">{!! nl2br(e($selectedRequest->details)) !!}</p>
                     </div>
                     <div>
@@ -131,7 +126,7 @@
                 </div>
 
                 <div class="mt-6 flex justify-end space-x-3">
-                    <x-secondary-button wire:click="closeModal">
+                    <x-secondary-button @click="showingModal = false">
                         {{ __('Cancelar') }}
                     </x-secondary-button>
                     
