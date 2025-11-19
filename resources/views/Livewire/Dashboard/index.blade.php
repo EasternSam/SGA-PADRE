@@ -1,188 +1,325 @@
-<div>
-    {{-- Slot del Encabezado (definido en app.blade.php) --}}
+<div class="min-h-screen bg-gray-50 pb-8">
+    
+    {{-- HEADER --}}
     <x-slot name="header">
-        <h2 class="text-xl font-semibold leading-tight text-sga-text">
-            {{ __('Dashboard') }}
-        </h2>
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h2 class="text-xl font-bold leading-tight text-gray-900">
+                    {{ __('Panel de Control') }}
+                </h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    Bienvenido al sistema de gestión de {{ config('app.name', 'SGA') }}.
+                </p>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md shadow-sm">
+                    <span class="flex h-2 w-2 rounded-full bg-green-500"></span>
+                    <span class="text-sm font-medium text-gray-600">Sistema en línea</span>
+                </div>
+                <span class="hidden sm:block text-sm font-medium text-gray-500 bg-white px-3 py-1.5 rounded-md border border-gray-200 shadow-sm">
+                    {{ now()->format('d M, Y') }}
+                </span>
+            </div>
+        </div>
     </x-slot>
 
-    <!-- --- ¡NUEVO DISEÑO DE DASHBOARD! --- -->
-    <div class="space-y-6">
-        
-        <!-- Saludo -->
-        <div>
-            <h3 class="text-2xl font-semibold text-sga-text">
-                Bienvenido de nuevo, <span class="text-sga-secondary">{{ Auth::user()->name }}</span>
-            </h3>
-            <p class="text-sga-text-light">
-                Aquí tienes un resumen de la actividad reciente.
-            </p>
-        </div>
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-6 sm:mt-8 space-y-6 sm:space-y-8">
 
-        <!-- 1. Tarjetas de Estadísticas -->
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            
+        {{-- 1. TARJETAS KPI --}}
+        <div class="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <!-- Card: Estudiantes -->
-            <div class="overflow-hidden rounded-lg bg-sga-card shadow">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <!-- Icono -->
-                            <span class="rounded-md bg-sga-secondary/10 p-3 text-sga-secondary">
-                                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372m-10.75 0a9.38 9.38 0 0 0 2.625.372M12 6.875c-1.036 0-1.875.84-1.875 1.875s.84 1.875 1.875 1.875 1.875-.84 1.875-1.875S13.036 6.875 12 6.875Zm0 0v.002v-.002Z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15c-1.036 0-1.875.84-1.875 1.875s.84 1.875 1.875 1.875 1.875-.84 1.875-1.875S13.036 15 12 15Zm0 0v.002v-.002Z" />
-                                </svg>
-                            </span>
-                        </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="truncate text-sm font-medium text-sga-text-light">Estudiantes</dt>
-                                <dd class="text-3xl font-bold tracking-tight text-sga-text">{{ $totalStudents }}</dd>
-                            </dl>
+            <div class="relative overflow-hidden rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-900/5 transition-all hover:shadow-md border-t-4 border-blue-500">
+                <div class="flex items-center gap-4">
+                    <div class="shrink-0 rounded-md bg-blue-50 p-3">
+                        <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-500 truncate">Estudiantes</p>
+                        <div class="flex items-baseline">
+                            <p class="text-2xl font-semibold text-gray-900">{{ $totalStudents }}</p>
+                            <p class="ml-2 text-xs font-medium text-gray-400">Registrados</p>
                         </div>
                     </div>
                 </div>
+                <a href="{{ route('admin.students.index') }}" wire:navigate class="absolute inset-0 z-10 focus:outline-none"></a>
             </div>
 
             <!-- Card: Cursos -->
-            <div class="overflow-hidden rounded-lg bg-sga-card shadow">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                             <!-- Icono -->
-                             <span class="rounded-md bg-sga-accent/10 p-3 text-sga-accent">
-                                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.25c2.291 0 4.545-.16 6.731-.462a60.504 60.504 0 0 0-.49-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.75c2.395 0 4.708.16 6.949.462a59.903 59.903 0 0 1-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.5c2.389 0 4.692-.157 6.928-.461" />
-                                </svg>
-                            </span>
-                        </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="truncate text-sm font-medium text-sga-text-light">Cursos</dt>
-                                <dd class="text-3xl font-bold tracking-tight text-sga-text">{{ $totalCourses }}</dd>
-                            </dl>
+            <div class="relative overflow-hidden rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-900/5 transition-all hover:shadow-md border-t-4 border-indigo-500">
+                <div class="flex items-center gap-4">
+                    <div class="shrink-0 rounded-md bg-indigo-50 p-3">
+                        <svg class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.499 5.221 50.59 50.59 0 00-2.658.814m-15.482 0A50.617 50.617 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" /></svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-500 truncate">Cursos</p>
+                        <div class="flex items-baseline">
+                            <p class="text-2xl font-semibold text-gray-900">{{ $totalCourses }}</p>
+                            <p class="ml-2 text-xs font-medium text-gray-400">En catálogo</p>
                         </div>
                     </div>
                 </div>
+                <a href="{{ route('admin.courses.index') }}" wire:navigate class="absolute inset-0 z-10 focus:outline-none"></a>
             </div>
 
             <!-- Card: Profesores -->
-            <div class="overflow-hidden rounded-lg bg-sga-card shadow">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                             <!-- Icono -->
-                             <span class="rounded-md bg-sga-accent-purple/10 p-3 text-sga-accent-purple">
-                                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                </svg>
-                            </span>
-                        </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="truncate text-sm font-medium text-sga-text-light">Profesores</dt>
-                                <dd class="text-3xl font-bold tracking-tight text-sga-text">{{ $totalTeachers }}</dd>
-                            </dl>
+            <div class="relative overflow-hidden rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-900/5 transition-all hover:shadow-md border-t-4 border-purple-500">
+                <div class="flex items-center gap-4">
+                    <div class="shrink-0 rounded-md bg-purple-50 p-3">
+                        <svg class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-1.294-1.579 6.721 6.721 0 01-1.294 1.579 2.25 2.25 0 01-2.25 2.25h-1.5a2.25 2.25 0 00-2.25 2.25v.75h15v-.75a2.25 2.25 0 00-2.25-2.25h-1.5a2.25 2.25 0 01-2.25-2.25z" /></svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-500 truncate">Profesores</p>
+                        <div class="flex items-baseline">
+                            <p class="text-2xl font-semibold text-gray-900">{{ $totalTeachers }}</p>
+                            <p class="ml-2 text-xs font-medium text-gray-400">Activos</p>
                         </div>
                     </div>
                 </div>
+                <a href="{{ route('admin.teachers.index') }}" wire:navigate class="absolute inset-0 z-10 focus:outline-none"></a>
             </div>
 
             <!-- Card: Inscripciones -->
-            <div class="overflow-hidden rounded-lg bg-sga-card shadow">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                             <!-- Icono -->
-                             <span class="rounded-md bg-sga-accent-red/10 p-3 text-sga-accent-red">
-                                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-1.5h5.25m-5.25 0h3m-3 0h-3m0 0h1.5M5.625 4.5H18.375a3 3 0 0 1 3 3V16.5a3 3 0 0 1-3 3H5.625a3 3 0 0 1-3-3V7.5a3 3 0 0 1 3-3Zm0 0V6.25m0 0h5.25m-5.25 0h3m-3 0h-3m0 0h1.5m-1.5 0h.008v.007H4.5Z" />
-                                </svg>
-                            </span>
-                        </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="truncate text-sm font-medium text-sga-text-light">Inscripciones</dt>
-                                <dd class="text-3xl font-bold tracking-tight text-sga-text">{{ $totalEnrollments }}</dd>
-                            </dl>
+            <div class="relative overflow-hidden rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-900/5 transition-all hover:shadow-md border-t-4 border-green-500">
+                <div class="flex items-center gap-4">
+                    <div class="shrink-0 rounded-md bg-green-50 p-3">
+                        <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" /></svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-500 truncate">Inscripciones</p>
+                        <div class="flex items-baseline">
+                            <p class="text-2xl font-semibold text-gray-900">{{ $totalEnrollments }}</p>
+                            <p class="ml-2 text-xs font-medium text-gray-400">Totales</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 2. Gráfica y Tabla -->
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {{-- 2. SECCIÓN PRINCIPAL --}}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             
-            <!-- Columna Izquierda: Inscripciones Recientes -->
-            <div class="overflow-hidden rounded-lg bg-sga-card shadow lg:col-span-2">
-                <div class="px-4 py-5 sm:p-6">
-                    <h3 class="text-lg font-medium leading-6 text-sga-text">
-                        Inscripciones Recientes
-                    </h3>
-                    
-                    <!-- Tabla -->
-                    <div class="mt-4 flow-root">
-                        <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                            <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                                <table class="min-w-full divide-y divide-sga-gray">
-                                    <thead>
-                                        <tr>
-                                            <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-sga-text sm:pl-0">Estudiante</th>
-                                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-sga-text">Curso</th>
-                                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-sga-text">Estado</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-sga-gray bg-sga-card">
-                                        @forelse ($recentEnrollments as $enrollment)
-                                            <tr wire:key="{{ $enrollment->id }}">
-                                                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-0">
-                                                    <div class="font-medium text-sga-text">{{ $enrollment->student->fullName ?? 'N/A' }}</div>
-                                                    <div class="text-sga-text-light">{{ $enrollment->student->email ?? 'N/A' }}</div>
-                                                </td>
-                                                <td class="whitespace-nowrap px-3 py-4 text-sm text-sga-text-light">
-                                                    <div class="font-medium text-sga-text">{{ $enrollment->courseSchedule->module->course->name ?? 'N/A' }}</div>
-                                                    <div class="text-sga-text-light">{{ $enrollment->courseSchedule->module->name ?? 'N/A' }}</div>
-                                                </td>
-                                                <td class="whitespace-nowrap px-3 py-4 text-sm">
-                                                    {{-- Estado (Ejemplo de 'badge') --}}
-                                                    <span class="inline-flex items-center rounded-full bg-sga-success/10 px-2.5 py-0.5 text-xs font-medium text-sga-success">
-                                                        {{ $enrollment->status ?? 'Activo' }}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        @empty
-                                            <tr>
-                                                <td colspan="3" class="whitespace-nowrap px-3 py-4 text-center text-sm text-sga-text-light">
-                                                    No hay inscripciones recientes.
-                                                </td>
-                                            </tr>
-                                        @endforelse
-                                    </tbody>
-                                </table>
+            {{-- COLUMNA IZQUIERDA: Tabla Detallada --}}
+            <div class="lg:col-span-2 space-y-6">
+                
+                <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-900/5">
+                    {{-- Header con TABS FUNCIONALES --}}
+                    <div class="border-b border-gray-200 px-4 py-5 sm:px-6">
+                        <div class="-ml-4 -mt-2 flex flex-wrap items-center justify-between sm:flex-nowrap">
+                            <div class="ml-4 mt-2">
+                                <h3 class="text-base font-semibold leading-6 text-gray-900">Inscripciones Recientes</h3>
+                            </div>
+                            <div class="ml-4 mt-2 flex-shrink-0">
+                                <nav class="flex flex-wrap gap-2" aria-label="Tabs">
+                                    {{-- Tab: Todas --}}
+                                    <button wire:click="setFilter('all')" 
+                                            class="rounded-md px-3 py-2 text-sm font-medium transition-colors {{ $enrollmentFilter === 'all' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50' }}">
+                                        Todas
+                                    </button>
+                                    
+                                    {{-- Tab: Pendientes --}}
+                                    <button wire:click="setFilter('Pendiente')" 
+                                            class="rounded-md px-3 py-2 text-sm font-medium transition-colors {{ $enrollmentFilter === 'Pendiente' ? 'bg-yellow-50 text-yellow-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50' }}">
+                                        Pendientes
+                                    </button>
+                                    
+                                    {{-- Tab: Activas --}}
+                                    <button wire:click="setFilter('Activo')" 
+                                            class="rounded-md px-3 py-2 text-sm font-medium transition-colors {{ $enrollmentFilter === 'Activo' ? 'bg-green-50 text-green-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50' }}">
+                                        Activas
+                                    </button>
+                                </nav>
                             </div>
                         </div>
                     </div>
 
-                </div>
-            </div>
-
-            <!-- Columna Derecha: Gráfica Placeholder -->
-            <div class="overflow-hidden rounded-lg bg-sga-card shadow">
-                <div class="px-4 py-5 sm:p-6">
-                    <h3 class="text-lg font-medium leading-6 text-sga-text">
-                        Estudiantes por Curso
-                    </h3>
-                    <div class="mt-4 flex h-64 items-center justify-center rounded-lg border-2 border-dashed border-sga-gray">
-                        <span class="text-sm text-sga-text-light">
-                            (Aquí va la gráfica de donut)
-                        </span>
+                    {{-- Cuerpo de la Tabla --}}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full whitespace-nowrap text-left text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 font-medium text-gray-900">Estudiante</th>
+                                    <th scope="col" class="px-6 py-3 font-medium text-gray-900">Curso</th>
+                                    <th scope="col" class="px-6 py-3 font-medium text-gray-900">Estado</th>
+                                    <th scope="col" class="px-6 py-3 font-medium text-gray-900 text-right">Fecha</th>
+                                    <th scope="col" class="px-6 py-3 font-medium text-gray-900 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 bg-white">
+                                @forelse ($recentEnrollments as $enrollment)
+                                    <tr class="hover:bg-gray-50 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center">
+                                                <div class="h-10 w-10 flex-shrink-0 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold border border-gray-200">
+                                                    {{ substr($enrollment->student->fullName ?? 'U', 0, 2) }}
+                                                </div>
+                                                <div class="ml-4">
+                                                    <div class="font-medium text-gray-900">{{ $enrollment->student->fullName ?? 'Desconocido' }}</div>
+                                                    <div class="text-gray-500 text-xs">{{ $enrollment->student->email ?? '' }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex flex-col">
+                                                <span class="text-gray-900 font-medium">{{ $enrollment->courseSchedule->module->course->name ?? 'N/A' }}</span>
+                                                <span class="text-gray-500 text-xs">{{ $enrollment->courseSchedule->module->name ?? '' }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            @php
+                                                $badgeStyle = match($enrollment->status) {
+                                                    'Activo' => 'bg-green-50 text-green-700 border-green-200',
+                                                    'Pendiente' => 'bg-yellow-50 text-yellow-800 border-yellow-200',
+                                                    'Cancelado' => 'bg-red-50 text-red-700 border-red-200',
+                                                    default => 'bg-gray-50 text-gray-600 border-gray-200',
+                                                };
+                                            @endphp
+                                            <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold {{ $badgeStyle }}">
+                                                {{ $enrollment->status ?? 'N/A' }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-right text-gray-500">
+                                            {{ $enrollment->created_at ? $enrollment->created_at->format('d M, Y') : '-' }}
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            {{-- Botón Ver funcional (Redirige al perfil del estudiante) --}}
+                                            @if($enrollment->student)
+                                                <a href="{{ route('admin.students.profile', $enrollment->student->id) }}" wire:navigate class="text-gray-400 hover:text-indigo-600 transition-colors">
+                                                    <span class="sr-only">Ver</span>
+                                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    </svg>
+                                                </a>
+                                            @else
+                                                <span class="text-gray-300">-</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-10 text-center text-gray-500 italic">
+                                            No hay inscripciones {{ $enrollmentFilter === 'all' ? 'recientes' : strtolower($enrollmentFilter).'s' }}.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="border-t border-gray-200 bg-gray-50 px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <span class="text-xs text-gray-500 text-center sm:text-left">Mostrando últimos registros</span>
+                        <a href="{{ route('admin.students.index') }}" wire:navigate class="text-sm font-medium text-indigo-600 hover:text-indigo-500 text-center sm:text-right">
+                            Ver directorio completo &rarr;
+                        </a>
                     </div>
                 </div>
             </div>
 
-        </div>
+            {{-- COLUMNA DERECHA: Sidebar --}}
+            <div class="space-y-6">
+                
+                <!-- Panel: Accesos Directos -->
+                <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-900/5 p-5">
+                    <h3 class="text-base font-semibold text-gray-900 mb-4">Accesos Rápidos</h3>
+                    <div class="space-y-2">
+                        <a href="{{ route('admin.students.index') }}" wire:navigate class="group flex items-center justify-between rounded-md border border-gray-200 p-3 hover:border-indigo-500 hover:bg-indigo-50 hover:ring-1 hover:ring-indigo-500 transition-all">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-8 w-8 items-center justify-center rounded bg-indigo-100 text-indigo-600 group-hover:bg-white">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" /></svg>
+                                </div>
+                                <span class="font-medium text-gray-700 group-hover:text-indigo-900">Nuevo Estudiante</span>
+                            </div>
+                            <svg class="h-4 w-4 text-gray-400 group-hover:text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                        </a>
 
+                        <a href="{{ route('admin.finance.concepts') }}" wire:navigate class="group flex items-center justify-between rounded-md border border-gray-200 p-3 hover:border-green-500 hover:bg-green-50 hover:ring-1 hover:ring-green-500 transition-all">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-8 w-8 items-center justify-center rounded bg-green-100 text-green-600 group-hover:bg-white">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" /></svg>
+                                </div>
+                                <span class="font-medium text-gray-700 group-hover:text-green-900">Registrar Pago</span>
+                            </div>
+                            <svg class="h-4 w-4 text-gray-400 group-hover:text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                        </a>
+
+                        <a href="{{ route('admin.courses.index') }}" wire:navigate class="group flex items-center justify-between rounded-md border border-gray-200 p-3 hover:border-purple-500 hover:bg-purple-50 hover:ring-1 hover:ring-purple-500 transition-all">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-8 w-8 items-center justify-center rounded bg-purple-100 text-purple-600 group-hover:bg-white">
+                                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
+                                </div>
+                                <span class="font-medium text-gray-700 group-hover:text-purple-900">Gestionar Cursos</span>
+                            </div>
+                            <svg class="h-4 w-4 text-gray-400 group-hover:text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Panel: Timeline -->
+                <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-900/5 p-5">
+                    <h3 class="text-base font-semibold text-gray-900 mb-4">Actividad Reciente</h3>
+                    <div class="flow-root">
+                        <ul role="list" class="-mb-8">
+                            @forelse($recentActivities as $activity)
+                                <li>
+                                    <div class="relative pb-8">
+                                        @unless($loop->last)
+                                            <span class="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                        @endunless
+                                        <div class="relative flex space-x-3">
+                                            <div>
+                                                @php
+                                                    $desc = strtolower($activity->description ?? '');
+                                                    $iconClass = match(true) {
+                                                        str_contains($desc, 'creado') || str_contains($desc, 'registrado') => 'bg-green-100 text-green-600',
+                                                        str_contains($desc, 'eliminado') => 'bg-red-100 text-red-600',
+                                                        str_contains($desc, 'actualizado') || str_contains($desc, 'editado') => 'bg-blue-100 text-blue-600',
+                                                        default => 'bg-gray-100 text-gray-600'
+                                                    };
+                                                @endphp
+                                                <span class="h-8 w-8 rounded-full {{ $iconClass }} flex items-center justify-center ring-8 ring-white">
+                                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                                    </svg>
+                                                </span>
+                                            </div>
+                                            <div class="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
+                                                <div>
+                                                    <p class="text-sm text-gray-500">
+                                                        {{ $activity->description }} 
+                                                        @if(isset($activity->causer))
+                                                            por <span class="font-medium text-gray-900">{{ $activity->causer->name ?? 'Sistema' }}</span>
+                                                        @endif
+                                                    </p>
+                                                </div>
+                                                <div class="whitespace-nowrap text-right text-xs text-gray-500">
+                                                    {{ $activity->created_at->diffForHumans() }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            @empty
+                                <li>
+                                    <div class="relative pb-8">
+                                        <div class="relative flex space-x-3">
+                                            <div>
+                                                <span class="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center ring-8 ring-white">
+                                                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                </span>
+                                            </div>
+                                            <div class="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
+                                                <div>
+                                                    <p class="text-sm text-gray-500">No hay actividad reciente registrada.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            @endforelse
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
