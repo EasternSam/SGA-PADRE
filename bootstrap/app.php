@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 
 // --- 1. IMPORTAR LOS MIDDLEWARE DE SPATIE ---
 use Spatie\Permission\Middleware\RoleMiddleware;
@@ -15,14 +16,21 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    // --- SOLUCIÓN: REGISTRO EXPLÍCITO DE COMANDOS ---
+    // Esto asegura que Laravel encuentre tu comando WipeStudents.php
+    ->withCommands([
+        __DIR__.'/../app/Console/Commands',
+    ])
     ->withMiddleware(function (Middleware $middleware) {
         
         // --- 2. REGISTRAR LOS ALIASES ---
-        // Esto le dice a Laravel qué hacer cuando vea 'role:' o 'permission:'
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
         ]);
+
+        // --- 3. SOLUCIÓN ERROR 401 NGROK ---
+        $middleware->trustProxies(at: '*');
 
     })
     ->withExceptions(function (Exceptions $exceptions) {

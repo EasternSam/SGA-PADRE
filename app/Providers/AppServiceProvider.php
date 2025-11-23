@@ -4,7 +4,6 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
-// 1. IMPORTAMOS EL FACADE DE URL
 use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,16 +21,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Tu código original
+        // 1. Configuración de BD
         Schema::defaultStringLength(191);
 
-        // 2. AÑADIMOS ESTA CONDICIÓN PARA ARREGLAR NGROK (Mixed Content)
-        // Si la app está en 'local' (para Ngrok) o 'production',
-        // fuerza que todos los enlaces (asset(), route()) se generen con https.
-        
-        // ¡CORRECCIÓN! Debe ser 'https' (con una 's'), no 'httpss'.
-        if (config('app.env') === 'local' || config('app.env') === 'production') {
+        // 2. CORRECCIÓN PARA NGROK (Error 401)
+        if ($this->app->environment('production') || str_contains(request()->getHost(), 'ngrok')) {
             URL::forceScheme('https');
         }
+
+        // 3. CORRECCIÓN LÍMITE LIVEWIRE (Error 12288KB)
+        // Livewire trae un límite por defecto de 12MB en su configuración interna.
+        // Aquí lo forzamos a 100MB (102400 KB) para que acepte tu CSV.
+        config(['livewire.temporary_file_upload.rules' => 'file|max:102400']);
     }
 }

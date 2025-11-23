@@ -4,8 +4,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Auth;
+use App\Livewire\Admin\DatabaseImport; // <--- ÚNICA IMPORTACIÓN NECESARIA AÑADIDA
 
-// NO HAY 'use' para los componentes de Livewire aquí
+// NO HAY 'use' para los componentes de Livewire aquí (se usan inline abajo)
 
 /*
 |--------------------------------------------------------------------------
@@ -66,6 +67,9 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
     // --- RUTA AÑADIDA PARA GESTIÓN DE SOLICITUDES (ADMIN) ---
     // ¡CORRECCIÓN! Usar el FQCN (Fully Qualified Class Name)
     Route::get('/requests', \App\Livewire\Admin\RequestsManagement::class)->name('admin.requests');
+
+    // --- RUTA NUEVA PARA EL IMPORTADOR DE BASE DE DATOS ---
+    Route::get('/import', DatabaseImport::class)->name('admin.import');
 
     // Alias para que 'admin.profile.edit' apunte a la ruta de perfil genérica.
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
