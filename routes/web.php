@@ -118,6 +118,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/reports/attendance-report/{section}', [ReportController::class, 'generateAttendanceReport'])->name('reports.attendance-report');
 });
 
-
+// --- RUTAS PARA CAMBIO DE CONTRASEÑA OBLIGATORIO ---
+Route::middleware(['auth'])->group(function () {
+    Route::get('/force-password-change', [\App\Http\Controllers\Auth\ForcePasswordChangeController::class, 'show'])
+        ->name('password.force_change');
+        
+    Route::post('/force-password-change', [\App\Http\Controllers\Auth\ForcePasswordChangeController::class, 'update'])
+        ->name('password.force_update');
+});
 // Rutas de autenticación
 require __DIR__.'/auth.php';

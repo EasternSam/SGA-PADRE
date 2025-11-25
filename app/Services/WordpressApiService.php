@@ -103,6 +103,23 @@ class WordpressApiService
         return [];
     }
 
+    /**
+     * Obtiene una lista simplificada de cursos (solo ID y título) para el importador.
+     * Este es un alias o adaptador para que el comando de importación funcione 
+     * si espera 'getCourses' en lugar de 'getSgaCourses'.
+     *
+     * @return array
+     */
+    public function getCourses(): array
+    {
+        // Reutilizamos el método principal
+        $courses = $this->getSgaCourses();
+        
+        // Si necesitas transformar la estructura para que coincida con lo que espera el importador, hazlo aquí.
+        // Por ahora, asumimos que getSgaCourses devuelve lo que necesitas.
+        return $courses;
+    }
+
     // INICIO: Método añadido para obtener horarios
     /**
      * Obtiene los horarios de un curso específico de WordPress.

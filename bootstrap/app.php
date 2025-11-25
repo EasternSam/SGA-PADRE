@@ -5,9 +5,11 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 
-// --- 1. IMPORTAR LOS MIDDLEWARE DE SPATIE ---
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\PermissionMiddleware;
+// Importar el nuevo middleware
+use App\Http\Middleware\ForcePasswordChange;
+use App\Console\Commands\ImportStudentsFast;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -16,20 +18,20 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    // --- SOLUCIÓN: REGISTRO EXPLÍCITO DE COMANDOS ---
-    // Esto asegura que Laravel encuentre tu comando WipeStudents.php
     ->withCommands([
-        __DIR__.'/../app/Console/Commands',
+        ImportStudentsFast::class, 
     ])
     ->withMiddleware(function (Middleware $middleware) {
         
-        // --- 2. REGISTRAR LOS ALIASES ---
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
         ]);
 
-        // --- 3. SOLUCIÓN ERROR 401 NGROK ---
+        // --- REGISTRAR MIDDLEWARE GLOBAL O ALIAS ---
+        // Lo agregamos al grupo 'web' para que se ejecute en todas las rutas de navegador
+        $middleware->appendToGroup('web', ForcePasswordChange::class);
+
         $middleware->trustProxies(at: '*');
 
     })
