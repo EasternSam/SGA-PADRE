@@ -24,20 +24,25 @@
             <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">
                 Gestión de Estudiantes
             </h1>
-            {{-- ¡REPARACIÓN! Este botón llama a 'create()' que ahora dispara el evento --}}
             <button wire:click="create()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
                 <i class="fas fa-plus-circle mr-2"></i>Crear Nuevo Estudiante
             </button>
         </div>
 
-        {{-- Barra de Búsqueda --}}
-        <div class="mt-6">
+        {{-- Barra de Búsqueda OPTIMIZADA --}}
+        <div class="mt-6 relative">
             <input 
-                wire:model.live.debounce.300ms="search" 
+                wire:model.live.debounce.500ms="search" 
                 type="text" 
-                placeholder="Buscar por nombre, apellido, email o cédula..." 
+                placeholder="Buscar por nombre, apellido, email, cédula o matrícula..." 
                 class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
+            <div wire:loading wire:target="search" class="absolute right-3 top-3">
+                <svg class="animate-spin h-5 w-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
         </div>
     </div>
 
@@ -61,16 +66,17 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     @forelse ($students as $student)
-                        <tr class="hover:bg-gray-50" wire:key="student-{{ $student->id }}">
+                        {{-- IMPORTANTE: wire:key es vital para rendimiento en listas grandes --}}
+                        <tr class="hover:bg-gray-50" wire:key="student-row-{{ $student->id }}">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-10 w-10">
-                                        {{-- Usamos el accesor 'fullName' (o 'name' si no existe) --}}
-                                        <img class="h-10 w-10 rounded-full" src="https://ui-avatars.com/api/?name={{ urlencode($student->fullName ?? $student->first_name) }}&background=1e3a8a&color=ffffff&size=128" alt="">
+                                        <img class="h-10 w-10 rounded-full" src="https://ui-avatars.com/api/?name={{ urlencode($student->first_name . ' ' . $student->last_name) }}&background=1e3a8a&color=ffffff&size=128" alt="">
                                     </div>
                                     <div class="ml-4">
-                                        {{-- Usamos el accesor 'fullName' --}}
-                                        <div class="text-sm font-medium text-gray-900">{{ $student->fullName }}</div>
+                                        <div class="text-sm font-medium text-gray-900">
+                                            {{ $student->first_name }} {{ $student->last_name }}
+                                        </div>
                                         <div class="text-sm text-gray-500">{{ $student->email }}</div>
                                     </div>
                                 </div>
@@ -79,13 +85,10 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $student->mobile_phone ?? 'N/A' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
                                 
-                                {{-- ¡¡¡AQUÍ ESTÁ LA CORRECCIÓN!!! --}}
-                                {{-- La ruta correcta es 'admin.students.profile' (con 's') según web.php --}}
-                                <a href="{{ route('admin.students.profile', $student) }}" class="text-indigo-600 hover:text-indigo-900" title="Ver Perfil">
+                                <a href="{{ route('admin.students.profile', $student->id) }}" class="text-indigo-600 hover:text-indigo-900" title="Ver Perfil">
                                     <i class="fas fa-eye"></i>
                                 </a>
 
-                                {{-- ¡REPARACIÓN! Este botón llama a 'edit()' que ahora dispara el evento --}}
                                 <button wire:click="edit({{ $student->id }})" class="text-blue-600 hover:text-blue-900" title="Editar">
                                     <i class="fas fa-edit"></i>
                                 </button>
@@ -107,18 +110,14 @@
 
         {{-- Paginación --}}
         <div class="p-6 border-t border-gray-200">
-            {{ $students->links('vendor.livewire.tailwind') }}
+            {{ $students->links() }}
         </div>
     </div>
 
     {{-- Modal de Crear/Editar Estudiante --}}
-    
-    {{-- ¡¡¡REPARACIÓN!!! --}}
-    {{-- Cambiado :show por 'name' y se usa el 'maxWidth' más grande --}}
     <x-modal name="student-form-modal" maxWidth="5xl">
         <div class="p-6">
             <h2 class="text-lg font-medium text-gray-900 mb-6">
-                {{-- Usamos tu $modalTitle --}}
                 {{ $modalTitle }}
             </h2>
 
@@ -201,14 +200,12 @@
 
                     <!-- Información del Tutor (Condicional) -->
                     <div class="flex items-center">
-                        {{-- ¡REPARACIÓN! Añadimos .live para que el bloque de tutor aparezca al instante --}}
                         <input wire:model.live="is_minor" id="is_minor" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
                         <label for="is_minor" class="ml-2 block text-sm text-gray-900">
                             ¿Es el estudiante menor de edad?
                         </label>
                     </div>
 
-                    {{-- ¡REPARACIÓN! Usamos $wire.is_minor para que Alpine reaccione al cambio de Livewire --}}
                     <fieldset x-data="{ showTutor: $wire.is_minor }" x-show="showTutor" x-init="$watch('$wire.is_minor', value => showTutor = value)"
                               class="border border-gray-300 p-4 rounded-lg"
                               x-transition:enter="transition ease-out duration-300"
@@ -242,13 +239,28 @@
                             </div>
                         </div>
                     </fieldset>
+                    
+                    <!-- Seguridad (Solo al editar y si se desea cambiar) -->
+                    @if($student_id)
+                    <fieldset class="border border-red-200 bg-red-50 p-4 rounded-lg">
+                        <legend class="text-md font-medium text-red-800 px-2">Seguridad (Opcional)</legend>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                            <div>
+                                <x-input-label for="password" value="Nueva Contraseña" />
+                                <x-text-input wire:model.defer="password" id="password" class="block mt-1 w-full" type="password" />
+                                <x-input-error :messages="$errors->get('password')" class="mt-2" />
+                            </div>
+                            <div>
+                                <x-input-label for="password_confirmation" value="Confirmar Contraseña" />
+                                <x-text-input wire:model.defer="password_confirmation" id="password_confirmation" class="block mt-1 w-full" type="password" />
+                            </div>
+                        </div>
+                    </fieldset>
+                    @endif
 
                 </div>
 
-                {{-- Botones del Modal --}}
                 <div class="flex justify-end mt-8 pt-6 border-t border-gray-200">
-                    {{-- ¡¡¡REPARACIÓN!!! --}}
-                    {{-- Este botón ahora llama a 'closeModal', que dispara el evento correcto --}}
                     <button type="button" wire:click="closeModal" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2 transition ease-in-out duration-150">
                         Cancelar
                     </button>
