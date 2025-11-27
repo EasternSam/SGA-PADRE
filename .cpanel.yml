@@ -5,7 +5,7 @@ deployment:
     # IMPORTANTE: Cambia 'tu_usuario' por tu usuario real de cPanel
     # Si es el dominio principal, suele ser /home/tu_usuario/public_html
     # Si es un subdominio, suele ser /home/tu_usuario/public_html/subdominio
-    - export DEPLOYPATH=/home/grupaqgl/public_html/sga
+    - export DEPLOYPATH=/home/grupaqgl/public_html/sga.90s.agency
 
     # 2. Copiar los archivos del repositorio a la carpeta pública
     # La bandera -R es recursiva (carpetas)
