@@ -5,6 +5,8 @@ namespace App\Livewire\StudentPortal;
 use Livewire\Component;
 use App\Models\Enrollment;
 use App\Models\Attendance;
+use App\Models\Module; // Añadido
+use App\Models\Course; // Añadido
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -18,6 +20,10 @@ class CourseDetail extends Component
     public $absentClasses = 0;
     public $tardyClasses = 0;
 
+    // NUEVAS PROPIEDADES PARA NAVEGACIÓN Y LÓGICA SECUENCIAL
+    public $course = null;
+    public $allModules = [];
+
     /**
      * Mounta el componente y carga la información de la inscripción (enrollment).
      *
@@ -25,43 +31,114 @@ class CourseDetail extends Component
      */
     public function mount($enrollmentId)
     {
-        // --- ¡CAMBIO! ---
-        // Vamos a hacer la verificación de forma más segura.
-        
         // 1. Obtener el ID del estudiante de forma segura
-        // Se usa el operador '?' (nullsafe) por si 'user' o 'student' son nulos.
         $studentId = Auth::user()?->student?->id;
 
         // 2. Si no hay ID de estudiante, no podemos continuar.
         if (!$studentId) {
-            // Esto es un error grave, probablemente el usuario no es un estudiante.
-            // Redirigimos al dashboard con un error.
             session()->flash('error', 'No se pudo verificar su perfil de estudiante.');
-            
-            // --- ¡¡¡ESTA ES LA CORRECCIÓN DEL BUCLE!!! ---
-            // Redirigimos directamente al dashboard de estudiante, NO a la ruta genérica 'dashboard'.
             return redirect()->route('student.dashboard'); 
         }
 
         // 3. Buscar la inscripción
-        // Usamos first() en lugar de firstOrFail()
         $enrollment = Enrollment::with(['student', 'courseSchedule.module.course', 'courseSchedule.teacher'])
-                            ->where('id', $enrollmentId)
-                            ->where('student_id', $studentId) // Asegurarnos de que la inscripción le pertenece
-                            ->first();
+                                ->where('id', $enrollmentId)
+                                ->where('student_id', $studentId)
+                                ->first();
 
         // 4. Verificar si se encontró la inscripción
-        // Si $enrollment es nulo, significa que no se encontró o no le pertenece.
         if (!$enrollment) {
-            // Esto es lo que probablemente causaba el 404 (a través de firstOrFail).
-            // Ahora, redirigimos al dashboard del estudiante con un mensaje de error claro.
             session()->flash('error', 'La inscripción solicitada no se encontró o no le pertenece.');
             return redirect()->route('student.dashboard');
         }
 
         // 5. Si todo está bien, asignamos la inscripción y cargamos la asistencia
         $this->enrollment = $enrollment;
+        
+        // --- NUEVO: Cargar contexto del curso y otros módulos ---
+        if ($this->enrollment->courseSchedule && $this->enrollment->courseSchedule->module) {
+            $this->course = $this->enrollment->courseSchedule->module->course;
+            // Cargar todos los módulos del curso para mostrarlos
+            $this->allModules = $this->course->modules()->orderBy('id')->get();
+        }
+        // --- FIN NUEVO ---
+
         $this->loadAttendanceSummary();
+    }
+
+    /**
+     * NUEVA FUNCIÓN: Inscribirse en un módulo siguiente (Lógica Secuencial)
+     */
+    public function enroll($moduleId)
+    {
+        $student = Auth::user()->student;
+
+        if (!$student) {
+            $this->dispatch('error', 'Perfil de estudiante no encontrado.');
+            return;
+        }
+
+        $moduleToEnroll = Module::find($moduleId);
+        if (!$moduleToEnroll) {
+            $this->dispatch('error', 'Módulo no encontrado.');
+            return;
+        }
+
+        // Verificar si ya está inscrito
+        $alreadyEnrolled = Enrollment::where('student_id', $student->id)
+            ->where('module_id', $moduleId)
+            ->exists();
+
+        if ($alreadyEnrolled) {
+            $this->dispatch('info', 'Ya estás inscrito en este módulo.');
+            return;
+        }
+
+        // LÓGICA DE PRERREQUISITOS (Secuencial)
+        if ($this->course && $this->course->is_sequential) {
+            
+            // Buscar el primer módulo del curso (asumiendo orden por ID)
+            $firstModule = $this->course->modules()->orderBy('id', 'asc')->first();
+
+            // Si el módulo al que queremos inscribirnos NO es el primero
+            if ($firstModule && $moduleToEnroll->id !== $firstModule->id) {
+                
+                // Buscar el módulo inmediatamente anterior
+                $previousModule = $this->course->modules()
+                    ->where('id', '<', $moduleToEnroll->id)
+                    ->orderBy('id', 'desc')
+                    ->first();
+
+                if ($previousModule) {
+                    // Verificar si el estudiante aprobó (o completó) el módulo anterior
+                    $passedPrevious = Enrollment::where('student_id', $student->id)
+                        ->where('module_id', $previousModule->id)
+                        ->where(function($q) {
+                            $q->where('status', 'aprobado')
+                              ->orWhere('status', 'completado'); 
+                        })
+                        ->exists();
+
+                    if (!$passedPrevious) {
+                        session()->flash('error', 'Requisito no cumplido: Debes aprobar el módulo "' . $previousModule->name . '" antes de inscribirte en este.');
+                        return; // Detener proceso
+                    }
+                }
+            }
+        }
+
+        // Si pasa validaciones, crear inscripción
+        Enrollment::create([
+            'student_id' => $student->id,
+            'module_id' => $moduleId,
+            'status' => 'inscrito', 
+            'enrollment_date' => now(),
+        ]);
+
+        session()->flash('success', 'Inscripción exitosa en el módulo: ' . $moduleToEnroll->name);
+        
+        // Recargar la página para ver cambios
+        return redirect()->route('student.course-detail', ['enrollmentId' => $this->enrollment->id]);
     }
 
     /**
@@ -69,7 +146,6 @@ class CourseDetail extends Component
      */
     public function loadAttendanceSummary()
     {
-        // Nos aseguramos de que $enrollment no sea nulo antes de usarlo
         if (!$this->enrollment) {
             return;
         }
@@ -90,39 +166,29 @@ class CourseDetail extends Component
         }
     }
 
-    /**
-     * Maneja la solicitud de retiro del curso.
-     */
     public function requestWithdrawal()
     {
         session()->flash('message', 'Tu solicitud de retiro ha sido enviada.');
     }
     
-    /**
-     * Maneja la solicitud de cambio de sección.
-     */
     public function requestSectionChange()
     {
         session()->flash('message', 'Tu solicitud de cambio de sección ha sido enviada.');
     }
-
 
     /**
      * Renderiza la vista.
      */
     public function render()
     {
-        // Si $enrollment es nulo (porque falló el mount), 
-        // mostramos la vista pero estará mayormente vacía, 
-        // lo cual está bien porque el 'mount' ya habrá redirigido.
-        // O podemos ser más explícitos:
         if (!$this->enrollment) {
-            // Renderiza una vista "vacía" o de "carga" si la redirección falla
             return view('livewire.student-portal.course-detail-empty')
                     ->layout('layouts.dashboard');
         }
 
-        return view('livewire.student-portal.course-detail')
-                ->layout('layouts.dashboard'); // Usa el layout principal
+        return view('livewire.student-portal.course-detail', [
+            'course' => $this->course, // Pasar variable extra a la vista
+            'allModules' => $this->allModules // Pasar módulos para listar opciones
+        ])->layout('layouts.dashboard'); 
     }
 }

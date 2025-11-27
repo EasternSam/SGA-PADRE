@@ -17,11 +17,17 @@ class Course extends Model
     protected $fillable = [
         'name',
         'description',
-        // 'code' // Lo mantenemos comentado ya que no está en tu migración original
-        // NOTA: Tu migración 2025_11_05_000019_add_code_to_courses_table.php SÍ AÑADE 'code'.
-        // Deberías añadir 'code' aquí para que funcione el modal de "Guardar Curso".
-        // Lo añadiré, ya que tu propio Livewire/Index.php lo está usando.
         'code',
+        'is_sequential', // Nuevo campo añadido
+    ];
+
+    /**
+     * Los atributos que deben ser convertidos.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'is_sequential' => 'boolean',
     ];
 
     /**

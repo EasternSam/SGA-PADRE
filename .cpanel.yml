@@ -1,18 +1,21 @@
 ---
 deployment:
   tasks:
-    # Define la carpeta de despliegue
-    - export DEPLOYDIR=/home/grupaqgl/sga-centu
+    # 1. Definir la ruta de destino (La carpeta pública de tu dominio)
+    # IMPORTANTE: Cambia 'tu_usuario' por tu usuario real de cPanel
+    # Si es el dominio principal, suele ser /home/tu_usuario/public_html
+    # Si es un subdominio, suele ser /home/tu_usuario/public_html/subdominio
+    - export DEPLOYPATH=/home/tu_usuario/public_html/
 
-    # 1. Instala las dependencias de PHP (el "motor" de Laravel)
-    # Usamos la ruta completa a composer de cPanel para más seguridad
-    - /opt/cpanel/composer/bin/composer install --no-dev --optimize-autoloader -d $DEPLOYDIR
+    # 2. Copiar los archivos del repositorio a la carpeta pública
+    # La bandera -R es recursiva (carpetas)
+    # Excluimos la carpeta .git para seguridad
+    - /bin/cp -R * $DEPLOYPATH
     
-    # 2. Limpia y guarda la caché de configuración
-    - php $DEPLOYDIR/artisan config:cache
+    # 3. Copiar archivos ocultos importantes (como .env.example o .gitignore si se necesitan)
+    # Nota: No copiamos .git
+    - /bin/cp .env.example $DEPLOYPATH
     
-    # 3. Limpia y guarda la caché de rutas
-    - php $DEPLOYDIR/artisan route:cache
-    
-    # 4. Limpia la caché de vistas (importante para Blade/Livewire)
-    - php $DEPLOYDIR/artisan view:clear
+    # Opcional: Si quieres que intente ejecutar comandos de composer automáticamente
+    # (A veces falla por permisos en servidores compartidos, mejor hacerlo manual la primera vez)
+    # - /bin/cd $DEPLOYPATH && /usr/bin/composer install --no-dev

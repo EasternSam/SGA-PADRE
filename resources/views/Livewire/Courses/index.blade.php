@@ -36,9 +36,16 @@
             <div class="bg-white rounded-lg shadow overflow-hidden">
                 <div class="p-4 border-b border-gray-200 flex justify-between items-center">
                     <h2 class="text-lg font-semibold text-gray-800">Cursos</h2>
-                    <button wire:click="createCourse" class="bg-indigo-600 text-white px-3 py-1 rounded-lg text-sm font-medium shadow-sm hover:bg-indigo-700">
-                        <i class="fas fa-plus mr-1"></i> Añadir
-                    </button>
+                    <div class="flex space-x-2">
+                        <!-- NUEVO: Botón de Limpieza -->
+                        <button wire:click="confirmClearUnusedCourses" class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded-lg text-xs font-medium shadow-sm" title="Eliminar cursos sin estudiantes">
+                            <i class="fas fa-trash-alt mr-1"></i> Limpiar
+                        </button>
+                        <!-- Botón Añadir -->
+                        <button wire:click="createCourse" class="bg-indigo-600 text-white px-3 py-1 rounded-lg text-sm font-medium shadow-sm hover:bg-indigo-700">
+                            <i class="fas fa-plus mr-1"></i> Añadir
+                        </button>
+                    </div>
                 </div>
                 <div class="p-4">
                     <ul class="divide-y divide-gray-200">
@@ -48,36 +55,30 @@
                                 <div class="flex justify-between items-center">
                                     <div>
                                         <span class="block font-medium text-gray-900">{{ $course->name }}</span>
-                                        {{-- MODIFICADO: Eliminada la referencia a 'credits' --}}
                                         <span class="block text-sm text-gray-500">{{ $course->code }}</span>
                                         
-                                        <!-- ================================================= -->
-                                        <!-- NUEVO BLOQUE DE ESTADO DE ENLACE (PUNTO 3) -->
-                                        <!-- ================================================= -->
+                                        <!-- NUEVO: Indicador Secuencial -->
+                                        @if($course->is_sequential)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 mt-1">
+                                                <i class="fas fa-list-ol mr-1"></i> Secuencial
+                                            </span>
+                                        @endif
+
                                         @if($course->mapping)
-                                            <span class="block text-xs text-green-600" title="ID de WP: {{ $course->mapping->wp_course_id }}">
+                                            <span class="block text-xs text-green-600 mt-1" title="ID de WP: {{ $course->mapping->wp_course_id }}">
                                                 <i class="fas fa-check-circle mr-1"></i>Enlazado: {{ $course->mapping->wp_course_name }}
                                             </span>
                                         @else
-                                            <span class="block text-xs text-gray-400 italic">
+                                            <span class="block text-xs text-gray-400 italic mt-1">
                                                 <i class="fas fa-times-circle mr-1"></i>No enlazado
                                             </span>
                                         @endif
-                                        <!-- ================================================= -->
-                                        <!-- FIN DE NUEVO BLOQUE -->
-                                        <!-- ================================================= -->
 
                                     </div>
                                     <div class="flex items-center">
-                                        <!-- ================================================= -->
-                                        <!-- NUEVO BOTÓN PARA ENLAZAR (PUNTO 3) -->
-                                        <!-- ================================================= -->
                                         <button wire:click.stop="openLinkModal({{ $course->id }})" class="text-gray-400 hover:text-blue-600 text-xs mr-2" title="Enlazar con WordPress">
                                             <i class="fas fa-link"></i>
                                         </button>
-                                        <!-- ================================================= -->
-                                        <!-- FIN DE NUEVO BOTÓN -->
-                                        <!-- ================================================= -->
                                         <button wire:click.stop="editCourse({{ $course->id }})" class="text-gray-400 hover:text-indigo-600 text-xs">
                                             <i class="fas fa-pencil-alt"></i>
                                         </button>
@@ -105,14 +106,12 @@
                     </div>
                     <div class="p-4">
                         <ul class="divide-y divide-gray-200">
-                            {{-- Usamos la variable $modules pasada por el componente --}}
                             @forelse ($modules as $module)
                                 <li wire:click="selectModule({{ $module->id }})"
                                     class="p-3 cursor-pointer hover:bg-gray-100 rounded-lg {{ $selectedModule == $module->id ? 'bg-indigo-100 border-l-4 border-indigo-500' : '' }}">
                                     <div class="flex justify-between items-center">
                                         <div>
                                             <span class="block font-medium text-gray-900">{{ $module->name }}</span>
-                                            {{-- MODIFICADO: Añadido el precio --}}
                                             <span class="block text-sm text-gray-500">Precio: ${{ number_format($module->price, 2) }}</span>
                                         </div>
                                         <button wire:click.stop="editModule({{ $module->id }})" class="text-gray-400 hover:text-indigo-600 text-xs">
@@ -156,22 +155,18 @@
                                                 {{ implode(', ', $schedule->days_of_week ?? []) }} | {{ $schedule->start_time ? \Carbon\Carbon::parse($schedule->start_time)->format('h:i A') : 'N/A' }} - {{ $schedule->end_time ? \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') : 'N/A' }}
                                             </span>
                                             
-                                            <!-- INICIO: Indicador de enlace de sección -->
                                             @if($schedule->mapping)
                                                 <span class="block text-xs text-green-600" title="WP Horario: {{ $schedule->mapping->wp_schedule_data }}">
                                                     <i class="fas fa-check-circle mr-1"></i>Sección Enlazada
                                                 </span>
                                             @endif
-                                            <!-- FIN: Indicador de enlace de sección -->
 
                                         </div>
                                         
-                                        <!-- INICIO: Botones de acción de sección modificados -->
                                         <div class="flex items-center">
-                                            <!-- Botón de Enlace de Sección -->
                                             @if($selectedCourseObject?->mapping)
                                                 @php
-                                                    $scheduleMapping = $schedule->mapping; // 'mapping' fue cargado en render()
+                                                    $scheduleMapping = $schedule->mapping; 
                                                 @endphp
                                                 <button wire:click.stop="openMapSectionModal({{ $schedule->id }})" 
                                                         class="text-gray-400 hover:text-blue-600 text-xs mr-2 {{ $scheduleMapping ? 'text-blue-600' : '' }}" 
@@ -184,12 +179,10 @@
                                                 </button>
                                             @endif
 
-                                            <!-- Botón de Editar (existente) -->
                                             <button wire:click.stop="editSchedule({{ $schedule->id }})" class="text-gray-400 hover:text-indigo-600 text-xs">
                                                 <i class="fas fa-pencil-alt"></i>
                                             </button>
                                         </div>
-                                        <!-- FIN: Botones de acción de sección modificados -->
 
                                     </div>
                                 </li>
@@ -213,6 +206,38 @@
 
     {{-- MODALES --}}
 
+    <!-- CORRECCIÓN: Modal de Confirmación de Limpieza (Estructura simple para usar con x-modal) -->
+    <x-modal name="confirm-clear-unused-modal">
+        <div class="p-6">
+            <h2 class="text-lg font-medium text-red-600 mb-4">⚠️ Confirmar Limpieza Masiva</h2>
+            
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-red-500"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-red-700">
+                            Estás a punto de eliminar <strong class="text-lg">{{ $unusedCoursesCount }}</strong> curso(s).
+                        </p>
+                        <p class="text-xs text-red-600 mt-1">
+                            Esta acción eliminará permanentemente los cursos que <strong>no tienen estudiantes inscritos</strong> en ninguno de sus módulos.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end mt-6 space-x-3">
+                <button type="button" x-on:click="$dispatch('close-modal', 'confirm-clear-unused-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">
+                    Cancelar
+                </button>
+                <button type="button" wire:click="clearUnusedCourses" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700">
+                    Sí, eliminar cursos vacíos
+                </button>
+            </div>
+        </div>
+    </x-modal>
+
     <!-- Modal de Curso -->
     <x-modal name="course-modal">
         <div class="p-6">
@@ -224,12 +249,20 @@
                         <x-text-input wire:model="course_code" id="course_code" class="block mt-1 w-full" type="text" />
                         @error('course_code') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
-                    {{-- MODIFICADO: Eliminado el campo 'credits' --}}
                 </div>
                 <div class="mt-4">
                     <x-input-label for="course_name" value="Nombre" />
                     <x-text-input wire:model="course_name" id="course_name" class="block mt-1 w-full" type="text" />
                     @error('course_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+
+                <!-- NUEVO: Checkbox para Módulos Secuenciales -->
+                <div class="mt-4 flex items-center">
+                    <input type="checkbox" id="is_sequential" wire:model="is_sequential" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <label for="is_sequential" class="ml-2 block text-sm text-gray-900">
+                        Módulos Requeridos (Secuencial)
+                        <span class="text-xs text-gray-500 block">Si se activa, los estudiantes deben aprobar el módulo 1 para inscribirse en el 2, etc.</span>
+                    </label>
                 </div>
                 
                 <div class="flex justify-end mt-6">
@@ -251,7 +284,6 @@
                     @error('module_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
 
-                {{-- MODIFICADO: Añadido campo de precio --}}
                 <div class="mt-4">
                     <label for="module_price" class="block text-sm font-medium text-gray-700">Precio</label>
                     <input id="module_price" wire:model="module_price" type="number" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
@@ -290,7 +322,6 @@
                     </div>
                 </div>
 
-                {{-- Campos de fecha --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <div>
                         <label for="start_date" class="block text-sm font-medium text-gray-700">Fecha de Inicio</label>
@@ -338,10 +369,7 @@
         </div>
     </x-modal>
 
-
-    <!-- ================================================= -->
-    <!-- NUEVO MODAL PARA ENLACE WP (PUNTO 3) -->
-    <!-- ================================================= -->
+    <!-- Modal Enlace WP (Sin cambios, solo contexto) -->
     <x-modal name="link-wp-modal" maxWidth="lg">
         <div class="p-6">
             <h2 class="text-lg font-medium text-gray-900 mb-2">Enlazar Curso con WordPress</h2>
@@ -352,7 +380,6 @@
                 </p>
             @endif
             
-            {{-- Indicador de Carga y Mensajes de Error/Feedback --}}
             <div wire:loading wire:target="openLinkModal, saveLink" class="w-full">
                 <div class="flex items-center p-3 text-sm text-blue-700 bg-blue-50 rounded-lg" role="alert">
                     <svg class="w-4 h-4 mr-2 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -374,7 +401,6 @@
                 </div>
             @endif
 
-            {{-- Solo muestra el selector si no hay error y no está cargando --}}
             <div wire:loading.remove wire:target="openLinkModal">
                 @if(!$linkErrorMessage && !empty($wpCourses))
                     <div class="mt-4">
@@ -399,11 +425,8 @@
             </div>
         </div>
     </x-modal>
-    <!-- ================================================= -->
-    <!-- FIN DE NUEVO MODAL -->
-    <!-- ================================================= -->
 
-    <!-- INICIO: Modal para Mapear Sección (Horario) -->
+    <!-- Modal Enlace Sección (Sin cambios, solo contexto) -->
     <x-modal name="link-section-modal" maxWidth="lg">
         <div class="p-6">
             <h2 class="text-lg font-medium text-gray-900 mb-2">Enlazar Sección con WordPress</h2>
@@ -414,7 +437,6 @@
                 </p>
             @endif
 
-            {{-- Indicador de Carga y Mensajes de Error --}}
             <div wire:loading wire:target="openMapSectionModal, saveSectionLink" class="w-full">
                 <div class="flex items-center p-3 text-sm text-blue-700 bg-blue-50 rounded-lg" role="alert">
                     <svg class="w-4 h-4 mr-2 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -431,7 +453,6 @@
                 </div>
             @endif
 
-            {{-- Selector de Horarios --}}
             <div wire:loading.remove wire:target="openMapSectionModal">
                 @if(!$sectionLinkErrorMessage && !empty($wpSchedules))
                     <div class="mt-4">
@@ -440,7 +461,6 @@
                             <option value="">-- Ninguno (Quitar enlace) --</option>
                             @foreach($wpSchedules as $wpSchedule)
                                 @php
-                                    // Formatear para mostrar
                                     $day = $wpSchedule['day'] ?? 'Día no def.';
                                     $start = isset($wpSchedule['start_time']) ? \Carbon\Carbon::parse($wpSchedule['start_time'])->format('h:i A') : 'N/A';
                                     $end = isset($wpSchedule['end_time']) ? \Carbon\Carbon::parse($wpSchedule['end_time'])->format('h:i A') : 'N/A';
@@ -465,6 +485,5 @@
             </div>
         </div>
     </x-modal>
-    <!-- FIN: Modal para Mapear Sección (Horario) -->
 
 </div>

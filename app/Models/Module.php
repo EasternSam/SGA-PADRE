@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Module extends Model
 {
@@ -11,7 +14,6 @@ class Module extends Model
 
     /**
      * Los atributos que se pueden asignar masivamente.
-     * (Alineado con la migración ...003)
      *
      * @var array<int, string>
      */
@@ -29,20 +31,30 @@ class Module extends Model
     /**
      * Relación: Un Módulo pertenece a un Curso.
      */
-    public function course()
+    public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
     }
 
     /**
      * Relación: Un Módulo tiene muchas Secciones (CourseSchedules).
-     * ¡ESTA ES LA CORRECCIÓN #6!
-     * Renombramos 'sections()' a 'schedules()' para que coincida
-     * con la consulta en 'app/Livewire/Courses/Index.php'.
      */
-    public function schedules()
+    public function schedules(): HasMany
     {
         // Esto asume que tu tabla 'course_schedules' tiene la foreign key 'module_id'
         return $this->hasMany(CourseSchedule::class, 'module_id');
+    }
+
+    /**
+     * Relación: Un módulo tiene muchas inscripciones a través de sus secciones.
+     * CORRECCIÓN: Usamos HasManyThrough para buscar enrollments vinculados a los schedules de este módulo.
+     */
+    public function enrollments(): HasManyThrough
+    {
+        // Estructura: Module -> tiene muchos CourseSchedule -> tiene muchos Enrollment
+        // Laravel buscará:
+        // 1. course_schedules.module_id (para conectar Módulo -> Sección)
+        // 2. enrollments.course_schedule_id (para conectar Sección -> Inscripción)
+        return $this->hasManyThrough(Enrollment::class, CourseSchedule::class);
     }
 }
