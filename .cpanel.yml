@@ -17,5 +17,5 @@ deployment:
     - /bin/cp .env.example $DEPLOYPATH
     
     # Opcional: Si quieres que intente ejecutar comandos de composer automáticamente
-    # (A veces falla por permisos en servidores compartidos, mejor hacerlo manual la primera vez)
+    # (A veces falla por permisos en servidores compartidos, mejor hacerlo m anual la primera vez)
     # - /bin/cd $DEPLOYPATH && /usr/bin/composer install --no-dev
