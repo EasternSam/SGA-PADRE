@@ -6,7 +6,6 @@ use Livewire\Component;
 use App\Models\Course;
 use App\Models\User;
 use App\Models\Student;
-use App\Models\Module;
 use App\Models\CourseSchedule;
 use App\Models\Attendance;
 use App\Models\Enrollment;
@@ -21,16 +20,14 @@ class Index extends Component
 
     // Filtros
     public $course_id = '';
-    public $module_id = ''; // NUEVO
     public $schedule_id = '';
     public $teacher_id = '';
     public $date_from;
     public $date_to;
-    public $payment_status = 'all';
+    public $payment_status = 'all'; // all, pending, paid
 
     // Datos para selects
     public $courses = [];
-    public $modules = []; // NUEVO
     public $schedules = [];
     public $teachers = [];
 
@@ -44,29 +41,15 @@ class Index extends Component
         $this->date_to = now()->endOfMonth()->format('Y-m-d');
         
         $this->courses = Course::orderBy('name')->get();
-        // Usamos role 'Profesor' o 'Teacher' segun tu Spatie/Sistema
+        // Ajusta el nombre del rol según tu base de datos ('Profesor' o 'Teacher')
         $this->teachers = User::role('Profesor')->orderBy('name')->get();
     }
 
     public function updatedCourseId($value)
     {
-        // Al cambiar el curso, cargamos los módulos y reseteamos lo demás
         if ($value) {
-            $this->modules = Module::where('course_id', $value)->orderBy('name')->get();
-        } else {
-            $this->modules = [];
-        }
-        
-        $this->module_id = '';
-        $this->schedules = [];
-        $this->schedule_id = '';
-    }
-
-    public function updatedModuleId($value)
-    {
-        // Al cambiar el módulo, cargamos las secciones (schedules)
-        if ($value) {
-            $this->schedules = CourseSchedule::where('module_id', $value)
+            $this->schedules = CourseSchedule::where('course_id', $value)
+                ->with('module') 
                 ->get();
         } else {
             $this->schedules = [];
@@ -111,7 +94,6 @@ class Index extends Component
 
         if (in_array($this->reportType, ['attendance', 'grades', 'students'])) {
             $rules['course_id'] = 'required';
-            $rules['module_id'] = 'required'; // NUEVO: Requerido para estos reportes
             $rules['schedule_id'] = 'required';
         }
 
@@ -121,9 +103,8 @@ class Index extends Component
         }
 
         $this->validate($rules, [
-            'course_id.required' => 'Seleccione un curso.',
-            'module_id.required' => 'Seleccione un módulo.',
-            'schedule_id.required' => 'Seleccione una sección.',
+            'course_id.required' => 'Debes seleccionar un curso.',
+            'schedule_id.required' => 'Debes seleccionar una sección.',
             'date_from.required' => 'La fecha de inicio es requerida.',
         ]);
     }
@@ -137,6 +118,7 @@ class Index extends Component
             $q->where('course_schedule_id', $this->schedule_id);
         })->orderBy('last_name')->orderBy('first_name')->get();
 
+        // Generar matriz de fechas
         $start = Carbon::parse($this->date_from);
         $end = Carbon::parse($this->date_to);
         $period = CarbonPeriod::create($start, $end);
@@ -208,6 +190,7 @@ class Index extends Component
 
         $payments = $query->latest()->get();
 
+        // Lógica simplificada de deuda
         $debts = [];
         if ($this->payment_status === 'pending' || $this->payment_status === 'all') {
             $debts = Enrollment::with(['student', 'courseSchedule.module.course'])
@@ -278,12 +261,7 @@ class Index extends Component
         }
         
         if ($this->course_id) {
-            $query->where('course_id', $this->course_id); // Esto funciona porque course_id NO está en CourseSchedule, pero aquí estamos filtrando.
-            // ESPERA: CourseSchedule no tiene course_id. 
-            // CORRECCIÓN: Debemos filtrar por relación module.course_id
-            $query->whereHas('module', function($q) {
-                $q->where('course_id', $this->course_id);
-            });
+            $query->where('course_id', $this->course_id);
         }
 
         $assignments = $query->get();
