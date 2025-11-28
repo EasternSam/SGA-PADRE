@@ -37,7 +37,7 @@
                 <div class="p-4 border-b border-gray-200 flex justify-between items-center">
                     <h2 class="text-lg font-semibold text-gray-800">Cursos</h2>
                     <div class="flex space-x-2">
-                        <!-- NUEVO: Botón de Limpieza -->
+                        <!-- Botón de Limpieza -->
                         <button wire:click="confirmClearUnusedCourses" class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded-lg text-xs font-medium shadow-sm" title="Eliminar cursos sin estudiantes">
                             <i class="fas fa-trash-alt mr-1"></i> Limpiar
                         </button>
@@ -57,7 +57,7 @@
                                         <span class="block font-medium text-gray-900">{{ $course->name }}</span>
                                         <span class="block text-sm text-gray-500">{{ $course->code }}</span>
                                         
-                                        <!-- NUEVO: Indicador Secuencial -->
+                                        <!-- Indicador Secuencial -->
                                         @if($course->is_sequential)
                                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 mt-1">
                                                 <i class="fas fa-list-ol mr-1"></i> Secuencial
@@ -154,6 +154,9 @@
                                             <span class="block text-sm text-gray-500">
                                                 {{ implode(', ', $schedule->days_of_week ?? []) }} | {{ $schedule->start_time ? \Carbon\Carbon::parse($schedule->start_time)->format('h:i A') : 'N/A' }} - {{ $schedule->end_time ? \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') : 'N/A' }}
                                             </span>
+                                            <span class="block text-xs font-semibold mt-1 {{ $schedule->modality === 'Virtual' ? 'text-purple-600' : ($schedule->modality === 'Semi-Presencial' ? 'text-orange-600' : 'text-blue-600') }}">
+                                                {{ $schedule->modality ?? 'Presencial' }}
+                                            </span>
                                             
                                             @if($schedule->mapping)
                                                 <span class="block text-xs text-green-600" title="WP Horario: {{ $schedule->mapping->wp_schedule_data }}">
@@ -206,7 +209,7 @@
 
     {{-- MODALES --}}
 
-    <!-- CORRECCIÓN: Modal de Confirmación de Limpieza (Estructura simple para usar con x-modal) -->
+    <!-- Modal de Confirmación de Limpieza -->
     <x-modal name="confirm-clear-unused-modal">
         <div class="p-6">
             <h2 class="text-lg font-medium text-red-600 mb-4">⚠️ Confirmar Limpieza Masiva</h2>
@@ -256,7 +259,7 @@
                     @error('course_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
 
-                <!-- NUEVO: Checkbox para Módulos Secuenciales -->
+                <!-- Checkbox para Módulos Secuenciales -->
                 <div class="mt-4 flex items-center">
                     <input type="checkbox" id="is_sequential" wire:model="is_sequential" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                     <label for="is_sequential" class="ml-2 block text-sm text-gray-900">
@@ -320,6 +323,17 @@
                         </select>
                         @error('teacher_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
+                </div>
+
+                <!-- CAMPO MODALIDAD AÑADIDO -->
+                <div class="mt-4">
+                    <label for="modality" class="block text-sm font-medium text-gray-700">Modalidad</label>
+                    <select id="modality" wire:model="modality" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        <option value="Presencial">Presencial</option>
+                        <option value="Virtual">Virtual</option>
+                        <option value="Semi-Presencial">Semi-Presencial</option>
+                    </select>
+                    @error('modality') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">

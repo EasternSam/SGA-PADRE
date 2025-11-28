@@ -39,7 +39,9 @@ class Index extends Component
     public $moduleModalTitle = '';
     
     // --- Propiedades para el modal de Horarios ---
+    // AÑADIDO: $modality
     public $schedule_id, $teacher_id, $days = [], $start_time, $end_time, $section_name, $start_date, $end_date;
+    public $modality = 'Presencial'; 
     public $scheduleModalTitle = '';
     public $teachers = []; 
 
@@ -328,6 +330,7 @@ class Index extends Component
             $this->days = $schedule->days_of_week ?? []; 
             
             $this->section_name = $schedule->section_name;
+            $this->modality = $schedule->modality ?? 'Presencial'; // AÑADIDO: Cargar modalidad existente
             
             $this->start_time = $schedule->start_time ? Carbon::parse($schedule->start_time)->format('H:i') : null;
             $this->end_time = $schedule->end_time ? Carbon::parse($schedule->end_time)->format('H:i') : null;
@@ -349,6 +352,7 @@ class Index extends Component
             'teacher_id' => 'required|exists:users,id',
             'days' => 'required|array|min:1', 
             'section_name' => 'nullable|string|max:100',
+            'modality' => 'required|in:Presencial,Virtual,Semi-Presencial', // AÑADIDO: Validación de modalidad
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
             'start_date' => 'required|date',
@@ -362,6 +366,7 @@ class Index extends Component
                 'teacher_id' => $this->teacher_id,
                 'days_of_week' => $this->days, 
                 'section_name' => $this->section_name,
+                'modality' => $this->modality, // AÑADIDO: Guardar modalidad
                 'start_time' => $this->start_time,
                 'end_time' => $this->end_time,
                 'start_date' => $this->start_date,
@@ -381,6 +386,7 @@ class Index extends Component
         $this->start_time = '';
         $this->end_time = '';
         $this->section_name = '';
+        $this->modality = 'Presencial'; // AÑADIDO: Resetear a default
         $this->start_date = '';
         $this->end_date = '';
     }
