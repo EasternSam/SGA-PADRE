@@ -9,6 +9,7 @@ use App\Models\Payment;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Collection;
+use Carbon\Carbon;
 
 #[Layout('layouts.dashboard')]
 class Dashboard extends Component
@@ -17,149 +18,147 @@ class Dashboard extends Component
     public ?Student $student;
     
     // Colecciones de datos
-    public Collection $activeEnrollments;    // Cursos 'Cursando' o 'Activo'
-    public Collection $pendingEnrollments;   // Inscripciones 'Pendiente' (de pago)
-    public Collection $completedEnrollments; // Cursos 'Completado'
-    public Collection $pendingPayments;      // Pagos con estado 'Pendiente' (para alertas)
-    public Collection $paymentHistory;       // Historial completo de pagos (NUEVO)
+    public Collection $activeEnrollments;    
+    public Collection $pendingEnrollments;   
+    public Collection $completedEnrollments; 
+    public Collection $pendingPayments;      
+    public Collection $paymentHistory;       
 
-    // --- Propiedades para el Modal de Completar Perfil (NUEVO) ---
+    // --- Propiedades para el Modal de Completar Perfil ---
     public bool $showProfileModal = false;
-    public $phone;
-    public $address;
+    
+    // Campos del formulario (NUEVOS)
+    public $mobile_phone; 
+    public $birth_date;   
+    public $address;      
+    public $gender;       
+    public $city;         
+    public $sector;       
 
-    /**
-     * Mounta el componente y carga todos los datos del estudiante.
-     */
     public function mount()
     {
-        // 1. Obtener el estudiante de forma segura
         $student = Auth::user()?->student; 
 
-        // 2. Verificar si el estudiante existe
         if (!$student) {
             if (!request()->routeIs('profile.edit')) {
-                session()->flash('error', 'Su cuenta de usuario no está enlazada a un perfil de estudiante. Por favor, contacte a soporte.');
+                session()->flash('error', 'Su cuenta de usuario no está enlazada a un perfil de estudiante.');
                 return redirect()->route('profile.edit');
             }
-            
             $this->student = null; 
-            // Inicializar colecciones vacías para evitar errores en la vista
-            $this->activeEnrollments = collect();
-            $this->pendingEnrollments = collect();
-            $this->completedEnrollments = collect();
-            $this->pendingPayments = collect();
-            $this->paymentHistory = collect();
+            $this->initEmptyCollections();
             return;
         }
 
-        // 3. Si existe, asignamos las propiedades
         $this->student = $student;
         
-        // --- LÓGICA DE ONBOARDING / COMPLETAR PERFIL (CORREGIDA) ---
-        // Cargar datos actuales en las propiedades del formulario
-        $this->phone = $this->student->phone;
+        // --- Cargar datos actuales en el formulario ---
+        // Usamos el operador ?? para evitar errores si el campo es null
+        $this->mobile_phone = $this->student->mobile_phone ?? $this->student->phone; // Si no hay móvil, sugerimos el fijo
+        $this->birth_date = $this->student->birth_date ? $this->student->birth_date->format('Y-m-d') : null;
         $this->address = $this->student->address;
+        $this->gender = $this->student->gender;
+        $this->city = $this->student->city;
+        $this->sector = $this->student->sector;
 
-        // Verificar si falta información o es "N/A" (Data sucia de importación)
-        // Solo abrimos el modal si hay un "N/A" explícito que necesitamos que el usuario corrija.
-        // Si el campo está vacío (null o string vacía), no molestamos porque es opcional.
+        // --- Verificar si falta información clave ---
+        // Activamos el modal si algún campo crítico tiene "N/A" o está vacío (según tu preferencia)
         if (
-            $this->isIncomplete($this->phone) || 
-            $this->isIncomplete($this->address)
+            $this->isIncomplete($this->mobile_phone) || 
+            $this->isIncomplete($this->address) ||
+            $this->isIncomplete($this->birth_date) ||
+            $this->isIncomplete($this->city)
         ) {
             $this->showProfileModal = true;
         }
-        // -------------------------------------------------------
 
-        // Base query para inscripciones
+        $this->loadStudentData();
+    }
+
+    private function initEmptyCollections()
+    {
+        $this->activeEnrollments = collect();
+        $this->pendingEnrollments = collect();
+        $this->completedEnrollments = collect();
+        $this->pendingPayments = collect();
+        $this->paymentHistory = collect();
+    }
+
+    private function loadStudentData()
+    {
         $baseQuery = Enrollment::with([
                 'courseSchedule.module.course',
                 'courseSchedule.teacher'
             ])
             ->where('student_id', $this->student->id);
 
-        // --- Carga de Datos ---
-
-        // A. Cursos Activos
         $this->activeEnrollments = (clone $baseQuery)
             ->whereIn('status', ['Cursando', 'cursando', 'Activo', 'activo'])
             ->get();
 
-        // B. Inscripciones Pendientes (Inscrito pero no cursando aun)
         $this->pendingEnrollments = (clone $baseQuery)
             ->whereIn('status', ['Pendiente', 'pendiente', 'Enrolled', 'enrolled'])
             ->get();
 
-        // C. Cursos Completados
         $this->completedEnrollments = (clone $baseQuery)
             ->whereIn('status', ['Completado', 'completado'])
             ->get();
 
-        // D. Pagos Pendientes (Para la alerta amarilla)
         $this->pendingPayments = Payment::with(['paymentConcept', 'enrollment.courseSchedule.module'])
             ->where('student_id', $this->student->id)
             ->where('status', 'Pendiente')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // E. Historial Completo de Pagos (Para la tabla lateral)
-        // Usamos tus relaciones: paymentConcept, enrollment->...
         $this->paymentHistory = Payment::with(['paymentConcept', 'enrollment.courseSchedule.module'])
             ->where('student_id', $this->student->id)
-            ->orderBy('created_at', 'desc') // Ordenar por fecha de creación (más reciente primero)
+            ->orderBy('created_at', 'desc')
             ->get();
     }
 
-    // --- Métodos de Onboarding (CORREGIDOS) ---
-
     /**
-     * Helper para verificar si un campo tiene "N/A".
-     * CORRECCIÓN: Si es vacío o null, devuelve false (correcto) porque el campo es opcional.
-     * Solo devuelve true si explícitamente dice "N/A" para obligar a limpiar ese dato sucio.
+     * Verifica si el campo tiene datos "basura" como N/A que necesitan limpieza.
+     * Si está vacío (null/empty string), retorna false porque es opcional.
      */
     private function isIncomplete($value)
     {
         if (empty($value)) return false; 
-        
-        // Verifica si el valor es "N/A" o "n/a"
         return strtoupper(trim($value)) === 'N/A';
     }
 
-    /**
-     * Guardar la información del perfil (Opcional)
-     */
     public function saveProfile()
     {
-        // Reglas 'nullable' porque es opcional
         $this->validate([
-            'phone' => 'nullable|string|max:50',
+            'mobile_phone' => 'nullable|string|max:20',
+            'birth_date' => 'nullable|date|before:today',
             'address' => 'nullable|string|max:255',
+            'gender' => 'nullable|in:Masculino,Femenino,Otro',
+            'city' => 'nullable|string|max:100',
+            'sector' => 'nullable|string|max:100',
         ]);
 
         if ($this->student) {
             $this->student->update([
-                'phone' => $this->phone,
+                'mobile_phone' => $this->mobile_phone,
+                // Opcional: Si 'phone' está vacío, lo llenamos con el móvil también
+                'phone' => $this->student->phone ?? $this->mobile_phone, 
+                'birth_date' => $this->birth_date,
                 'address' => $this->address,
+                'gender' => $this->gender,
+                'city' => $this->city,
+                'sector' => $this->sector,
             ]);
             
             $this->student->refresh();
-
-            session()->flash('message', 'Información de perfil actualizada correctamente.');
+            session()->flash('message', 'Perfil actualizado exitosamente.');
         }
 
-        // CORRECCIÓN: Cerramos el modal cambiando la variable Y despachando el evento
-        $this->showProfileModal = false;
-        $this->dispatch('close-modal', 'complete-profile-modal');
+        $this->closeProfileModal();
     }
 
-    /**
-     * Cerrar el modal sin guardar (Botón "Más tarde")
-     */
     public function closeProfileModal()
     {
         $this->showProfileModal = false;
-        // CORRECCIÓN: Despachamos el evento para asegurar que AlpineJS lo cierre
+        // Importante: Disparar evento para cerrar el modal en AlpineJS
         $this->dispatch('close-modal', 'complete-profile-modal');
     }
 

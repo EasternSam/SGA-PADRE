@@ -15,8 +15,8 @@ class Student extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'user_id', // <-- AÑADIDO: Para vincular con el User
-        'student_code', // Este será la "matrícula"
+        'user_id', // Vinculación con User
+        'student_code', // Matrícula
         'first_name',
         'last_name',
         'cedula',
@@ -27,13 +27,13 @@ class Student extends Model
         'address',
         'sector',
         'city',
-        'home_phone',
-        'mobile_phone',
-        'how_found', // (Ej. Redes Sociales, referido, etc.)
-        'status', // (Ej. Activo, Inactivo, Graduado, Prospecto)
-        'balance', // (Balance financiero pendiente)
-
-        // Campos de Tutor (si es menor)
+        'home_phone', // Teléfono residencial/fijo
+        'mobile_phone', // Teléfono celular
+        'how_found', // Fuente de captación
+        'status', // Activo, Inactivo, etc.
+        'balance', // Balance financiero
+        
+        // Campos de Tutor (para menores de edad)
         'is_minor',
         'tutor_name',
         'tutor_cedula',
@@ -77,19 +77,18 @@ class Student extends Model
     }
 
     /**
-     * Obtiene el nombre completo del estudiante.
-     */
-    public function getFullNameAttribute()
-    {
-        return $this->first_name . ' ' . $this->last_name;
-    }
-
-    /**
      * Un estudiante puede tener muchas solicitudes.
-     * ESTA ES LA NUEVA FUNCIÓN AÑADIDA
      */
     public function requests()
     {
         return $this->hasMany(StudentRequest::class);
+    }
+
+    /**
+     * Obtiene el nombre completo del estudiante.
+     */
+    public function getFullNameAttribute()
+    {
+        return "{$this->first_name} {$this->last_name}";
     }
 }
