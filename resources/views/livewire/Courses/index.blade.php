@@ -1,5 +1,6 @@
 <div> {{-- <--- ESTE ES EL DIV RAÍZ OBLIGATORIO QUE ABRE --}}
 
+
     {{-- Mensajes de Sesión (Flash) --}}
     <div class="fixed top-24 right-6 z-50">
         @if (session()->has('message'))
