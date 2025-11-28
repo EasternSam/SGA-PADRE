@@ -12,7 +12,6 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
 
-    {{-- ¡¡¡AQUÍ ESTÁ LA CORRECCIÓN!!! --}}
     {{-- Link para que funcionen los íconos (fas fa-eye, etc.) --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" xintegrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
@@ -20,7 +19,6 @@
     {{-- Esta directiva de Vite carga tu app.css y app.js --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <!-- ¡¡¡CORRECCIÓN AÑADIDA!!! -->
     <!-- Carga los estilos de Livewire (para modales, etc.) -->
     @livewireStyles
 
@@ -63,7 +61,7 @@
                             @endif
                         </div>
 
-                        <!-- Menú de usuario (opcional en la barra superior) -->
+                        <!-- Menú de usuario (Desktop) -->
                         <div class="hidden lg:block">
                             <div class="hidden sm:flex sm:items-center">
                                 <x-dropdown align="right" width="48">
@@ -94,6 +92,22 @@
                                 </x-dropdown>
                             </div>
                         </div>
+
+                        {{-- NUEVO: Botón de Cerrar Sesión para MÓVIL (lg:hidden) --}}
+                        <div class="flex items-center lg:hidden">
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" onclick="event.preventDefault(); this.closest('form').submit();"
+                                    class="-m-2.5 p-2.5 text-gray-400 hover:text-red-500 transition-colors"
+                                    title="Cerrar Sesión">
+                                    <span class="sr-only">Cerrar Sesión</span>
+                                    {{-- Usamos FontAwesome para el icono de salida --}}
+                                    <i class="fas fa-sign-out-alt h-6 w-6 text-xl"></i>
+                                </button>
+                            </form>
+                        </div>
+                        {{-- FIN NUEVO BOTÓN --}}
+
                     </div>
                 </div>
             </header>
@@ -107,7 +121,6 @@
         </div>
     </div>
 
-    <!-- ¡¡¡CORRECCIÓN AÑADIDA!!! -->
     <!-- Carga los scripts de Livewire (para wire:click, etc.) -->
     @livewireScripts
 </body>
