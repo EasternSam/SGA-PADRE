@@ -143,19 +143,61 @@
 
                                 {{-- Contenedor del Reporte (Scrollable) --}}
                                 <div class="p-6 overflow-auto max-h-[800px] bg-white rounded-b-lg">
-                                    {{-- Incluimos dinámicamente la vista según el tipo --}}
+                                    {{-- Incluimos dinámicamente la vista según el tipo, CON CHEQUEO DE EXISTENCIA --}}
                                     @if($generatedReportType === 'attendance')
-                                        @include('reports.attendance-report', ['data' => $reportData])
+                                        @if(view()->exists('reports.attendance-report'))
+                                            @include('reports.attendance-report', ['data' => $reportData])
+                                        @else
+                                            <div class="p-4 bg-red-50 text-red-600 border border-red-200 rounded">
+                                                <strong>Error 404 de Vista:</strong> No se encuentra <code>resources/views/reports/attendance-report.blade.php</code>.
+                                            </div>
+                                        @endif
+                                    
                                     @elseif($generatedReportType === 'grades')
-                                        @include('reports.grades-report', ['data' => $reportData])
+                                        @if(view()->exists('reports.grades-report'))
+                                            @include('reports.grades-report', ['data' => $reportData])
+                                        @else
+                                            <div class="p-4 bg-red-50 text-red-600 border border-red-200 rounded">
+                                                <strong>Error 404 de Vista:</strong> No se encuentra <code>resources/views/reports/grades-report.blade.php</code>.
+                                            </div>
+                                        @endif
+                                    
                                     @elseif($generatedReportType === 'payments')
-                                        @include('reports.financial-report', ['data' => $reportData])
+                                        @if(view()->exists('reports.financial-report'))
+                                            @include('reports.financial-report', ['data' => $reportData])
+                                        @else
+                                            <div class="p-4 bg-red-50 text-red-600 border border-red-200 rounded">
+                                                <strong>Error 404 de Vista:</strong> No se encuentra <code>resources/views/reports/financial-report.blade.php</code>.
+                                            </div>
+                                        @endif
+                                    
                                     @elseif($generatedReportType === 'students')
-                                        @include('reports.student-list-report', ['data' => $reportData])
+                                        @if(view()->exists('reports.student-list-report'))
+                                            @include('reports.student-list-report', ['data' => $reportData])
+                                        @else
+                                            <div class="p-4 bg-red-50 text-red-600 border border-red-200 rounded">
+                                                <strong>Error 404 de Vista:</strong> No se encuentra <code>resources/views/reports/student-list-report.blade.php</code>.
+                                            </div>
+                                        @endif
+                                    
                                     @elseif($generatedReportType === 'calendar')
-                                        @include('reports.calendar-report', ['data' => $reportData])
+                                        @if(view()->exists('reports.calendar-report'))
+                                            @include('reports.calendar-report', ['data' => $reportData])
+                                        @else
+                                            <div class="p-4 bg-red-50 text-red-600 border border-red-200 rounded">
+                                                <strong>Error 404 de Vista:</strong> No se encuentra <code>resources/views/reports/calendar-report.blade.php</code>.
+                                            </div>
+                                        @endif
+                                    
                                     @elseif($generatedReportType === 'assignments')
-                                        @include('reports.assignment-report', ['data' => $reportData])
+                                        @if(view()->exists('reports.assignment-report'))
+                                            @include('reports.assignment-report', ['data' => $reportData])
+                                        @else
+                                            <div class="p-4 bg-red-50 text-red-600 border border-red-200 rounded">
+                                                <strong>Error 404 de Vista:</strong> No se encuentra <code>resources/views/reports/assignment-report.blade.php</code>. <br>
+                                                <small class="text-gray-600">Verifique el nombre del archivo (minúsculas) y la ruta.</small>
+                                            </div>
+                                        @endif
                                     @endif
                                 </div>
                             @else

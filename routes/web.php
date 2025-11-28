@@ -107,7 +107,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
-    // --- NUEVO MÓDULO DE REPORTES (ACCESIBLE PARA ADMIN Y PROFESORES) ---
+    // --- NUEVO MÓDULO DE REPORTES ---
+    // Accesible para usuarios autenticados (se pueden añadir roles específicos si se desea)
     Route::get('/reports', \App\Livewire\Reports\Index::class)->name('reports.index');
 });
 
@@ -145,7 +146,7 @@ Route::middleware(['auth', 'role:Profesor|Admin'])->prefix('teacher')->group(fun
     Route::get('/profile', [ProfileController::class, 'edit'])->name('teacher.profile.edit');
 });
 
-// --- RUTAS DE REPORTES (Controlador Legacy, si se usa) ---
+// --- RUTAS DE REPORTES (Controlador Legacy, mantenido por compatibilidad si existen links antiguos) ---
 Route::middleware(['auth'])->group(function () {
     Route::get('/reports/student-report/{student}', [ReportController::class, 'generateStudentReport'])->name('reports.student-report');
     Route::get('/reports/attendance-report/{section}', [ReportController::class, 'generateAttendanceReport'])->name('reports.attendance-report');

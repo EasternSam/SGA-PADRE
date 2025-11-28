@@ -6,7 +6,7 @@
             <p class="text-sm text-gray-600">Periodo Académico Vigente</p>
         </div>
         <div class="text-right text-xs">
-            <p><strong>Generado:</strong> {{ now()->format('d/m/Y H:i') }}</p>
+            <p><strong>Generado:</strong> {{ now()->format('d/m/Y') }}</p>
         </div>
     </div>
 
@@ -40,7 +40,7 @@
                     <td class="border border-gray-300 px-3 py-2 text-center text-xs">
                         {{ $enrollment->status }}
                     </td>
-                    <td class="border border-gray-300 px-3 py-2 text-center font-bold {{ $enrollment->final_grade < 70 ? 'text-red-600' : 'text-blue-600' }}">
+                    <td class="border border-gray-300 px-3 py-2 text-center font-bold {{ ($enrollment->final_grade ?? 0) < 70 ? 'text-red-600' : 'text-blue-600' }}">
                         {{ $enrollment->final_grade ?? '-' }}
                     </td>
                 </tr>

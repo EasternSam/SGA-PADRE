@@ -41,7 +41,7 @@ class Index extends Component
         $this->date_to = now()->endOfMonth()->format('Y-m-d');
         
         $this->courses = Course::orderBy('name')->get();
-        // Usando el role 'Profesor' según tus archivos
+        // Ajusta el nombre del rol según tu base de datos ('Profesor' o 'Teacher')
         $this->teachers = User::role('Profesor')->orderBy('name')->get();
     }
 
@@ -49,7 +49,7 @@ class Index extends Component
     {
         if ($value) {
             $this->schedules = CourseSchedule::where('course_id', $value)
-                ->with('module') // Cargamos modulo si existe para mostrar nombre
+                ->with('module') 
                 ->get();
         } else {
             $this->schedules = [];
@@ -124,15 +124,7 @@ class Index extends Component
         $period = CarbonPeriod::create($start, $end);
         
         $dates = [];
-        $daysOfWeekMap = [
-            'Monday' => 1, 'Tuesday' => 2, 'Wednesday' => 3, 'Thursday' => 4, 
-            'Friday' => 5, 'Saturday' => 6, 'Sunday' => 0
-        ];
-        // En tu modelo, days_of_week es array. Puede ser nombres o números. Asumimos que viene de DB.
-        // Si tu array guarda 'Lunes', etc, habría que mapear. Asumimos formato Carbon estándar o numérico.
-        
         foreach ($period as $date) {
-            // Lógica simple: incluimos todos los días del rango para visualización completa
             $dates[] = $date->format('Y-m-d');
         }
 
@@ -163,7 +155,7 @@ class Index extends Component
         $enrollments = Enrollment::with('student')
             ->where('course_schedule_id', $this->schedule_id)
             ->get()
-            ->sortBy('student.last_name'); // Ordenar por apellido
+            ->sortBy('student.last_name');
 
         $this->reportData = [
             'schedule' => $schedule,
@@ -174,7 +166,6 @@ class Index extends Component
     // 3. REPORTE DE PAGOS
     public function generatePaymentsReport()
     {
-        // Consulta base: Estudiantes y sus pagos
         $query = Payment::with(['student', 'paymentConcept', 'enrollment.courseSchedule.module.course']);
 
         if ($this->date_from && $this->date_to) {
@@ -199,21 +190,15 @@ class Index extends Component
 
         $payments = $query->latest()->get();
 
-        // Para pagos PENDIENTES reales (deuda), la lógica es más compleja (buscar enrollments SIN pagos).
-        // Por simplicidad en este reporte, listamos transacciones registradas.
-        // Si necesitas "Deudas", habría que consultar Enrollments y restar pagos. 
-        // Implementamos una versión mixta si selecciona 'pending'.
-        
+        // Lógica simplificada de deuda
         $debts = [];
-        if ($this->payment_status === 'pending') {
-            // Buscar inscripciones activas que no tengan pago completo
-            // Esto es un ejemplo simplificado
+        if ($this->payment_status === 'pending' || $this->payment_status === 'all') {
             $debts = Enrollment::with(['student', 'courseSchedule.module.course'])
                 ->whereDoesntHave('payment', function($q) {
                     $q->where('status', 'paid');
                 })
-                ->where('status', 'Cursando') // Solo activos
-                ->limit(50) // Limite por rendimiento
+                ->where('status', 'Cursando') 
+                ->limit(50) 
                 ->get();
         }
 
@@ -245,7 +230,6 @@ class Index extends Component
     // 5. REPORTE DE CALENDARIO
     public function generateCalendarReport()
     {
-        // Buscar secciones activas en el rango
         $schedules = CourseSchedule::with(['module.course', 'teacher'])
             ->where(function($q) {
                 $q->whereBetween('start_date', [$this->date_from, $this->date_to])
@@ -265,11 +249,11 @@ class Index extends Component
         ];
     }
 
-    // 6. REPORTE DE ASIGNACIÓN (Cursos y Profesores)
+    // 6. REPORTE DE ASIGNACIÓN
     public function generateAssignmentsReport()
     {
         $query = CourseSchedule::with(['module.course', 'teacher'])
-            ->orderBy('teacher_id') // Agrupar por profesor visualmente
+            ->orderBy('teacher_id')
             ->orderBy('start_date');
 
         if ($this->teacher_id) {

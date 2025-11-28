@@ -29,14 +29,14 @@
                         @endif
                     </td>
                     <td class="border border-gray-300 p-2 align-top">
-                        {{-- CORRECCIÓN: Orden Curso -> Módulo -> Sección --}}
+                        {{-- JERARQUÍA SOLICITADA: CURSO -> MÓDULO -> SECCIÓN --}}
                         <div class="font-bold text-gray-900 text-sm mb-1">
                             {{ $assign->module->course->name ?? 'Curso N/A' }}
                         </div>
                         <div class="text-xs text-gray-600 uppercase mb-1">
-                            <span class="font-semibold">Módulo:</span> {{ $assign->module->name ?? 'General' }}
+                            <span class="font-semibold text-gray-500">Módulo:</span> {{ $assign->module->name ?? 'General' }}
                         </div>
-                        <div class="text-[11px] text-gray-500 italic bg-gray-50 inline-block px-1 rounded">
+                        <div class="text-[11px] text-gray-500 italic bg-gray-50 inline-block px-2 py-0.5 rounded border border-gray-200">
                             Sección: {{ $assign->section_name }}
                         </div>
                     </td>
