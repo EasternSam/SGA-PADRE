@@ -6,15 +6,20 @@
     </x-slot>
 
     <div class="py-12">
-        {{-- Usamos max-w-[95%] para permitir que los reportes anchos (como asistencia) se vean bien --}}
-        <div class="max-w-[95%] mx-auto sm:px-6 lg:px-8">
+        {{-- CORRECCIÓN: Cambiado de max-w-[95%] a max-w-7xl para alinear con el header --}}
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     
-                    {{-- Mensajes de Sesión (por si acaso) --}}
+                    {{-- Mensajes de Sesión --}}
                     @if (session()->has('message'))
                         <div class="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
                             {{ session('message') }}
+                        </div>
+                    @endif
+                    @if (session()->has('success'))
+                        <div class="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
+                            {{ session('success') }}
                         </div>
                     @endif
 
