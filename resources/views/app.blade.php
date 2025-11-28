@@ -25,7 +25,7 @@
     <div class="min-h-screen bg-sga-bg">
 
         <!-- --- MEJORA: Incluir el sidebar (navigation.blade.php) --- -->
-        @include('Layouts.navigation')
+        @include('layouts.navigation')
 
         <!-- --- MEJORA: Contenido principal con padding izquierdo (en escritorio) --- -->
         <div class="flex min-h-screen flex-col transition-all duration-300"
