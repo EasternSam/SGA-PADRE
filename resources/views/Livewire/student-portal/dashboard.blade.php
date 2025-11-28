@@ -40,17 +40,23 @@
                         <ul class="mt-2 list-disc list-inside space-y-1">
                             @foreach($pendingPayments as $payment)
                                 @php
-                                    // Lógica para alternar entre Curso y Concepto si son N/A
+                                    // Obtener valores crudos
                                     $rawCourse = $payment->enrollment?->courseSchedule?->module?->name;
                                     $rawConcept = $payment->paymentConcept?->name;
 
-                                    // Normalizar "N/A" a null para que el operador ?? funcione
-                                    $courseName = ($rawCourse && $rawCourse !== 'N/A') ? $rawCourse : null;
-                                    $conceptName = ($rawConcept && $rawConcept !== 'N/A') ? $rawConcept : null;
+                                    // Función de limpieza para asegurar que detectamos "N/A" incluso con espacios o minúsculas
+                                    $clean = function($val) {
+                                        return ($val && strtoupper(trim($val)) !== 'N/A') ? $val : null;
+                                    };
 
-                                    // Prioridad: Curso -> Concepto -> Fallback
-                                    // Si Curso es válido, muestra Curso. Si es N/A, salta a Concepto.
-                                    $displayText = $courseName ?? $conceptName ?? 'Concepto de Pago';
+                                    $courseName = $clean($rawCourse);
+                                    $conceptName = $clean($rawConcept);
+
+                                    // Lógica corregida: 
+                                    // 1. Intentar mostrar Concepto (si no es N/A).
+                                    // 2. Si Concepto es N/A, mostrar Curso.
+                                    // 3. Fallback a texto genérico.
+                                    $displayText = $conceptName ?? $courseName ?? 'Concepto de Pago';
                                 @endphp
                                 <li>
                                     <strong>{{ $displayText }}</strong>:
@@ -277,20 +283,29 @@
                          <ul role="list" class="divide-y divide-sga-gray">
                             @php
                                 // ACTUALIZADO: Agregamos 'enrollment.courseSchedule.module' para poder leer el curso si el concepto es N/A
-                                $allPayments = $student->payments()->with(['paymentConcept', 'enrollment.courseSchedule.module'])->orderBy('created_at', 'desc')->take(5)->get();
+                                $allPayments = $student->payments()
+                                    ->with(['paymentConcept', 'enrollment.courseSchedule.module'])
+                                    ->orderBy('created_at', 'desc')
+                                    ->take(5)
+                                    ->get();
                             @endphp
                             @forelse ($allPayments as $payment)
                                 @php
-                                    // Lógica para alternar entre Concepto y Curso si son N/A
-                                    $histRawConcept = $payment->paymentConcept?->name;
-                                    $histRawCourse = $payment->enrollment?->courseSchedule?->module?->name;
-                                    $histDesc = $payment->description;
+                                    $rawHistConcept = $payment->paymentConcept?->name;
+                                    $rawHistCourse = $payment->enrollment?->courseSchedule?->module?->name;
+                                    $rawHistDesc = $payment->description;
 
-                                    $histConcept = ($histRawConcept && $histRawConcept !== 'N/A') ? $histRawConcept : null;
-                                    $histCourse = ($histRawCourse && $histRawCourse !== 'N/A') ? $histRawCourse : null;
+                                    // Limpieza para asegurar detección de N/A
+                                    $cleanHist = function($val) {
+                                        return ($val && strtoupper(trim($val)) !== 'N/A') ? $val : null;
+                                    };
 
-                                    // En historial solemos priorizar Concepto, pero si es N/A, mostramos Curso.
-                                    $histDisplay = $histConcept ?? $histCourse ?? $histDesc ?? 'N/A';
+                                    $hConcept = $cleanHist($rawHistConcept);
+                                    $hCourse = $cleanHist($rawHistCourse);
+                                    $hDesc = $cleanHist($rawHistDesc);
+
+                                    // Prioridad: Concepto -> Curso -> Descripción -> Fallback
+                                    $histDisplay = $hConcept ?? $hCourse ?? $hDesc ?? 'Pago registrado';
                                 @endphp
                                 <li wire:key="payment-{{ $payment->id }}" class="flex justify-between gap-x-6 py-3">
                                     <div>
