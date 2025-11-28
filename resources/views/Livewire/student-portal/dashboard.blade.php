@@ -276,17 +276,17 @@
                 <div class="overflow-hidden rounded-lg bg-sga-card shadow">
                     <div class="p-4 sm:p-6">
                         <h3 class="text-lg font-medium leading-6 text-sga-text">
-                            <i class="fas fa-dollar-sign mr-2 text-sga-primary"></i> Últimos Pagos
+                            <i class="fas fa-dollar-sign mr-2 text-sga-primary"></i> Historial de Pagos
                         </h3>
                     </div>
                     <div class="border-t border-sga-gray p-4 sm:p-6">
                          <ul role="list" class="divide-y divide-sga-gray">
                             @php
-                                // ACTUALIZADO: Agregamos 'enrollment.courseSchedule.module' para poder leer el curso si el concepto es N/A
+                                // ACTUALIZADO: Quitamos take(5) para mostrar todos
                                 $allPayments = $student->payments()
                                     ->with(['paymentConcept', 'enrollment.courseSchedule.module'])
                                     ->orderBy('created_at', 'desc')
-                                    ->take(5)
+                                    // ->take(5) eliminado
                                     ->get();
                             @endphp
                             @forelse ($allPayments as $payment)
