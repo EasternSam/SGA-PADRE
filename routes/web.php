@@ -5,7 +5,8 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Auth;
 use App\Livewire\Admin\DatabaseImport; 
-use Illuminate\Support\Facades\Http; // Agregado para el test de WP
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,7 +20,7 @@ use Illuminate\Support\Facades\Http; // Agregado para el test de WP
 */
 
 Route::get('/', function () {
-    return view('auth.login'); // Redirige a login por defecto
+    return view('auth.login');
 });
 
 // --- INICIO: RUTA DE PRUEBA (Health Check) ---
@@ -40,21 +41,16 @@ Route::get('/test', function () {
     ]);
 });
 
-// --- NUEVA RUTA DE DIAGNÓSTICO WP API (AGREGADA) ---
-// Úsala entrando a /test-wp para ver por qué falla la conexión
+// --- NUEVA RUTA DE DIAGNÓSTICO WP API ---
 Route::get('/test-wp', function () {
-    // 1. Obtener configuración
     $baseUri = config('services.wordpress.base_uri') ?? env('WP_API_BASE_URI');
     $secret = config('services.wordpress.secret') ?? env('WP_API_SECRET');
-    
-    // 2. Construir URL
     $endpoint = 'sga/v1/get-courses/';
     $fullUrl = rtrim($baseUri, '/') . '/' . ltrim($endpoint, '/');
 
-    // 3. Simular petición (replicando la lógica del servicio)
     $startTime = microtime(true);
     try {
-        $response = Http::withoutVerifying() // Ignorar SSL
+        $response = Http::withoutVerifying()
             ->timeout(60)
             ->withHeaders([
                 'X-SGA-Signature' => $secret,
@@ -90,100 +86,68 @@ Route::get('/test-wp', function () {
         ], 500);
     }
 });
-// --- FIN RUTAS DE PRUEBA ---
 
 // Ruta de 'dashboard' genérica que redirige según el rol
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
         $user = Auth::user();
 
-        // --- ¡¡¡CORRECCIÓN!!! ---
-        // Se usan los roles en español
         if ($user->hasRole('Admin')) {
             return redirect()->route('admin.dashboard');
-        } elseif ($user->hasRole('Estudiante')) { // Cambiado de 'Student'
+        } elseif ($user->hasRole('Estudiante')) {
             return redirect()->route('student.dashboard');
-        } elseif ($user->hasRole('Profesor')) { // Cambiado de 'Teacher'
+        } elseif ($user->hasRole('Profesor')) {
             return redirect()->route('teacher.dashboard');
         }
 
-        // Fallback por si no tiene rol (esto causa que se quede en 'perfil')
         return redirect()->route('profile.edit');
     })->name('dashboard');
 
-    // Perfil (Ruta genérica)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // --- NUEVO MÓDULO DE REPORTES (ACCESIBLE PARA ADMIN Y PROFESORES) ---
+    Route::get('/reports', \App\Livewire\Reports\Index::class)->name('reports.index');
 });
 
 
 // --- RUTAS DE ADMINISTRADOR ---
-// 'Admin' se queda igual
 Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', \App\Livewire\Dashboard\Index::class)->name('admin.dashboard');
     Route::get('/students', \App\Livewire\Students\Index::class)->name('admin.students.index');
-    Route::get('/students/profile/{student}', \App\Livewire\StudentProfile\Index::class)->name('admin.students.profile'); // Cambiado studentId a student
+    Route::get('/students/profile/{student}', \App\Livewire\StudentProfile\Index::class)->name('admin.students.profile');
     Route::get('/courses', \App\Livewire\Courses\Index::class)->name('admin.courses.index');
     Route::get('/finance/payment-concepts', \App\Livewire\Finance\PaymentConcepts::class)->name('admin.finance.concepts');
 
-    // --- RUTAS GESTIÓN DE PROFESORES (ACTUALIZADAS) ---
-    // Ruta para la lista de profesores
     Route::get('/teachers', \App\Livewire\Teachers\Index::class)->name('admin.teachers.index');
-    // Ruta para el perfil de un profesor (pasando el 'user' como 'teacher')
     Route::get('/teachers/profile/{teacher}', \App\Livewire\TeacherProfile\Index::class)->name('admin.teachers.profile');
 
-    // --- RUTA AÑADIDA PARA GESTIÓN DE SOLICITUDES (ADMIN) ---
-    // ¡CORRECCIÓN! Usar el FQCN (Fully Qualified Class Name)
     Route::get('/requests', \App\Livewire\Admin\RequestsManagement::class)->name('admin.requests');
-
-    // --- RUTA NUEVA PARA EL IMPORTADOR DE BASE DE DATOS ---
     Route::get('/import', DatabaseImport::class)->name('admin.import');
 
-    // Alias para que 'admin.profile.edit' apunte a la ruta de perfil genérica.
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
 });
 
 // --- RUTAS DE ESTUDIANTE ---
-Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student.')->group(function () { // Cambiado de 'Student' y añadido prefijo de nombre
+Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student.')->group(function () {
     Route::get('/dashboard', \App\Livewire\StudentPortal\Dashboard::class)->name('dashboard');
-
-    // --- ¡¡¡CORRECCIÓN DE RUTA!!! ---
-    // Cambiamos el parámetro {enrollment} a {enrollmentId}
-    // para que coincida con la variable del método mount()
     Route::get('/course/{enrollmentId}', \App\Livewire\StudentPortal\CourseDetail::class)->name('course.detail');
-
-    // --- RUTA AÑADIDA PARA SOLICITUDES (ESTUDIANTE) ---
-    // ¡CORRECCIÓN! Usar el FQCN (Fully Qualified Class Name)
     Route::get('/requests', \App\Livewire\StudentPortal\Requests::class)->name('requests');
-
-    // Alias para que 'student.profile.edit' apunte a la ruta de perfil genérica.
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
 });
 
 // --- RUTAS DE PROFESOR ---
-// --- ¡¡¡CORRECCIÓN DE PERMISOS!!! ---
-// Se añade 'Admin' para que el administrador pueda ver las secciones de asistencia y notas
-Route::middleware(['auth', 'role:Profesor|Admin'])->prefix('teacher')->group(function () { // Cambiado de 'Teacher'
+Route::middleware(['auth', 'role:Profesor|Admin'])->prefix('teacher')->group(function () {
     Route::get('/dashboard', \App\Livewire\TeacherPortal\Dashboard::class)->name('teacher.dashboard');
-    // --- ¡CORRECIÓN! ---
-    // Las rutas de 'grades' y 'attendance' deben aceptar el ID de la sección
     Route::get('/grades/{section}', \App\Livewire\TeacherPortal\Grades::class)->name('teacher.grades');
     Route::get('/attendance/{section}', \App\Livewire\TeacherPortal\Attendance::class)->name('teacher.attendance');
-
-    // Alias para que 'teacher.profile.edit' apunte a la ruta de perfil genérica.
     Route::get('/profile', [ProfileController::class, 'edit'])->name('teacher.profile.edit');
 });
 
-
-// --- RUTAS DE REPORTES ---
+// --- RUTAS DE REPORTES (Controlador Legacy, si se usa) ---
 Route::middleware(['auth'])->group(function () {
-    // Asegurarse de que el parámetro coincida con el controlador (student)
-    // --- ¡¡¡CORRECCIÓN!!! El método se llama 'generateStudentReport' en el controlador ---
     Route::get('/reports/student-report/{student}', [ReportController::class, 'generateStudentReport'])->name('reports.student-report');
-
-    // --- ¡¡¡RUTA AÑADIDA!!! ---
-    // Ruta para el nuevo reporte de asistencia
     Route::get('/reports/attendance-report/{section}', [ReportController::class, 'generateAttendanceReport'])->name('reports.attendance-report');
 });
 
@@ -191,9 +155,8 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/force-password-change', [\App\Http\Controllers\Auth\ForcePasswordChangeController::class, 'show'])
         ->name('password.force_change');
-        
     Route::post('/force-password-change', [\App\Http\Controllers\Auth\ForcePasswordChangeController::class, 'update'])
         ->name('password.force_update');
 });
-// Rutas de autenticación
+
 require __DIR__.'/auth.php';
