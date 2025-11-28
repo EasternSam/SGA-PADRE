@@ -39,8 +39,21 @@
                         <p>Detectamos una o más inscripciones que están pendientes de pago. Por favor, completa el pago para activar tu(s) curso(s) y asegurar tu cupo.</p>
                         <ul class="mt-2 list-disc list-inside space-y-1">
                             @foreach($pendingPayments as $payment)
+                                @php
+                                    // Lógica para alternar entre Curso y Concepto si son N/A
+                                    $rawCourse = $payment->enrollment?->courseSchedule?->module?->name;
+                                    $rawConcept = $payment->paymentConcept?->name;
+
+                                    // Normalizar "N/A" a null para que el operador ?? funcione
+                                    $courseName = ($rawCourse && $rawCourse !== 'N/A') ? $rawCourse : null;
+                                    $conceptName = ($rawConcept && $rawConcept !== 'N/A') ? $rawConcept : null;
+
+                                    // Prioridad: Curso -> Concepto -> Fallback
+                                    // Si Curso es válido, muestra Curso. Si es N/A, salta a Concepto.
+                                    $displayText = $courseName ?? $conceptName ?? 'Concepto de Pago';
+                                @endphp
                                 <li>
-                                    <strong>{{ $payment->enrollment?->courseSchedule?->module?->name ?? $payment->paymentConcept?->name ?? 'Concepto' }}</strong>:
+                                    <strong>{{ $displayText }}</strong>:
                                     <span class="font-semibold">${{ number_format($payment->amount, 2) }}</span>
                                 </li>
                             @endforeach
@@ -262,16 +275,26 @@
                     </div>
                     <div class="border-t border-sga-gray p-4 sm:p-6">
                          <ul role="list" class="divide-y divide-sga-gray">
-                            {{-- Modificamos esta sección para usar $pendingPayments Y $completedPayments (si la tuviéramos) --}}
-                            {{-- Por ahora, mostramos TODOS los pagos (completados o no) --}}
                             @php
-                                // Recargamos los pagos para tener una lista completa, no solo los pendientes
-                                $allPayments = $student->payments()->with('paymentConcept')->orderBy('created_at', 'desc')->take(5)->get();
+                                // ACTUALIZADO: Agregamos 'enrollment.courseSchedule.module' para poder leer el curso si el concepto es N/A
+                                $allPayments = $student->payments()->with(['paymentConcept', 'enrollment.courseSchedule.module'])->orderBy('created_at', 'desc')->take(5)->get();
                             @endphp
                             @forelse ($allPayments as $payment)
+                                @php
+                                    // Lógica para alternar entre Concepto y Curso si son N/A
+                                    $histRawConcept = $payment->paymentConcept?->name;
+                                    $histRawCourse = $payment->enrollment?->courseSchedule?->module?->name;
+                                    $histDesc = $payment->description;
+
+                                    $histConcept = ($histRawConcept && $histRawConcept !== 'N/A') ? $histRawConcept : null;
+                                    $histCourse = ($histRawCourse && $histRawCourse !== 'N/A') ? $histRawCourse : null;
+
+                                    // En historial solemos priorizar Concepto, pero si es N/A, mostramos Curso.
+                                    $histDisplay = $histConcept ?? $histCourse ?? $histDesc ?? 'N/A';
+                                @endphp
                                 <li wire:key="payment-{{ $payment->id }}" class="flex justify-between gap-x-6 py-3">
                                     <div>
-                                        <p class="text-sm font-semibold text-sga-text">{{ $payment->paymentConcept->name ?? $payment->description ?? 'N/A' }}</p>
+                                        <p class="text-sm font-semibold text-sga-text">{{ $histDisplay }}</p>
                                         <p class="text-xs text-sga-text-light">{{ $payment->created_at->format('d/m/Y') }}</p>
                                     </div>
                                     <div class="flex-shrink-0 text-right">
