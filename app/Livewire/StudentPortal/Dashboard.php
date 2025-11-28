@@ -14,20 +14,16 @@ use Carbon\Carbon;
 #[Layout('layouts.dashboard')]
 class Dashboard extends Component
 {
-    // --- Propiedades ---
     public ?Student $student;
     
-    // Colecciones de datos
     public Collection $activeEnrollments;    
     public Collection $pendingEnrollments;   
     public Collection $completedEnrollments; 
     public Collection $pendingPayments;      
     public Collection $paymentHistory;       
 
-    // --- Propiedades para el Modal de Completar Perfil ---
     public bool $showProfileModal = false;
     
-    // Campos del formulario (NUEVOS)
     public $mobile_phone; 
     public $birth_date;   
     public $address;      
@@ -51,23 +47,26 @@ class Dashboard extends Component
 
         $this->student = $student;
         
-        // --- Cargar datos actuales en el formulario ---
-        // Usamos el operador ?? para evitar errores si el campo es null
-        $this->mobile_phone = $this->student->mobile_phone ?? $this->student->phone; // Si no hay móvil, sugerimos el fijo
+        // --- Cargar datos actuales ---
+        $this->mobile_phone = $this->student->mobile_phone ?? $this->student->phone; 
         $this->birth_date = $this->student->birth_date ? $this->student->birth_date->format('Y-m-d') : null;
         $this->address = $this->student->address;
         $this->gender = $this->student->gender;
         $this->city = $this->student->city;
         $this->sector = $this->student->sector;
 
-        // --- Verificar si falta información clave ---
-        // Activamos el modal si algún campo crítico tiene "N/A" o está vacío (según tu preferencia)
-        if (
+        // --- Lógica de Apertura Automática (ONBOARDING) ---
+        // 1. Verificamos si falta información (Vacío o N/A)
+        $hasIncompleteData = (
             $this->isIncomplete($this->mobile_phone) || 
             $this->isIncomplete($this->address) ||
             $this->isIncomplete($this->birth_date) ||
             $this->isIncomplete($this->city)
-        ) {
+        );
+
+        // 2. Solo abrimos automáticamente si hay datos incompletos Y NO se ha mostrado ya en esta sesión.
+        // Esto evita el bucle infinito si el usuario decide dejarlo vacío.
+        if ($hasIncompleteData && !session()->has('profile_onboarding_seen')) {
             $this->showProfileModal = true;
         }
 
@@ -116,13 +115,36 @@ class Dashboard extends Component
     }
 
     /**
-     * Verifica si el campo tiene datos "basura" como N/A que necesitan limpieza.
-     * Si está vacío (null/empty string), retorna false porque es opcional.
+     * Verifica si el campo está incompleto.
+     * AHORA: Retorna true si es vacío o "N/A".
      */
     private function isIncomplete($value)
     {
-        if (empty($value)) return false; 
-        return strtoupper(trim($value)) === 'N/A';
+        return empty($value) || strtoupper(trim($value)) === 'N/A';
+    }
+
+    /**
+     * Convierte "N/A" o vacíos a NULL para limpiar la base de datos.
+     */
+    private function sanitizeInput($value)
+    {
+        if (is_string($value)) {
+            $trimmed = trim($value);
+            if (empty($trimmed) || strtoupper($trimmed) === 'N/A') {
+                return null;
+            }
+            return $trimmed;
+        }
+        return $value;
+    }
+
+    /**
+     * Abre el modal manualmente (Botón Editar)
+     */
+    public function openProfileModal()
+    {
+        $this->showProfileModal = true;
+        $this->dispatch('open-modal', 'complete-profile-modal');
     }
 
     public function saveProfile()
@@ -136,19 +158,24 @@ class Dashboard extends Component
             'sector' => 'nullable|string|max:100',
         ]);
 
+        $dataToUpdate = [
+            'mobile_phone' => $this->sanitizeInput($this->mobile_phone),
+            'birth_date' => $this->sanitizeInput($this->birth_date),
+            'address' => $this->sanitizeInput($this->address),
+            'gender' => $this->sanitizeInput($this->gender),
+            'city' => $this->sanitizeInput($this->city),
+            'sector' => $this->sanitizeInput($this->sector),
+        ];
+
         if ($this->student) {
-            $this->student->update([
-                'mobile_phone' => $this->mobile_phone,
-                // Opcional: Si 'phone' está vacío, lo llenamos con el móvil también
-                'phone' => $this->student->phone ?? $this->mobile_phone, 
-                'birth_date' => $this->birth_date,
-                'address' => $this->address,
-                'gender' => $this->gender,
-                'city' => $this->city,
-                'sector' => $this->sector,
-            ]);
-            
+            // Sincronizar teléfono principal si está vacío o sucio
+            if ($this->isIncomplete($this->student->phone) || empty($this->student->phone)) {
+                $dataToUpdate['phone'] = $dataToUpdate['mobile_phone'];
+            }
+
+            $this->student->update($dataToUpdate);
             $this->student->refresh();
+
             session()->flash('message', 'Perfil actualizado exitosamente.');
         }
 
@@ -158,8 +185,10 @@ class Dashboard extends Component
     public function closeProfileModal()
     {
         $this->showProfileModal = false;
-        // Importante: Disparar evento para cerrar el modal en AlpineJS
         $this->dispatch('close-modal', 'complete-profile-modal');
+        
+        // Marcamos en sesión que ya interactuó con el modal para no volver a abrirlo automáticamente
+        session()->put('profile_onboarding_seen', true);
     }
 
     public function render()
