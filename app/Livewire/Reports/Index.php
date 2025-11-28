@@ -13,6 +13,7 @@ use App\Models\Enrollment;
 use App\Models\Payment;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use Illuminate\Support\Facades\DB; // Importante para optimizaciones
 
 class Index extends Component
 {
@@ -21,7 +22,7 @@ class Index extends Component
 
     // Filtros
     public $course_id = '';
-    public $module_id = ''; // NUEVO
+    public $module_id = '';
     public $schedule_id = '';
     public $teacher_id = '';
     public $date_from;
@@ -30,7 +31,7 @@ class Index extends Component
 
     // Datos para selects
     public $courses = [];
-    public $modules = []; // NUEVO
+    public $modules = [];
     public $schedules = [];
     public $teachers = [];
 
@@ -43,16 +44,15 @@ class Index extends Component
         $this->date_from = now()->startOfMonth()->format('Y-m-d');
         $this->date_to = now()->endOfMonth()->format('Y-m-d');
         
-        $this->courses = Course::orderBy('name')->get();
-        // Usamos role 'Profesor' o 'Teacher' segun tu Spatie/Sistema
-        $this->teachers = User::role('Profesor')->orderBy('name')->get();
+        // Optimización: Cargar solo campos necesarios
+        $this->courses = Course::select('id', 'name')->orderBy('name')->get();
+        $this->teachers = User::role('Profesor')->select('id', 'name')->orderBy('name')->get();
     }
 
     public function updatedCourseId($value)
     {
-        // Al cambiar el curso, cargamos los módulos y reseteamos lo demás
         if ($value) {
-            $this->modules = Module::where('course_id', $value)->orderBy('name')->get();
+            $this->modules = Module::where('course_id', $value)->select('id', 'name')->orderBy('name')->get();
         } else {
             $this->modules = [];
         }
@@ -64,10 +64,8 @@ class Index extends Component
 
     public function updatedModuleId($value)
     {
-        // Al cambiar el módulo, cargamos las secciones (schedules)
         if ($value) {
-            $this->schedules = CourseSchedule::where('module_id', $value)
-                ->get();
+            $this->schedules = CourseSchedule::where('module_id', $value)->get(); // Aquí necesitamos más campos para mostrar horarios
         } else {
             $this->schedules = [];
         }
@@ -76,6 +74,9 @@ class Index extends Component
 
     public function generateReport()
     {
+        // Aumentar el tiempo límite de ejecución solo para este proceso
+        set_time_limit(120); // 2 minutos
+
         $this->validateFilters();
 
         $this->generatedReportType = $this->reportType;
@@ -111,7 +112,7 @@ class Index extends Component
 
         if (in_array($this->reportType, ['attendance', 'grades', 'students'])) {
             $rules['course_id'] = 'required';
-            $rules['module_id'] = 'required'; // NUEVO: Requerido para estos reportes
+            $rules['module_id'] = 'required';
             $rules['schedule_id'] = 'required';
         }
 
@@ -128,31 +129,56 @@ class Index extends Component
         ]);
     }
 
-    // 1. REPORTE DE ASISTENCIA
+    // 1. REPORTE DE ASISTENCIA (OPTIMIZADO)
     public function generateAttendanceReport()
     {
-        $schedule = CourseSchedule::with(['module.course', 'teacher'])->find($this->schedule_id);
+        // Cargar datos de la sección con relaciones mínimas necesarias
+        $schedule = CourseSchedule::with(['module:id,name,course_id', 'module.course:id,name', 'teacher:id,name'])
+            ->select('id', 'module_id', 'teacher_id', 'section_name', 'start_time', 'end_time', 'days_of_week', 'start_date', 'end_date')
+            ->find($this->schedule_id);
 
+        // Obtener estudiantes en una sola consulta eficiente
         $students = Student::whereHas('enrollments', function($q) {
             $q->where('course_schedule_id', $this->schedule_id);
-        })->orderBy('last_name')->orderBy('first_name')->get();
+        })
+        ->select('id', 'first_name', 'last_name') // Solo campos necesarios
+        ->orderBy('last_name')
+        ->orderBy('first_name')
+        ->get();
 
+        // Generar rango de fechas
         $start = Carbon::parse($this->date_from);
         $end = Carbon::parse($this->date_to);
-        $period = CarbonPeriod::create($start, $end);
         
+        // Optimización: Si el rango es muy grande (> 31 días), advertir o limitar internamente
+        // Aquí confiamos en que el usuario sea razonable, pero podríamos limitar $end.
+        
+        $period = CarbonPeriod::create($start, $end);
         $dates = [];
         foreach ($period as $date) {
             $dates[] = $date->format('Y-m-d');
         }
 
+        // Consulta optimizada de asistencias: Traer todo en un solo bloque
+        // Usamos array asociativo para acceso O(1) en la vista
         $attendances = Attendance::where('course_schedule_id', $this->schedule_id)
             ->whereBetween('attendance_date', [$this->date_from, $this->date_to])
+            ->select('enrollment_id', 'attendance_date', 'status')
             ->get();
 
+        // Mapear student_id desde enrollment para evitar consultas N+1
+        // Primero obtenemos los enrollment_ids de los estudiantes de esta sección
+        $enrollmentMap = Enrollment::where('course_schedule_id', $this->schedule_id)
+            ->pluck('student_id', 'id'); // [enrollment_id => student_id]
+
         $attendanceMatrix = [];
+        
+        // Procesamiento en memoria (mucho más rápido que consultas DB)
         foreach ($attendances as $record) {
-            $attendanceMatrix[$record->enrollment->student_id ?? 0][$record->attendance_date->format('Y-m-d')] = $record->status;
+            $studentId = $enrollmentMap[$record->enrollment_id] ?? null;
+            if ($studentId) {
+                $attendanceMatrix[$studentId][$record->attendance_date->format('Y-m-d')] = $record->status;
+            }
         }
 
         $this->reportData = [
@@ -206,10 +232,11 @@ class Index extends Component
             $query->where('status', $this->payment_status);
         }
 
-        $payments = $query->latest()->get();
+        $payments = $query->latest()->limit(500)->get(); // Limitar resultados para evitar timeout
 
         $debts = [];
         if ($this->payment_status === 'pending' || $this->payment_status === 'all') {
+            // Consulta optimizada para deudas
             $debts = Enrollment::with(['student', 'courseSchedule.module.course'])
                 ->whereDoesntHave('payment', function($q) {
                     $q->where('status', 'paid');
@@ -257,6 +284,7 @@ class Index extends Component
                   });
             })
             ->orderBy('start_date')
+            ->limit(200) // Limitar para evitar sobrecarga visual y de memoria
             ->get();
 
         $this->reportData = [
@@ -278,9 +306,6 @@ class Index extends Component
         }
         
         if ($this->course_id) {
-            $query->where('course_id', $this->course_id); // Esto funciona porque course_id NO está en CourseSchedule, pero aquí estamos filtrando.
-            // ESPERA: CourseSchedule no tiene course_id. 
-            // CORRECCIÓN: Debemos filtrar por relación module.course_id
             $query->whereHas('module', function($q) {
                 $q->where('course_id', $this->course_id);
             });
