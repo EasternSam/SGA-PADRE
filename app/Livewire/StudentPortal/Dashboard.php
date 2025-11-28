@@ -23,6 +23,11 @@ class Dashboard extends Component
     public Collection $pendingPayments;      // Pagos con estado 'Pendiente' (para alertas)
     public Collection $paymentHistory;       // Historial completo de pagos (NUEVO)
 
+    // --- Propiedades para el Modal de Completar Perfil (NUEVO) ---
+    public bool $showProfileModal = false;
+    public $phone;
+    public $address;
+
     /**
      * Mounta el componente y carga todos los datos del estudiante.
      */
@@ -51,6 +56,21 @@ class Dashboard extends Component
         // 3. Si existe, asignamos las propiedades
         $this->student = $student;
         
+        // --- LÓGICA DE ONBOARDING / COMPLETAR PERFIL (NUEVO) ---
+        // Cargar datos actuales en las propiedades del formulario
+        $this->phone = $this->student->phone;
+        $this->address = $this->student->address;
+
+        // Verificar si falta información o es "N/A" (Data sucia de importación)
+        // Si el teléfono o la dirección son "N/A", null o vacíos, abrimos el modal.
+        if (
+            $this->isIncomplete($this->phone) || 
+            $this->isIncomplete($this->address)
+        ) {
+            $this->showProfileModal = true;
+        }
+        // -------------------------------------------------------
+
         // Base query para inscripciones
         $baseQuery = Enrollment::with([
                 'courseSchedule.module.course',
@@ -88,6 +108,51 @@ class Dashboard extends Component
             ->where('student_id', $this->student->id)
             ->orderBy('created_at', 'desc') // Ordenar por fecha de creación (más reciente primero)
             ->get();
+    }
+
+    // --- Métodos de Onboarding (NUEVO) ---
+
+    /**
+     * Helper para verificar si un campo está incompleto o tiene N/A
+     */
+    private function isIncomplete($value)
+    {
+        // Se considera incompleto si es null, vacío, o dice "N/A" (sin importar mayúsculas/minúsculas)
+        return empty($value) || strtoupper(trim($value)) === 'N/A';
+    }
+
+    /**
+     * Guardar la información del perfil (Opcional)
+     */
+    public function saveProfile()
+    {
+        // Reglas 'nullable' porque pediste que sea opcional
+        $this->validate([
+            'phone' => 'nullable|string|max:50',
+            'address' => 'nullable|string|max:255',
+        ]);
+
+        if ($this->student) {
+            $this->student->update([
+                'phone' => $this->phone,
+                'address' => $this->address,
+            ]);
+            
+            // Refrescamos el modelo para que la UI principal se actualice si muestra estos datos
+            $this->student->refresh();
+
+            session()->flash('message', 'Información de perfil actualizada correctamente.');
+        }
+
+        $this->showProfileModal = false;
+    }
+
+    /**
+     * Cerrar el modal sin guardar (Botón "Más tarde")
+     */
+    public function closeProfileModal()
+    {
+        $this->showProfileModal = false;
     }
 
     public function render()

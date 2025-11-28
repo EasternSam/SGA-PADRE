@@ -328,4 +328,56 @@
             </div>
         </div>
     </div>
+
+    {{-- 
+        ====================================================================
+        MODAL DE ONBOARDING: COMPLETAR PERFIL
+        ====================================================================
+        Se muestra automáticamente si la variable $showProfileModal es true.
+    --}}
+    <x-modal name="complete-profile-modal" :show="$showProfileModal" focusable>
+        <div class="p-6">
+            <h2 class="text-lg font-medium text-gray-900">
+                Completa tu Perfil
+            </h2>
+
+            <p class="mt-1 text-sm text-gray-600">
+                Hemos detectado que falta información en tu perfil o aparece como "N/A". 
+                <br>
+                Por favor, actualiza tus datos para mantener nuestro registro al día.
+                <span class="block mt-2 italic text-xs text-gray-500">Esto es opcional, puedes dejarlo para más tarde.</span>
+            </p>
+
+            <form wire:submit.prevent="saveProfile" class="mt-6 space-y-6">
+                <!-- Teléfono -->
+                <div>
+                    <x-input-label for="phone" value="Teléfono / Celular" />
+                    <x-text-input id="phone" type="text" class="mt-1 block w-full" 
+                                  wire:model="phone" 
+                                  placeholder="Ej: 809-555-5555" />
+                    @error('phone') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+
+                <!-- Dirección -->
+                <div>
+                    <x-input-label for="address" value="Dirección" />
+                    <x-text-input id="address" type="text" class="mt-1 block w-full" 
+                                  wire:model="address" 
+                                  placeholder="Tu dirección actual" />
+                    @error('address') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <x-secondary-button wire:click="closeProfileModal">
+                        Más tarde
+                    </x-secondary-button>
+
+                    <x-primary-button class="ml-3">
+                        Guardar Información
+                    </x-primary-button>
+                </div>
+            </form>
+        </div>
+    </x-modal>
+
 </div>
