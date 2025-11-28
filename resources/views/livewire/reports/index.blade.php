@@ -1,232 +1,184 @@
 <div>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Gestión de Reportes Dinámicos') }}
+            {{ __('Gestión de Reportes') }}
         </h2>
     </x-slot>
 
     <div class="py-12">
-        {{-- CORRECCIÓN: Cambiado de max-w-[95%] a max-w-7xl para alinear con el header --}}
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     
-                    {{-- Mensajes de Sesión --}}
+                    {{-- Mensajes de Éxito --}}
                     @if (session()->has('message'))
-                        <div class="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
-                            {{ session('message') }}
-                        </div>
-                    @endif
-                    @if (session()->has('success'))
-                        <div class="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
-                            {{ session('success') }}
+                        <div class="mb-6 p-4 bg-green-50 border-l-4 border-green-400 text-green-700">
+                            <div class="flex">
+                                <div class="py-1"><svg class="h-6 w-6 text-green-500 mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+                                <div><p>{{ session('message') }}</p></div>
+                            </div>
                         </div>
                     @endif
 
-                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                        
-                        {{-- Sidebar de Tipos de Reporte --}}
-                        <div class="col-span-1 space-y-2">
-                            <h3 class="font-semibold text-gray-500 uppercase text-xs tracking-wider mb-3 px-2">Seleccionar Reporte</h3>
-                            
+                    {{-- 1. SELECCIÓN DE TIPO DE REPORTE (Pestañas Superiores) --}}
+                    <div class="mb-8">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ __('Seleccione el Tipo de Reporte') }}</label>
+                        <div class="flex flex-wrap gap-2">
                             @foreach([
-                                'attendance' => '📅 Asistencia',
-                                'grades' => '🎓 Calificaciones',
-                                'payments' => '💰 Pagos y Deudas',
-                                'students' => '👥 Listado Estudiantes',
-                                'calendar' => '🗓️ Calendario Académico',
-                                'assignments' => '👨‍🏫 Cargas Académicas'
+                                'attendance' => 'Asistencia',
+                                'grades' => 'Calificaciones',
+                                'payments' => 'Pagos y Deudas',
+                                'students' => 'Estudiantes',
+                                'calendar' => 'Calendario',
+                                'assignments' => 'Cargas Académicas'
                             ] as $key => $label)
-                                <button wire:click="$set('reportType', '{{ $key }}')" 
-                                    class="w-full text-left px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium flex items-center
+                                <button 
+                                    wire:click="$set('reportType', '{{ $key }}')" 
+                                    class="px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 border 
                                     {{ $reportType === $key 
-                                        ? 'bg-indigo-50 text-indigo-700 shadow-sm border border-indigo-100 ring-1 ring-indigo-200' 
-                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' 
+                                        : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50 hover:text-gray-900' }}">
                                     {{ $label }}
                                 </button>
                             @endforeach
                         </div>
+                    </div>
 
-                        {{-- Área de Configuración y Vista Previa --}}
-                        <div class="col-span-1 lg:col-span-3 border-l border-gray-100 pl-0 lg:pl-6">
+                    {{-- 2. ÁREA DE FILTROS (Panel Gris) --}}
+                    <div class="bg-gray-50 rounded-xl p-5 mb-8 border border-gray-200 shadow-inner">
+                        <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                            <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                                {{ __('Configuración del Reporte') }}
+                            </h3>
                             
-                            {{-- Panel de Filtros --}}
-                            <div class="bg-gray-50 rounded-xl p-5 mb-8 border border-gray-200">
-                                <h3 class="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide flex items-center">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-                                    Filtros: @switch($reportType)
-                                        @case('attendance') Asistencia @break
-                                        @case('grades') Notas @break
-                                        @case('payments') Financiero @break
-                                        @default General
-                                    @endswitch
-                                </h3>
+                            {{-- Indicador del reporte activo --}}
+                            <span class="text-xs font-semibold text-gray-500 bg-white px-2 py-1 rounded border border-gray-200">
+                                @switch($reportType)
+                                    @case('attendance') Módulo de Asistencia @break
+                                    @case('grades') Módulo de Notas @break
+                                    @case('payments') Módulo Financiero @break
+                                    @default Vista General
+                                @endswitch
+                            </span>
+                        </div>
 
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    {{-- Filtros de Fecha --}}
-                                    @if(in_array($reportType, ['attendance', 'payments', 'calendar']))
-                                        <div class="col-span-1">
-                                            <label class="block text-xs font-medium text-gray-700 mb-1">Desde</label>
-                                            <input type="date" wire:model="date_from" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
-                                        </div>
-                                        <div class="col-span-1">
-                                            <label class="block text-xs font-medium text-gray-700 mb-1">Hasta</label>
-                                            <input type="date" wire:model="date_to" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
-                                        </div>
-                                    @endif
-
-                                    {{-- Filtros de Curso/Sección --}}
-                                    @if(in_array($reportType, ['attendance', 'grades', 'students', 'assignments', 'payments']))
-                                        <div class="col-span-1">
-                                            <label class="block text-xs font-medium text-gray-700 mb-1">Curso</label>
-                                            <select wire:model.live="course_id" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
-                                                <option value="">-- Todos los Cursos --</option>
-                                                @foreach($courses as $course)
-                                                    <option value="{{ $course->id }}">{{ $course->name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                    @endif
-
-                                    @if(in_array($reportType, ['attendance', 'grades', 'students']) && $course_id)
-                                        <div class="col-span-2 md:col-span-1">
-                                            <label class="block text-xs font-medium text-gray-700 mb-1">Sección / Horario</label>
-                                            <select wire:model="schedule_id" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
-                                                <option value="">-- Seleccionar Sección --</option>
-                                                @foreach($schedules as $schedule)
-                                                    <option value="{{ $schedule->id }}">
-                                                        {{ $schedule->section_name ?? 'Sección Única' }} 
-                                                        ({{ $schedule->start_time ?? '' }} - {{ $schedule->end_time ?? '' }})
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                    @endif
-
-                                    {{-- Filtros Específicos Pagos/Asignaciones --}}
-                                    @if(in_array($reportType, ['payments', 'assignments']))
-                                        <div class="col-span-1">
-                                            <label class="block text-xs font-medium text-gray-700 mb-1">Profesor</label>
-                                            <select wire:model="teacher_id" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
-                                                <option value="">-- Todos --</option>
-                                                @foreach($teachers as $teacher)
-                                                    <option value="{{ $teacher->id }}">{{ $teacher->name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                    @endif
-
-                                    @if($reportType === 'payments')
-                                        <div class="col-span-1">
-                                            <label class="block text-xs font-medium text-gray-700 mb-1">Estado</label>
-                                            <select wire:model="payment_status" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
-                                                <option value="all">Todo (Pagos y Deudas)</option>
-                                                <option value="pending">Solo Pendientes/Deuda</option>
-                                                <option value="paid">Solo Pagados</option>
-                                            </select>
-                                        </div>
-                                    @endif
-
-                                    {{-- Botón Generar --}}
-                                    <div class="col-span-1 md:col-span-3 flex justify-end mt-4 pt-4 border-t border-gray-200">
-                                        <button wire:click="generateReport" wire:loading.attr="disabled" class="inline-flex items-center px-6 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 disabled:opacity-50 shadow-md">
-                                            <span wire:loading.remove wire:target="generateReport">Generar Vista Previa</span>
-                                            <span wire:loading wire:target="generateReport" class="flex items-center">
-                                                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                                Procesando...
-                                            </span>
-                                        </button>
-                                    </div>
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+                            {{-- Filtros de Fecha --}}
+                            @if(in_array($reportType, ['attendance', 'payments', 'calendar']))
+                                <div class="md:col-span-3">
+                                    <x-input-label for="date_from" :value="__('Desde')" />
+                                    <input type="date" id="date_from" wire:model="date_from" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
                                 </div>
-                                @error('schedule_id') <span class="text-red-500 text-xs block mt-2">{{ $message }}</span> @enderror
-                                @error('course_id') <span class="text-red-500 text-xs block mt-2">{{ $message }}</span> @enderror
-                            </div>
+                                <div class="md:col-span-3">
+                                    <x-input-label for="date_to" :value="__('Hasta')" />
+                                    <input type="date" id="date_to" wire:model="date_to" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
+                                </div>
+                            @endif
 
-                            {{-- Área de Vista Previa --}}
-                            <div class="border border-gray-200 rounded-lg shadow-sm bg-gray-50 min-h-[500px]">
-                                @if($reportData)
-                                    {{-- Toolbar --}}
-                                    <div class="bg-white px-4 py-3 border-b border-gray-200 flex justify-between items-center rounded-t-lg shadow-sm">
-                                        <span class="text-xs font-bold text-gray-500 uppercase flex items-center">
-                                            <span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
-                                            Vista Previa Generada
-                                        </span>
-                                        <button onclick="printReport()" class="inline-flex items-center px-3 py-1 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase hover:bg-gray-700 focus:outline-none transition ease-in-out duration-150">
-                                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                                            Imprimir / Guardar PDF
-                                        </button>
-                                    </div>
+                            {{-- Filtros de Curso/Sección --}}
+                            @if(in_array($reportType, ['attendance', 'grades', 'students', 'assignments', 'payments']))
+                                <div class="md:col-span-3">
+                                    <x-input-label for="course_id" :value="__('Curso')" />
+                                    <select id="course_id" wire:model.live="course_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
+                                        <option value="">-- Todos los Cursos --</option>
+                                        @foreach($courses as $course)
+                                            <option value="{{ $course->id }}">{{ $course->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('course_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                                </div>
+                            @endif
 
-                                    {{-- Contenedor del Reporte (Scrollable) --}}
-                                    <div class="p-6 overflow-auto max-h-[800px] bg-white rounded-b-lg">
-                                        {{-- Incluimos dinámicamente la vista según el tipo, CON CHEQUEO DE EXISTENCIA --}}
-                                        @if($generatedReportType === 'attendance')
-                                            @if(view()->exists('reports.attendance-report'))
-                                                @include('reports.attendance-report', ['data' => $reportData])
-                                            @else
-                                                <div class="p-4 bg-red-50 text-red-600 border border-red-200 rounded">
-                                                    <strong>Error 404 de Vista:</strong> No se encuentra <code>resources/views/reports/attendance-report.blade.php</code>.
-                                                </div>
-                                            @endif
-                                        
-                                        @elseif($generatedReportType === 'grades')
-                                            @if(view()->exists('reports.grades-report'))
-                                                @include('reports.grades-report', ['data' => $reportData])
-                                            @else
-                                                <div class="p-4 bg-red-50 text-red-600 border border-red-200 rounded">
-                                                    <strong>Error 404 de Vista:</strong> No se encuentra <code>resources/views/reports/grades-report.blade.php</code>.
-                                                </div>
-                                            @endif
-                                        
-                                        @elseif($generatedReportType === 'payments')
-                                            @if(view()->exists('reports.financial-report'))
-                                                @include('reports.financial-report', ['data' => $reportData])
-                                            @else
-                                                <div class="p-4 bg-red-50 text-red-600 border border-red-200 rounded">
-                                                    <strong>Error 404 de Vista:</strong> No se encuentra <code>resources/views/reports/financial-report.blade.php</code>.
-                                                </div>
-                                            @endif
-                                        
-                                        @elseif($generatedReportType === 'students')
-                                            @if(view()->exists('reports.student-list-report'))
-                                                @include('reports.student-list-report', ['data' => $reportData])
-                                            @else
-                                                <div class="p-4 bg-red-50 text-red-600 border border-red-200 rounded">
-                                                    <strong>Error 404 de Vista:</strong> No se encuentra <code>resources/views/reports/student-list-report.blade.php</code>.
-                                                </div>
-                                            @endif
-                                        
-                                        @elseif($generatedReportType === 'calendar')
-                                            @if(view()->exists('reports.calendar-report'))
-                                                @include('reports.calendar-report', ['data' => $reportData])
-                                            @else
-                                                <div class="p-4 bg-red-50 text-red-600 border border-red-200 rounded">
-                                                    <strong>Error 404 de Vista:</strong> No se encuentra <code>resources/views/reports/calendar-report.blade.php</code>.
-                                                </div>
-                                            @endif
-                                        
-                                        @elseif($generatedReportType === 'assignments')
-                                            @if(view()->exists('reports.assignment-report'))
-                                                @include('reports.assignment-report', ['data' => $reportData])
-                                            @else
-                                                <div class="p-4 bg-red-50 text-red-600 border border-red-200 rounded">
-                                                    <strong>Error 404 de Vista:</strong> No se encuentra <code>resources/views/reports/assignment-report.blade.php</code>. <br>
-                                                    <small class="text-gray-600">Verifique el nombre del archivo (minúsculas) y la ruta.</small>
-                                                </div>
-                                            @endif
-                                        @endif
-                                    </div>
-                                @else
-                                    <div class="flex flex-col items-center justify-center h-[500px] text-gray-400">
-                                        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                            <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                        </div>
-                                        <p class="text-sm font-medium">Configura los filtros y haz clic en "Generar Vista Previa"</p>
-                                    </div>
-                                @endif
+                            @if(in_array($reportType, ['attendance', 'grades', 'students']) && $course_id)
+                                <div class="md:col-span-3">
+                                    <x-input-label for="schedule_id" :value="__('Sección / Horario')" />
+                                    <select id="schedule_id" wire:model="schedule_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
+                                        <option value="">-- Seleccionar Sección --</option>
+                                        @foreach($schedules as $schedule)
+                                            <option value="{{ $schedule->id }}">
+                                                {{ $schedule->section_name ?? 'Sección Única' }} 
+                                                ({{ $schedule->start_time ?? '' }} - {{ $schedule->end_time ?? '' }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('schedule_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                                </div>
+                            @endif
+
+                            {{-- Filtros Profesor/Estado --}}
+                            @if(in_array($reportType, ['payments', 'assignments']))
+                                <div class="md:col-span-3">
+                                    <x-input-label for="teacher_id" :value="__('Profesor')" />
+                                    <select id="teacher_id" wire:model="teacher_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
+                                        <option value="">-- Todos --</option>
+                                        @foreach($teachers as $teacher)
+                                            <option value="{{ $teacher->id }}">{{ $teacher->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            @endif
+
+                            @if($reportType === 'payments')
+                                <div class="md:col-span-3">
+                                    <x-input-label for="payment_status" :value="__('Estado de Pago')" />
+                                    <select id="payment_status" wire:model="payment_status" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
+                                        <option value="all">Todo (Pagos y Deudas)</option>
+                                        <option value="pending">Solo Pendientes/Deuda</option>
+                                        <option value="paid">Solo Pagados</option>
+                                    </select>
+                                </div>
+                            @endif
+
+                            {{-- Botón Generar (Ocupa el espacio restante o se alinea a la derecha) --}}
+                            <div class="md:col-span-12 flex justify-end mt-4 pt-4 border-t border-gray-200">
+                                <x-primary-button wire:click="generateReport" wire:loading.attr="disabled" class="ml-3">
+                                    <span wire:loading.remove wire:target="generateReport">{{ __('Generar Vista Previa') }}</span>
+                                    <span wire:loading wire:target="generateReport" class="flex items-center">
+                                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                        {{ __('Procesando...') }}
+                                    </span>
+                                </x-primary-button>
                             </div>
                         </div>
                     </div>
+
+                    {{-- 3. RESULTADOS / VISTA PREVIA --}}
+                    @if($reportData)
+                        <div class="border border-gray-200 rounded-lg shadow overflow-hidden">
+                            <div class="bg-gray-100 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                                <h3 class="text-lg font-medium text-gray-900">{{ __('Vista Previa del Documento') }}</h3>
+                                <button onclick="printReport()" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150">
+                                    <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                                    {{ __('Imprimir / PDF') }}
+                                </button>
+                            </div>
+                            <div class="bg-white p-6 overflow-x-auto">
+                                {{-- Inclusión dinámica de vistas con chequeo de existencia --}}
+                                @if($generatedReportType === 'attendance')
+                                    @if(view()->exists('reports.attendance-report')) @include('reports.attendance-report', ['data' => $reportData]) @else <div class="text-red-500">Vista no encontrada.</div> @endif
+                                @elseif($generatedReportType === 'grades')
+                                    @if(view()->exists('reports.grades-report')) @include('reports.grades-report', ['data' => $reportData]) @else <div class="text-red-500">Vista no encontrada.</div> @endif
+                                @elseif($generatedReportType === 'payments')
+                                    @if(view()->exists('reports.financial-report')) @include('reports.financial-report', ['data' => $reportData]) @else <div class="text-red-500">Vista no encontrada.</div> @endif
+                                @elseif($generatedReportType === 'students')
+                                    @if(view()->exists('reports.student-list-report')) @include('reports.student-list-report', ['data' => $reportData]) @else <div class="text-red-500">Vista no encontrada.</div> @endif
+                                @elseif($generatedReportType === 'calendar')
+                                    @if(view()->exists('reports.calendar-report')) @include('reports.calendar-report', ['data' => $reportData]) @else <div class="text-red-500">Vista no encontrada.</div> @endif
+                                @elseif($generatedReportType === 'assignments')
+                                    @if(view()->exists('reports.assignment-report')) @include('reports.assignment-report', ['data' => $reportData]) @else <div class="text-red-500">Vista no encontrada.</div> @endif
+                                @endif
+                            </div>
+                        </div>
+                    @else
+                        {{-- Estado Vacío (Placeholder) --}}
+                        <div class="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span class="mt-2 block text-sm font-medium text-gray-900">
+                                {{ __('Seleccione un tipo de reporte y los filtros para generar una vista previa.') }}
+                            </span>
+                        </div>
+                    @endif
 
                 </div>
             </div>
@@ -240,6 +192,7 @@
             document.body.innerHTML = printContents;
             window.print();
             document.body.innerHTML = originalContents;
+            // Recargar para restaurar los eventos de Livewire/Alpine
             window.location.reload(); 
         }
     </script>
