@@ -58,6 +58,23 @@
                         <strong class="text-gray-500 block">Período:</strong>
                         <span class="text-gray-900">{{ \Carbon\Carbon::parse($enrollment->courseSchedule->start_date)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($enrollment->courseSchedule->end_date)->format('d/m/Y') }}</span>
                     </div>
+                    
+                    {{-- NUEVO CAMPO: Modalidad --}}
+                    <div>
+                        <strong class="text-gray-500 block">Modalidad:</strong>
+                        <span @class([
+                            'px-2 inline-flex text-xs leading-5 font-semibold rounded-full',
+                            'bg-blue-100 text-blue-800' => ($enrollment->courseSchedule->modality ?? 'Presencial') === 'Presencial',
+                            'bg-purple-100 text-purple-800' => ($enrollment->courseSchedule->modality ?? '') === 'Virtual',
+                            'bg-orange-100 text-orange-800' => ($enrollment->courseSchedule->modality ?? '') === 'Semi-Presencial',
+                            // Fallback por si acaso es otro valor
+                            'bg-gray-100 text-gray-800' => !in_array(($enrollment->courseSchedule->modality ?? 'Presencial'), ['Presencial', 'Virtual', 'Semi-Presencial']),
+                        ])>
+                            {{ $enrollment->courseSchedule->modality ?? 'Presencial' }}
+                        </span>
+                    </div>
+                    {{-- FIN NUEVO CAMPO --}}
+
                     <div>
                         <strong class="text-gray-500 block">Estado Actual:</strong>
                         <span @class([

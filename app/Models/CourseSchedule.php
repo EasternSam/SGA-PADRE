@@ -22,7 +22,8 @@ class CourseSchedule extends Model
         'end_date',   
         'teacher_id', 
         'days_of_week', // <-- Corregido de 'days'
-        'section_name'
+        'section_name',
+        'modality', // <-- NUEVO CAMPO AÑADIDO
     ];
 
     /**
