@@ -56,13 +56,14 @@ class Dashboard extends Component
         // 3. Si existe, asignamos las propiedades
         $this->student = $student;
         
-        // --- LÓGICA DE ONBOARDING / COMPLETAR PERFIL (NUEVO) ---
+        // --- LÓGICA DE ONBOARDING / COMPLETAR PERFIL (CORREGIDA) ---
         // Cargar datos actuales en las propiedades del formulario
         $this->phone = $this->student->phone;
         $this->address = $this->student->address;
 
         // Verificar si falta información o es "N/A" (Data sucia de importación)
-        // Si el teléfono o la dirección son "N/A", null o vacíos, abrimos el modal.
+        // Solo abrimos el modal si hay un "N/A" explícito que necesitamos que el usuario corrija.
+        // Si el campo está vacío (null o string vacía), no molestamos porque es opcional.
         if (
             $this->isIncomplete($this->phone) || 
             $this->isIncomplete($this->address)
@@ -110,15 +111,19 @@ class Dashboard extends Component
             ->get();
     }
 
-    // --- Métodos de Onboarding (NUEVO) ---
+    // --- Métodos de Onboarding (CORREGIDOS) ---
 
     /**
-     * Helper para verificar si un campo está incompleto o tiene N/A
+     * Helper para verificar si un campo tiene "N/A".
+     * CORRECCIÓN: Si es vacío o null, devuelve false (correcto) porque el campo es opcional.
+     * Solo devuelve true si explícitamente dice "N/A" para obligar a limpiar ese dato sucio.
      */
     private function isIncomplete($value)
     {
-        // Se considera incompleto si es null, vacío, o dice "N/A" (sin importar mayúsculas/minúsculas)
-        return empty($value) || strtoupper(trim($value)) === 'N/A';
+        if (empty($value)) return false; 
+        
+        // Verifica si el valor es "N/A" o "n/a"
+        return strtoupper(trim($value)) === 'N/A';
     }
 
     /**
@@ -126,7 +131,7 @@ class Dashboard extends Component
      */
     public function saveProfile()
     {
-        // Reglas 'nullable' porque pediste que sea opcional
+        // Reglas 'nullable' porque es opcional
         $this->validate([
             'phone' => 'nullable|string|max:50',
             'address' => 'nullable|string|max:255',
@@ -138,13 +143,14 @@ class Dashboard extends Component
                 'address' => $this->address,
             ]);
             
-            // Refrescamos el modelo para que la UI principal se actualice si muestra estos datos
             $this->student->refresh();
 
             session()->flash('message', 'Información de perfil actualizada correctamente.');
         }
 
+        // CORRECCIÓN: Cerramos el modal cambiando la variable Y despachando el evento
         $this->showProfileModal = false;
+        $this->dispatch('close-modal', 'complete-profile-modal');
     }
 
     /**
@@ -153,6 +159,8 @@ class Dashboard extends Component
     public function closeProfileModal()
     {
         $this->showProfileModal = false;
+        // CORRECCIÓN: Despachamos el evento para asegurar que AlpineJS lo cierre
+        $this->dispatch('close-modal', 'complete-profile-modal');
     }
 
     public function render()
