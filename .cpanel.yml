@@ -1,21 +1,20 @@
 ---
 deployment:
   tasks:
-    # 1. Definir la ruta de destino (La carpeta pública de tu dominio)
-    # IMPORTANTE: Cambia 'tu_usuario' por tu usuario real de cPanel
-    # Si es el dominio principal, suele ser /home/tu_usuario/public_html
-    # Si es un subdominio, suele ser /home/tu_usuario/public_html/subdominio
-    - export DEPLOYPATH=/home/grupaqgl/public_html/sga.90s.agency
+    # 1. Ruta de destino (Corregida según tus logs anteriores)
+    # Tus logs mostraron: /home/grupaqgl/sga.90s.agency
+    # NO uses public_html si tu subdominio está en la raíz de tu usuario.
+    - export DEPLOYPATH=/home/grupaqgl/sga.90s.agency/
 
-    # 2. Copiar los archivos del repositorio a la carpeta pública
-    # La bandera -R es recursiva (carpetas)
-    # Excluimos la carpeta .git para seguridad
+    # 2. Copiar archivos nuevos/modificados
+    # -R = Recursivo, -u = Update (solo copia si es más nuevo)
     - /bin/cp -R * $DEPLOYPATH
     
-    # 3. Copiar archivos ocultos importantes (como .env.example o .gitignore si se necesitan)
-    # Nota: No copiamos .git
+    # 3. Copiar explícitamente el archivo de entorno y la configuración
     - /bin/cp .env.example $DEPLOYPATH
+    - /bin/cp .cpanel.yml $DEPLOYPATH
     
-    # Opcional: Si quieres que intente ejecutar comandos de composer automáticamente
-    # (A veces falla por permisos en servidores compartidos, mejor hacerlo m anual la primera vez)
-    # - /bin/cd $DEPLOYPATH && /usr/bin/composer install --no-dev
+    # 4. (Opcional) Permisos - Asegura que las carpetas sean escribibles
+    # Esto evita errores 500 o de "permiso denegado" en logs
+    # - /bin/chmod -R 755 $DEPLOYPATH/public
+    # - /bin/chmod -R 775 $DEPLOYPATH/storage

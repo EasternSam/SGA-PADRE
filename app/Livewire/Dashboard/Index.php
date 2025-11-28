@@ -81,7 +81,7 @@ class Index extends Component
         // Obtener resultados limitados (ej. 5 últimos del filtro seleccionado)
         $recentEnrollments = $query->take(5)->get();
 
-        return view('Livewire.Dashboard.index', [
+        return view('livewire.dashboard.index', [
             'recentEnrollments' => $recentEnrollments,
         ]);
     }
