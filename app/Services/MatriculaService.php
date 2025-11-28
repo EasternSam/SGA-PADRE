@@ -5,11 +5,11 @@ namespace App\Services;
 use App\Models\Payment;
 use App\Models\Student;
 use App\Models\User;
-use App\Models\Enrollment; // <-- AÑADIDO: Importar el modelo Enrollment
+use App\Models\Enrollment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log; // <-- AÑADIDO: Para Loguear
+use Illuminate\Support\Facades\Log;
 
 /**
  * Servicio para manejar la lógica de generación de matrícula
@@ -61,13 +61,15 @@ class MatriculaService
 
                     // Validar que el nuevo email no exista (colisión)
                     $emailExists = User::where('email', $newEmail)->where('id', '!=', $user->id)->exists();
+                    
                     if ($emailExists) {
-                        // Si hay colisión, se re-intenta con un sufijo,
-                        // aunque 'generateUniqueStudentCode' debería evitarlo.
-                         $matricula = $this.generateUniqueStudentCode(); // Generar uno nuevo
+                        // Si hay colisión, intentamos generar uno nuevo.
+                        // Gracias a la mejora en generateUniqueStudentCode, esto es muy improbable,
+                        // pero mantenemos la lógica como seguridad.
+                         $matricula = $this->generateUniqueStudentCode();
                          $newEmail = $matricula . '@centu.edu.do';
                          $newPassword = Hash::make($matricula);
-                         $student->student_code = $matricula; // Guardar el nuevo
+                         $student->student_code = $matricula; 
                     }
 
                     // Actualizar el usuario temporal a permanente
@@ -93,11 +95,9 @@ class MatriculaService
 
     /**
      * Cambia el estado de la inscripción asociada al pago.
-     * ¡¡¡ESTA ES LA CORRECCIÓN!!!
      */
     private function activarInscripcion(Payment $payment)
     {
-        // --- ¡¡¡CORRECCIÓN!!! ---
         // En lugar de confiar en la relación '$payment->enrollment' (que puede perderse),
         // buscamos la inscripción usando el 'enrollment_id' del pago.
         
@@ -118,32 +118,52 @@ class MatriculaService
     }
 
     /**
-     * Genera un código de estudiante único.
-     * Ejemplo: 202500001
+     * Genera un código de estudiante con el formato Año (2 dígitos) + 7 dígitos incrementales.
+     * Ejemplo: 250001035
      */
     private function generateUniqueStudentCode(): string
     {
-        $year = Carbon::now()->year;
-        
-        // Buscar el último estudiante de este año para obtener el consecutivo
-        $lastStudent = Student::where('student_code', 'LIKE', $year . '%')
-                             ->orderBy('student_code', 'desc')
-                             ->first();
-        
-        $nextNumber = 1;
+        // 1. Obtener los 2 últimos dígitos del año actual (ej: "25")
+        $yearPrefix = date('y'); 
+
+        // 2. Buscar la última matrícula de este año.
+        // Usamos lockForUpdate para bloquear la lectura y evitar duplicados en concurrencia.
+        // Importante: Esta consulta debe ocurrir dentro de una transacción (generarMatricula ya crea una).
+        $lastStudent = Student::where('student_code', 'like', $yearPrefix . '%')
+            ->orderByRaw('LENGTH(student_code) DESC') // Asegurar que ordenamos bien numéricamente
+            ->orderBy('student_code', 'desc')
+            ->lockForUpdate()
+            ->first();
+
+        // 3. Determinar el siguiente número secuencial
+        $nextSequence = 1;
         if ($lastStudent) {
-            $lastNumber = (int) substr($lastStudent->student_code, 4); // Obtener '00001'
-            $nextNumber = $lastNumber + 1;
+            // Extraer la parte numérica (quitando el prefijo del año)
+            // Ejemplo: "250001035" -> "0001035"
+            $lastSequenceStr = substr($lastStudent->student_code, strlen($yearPrefix));
+            $nextSequence = intval($lastSequenceStr) + 1;
         }
 
-        $newCode = $year . str_pad($nextNumber, 5, '0', STR_PAD_LEFT); // '2025' + '00001'
+        // 4. Bucle de seguridad para evitar colisión con Emails de Usuarios existentes
+        // Esto es útil si borraste un Estudiante pero dejaste su Usuario huérfano ocupando el email.
+        do {
+            // Formatear a 7 dígitos con ceros a la izquierda (ej: 1 -> "0000001")
+            $paddedSequence = str_pad($nextSequence, 7, '0', STR_PAD_LEFT);
+            $candidateCode = $yearPrefix . $paddedSequence;
+            
+            // Verificamos si este código ya está tomado por un usuario como email
+            $emailTaken = User::where('email', $candidateCode . '@centu.edu.do')->exists();
+            // Verificamos si ya está tomado como matrícula (doble check por seguridad)
+            $codeTaken = Student::where('student_code', $candidateCode)->exists();
 
-        // Asegurarse de que es realmente único (por si acaso)
-        while (Student::where('student_code', $newCode)->exists()) {
-            $nextNumber++;
-            $newCode = $year . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
-        }
+            if ($emailTaken || $codeTaken) {
+                // Si está ocupado, probamos con el siguiente número
+                $nextSequence++;
+            } else {
+                // Si está libre, lo retornamos
+                return $candidateCode;
+            }
 
-        return $newCode;
+        } while (true);
     }
 }
