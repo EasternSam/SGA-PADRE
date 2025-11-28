@@ -1,3 +1,7 @@
+
+<div style="background: red; color: white; font-size: 20px; padding: 20px; z-index: 9999; position: relative;">
+    SI VES ESTO, ESTÁS EDITANDO EL ARCHIVO CORRECTO
+</div>
 <div>
     {{-- Mensajes de Sesión (Flash) --}}
     <div class="fixed top-24 right-6 z-50">
