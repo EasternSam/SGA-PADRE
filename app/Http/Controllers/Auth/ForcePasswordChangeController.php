@@ -21,13 +21,16 @@ class ForcePasswordChangeController extends Controller
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // Actualizar contraseña y quitar la bandera
-        $user->update([
+        // SOLUCIÓN: Usamos forceFill() o asignación directa para saltar la protección $fillable
+        // Si usas $user->update(), y 'must_change_password' no está en el array $fillable del modelo User,
+        // Laravel lo ignora silenciosamente y el usuario se queda en un bucle infinito.
+        $user->forceFill([
             'password' => Hash::make($request->password),
-            'must_change_password' => false,
-        ]);
+            'must_change_password' => false, // Desactivar la bandera
+        ])->save();
 
         return redirect()->route('dashboard')->with('status', '¡Contraseña actualizada correctamente!');
     }
