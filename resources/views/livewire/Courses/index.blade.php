@@ -1,8 +1,10 @@
+<div> {{-- <--- ESTE ES EL DIV RAÍZ OBLIGATORIO QUE ABRE --}}
 
-<div style="background: red; color: white; font-size: 20px; padding: 20px; z-index: 9999; position: relative;">
-    SI VES ESTO, ESTÁS EDITANDO EL ARCHIVO CORRECTO
-</div>
-<div>
+    {{-- Mensaje de prueba (OPCIONAL, puedes borrarlo si ya se ve bien) --}}
+    <div style="background: #ef4444; color: white; text-align: center; padding: 10px; font-weight: bold;">
+        SI VES ESTA BARRA ROJA, ESTÁS EN EL ARCHIVO CORRECTO Y LA ESTRUCTURA ESTÁ BIEN
+    </div>
+
     {{-- Mensajes de Sesión (Flash) --}}
     <div class="fixed top-24 right-6 z-50">
         @if (session()->has('message'))
@@ -158,6 +160,8 @@
                                             <span class="block text-sm text-gray-500">
                                                 {{ implode(', ', $schedule->days_of_week ?? []) }} | {{ $schedule->start_time ? \Carbon\Carbon::parse($schedule->start_time)->format('h:i A') : 'N/A' }} - {{ $schedule->end_time ? \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') : 'N/A' }}
                                             </span>
+                                            
+                                            {{-- NUEVO: Etiqueta de Modalidad --}}
                                             <span class="block text-xs font-semibold mt-1 {{ $schedule->modality === 'Virtual' ? 'text-purple-600' : ($schedule->modality === 'Semi-Presencial' ? 'text-orange-600' : 'text-blue-600') }}">
                                                 {{ $schedule->modality ?? 'Presencial' }}
                                             </span>
@@ -329,7 +333,7 @@
                     </div>
                 </div>
 
-                <!-- CAMPO MODALIDAD AÑADIDO -->
+                <!-- CAMPO MODALIDAD AÑADIDO (CORREGIDO DENTRO DEL FORM) -->
                 <div class="mt-4">
                     <label for="modality" class="block text-sm font-medium text-gray-700">Modalidad</label>
                     <select id="modality" wire:model="modality" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
@@ -504,4 +508,4 @@
         </div>
     </x-modal>
 
-</div>
+</div> {{-- <--- ESTE ES EL DIV RAÍZ OBLIGATORIO QUE CIERRA --}}
