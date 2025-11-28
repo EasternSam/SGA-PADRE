@@ -4,9 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Auth;
-use App\Livewire\Admin\DatabaseImport; // <--- ÚNICA IMPORTACIÓN NECESARIA AÑADIDA
-
-// NO HAY 'use' para los componentes de Livewire aquí (se usan inline abajo)
+use App\Livewire\Admin\DatabaseImport; 
+use Illuminate\Support\Facades\Http; // Agregado para el test de WP
 
 /*
 |--------------------------------------------------------------------------
@@ -22,6 +21,76 @@ use App\Livewire\Admin\DatabaseImport; // <--- ÚNICA IMPORTACIÓN NECESARIA AÑ
 Route::get('/', function () {
     return view('auth.login'); // Redirige a login por defecto
 });
+
+// --- INICIO: RUTA DE PRUEBA (Health Check) ---
+Route::get('/test', function () {
+    try {
+        \Illuminate\Support\Facades\DB::connection()->getPdo();
+        $dbStatus = 'Conectado a ' . \Illuminate\Support\Facades\DB::connection()->getDatabaseName();
+    } catch (\Exception $e) {
+        $dbStatus = 'Error de conexión: ' . $e->getMessage();
+    }
+
+    return response()->json([
+        'status' => 'OK',
+        'message' => '¡Conexión exitosa! Laravel en cPanel está vivo.',
+        'server_time' => now()->toDateTimeString(),
+        'database_status' => $dbStatus,
+        'php_version' => phpversion(),
+    ]);
+});
+
+// --- NUEVA RUTA DE DIAGNÓSTICO WP API (AGREGADA) ---
+// Úsala entrando a /test-wp para ver por qué falla la conexión
+Route::get('/test-wp', function () {
+    // 1. Obtener configuración
+    $baseUri = config('services.wordpress.base_uri') ?? env('WP_API_BASE_URI');
+    $secret = config('services.wordpress.secret') ?? env('WP_API_SECRET');
+    
+    // 2. Construir URL
+    $endpoint = 'sga/v1/get-courses/';
+    $fullUrl = rtrim($baseUri, '/') . '/' . ltrim($endpoint, '/');
+
+    // 3. Simular petición (replicando la lógica del servicio)
+    $startTime = microtime(true);
+    try {
+        $response = Http::withoutVerifying() // Ignorar SSL
+            ->timeout(60)
+            ->withHeaders([
+                'X-SGA-Signature' => $secret,
+                'Accept' => 'application/json',
+                'User-Agent' => 'Laravel-Debug/1.0'
+            ])
+            ->get($fullUrl);
+            
+        $duration = microtime(true) - $startTime;
+
+        return response()->json([
+            'test' => 'Conexión Directa WP API',
+            'url_intentada' => $fullUrl,
+            'credenciales' => [
+                'base_uri_configurado' => $baseUri,
+                'tiene_secret' => !empty($secret) ? 'SÍ' : 'NO',
+            ],
+            'resultado' => [
+                'http_status' => $response->status(),
+                'exito_laravel' => $response->successful(),
+                'duracion' => round($duration, 2) . 's',
+                'body_preview' => Str::limit($response->body(), 500),
+                'json_decodificado' => $response->json(),
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'test' => 'FALLO CRÍTICO',
+            'error_tipo' => get_class($e),
+            'mensaje' => $e->getMessage(),
+            'url_intentada' => $fullUrl
+        ], 500);
+    }
+});
+// --- FIN RUTAS DE PRUEBA ---
 
 // Ruta de 'dashboard' genérica que redirige según el rol
 Route::middleware(['auth', 'verified'])->group(function () {

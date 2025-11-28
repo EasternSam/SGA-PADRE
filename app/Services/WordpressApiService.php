@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Servicio para manejar la comunicación (saliente) con la API de WordPress.
+ * Optimizado para cPanel: SSL ignorado, timeouts altos y logs detallados.
  */
 class WordpressApiService
 {
@@ -15,9 +16,11 @@ class WordpressApiService
 
     public function __construct()
     {
-        // Obtiene la configuración desde config/services.php
-        $this->baseUri = config('services.wordpress.base_uri');
-        $this->secret = config('services.wordpress.secret');
+        // ESTRATEGIA DE DEFENSA: 
+        // Primero intenta leer de la configuración cacheada (lo correcto).
+        // Si falla (null), lee DIRECTAMENTE del .env (salvavidas para cPanel).
+        $this->baseUri = config('services.wordpress.base_uri') ?? env('WP_API_BASE_URI');
+        $this->secret = config('services.wordpress.secret') ?? env('WP_API_SECRET');
     }
 
     /**
@@ -28,57 +31,50 @@ class WordpressApiService
      */
     private function makeGetRequest($endpoint)
     {
-        // ====================================================================
-        // INICIO DE DEBUG Y CORRECCIÓN DE URL
-        // ====================================================================
-
-        // CORRECCIÓN: Nos aseguramos de que la URL se construya correctamente
-        // 1. rtrim quita la barra '/' del final de $baseUri (si la hay)
-        // 2. ltrim quita la barra '/' del inicio de $endpoint (si la hay)
-        // 3. Se unen con una sola barra '/' en medio.
+        // Corrección de URL para evitar dobles slashes problemáticos
         $fullUrl = rtrim($this->baseUri, '/') . '/' . ltrim($endpoint, '/');
 
-        Log::debug("WordpressApiService: Intentando conectar a...", [
-            'base_uri' => $this->baseUri,
-            'endpoint' => $endpoint,
-            'url_completa' => $fullUrl, // Usamos la variable corregida
-            'secret_cargado' => !empty($this->secret) ? 'Sí' : 'No (¡ERROR DE CONFIG!)',
+        // Log inicial para rastrear intentos
+        Log::info("WP_API: Iniciando conexión...", [
+            'destino' => $fullUrl,
+            'tiene_secret' => !empty($this->secret) ? 'SI' : 'NO'
         ]);
-        // ====================================================================
-        // FIN DE DEBUG Y CORRECCIÓN
-        // ====================================================================
 
         if (empty($this->baseUri) || empty($this->secret)) {
-            Log::error('WordpressApiService: La URI base o el secreto de la API no están configurados en config/services.php o .env');
+            Log::error('WP_API_FATAL: Faltan credenciales en .env (WP_API_BASE_URI o WP_API_SECRET).');
             return null;
         }
 
         try {
-            $response = Http::withHeaders([
-                'X-SGA-Signature' => $this->secret, // El header que tu API de WP espera
-                'Accept' => 'application/json',
-            ])->timeout(15) // Timeout de 15 segundos
-              ->get($fullUrl); // Usamos la variable URL corregida
+            // HTTP CLIENT BLINDADO PARA CPANEL
+            $response = Http::withoutVerifying() // <--- CRÍTICO: Ignora errores de SSL (común en cPanel)
+                ->withOptions(["verify" => false]) // Refuerzo para la librería Guzzle subyacente
+                ->timeout(60) // Aumentamos a 60s por si el servidor WP es lento
+                ->withHeaders([
+                    'X-SGA-Signature' => $this->secret,
+                    'Accept' => 'application/json',
+                    'User-Agent' => 'Laravel-SGA-Client/1.0', // Evita bloqueo por ModSecurity/Firewalls
+                ])
+                ->get($fullUrl);
 
             if ($response->successful()) {
-                // Devuelve el cuerpo de la respuesta JSON decodificado
+                Log::info("WP_API: Éxito ({$response->status()})");
                 return $response->json();
             }
 
-            // Log del error si la API devuelve un error
-            Log::error("WordpressApiService: Error al llamar a {$endpoint}", [
-                'status' => $response->status(),
-                'body' => $response->body(),
+            // Manejo de errores específicos (401, 403, 404, 500)
+            Log::error("WP_API: Error HTTP {$response->status()}", [
+                'body_preview' => substr($response->body(), 0, 500) // Solo guardamos el inicio para no llenar el log
             ]);
             
             return null;
 
         } catch (\Exception $e) {
-            // Log del error si la conexión falla (timeout, DNS, etc.)
-            Log::error("WordpressApiService: Excepción al llamar a {$endpoint}", [
-                'tipo' => get_class($e), // Nos dice si es ConnectException, etc.
-                'message' => $e->getMessage(),
-                'linea' => $e->getLine(),
+            // Captura errores de red (DNS, Timeout, Conexión rechazada)
+            Log::error("WP_API: Excepción de Conexión", [
+                'error' => $e->getMessage(),
+                'archivo' => $e->getFile(),
+                'linea' => $e->getLine()
             ]);
             return null;
         }
@@ -86,77 +82,45 @@ class WordpressApiService
 
     /**
      * Obtiene la lista de cursos desde el endpoint de WordPress.
-     * (Llama a /sga/v1/get-courses/ que creamos en WP)
-     *
+     * Endpoint: /sga/v1/get-courses/
      * @return array
      */
     public function getSgaCourses(): array
     {
         $response = $this->makeGetRequest('sga/v1/get-courses/');
 
-        // Si la solicitud fue exitosa y 'data' existe (basado en tu API de WP)
         if (isset($response['success']) && $response['success'] === true && isset($response['data'])) {
             return $response['data'];
         }
         
-        // Devuelve un array vacío en caso de fallo
         return [];
     }
 
     /**
-     * Obtiene una lista simplificada de cursos (solo ID y título) para el importador.
-     * Este es un alias o adaptador para que el comando de importación funcione 
-     * si espera 'getCourses' en lugar de 'getSgaCourses'.
-     *
+     * Alias para compatibilidad con el comando de importación.
      * @return array
      */
     public function getCourses(): array
     {
-        // Reutilizamos el método principal
-        $courses = $this->getSgaCourses();
-        
-        // Si necesitas transformar la estructura para que coincida con lo que espera el importador, hazlo aquí.
-        // Por ahora, asumimos que getSgaCourses devuelve lo que necesitas.
-        return $courses;
+        return $this->getSgaCourses();
     }
 
-    // INICIO: Método añadido para obtener horarios
     /**
      * Obtiene los horarios de un curso específico de WordPress.
-     *
+     * Endpoint: /sga/v1/course/{id}/schedules
      * @param int $wpCourseId
      * @return array
      */
     public function getSchedulesForWpCourse(int $wpCourseId): array
     {
-        // Llama al nuevo endpoint que creamos en class-sga-api.php
         $endpoint = "sga/v1/course/{$wpCourseId}/schedules";
         $response = $this->makeGetRequest($endpoint);
 
-        // INICIO: DEBUG AÑADIDO
-        Log::info("DEBUG: Respuesta de API para horarios", [
-            'wp_course_id' => $wpCourseId,
-            'endpoint_llamado' => $endpoint,
-            'respuesta_completa' => $response // <-- ESTO ES LO MÁS IMPORTANTE
-        ]);
-        // FIN: DEBUG AÑADIDO
-
-        // Espera el mismo formato de respuesta: ['success' => true, 'data' => [...]]
         if (isset($response['success']) && $response['success'] === true && isset($response['data'])) {
-            // INICIO: DEBUG AÑADIDO
-            Log::info("DEBUG: API devolvió éxito.", [
-                'data_recibida' => $response['data']
-            ]);
-            // FIN: DEBUG AÑADIDO
             return $response['data'];
         }
 
-        Log::warning("WordpressApiService: No se pudieron obtener horarios para WP Course ID: {$wpCourseId}", [
-            'response' => $response
-        ]);
+        Log::warning("WP_API: No se pudieron obtener horarios para WP Course ID: {$wpCourseId}");
         return [];
     }
-    // FIN: Método añadido
-
-    // Aquí se añadirán más métodos (como 'updateStudentStatusInWp') en el futuro
 }
