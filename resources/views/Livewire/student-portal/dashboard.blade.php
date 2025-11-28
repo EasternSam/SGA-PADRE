@@ -6,7 +6,7 @@
         </h2>
     </x-slot>
 
-    <!-- ¡¡¡NUEVO!!! Bloque de Mensajes Flash -->
+    <!-- Bloque de Mensajes Flash -->
     @if (session()->has('message'))
         <div class="mb-6 rounded-lg border border-green-400 bg-green-100 px-4 py-3 text-green-700 shadow" role="alert">
             <strong class="font-bold">¡Éxito!</strong>
@@ -19,10 +19,9 @@
             <span class="block sm:inline">{{ session('error') }}</span>
         </div>
     @endif
-    <!-- Fin de Mensajes Flash -->
     
     <!-- ============================================= -->
-    <!--     ALERTA DE PAGOS PENDIENTES (LOGICA N/A)   -->
+    <!--     ALERTA DE PAGOS PENDIENTES                -->
     <!-- ============================================= -->
     @if($pendingPayments->count() > 0)
         <div class="mb-6 rounded-lg border border-yellow-400 bg-yellow-50 p-4 shadow-sm" role="alert">
@@ -35,16 +34,14 @@
                 <div class="ml-3">
                     <h3 class="text-sm font-medium text-yellow-800">Tienes Pagos Pendientes</h3>
                     <div class="mt-2 text-sm text-yellow-700">
-                        <p>Detectamos una o más inscripciones que están pendientes de pago. Por favor, completa el pago para activar tu(s) curso(s) y asegurar tu cupo.</p>
+                        <p>Detectamos una o más inscripciones que están pendientes de pago. Por favor, completa el pago para activar tu(s) curso(s).</p>
                         <ul class="mt-2 list-disc list-inside space-y-1">
                             @foreach($pendingPayments as $payment)
                                 @php
-                                    // 1. Recolectar datos
                                     $parts = [];
                                     $rawConcept = $payment->paymentConcept?->name;
                                     $rawCourse  = $payment->enrollment?->courseSchedule?->module?->name;
 
-                                    // 2. Filtrar "N/A" (conceptos validos solamente)
                                     if ($rawConcept && strtoupper(trim($rawConcept)) !== 'N/A') {
                                         $parts[] = trim($rawConcept);
                                     }
@@ -52,12 +49,7 @@
                                         $parts[] = trim($rawCourse);
                                     }
 
-                                    // 3. Unir o usar fallback
-                                    if (count($parts) > 0) {
-                                        $displayText = implode(' | ', $parts);
-                                    } else {
-                                        $displayText = $payment->description ?? 'Pago Pendiente';
-                                    }
+                                    $displayText = count($parts) > 0 ? implode(' | ', $parts) : ($payment->description ?? 'Pago Pendiente');
                                 @endphp
                                 <li>
                                     <strong>{{ $displayText }}</strong>:
@@ -70,7 +62,6 @@
             </div>
         </div>
     @endif
-    <!-- Fin de Alerta de Pagos -->
 
 
     <!-- Contenido de la Página -->
@@ -95,11 +86,11 @@
                     <div class="mt-4 grid grid-cols-1 gap-4 border-t border-sga-gray pt-4 text-sm sm:grid-cols-2 md:grid-cols-4">
                         <div>
                             <strong class="text-sga-text-light block">Nombre Completo:</strong>
-                            <span class_alias="text-sga-text">{{ $student->fullName }}</span>
+                            <span class="text-sga-text">{{ $student->fullName }}</span>
                         </div>
                         <div>
                             <strong class="text-sga-text-light block">Matrícula:</strong>
-                            <span class_alias="text-sga-text">{{ $student->student_code ?? 'Pendiente' }}</span>
+                            <span class="text-sga-text">{{ $student->student_code ?? 'Pendiente' }}</span>
                         </div>
                         <div>
                             <strong class="text-sga-text-light block">Email de Acceso:</strong>
@@ -118,10 +109,10 @@
         <!-- 2. Grid Principal (Cursos y Finanzas) -->
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 
-            <!-- Columna Principal (Cursos Activos) -->
+            <!-- Columna Principal (Cursos Activos e Inscripciones) -->
             <div class="space-y-6 lg:col-span-2">
 
-                <!-- Inscripciones Pendientes de Pago -->
+                <!-- Inscripciones Pendientes de Pago (Enrolled / Pendiente) -->
                 @if($pendingEnrollments->count() > 0)
                 <div class="overflow-hidden rounded-lg bg-sga-card shadow">
                     <div class="p-4 sm:p-6">
@@ -171,15 +162,14 @@
                     </div>
                 </div>
                 @endif
-                <!-- Fin de Inscripciones Pendientes -->
 
+                <!-- Cursos Activos -->
                 <div class="overflow-hidden rounded-lg bg-sga-card shadow">
                     <div class="p-4 sm:p-6">
                         <h3 class="text-lg font-medium leading-6 text-sga-text">
                             <i class="fas fa-book-open mr-2 text-sga-primary"></i> Mis Cursos Activos
                         </h3>
                     </div>
-                    <!-- Tabla de Cursos Activos -->
                     <div class="flow-root">
                         <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
                             <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
@@ -262,7 +252,7 @@
                     </div>
                 </div>
 
-                <!-- Historial de Pagos -->
+                <!-- Historial de Pagos (MODIFICADO Y ACTUALIZADO) -->
                 <div class="overflow-hidden rounded-lg bg-sga-card shadow">
                     <div class="p-4 sm:p-6">
                         <h3 class="text-lg font-medium leading-6 text-sga-text">
@@ -271,16 +261,9 @@
                     </div>
                     <div class="border-t border-sga-gray p-4 sm:p-6">
                          <ul role="list" class="divide-y divide-sga-gray">
-                            @php
-                                // SELECCIONA TODOS LOS PAGOS (SIN LIMITE)
-                                $allPayments = $student->payments()
-                                    ->with(['paymentConcept', 'enrollment.courseSchedule.module'])
-                                    ->orderBy('created_at', 'desc')
-                                    ->get();
-                            @endphp
-                            @forelse ($allPayments as $payment)
+                            @forelse ($paymentHistory as $payment)
                                 @php
-                                    // 1. Recolectar datos
+                                    // 1. Recolectar datos para mostrar (Concepto y Curso)
                                     $histParts = [];
                                     $hConcept = $payment->paymentConcept?->name;
                                     $hCourse  = $payment->enrollment?->courseSchedule?->module?->name;
@@ -293,27 +276,44 @@
                                         $histParts[] = trim($hCourse);
                                     }
 
-                                    // 3. Unir o usar fallback (Descripcion original o texto genérico)
-                                    if (count($histParts) > 0) {
-                                        $histDisplay = implode(' | ', $histParts);
-                                    } else {
-                                        $histDisplay = $payment->description ?? 'Pago registrado';
-                                    }
+                                    // 3. Crear texto de descripción
+                                    $histDisplay = count($histParts) > 0 ? implode(' | ', $histParts) : ($payment->description ?? 'Pago registrado');
+
+                                    // 4. Clases de estado
+                                    $statusClasses = [
+                                        'approved' => 'text-green-600',
+                                        'paid' => 'text-green-600',
+                                        'pending' => 'text-yellow-600',
+                                        'failed' => 'text-red-600',
+                                        'rejected' => 'text-red-600',
+                                        'refunded' => 'text-gray-500',
+                                    ];
+                                    $currentStatus = strtolower($payment->status);
+                                    $statusColor = $statusClasses[$currentStatus] ?? 'text-gray-600';
                                 @endphp
-                                <li wire:key="payment-{{ $payment->id }}" class="flex justify-between gap-x-6 py-3">
-                                    <div>
-                                        <p class="text-sm font-semibold text-sga-text">{{ $histDisplay }}</p>
-                                        <p class="text-xs text-sga-text-light">{{ $payment->created_at->format('d/m/Y') }}</p>
-                                    </div>
-                                    <div class="flex-shrink-0 text-right">
-                                        <span class="text-sm font-medium text-sga-text">${{ number_format($payment->amount, 2) }}</span>
-                                        @if($payment->status == 'Pendiente')
-                                            <span class="block text-xs text-yellow-600">Pendiente</span>
-                                        @elseif($payment->status == 'Completado')
-                                            <span class="block text-xs text-green-600">Completado</span>
-                                        @else
-                                            <span class="block text-xs text-red-600">{{ $payment->status }}</span>
-                                        @endif
+
+                                <li wire:key="payment-{{ $payment->id }}" class="flex flex-col py-3">
+                                    <div class="flex justify-between items-start">
+                                        <div class="flex-1 pr-2">
+                                            <p class="text-sm font-semibold text-sga-text leading-tight">{{ $histDisplay }}</p>
+                                            <p class="text-xs text-sga-text-light mt-1">
+                                                {{ $payment->created_at->format('d/m/Y') }} 
+                                                @if($payment->gateway)
+                                                    &bull; <span class="capitalize">{{ str_replace('_', ' ', $payment->gateway) }}</span>
+                                                @endif
+                                            </p>
+                                            @if($payment->transaction_id)
+                                                <p class="text-xs text-gray-400 font-mono mt-0.5" title="Referencia">Ref: {{ Str::limit($payment->transaction_id, 15) }}</p>
+                                            @endif
+                                        </div>
+                                        <div class="flex-shrink-0 text-right">
+                                            <span class="block text-sm font-bold text-sga-text">
+                                                {{ $payment->currency ?? '$' }}{{ number_format($payment->amount, 2) }}
+                                            </span>
+                                            <span class="block text-xs font-medium {{ $statusColor }}">
+                                                {{ ucfirst($currentStatus) }}
+                                            </span>
+                                        </div>
                                     </div>
                                 </li>
                             @empty
