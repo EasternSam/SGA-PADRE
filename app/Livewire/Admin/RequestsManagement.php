@@ -104,7 +104,7 @@ class RequestsManagement extends Component
             ->latest() // Ordenar por más reciente
             ->paginate(10);
 
-        return view('Livewire.Admin.requests-management', [
+        return view('livewire.admin.requests-management', [
             'requests' => $requests
         ]);
     }
