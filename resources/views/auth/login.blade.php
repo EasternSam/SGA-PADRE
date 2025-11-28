@@ -7,7 +7,7 @@
 
         <!-- Campo de Login (Modificado) -->
         <div>
-            <x-input-label for="login" :value="__('Email o Matricula (Si eres nuevo coloca tu cédula)')" />
+            <x-input-label for="login" :value="__('Email o Matricula (Si eres nuevo ingreso coloca tu cédula)')" />
             <x-text-input id="login" class="block mt-1 w-full"
                             type="text"
                             name="login"
@@ -18,7 +18,7 @@
 
         <!-- Password -->
         <div class="mt-4">
-            <x-input-label for="password" :value="__('Contraseña')" />
+            <x-input-label for="password" :value="__('Contraseña (Si eres nuevo ingreso coloca tu cédula)')" />
 
             <x-text-input id="password" class="block mt-1 w-full"
                             type="password"
