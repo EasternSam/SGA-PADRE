@@ -13,7 +13,7 @@
         <thead class="bg-gray-100">
             <tr>
                 <th class="border border-gray-300 p-2 text-left">Profesor</th>
-                <th class="border border-gray-300 p-2 text-left">Curso Asignado</th>
+                <th class="border border-gray-300 p-2 text-left">Asignación (Curso / Módulo / Sección)</th>
                 <th class="border border-gray-300 p-2 text-left">Horario</th>
                 <th class="border border-gray-300 p-2 text-center">Periodo</th>
             </tr>
@@ -21,25 +21,35 @@
         <tbody>
             @foreach($data['assignments'] as $assign)
                 <tr>
-                    <td class="border border-gray-300 p-2 font-bold uppercase bg-gray-50">
+                    <td class="border border-gray-300 p-2 font-bold uppercase bg-gray-50 align-top">
                         {{-- Mostrar nombre solo si cambia --}}
                         @if($currentTeacher !== $assign->teacher_id)
                             {{ $assign->teacher->name ?? 'SIN PROFESOR' }}
                             @php $currentTeacher = $assign->teacher_id; @endphp
                         @endif
                     </td>
-                    <td class="border border-gray-300 p-2">
-                        {{ $assign->module->course->name ?? 'N/A' }} - {{ $assign->section_name }}
+                    <td class="border border-gray-300 p-2 align-top">
+                        {{-- CORRECCIÓN: Orden Curso -> Módulo -> Sección --}}
+                        <div class="font-bold text-gray-900 text-sm mb-1">
+                            {{ $assign->module->course->name ?? 'Curso N/A' }}
+                        </div>
+                        <div class="text-xs text-gray-600 uppercase mb-1">
+                            <span class="font-semibold">Módulo:</span> {{ $assign->module->name ?? 'General' }}
+                        </div>
+                        <div class="text-[11px] text-gray-500 italic bg-gray-50 inline-block px-1 rounded">
+                            Sección: {{ $assign->section_name }}
+                        </div>
                     </td>
-                    <td class="border border-gray-300 p-2">
+                    <td class="border border-gray-300 p-2 align-top">
                          @if(is_array($assign->days_of_week))
                             {{ implode(', ', $assign->days_of_week) }}
                         @else
                             {{ $assign->days_of_week }}
                         @endif
-                        ({{ $assign->start_time }} - {{ $assign->end_time }})
+                        <br>
+                        <span class="font-semibold">({{ $assign->start_time }} - {{ $assign->end_time }})</span>
                     </td>
-                    <td class="border border-gray-300 p-2 text-center">
+                    <td class="border border-gray-300 p-2 text-center align-top">
                         {{ \Carbon\Carbon::parse($assign->start_date)->format('d/m') }} - {{ \Carbon\Carbon::parse($assign->end_date)->format('d/m/Y') }}
                     </td>
                 </tr>
