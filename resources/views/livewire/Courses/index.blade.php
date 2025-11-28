@@ -1,10 +1,5 @@
 <div> {{-- <--- ESTE ES EL DIV RAÍZ OBLIGATORIO QUE ABRE --}}
 
-    {{-- Mensaje de prueba (OPCIONAL, puedes borrarlo si ya se ve bien) --}}
-    <div style="background: #ef4444; color: white; text-align: center; padding: 10px; font-weight: bold;">
-        SI VES ESTA BARRA ROJA, ESTÁS EN EL ARCHIVO CORRECTO Y LA ESTRUCTURA ESTÁ BIEN
-    </div>
-
     {{-- Mensajes de Sesión (Flash) --}}
     <div class="fixed top-24 right-6 z-50">
         @if (session()->has('message'))
