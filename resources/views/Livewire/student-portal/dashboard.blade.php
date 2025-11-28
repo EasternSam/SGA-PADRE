@@ -7,7 +7,6 @@
     </x-slot>
 
     <!-- ¡¡¡NUEVO!!! Bloque de Mensajes Flash -->
-    <!-- Esto mostrará los errores cuando seas redirigido aquí -->
     @if (session()->has('message'))
         <div class="mb-6 rounded-lg border border-green-400 bg-green-100 px-4 py-3 text-green-700 shadow" role="alert">
             <strong class="font-bold">¡Éxito!</strong>
@@ -23,7 +22,7 @@
     <!-- Fin de Mensajes Flash -->
     
     <!-- ============================================= -->
-    <!--     NUEVO: Alerta de Pagos Pendientes         -->
+    <!--     ALERTA DE PAGOS PENDIENTES (LOGICA N/A)   -->
     <!-- ============================================= -->
     @if($pendingPayments->count() > 0)
         <div class="mb-6 rounded-lg border border-yellow-400 bg-yellow-50 p-4 shadow-sm" role="alert">
@@ -40,23 +39,25 @@
                         <ul class="mt-2 list-disc list-inside space-y-1">
                             @foreach($pendingPayments as $payment)
                                 @php
-                                    // Obtener valores crudos
-                                    $rawCourse = $payment->enrollment?->courseSchedule?->module?->name;
+                                    // 1. Recolectar datos
+                                    $parts = [];
                                     $rawConcept = $payment->paymentConcept?->name;
+                                    $rawCourse  = $payment->enrollment?->courseSchedule?->module?->name;
 
-                                    // Función de limpieza para asegurar que detectamos "N/A" incluso con espacios o minúsculas
-                                    $clean = function($val) {
-                                        return ($val && strtoupper(trim($val)) !== 'N/A') ? $val : null;
-                                    };
+                                    // 2. Filtrar "N/A" (conceptos validos solamente)
+                                    if ($rawConcept && strtoupper(trim($rawConcept)) !== 'N/A') {
+                                        $parts[] = trim($rawConcept);
+                                    }
+                                    if ($rawCourse && strtoupper(trim($rawCourse)) !== 'N/A') {
+                                        $parts[] = trim($rawCourse);
+                                    }
 
-                                    $courseName = $clean($rawCourse);
-                                    $conceptName = $clean($rawConcept);
-
-                                    // Lógica corregida: 
-                                    // 1. Intentar mostrar Concepto (si no es N/A).
-                                    // 2. Si Concepto es N/A, mostrar Curso.
-                                    // 3. Fallback a texto genérico.
-                                    $displayText = $conceptName ?? $courseName ?? 'Concepto de Pago';
+                                    // 3. Unir o usar fallback
+                                    if (count($parts) > 0) {
+                                        $displayText = implode(' | ', $parts);
+                                    } else {
+                                        $displayText = $payment->description ?? 'Pago Pendiente';
+                                    }
                                 @endphp
                                 <li>
                                     <strong>{{ $displayText }}</strong>:
@@ -91,9 +92,6 @@
                         Aquí puedes ver un resumen de tu progreso académico y tu estado financiero.
                     </p>
                     
-                    <!-- ============================================= -->
-                    <!--     ACTUALIZADO: Tarjeta de Perfil            -->
-                    <!-- ============================================= -->
                     <div class="mt-4 grid grid-cols-1 gap-4 border-t border-sga-gray pt-4 text-sm sm:grid-cols-2 md:grid-cols-4">
                         <div>
                             <strong class="text-sga-text-light block">Nombre Completo:</strong>
@@ -105,7 +103,6 @@
                         </div>
                         <div>
                             <strong class="text-sga-text-light block">Email de Acceso:</strong>
-                            {{-- Muestra el email del USER (el de @centu.edu.do) o el del student si no --}}
                             <span class="text-sga-text">{{ $student->user?->email ?? $student->email }}</span>
                         </div>
                         <div>
@@ -113,7 +110,6 @@
                             <span class="text-sga-text">{{ $student->mobile_phone ?? $student->phone ?? 'N/A' }}</span>
                         </div>
                     </div>
-                    <!-- Fin de Actualización -->
 
                 </div>
             </div>
@@ -125,9 +121,7 @@
             <!-- Columna Principal (Cursos Activos) -->
             <div class="space-y-6 lg:col-span-2">
 
-                <!-- ============================================= -->
-                <!--  NUEVO: Inscripciones Pendientes de Pago      -->
-                <!-- ============================================= -->
+                <!-- Inscripciones Pendientes de Pago -->
                 @if($pendingEnrollments->count() > 0)
                 <div class="overflow-hidden rounded-lg bg-sga-card shadow">
                     <div class="p-4 sm:p-6">
@@ -135,7 +129,6 @@
                             <i class="fas fa-exclamation-triangle mr-2"></i> Inscripciones Pendientes de Pago
                         </h3>
                     </div>
-                    <!-- Tabla de Cursos Pendientes -->
                     <div class="flow-root">
                         <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
                             <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
@@ -159,7 +152,6 @@
                                                     {{ $enrollment->courseSchedule->teacher->name ?? 'No asignado' }}
                                                 </td>
                                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-sga-text-light">
-                                                    {{-- Usar 'section_name' o 'day_of_week' como fallback --}}
                                                     <div>{{ $enrollment->courseSchedule->section_name ?? $enrollment->courseSchedule->day_of_week ?? 'N/A' }}</div>
                                                     @if($enrollment->courseSchedule->start_time && $enrollment->courseSchedule->start_time != '00:00:00')
                                                     <div>{{ \Carbon\Carbon::parse($enrollment->courseSchedule->start_time)->format('h:i A') }} - {{ \Carbon\Carbon::parse($enrollment->courseSchedule->end_time)->format('h:i A') }}</div>
@@ -213,14 +205,12 @@
                                                     {{ $enrollment->courseSchedule->teacher->name ?? 'No asignado' }}
                                                 </td>
                                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-sga-text-light">
-                                                    {{-- Usar 'section_name' o 'day_of_week' como fallback --}}
                                                     <div>{{ $enrollment->courseSchedule->section_name ?? $enrollment->courseSchedule->day_of_week ?? 'N/A' }}</div>
                                                     @if($enrollment->courseSchedule->start_time && $enrollment->courseSchedule->start_time != '00:00:00')
                                                     <div>{{ \Carbon\Carbon::parse($enrollment->courseSchedule->start_time)->format('h:i A') }} - {{ \Carbon\Carbon::parse($enrollment->courseSchedule->end_time)->format('h:i A') }}</div>
                                                     @endif
                                                 </td>
                                                 <td class="whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                                    {{-- ¡CAMBIO! Se eliminó wire:navigate para forzar una recarga de página completa --}}
                                                     <a href="{{ route('student.course.detail', $enrollment->id) }}" class="text-sga-secondary hover:text-sga-primary font-semibold">
                                                         Ver Detalles <span aria-hidden="true">&rarr;</span>
                                                     </a>
@@ -282,30 +272,33 @@
                     <div class="border-t border-sga-gray p-4 sm:p-6">
                          <ul role="list" class="divide-y divide-sga-gray">
                             @php
-                                // ACTUALIZADO: Quitamos take(5) para mostrar todos
+                                // SELECCIONA TODOS LOS PAGOS (SIN LIMITE)
                                 $allPayments = $student->payments()
                                     ->with(['paymentConcept', 'enrollment.courseSchedule.module'])
                                     ->orderBy('created_at', 'desc')
-                                    // ->take(5) eliminado
                                     ->get();
                             @endphp
                             @forelse ($allPayments as $payment)
                                 @php
-                                    $rawHistConcept = $payment->paymentConcept?->name;
-                                    $rawHistCourse = $payment->enrollment?->courseSchedule?->module?->name;
-                                    $rawHistDesc = $payment->description;
+                                    // 1. Recolectar datos
+                                    $histParts = [];
+                                    $hConcept = $payment->paymentConcept?->name;
+                                    $hCourse  = $payment->enrollment?->courseSchedule?->module?->name;
 
-                                    // Limpieza para asegurar detección de N/A
-                                    $cleanHist = function($val) {
-                                        return ($val && strtoupper(trim($val)) !== 'N/A') ? $val : null;
-                                    };
+                                    // 2. Filtrar "N/A"
+                                    if ($hConcept && strtoupper(trim($hConcept)) !== 'N/A') {
+                                        $histParts[] = trim($hConcept);
+                                    }
+                                    if ($hCourse && strtoupper(trim($hCourse)) !== 'N/A') {
+                                        $histParts[] = trim($hCourse);
+                                    }
 
-                                    $hConcept = $cleanHist($rawHistConcept);
-                                    $hCourse = $cleanHist($rawHistCourse);
-                                    $hDesc = $cleanHist($rawHistDesc);
-
-                                    // Prioridad: Concepto -> Curso -> Descripción -> Fallback
-                                    $histDisplay = $hConcept ?? $hCourse ?? $hDesc ?? 'Pago registrado';
+                                    // 3. Unir o usar fallback (Descripcion original o texto genérico)
+                                    if (count($histParts) > 0) {
+                                        $histDisplay = implode(' | ', $histParts);
+                                    } else {
+                                        $histDisplay = $payment->description ?? 'Pago registrado';
+                                    }
                                 @endphp
                                 <li wire:key="payment-{{ $payment->id }}" class="flex justify-between gap-x-6 py-3">
                                     <div>
