@@ -90,7 +90,22 @@
                                 </div>
                             @endif
 
+                            {{-- NUEVO: Filtro de Módulo (Intermedio) --}}
                             @if(in_array($reportType, ['attendance', 'grades', 'students']) && $course_id)
+                                <div class="md:col-span-3">
+                                    <x-input-label for="module_id" :value="__('Módulo')" />
+                                    <select id="module_id" wire:model.live="module_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
+                                        <option value="">-- Seleccionar Módulo --</option>
+                                        @foreach($modules as $module)
+                                            <option value="{{ $module->id }}">{{ $module->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('module_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                                </div>
+                            @endif
+
+                            {{-- Filtro de Sección (Ahora depende de module_id) --}}
+                            @if(in_array($reportType, ['attendance', 'grades', 'students']) && $module_id)
                                 <div class="md:col-span-3">
                                     <x-input-label for="schedule_id" :value="__('Sección / Horario')" />
                                     <select id="schedule_id" wire:model="schedule_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
