@@ -1,75 +1,97 @@
-{{-- Plantilla del Reporte de Asistencia --}}
-<div class="bg-white p-8" id="printable-area">
-    <div class="border-b-2 border-gray-800 pb-4 mb-6">
-        <div class="flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <div class="h-16 w-16 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-xs font-bold">
-                    LOGO
-                </div>
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900 uppercase tracking-wide">Reporte de Asistencia</h1>
-                    <p class="text-sm text-gray-600">Sistema de Gestión Académica</p>
-                </div>
-            </div>
-            <div class="text-right text-sm text-gray-600">
-                <p><strong>Fecha:</strong> {{ now()->format('d/m/Y') }}</p>
-            </div>
-        </div>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>Reporte de Asistencia</title>
+    <style>
+        body { font-family: sans-serif; font-size: 11px; color: #333; }
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        .header h1 { margin: 0 0 5px 0; font-size: 18px; color: #2c3e50; }
+        .header h2 { margin: 0; font-size: 14px; font-weight: normal; color: #7f8c8d; }
+        
+        .info-table { width: 100%; margin-bottom: 15px; border-collapse: collapse; }
+        .info-table td { padding: 4px; }
+        .label { font-weight: bold; width: 100px; }
 
-        <div class="mt-6 grid grid-cols-2 gap-4 text-sm">
-            <div>
-                <p><span class="font-bold text-gray-900">Curso:</span> {{ $data['schedule']->course->name ?? 'N/A' }}</p>
-                <p><span class="font-bold text-gray-900">Sección:</span> {{ $data['schedule']->section_name ?? 'Única' }}</p>
-            </div>
-            <div class="text-right">
-                <p><span class="font-bold text-gray-900">Profesor:</span> {{ $data['schedule']->teacher->name ?? 'Sin asignar' }}</p>
-                <p><span class="font-bold text-gray-900">Desde:</span> {{ $data['start_date']->format('d/m/Y') }} <span class="font-bold text-gray-900">Hasta:</span> {{ $data['end_date']->format('d/m/Y') }}</p>
-            </div>
-        </div>
+        .attendance-table { width: 100%; border-collapse: collapse; }
+        .attendance-table th, .attendance-table td { border: 1px solid #ccc; padding: 4px; text-align: center; }
+        .attendance-table th { background-color: #f2f2f2; font-size: 10px; }
+        .student-col { text-align: left !important; padding-left: 8px !important; width: 200px; }
+        
+        /* Rotar encabezados de fecha para ahorrar espacio */
+        .rotate { height: 80px; white-space: nowrap; }
+        .rotate > div { transform: rotate(-90deg); width: 30px; }
+
+        .status-P { color: green; font-weight: bold; }
+        .status-A { color: red; font-weight: bold; }
+        .status-T { color: orange; font-weight: bold; }
+        .status-NA { color: #ccc; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Reporte de Asistencia</h1>
+        <h2>{{ $section->module->course->name }} - {{ $section->module->name }} ({{ $section->section_name }})</h2>
     </div>
 
-    <div class="overflow-x-auto">
-        <table class="min-w-full border-collapse border border-gray-300 text-xs">
-            <thead>
-                <tr class="bg-gray-100">
-                    <th class="border border-gray-300 px-2 py-2 text-left font-bold w-10">#</th>
-                    <th class="border border-gray-300 px-2 py-2 text-left font-bold min-w-[200px]">Estudiante</th>
-                    @foreach($data['dates'] as $date)
-                        <th class="border border-gray-300 px-1 py-1 text-center font-bold h-24 whitespace-nowrap">
-                            <div class="transform -rotate-90 w-6">{{ \Carbon\Carbon::parse($date)->format('d/m') }}</div>
-                        </th>
+    <table class="info-table">
+        <tr>
+            <td class="label">Profesor:</td>
+            <td>{{ $section->teacher->name ?? 'N/A' }}</td>
+            <td class="label">Periodo:</td>
+            <td>{{ \Carbon\Carbon::parse($section->start_date)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($section->end_date)->format('d/m/Y') }}</td>
+        </tr>
+    </table>
+
+    <table class="attendance-table">
+        <thead>
+            <tr>
+                <th class="student-col">Estudiante</th>
+                @foreach($dates as $date)
+                    <th class="rotate">
+                        {{ $date->format('d-M') }}
+                    </th>
+                @endforeach
+                <th width="30">P</th>
+                <th width="30">A</th>
+                <th width="30">%</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($enrollments as $enrollment)
+                @php
+                    $present = 0;
+                    $absent = 0;
+                    $totalRecorded = 0;
+                @endphp
+                <tr>
+                    <td class="student-col">{{ $enrollment->student->last_name }}, {{ $enrollment->student->first_name }}</td>
+                    
+                    @foreach($dates as $date)
+                        @php
+                            $dateStr = $date->format('Y-m-d');
+                            // Usamos la estructura agrupada que definiste en tu controlador
+                            // $attendances[$dateStr][$enrollmentId]
+                            $record = $attendances[$dateStr][$enrollment->id] ?? null;
+                            $status = $record ? $record->status : '-';
+                            $class = 'status-NA';
+
+                            if ($status == 'Presente') { $present++; $totalRecorded++; $class = 'status-P'; $char = 'P'; }
+                            elseif ($status == 'Ausente') { $absent++; $totalRecorded++; $class = 'status-A'; $char = 'A'; }
+                            elseif ($status == 'Tardanza') { $present++; $totalRecorded++; $class = 'status-T'; $char = 'T'; } // T cuenta como P o medio P según regla
+                            else { $char = '-'; }
+                        @endphp
+                        <td class="{{ $class }}">{{ $char }}</td>
                     @endforeach
-                    <th class="border border-gray-300 px-2 py-2 text-center font-bold bg-gray-50">T</th>
+
+                    {{-- Totales --}}
+                    <td>{{ $present }}</td>
+                    <td>{{ $absent }}</td>
+                    <td>{{ $totalRecorded > 0 ? round(($present / $totalRecorded) * 100) . '%' : '-' }}</td>
                 </tr>
-            </thead>
-            <tbody>
-                @forelse($data['students'] as $index => $student)
-                    @php $presentCount = 0; @endphp
-                    <tr class="{{ $loop->even ? 'bg-gray-50' : 'bg-white' }}">
-                        <td class="border border-gray-300 px-2 py-1 text-center">{{ $index + 1 }}</td>
-                        <td class="border border-gray-300 px-2 py-1 font-medium text-gray-800 uppercase">
-                            {{ $student->last_name }}, {{ $student->first_name }}
-                        </td>
-                        
-                        @foreach($data['dates'] as $date)
-                            @php
-                                $status = $data['matrix'][$student->id][$date] ?? null;
-                                $display = '';
-                                $class = '';
-                                if ($status === 'present') { $display = '•'; $class = 'text-green-600 font-bold text-lg'; $presentCount++; }
-                                elseif ($status === 'absent') { $display = 'F'; $class = 'text-red-600 font-bold'; }
-                                elseif ($status === 'late') { $display = 'T'; $class = 'text-yellow-600 font-bold'; }
-                            @endphp
-                            <td class="border border-gray-300 px-1 py-1 text-center {{ $class }}">
-                                {{ $display }}
-                            </td>
-                        @endforeach
-                        <td class="border border-gray-300 px-2 py-1 text-center font-bold bg-gray-50">{{ $presentCount }}</td>
-                    </tr>
-                @empty
-                    <tr><td colspan="100%" class="text-center p-4">Sin datos</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-</div>
+            @endforeach
+        </tbody>
+    </table>
+</body>
+</html>

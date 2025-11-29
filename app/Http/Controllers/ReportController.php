@@ -66,10 +66,11 @@ class ReportController extends Controller
         $dateTo = now()->endOfMonth()->format('Y-m-d');
 
         // Obtener Estudiantes (Excluyendo 'Pendiente')
+        // CORRECCIÓN APLICADA: Se agregan las condiciones whereNotIn para excluir inscripciones pendientes
         $students = DB::table('students')
             ->join('enrollments', 'students.id', '=', 'enrollments.student_id')
             ->where('enrollments.course_schedule_id', $schedule->id)
-            ->whereNotIn('enrollments.status', ['Pendiente', 'pendiente']) 
+            ->whereNotIn('enrollments.status', ['Pendiente', 'pendiente']) // <-- FILTRO APLICADO
             ->select('students.id', 'students.first_name', 'students.last_name')
             ->distinct()
             ->orderBy('students.last_name')
@@ -86,7 +87,7 @@ class ReportController extends Controller
         // Mapeo Enrollment -> Student
         $enrollmentMap = DB::table('enrollments')
             ->where('course_schedule_id', $schedule->id)
-            ->whereNotIn('status', ['Pendiente', 'pendiente'])
+            ->whereNotIn('status', ['Pendiente', 'pendiente']) // <-- FILTRO APLICADO
             ->pluck('student_id', 'id');
 
         // Obtener Asistencias
