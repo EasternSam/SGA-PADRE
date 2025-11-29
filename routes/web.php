@@ -136,6 +136,8 @@ Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student
     Route::get('/course/{enrollmentId}', \App\Livewire\StudentPortal\CourseDetail::class)->name('course.detail');
     Route::get('/requests', \App\Livewire\StudentPortal\Requests::class)->name('requests');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('/reports/attendance/{section}/pdf', [App\Http\Controllers\AttendancePdfController::class, 'download'])->name('reports.attendance.pdf');
+
 });
 
 // --- RUTAS DE PROFESOR ---
