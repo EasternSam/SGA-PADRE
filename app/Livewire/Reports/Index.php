@@ -235,7 +235,8 @@ class Index extends Component
     {
         $schedule = CourseSchedule::with(['module.course', 'teacher'])->find($this->schedule_id);
         
-        $enrollments = Enrollment::with('student', 'grades')
+        // CORRECCIÓN: Eliminada la relación 'grades' que no existe en el modelo Enrollment
+        $enrollments = Enrollment::with('student')
             ->where('course_schedule_id', $this->schedule_id)
             ->get()
             ->sortBy('student.last_name');
