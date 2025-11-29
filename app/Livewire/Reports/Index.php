@@ -222,7 +222,7 @@ class Index extends Component
         Log::info("--- FIN REPORTE ASISTENCIA ---");
     }
 
-    // --- REPORTE FINANCIERO (CORREGIDO PARA EVITAR DUPLICADOS) ---
+    // --- REPORTE FINANCIERO (CORREGIDO Y ROBUSTO) ---
     public function generatePaymentsReport()
     {
         // 1. Base Query: Empezamos desde las Matrículas
@@ -239,12 +239,15 @@ class Index extends Component
                 'students.phone',
                 'courses.name as course_name',
                 'modules.name as module_name',
+                'modules.price as module_price', // <-- PRECIO BASE DEL MÓDULO (Fuente de Verdad)
                 'course_schedules.section_name',
                 'enrollments.status as enrollment_status',
-                // FIX CRÍTICO: Usar comillas simples ' ' para valores string en SQL
-                // LOWER() ayuda si en la base de datos dice "Paid" en lugar de "paid"
-                DB::raw("SUM(CASE WHEN LOWER(payments.status) = 'paid' THEN payments.amount ELSE 0 END) as total_paid"),
-                DB::raw("SUM(CASE WHEN LOWER(payments.status) = 'pending' THEN payments.amount ELSE 0 END) as raw_pending_sum")
+                
+                // Sumamos pagos confirmados (buscando varios estados posibles para asegurar)
+                DB::raw("SUM(CASE WHEN LOWER(payments.status) IN ('paid', 'pagado', 'completado', 'succeeded', 'aprobado') THEN payments.amount ELSE 0 END) as total_paid"),
+                
+                // Sumamos pagos pendientes solo como referencia secundaria
+                DB::raw("SUM(CASE WHEN LOWER(payments.status) IN ('pending', 'pendiente', 'created') THEN payments.amount ELSE 0 END) as raw_pending_sum")
             );
 
         // 2. Aplicar Filtros
@@ -257,7 +260,8 @@ class Index extends Component
         }
 
         if ($this->date_from && $this->date_to) {
-             // Usamos created_at de enrollment para filtrar inscripciones en el periodo
+             // Filtramos por fecha de inscripción para ver el estado de cuentas generadas en este periodo
+             // O si prefieres ver pagos en este periodo, habría que cambiar la lógica, pero para "Estado de Cuenta" es mejor enrollment.
              $query->whereBetween('enrollments.created_at', [$this->date_from . ' 00:00:00', $this->date_to . ' 23:59:59']);
         }
 
@@ -270,6 +274,7 @@ class Index extends Component
             'students.phone',
             'courses.name', 
             'modules.name', 
+            'modules.price', // Importante agrupar por precio
             'course_schedules.section_name',
             'enrollments.status'
         );
@@ -277,26 +282,22 @@ class Index extends Component
         // 4. Ejecución
         $financials = $query->get();
 
-        // 5. Post-procesamiento LÓGICO para arreglar totales incorrectos
-        // Recorremos cada registro y corregimos el 'total_cost'
+        // 5. Post-procesamiento LÓGICO
         $financials = $financials->map(function ($item) {
-            // Lógica de corrección:
-            // Si hay pagos 'paid' (> 0), asumimos que el costo real es igual a lo pagado (o múltiplo de ello),
-            // y IGNORAMOS los montos 'pending' que probablemente sean intentos fallidos duplicados.
-            
             $paid = (float) $item->total_paid;
-            $pendingSum = (float) $item->raw_pending_sum;
+            $modulePrice = (float) $item->module_price;
+            
+            // Lógica de Negocio:
+            // El Costo Total es el precio del módulo.
+            $item->total_cost = $modulePrice;
 
-            if ($paid > 0) {
-                // Caso A: Ya pagó.
-                // Asumimos que no debe nada más del mismo concepto.
-                // El costo total es lo que pagó.
+            // Caso borde: Si por alguna razón pagó más que el precio (o el precio es 0 pero pagó),
+            // ajustamos el costo para reflejar la realidad de la transacción.
+            if ($paid > $item->total_cost) {
                 $item->total_cost = $paid;
-            } else {
-                // Caso B: No ha pagado nada.
-                // Asumimos que la deuda es el monto del pendiente.
-                $item->total_cost = $pendingSum;
             }
+            
+            // Caso borde 2: Si el precio es 0 y no ha pagado nada, el costo es 0.
 
             return $item;
         });
@@ -306,10 +307,11 @@ class Index extends Component
             $financials = $financials->filter(function($item) {
                 $paid = (float) $item->total_paid;
                 $cost = (float) $item->total_cost;
-                $balance = $cost - $paid;
+                // Usamos round para evitar problemas de flotantes (ej: 0.0000001)
+                $balance = round($cost - $paid, 2);
 
-                if ($this->payment_status == 'paid') return $balance <= 0.01 && $paid > 0;
-                if ($this->payment_status == 'pending') return $balance > 0.01;
+                if ($this->payment_status == 'paid') return $balance <= 0 && $paid > 0; // Pagado y sin deuda
+                if ($this->payment_status == 'pending') return $balance > 0; // Tiene deuda
                 return true;
             });
         }
