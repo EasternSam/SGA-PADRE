@@ -14,6 +14,7 @@ use App\Models\Payment;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB; // Importante para optimizaciones
+use Illuminate\Support\Facades\Log; // Importante para debug
 
 class Index extends Component
 {
@@ -129,13 +130,26 @@ class Index extends Component
         ]);
     }
 
-    // 1. REPORTE DE ASISTENCIA (OPTIMIZADO)
+    // 1. REPORTE DE ASISTENCIA (OPTIMIZADO CON DEBUG)
     public function generateAttendanceReport()
     {
+        Log::info("--- INICIO REPORTE ASISTENCIA ---");
+        Log::info("Parametros recibidos:", [
+            'schedule_id' => $this->schedule_id,
+            'date_from' => $this->date_from,
+            'date_to' => $this->date_to
+        ]);
+
         // Cargar datos de la sección con relaciones mínimas necesarias
         $schedule = CourseSchedule::with(['module:id,name,course_id', 'module.course:id,name', 'teacher:id,name'])
             ->select('id', 'module_id', 'teacher_id', 'section_name', 'start_time', 'end_time', 'days_of_week', 'start_date', 'end_date')
             ->find($this->schedule_id);
+
+        if (!$schedule) {
+            Log::error("Sección no encontrada con ID: " . $this->schedule_id);
+            return;
+        }
+        Log::info("Sección cargada: " . $schedule->section_name);
 
         // Obtener estudiantes en una sola consulta eficiente
         $students = Student::whereHas('enrollments', function($q) {
@@ -145,6 +159,8 @@ class Index extends Component
         ->orderBy('last_name')
         ->orderBy('first_name')
         ->get();
+
+        Log::info("Estudiantes encontrados: " . $students->count());
 
         // Generar rango de fechas
         $start = Carbon::parse($this->date_from);
@@ -158,6 +174,7 @@ class Index extends Component
         foreach ($period as $date) {
             $dates[] = $date->format('Y-m-d');
         }
+        Log::info("Total de días en el rango: " . count($dates));
 
         // Consulta optimizada de asistencias: Traer todo en un solo bloque
         // Usamos array asociativo para acceso O(1) en la vista
@@ -165,6 +182,8 @@ class Index extends Component
             ->whereBetween('attendance_date', [$this->date_from, $this->date_to])
             ->select('enrollment_id', 'attendance_date', 'status')
             ->get();
+
+        Log::info("Registros de asistencia encontrados en DB: " . $attendances->count());
 
         // Mapear student_id desde enrollment para evitar consultas N+1
         // Primero obtenemos los enrollment_ids de los estudiantes de esta sección
@@ -180,6 +199,7 @@ class Index extends Component
                 $attendanceMatrix[$studentId][$record->attendance_date->format('Y-m-d')] = $record->status;
             }
         }
+        Log::info("Matriz de asistencia construida en memoria.");
 
         $this->reportData = [
             'schedule' => $schedule,
@@ -189,6 +209,7 @@ class Index extends Component
             'start_date' => $start,
             'end_date' => $end,
         ];
+        Log::info("--- FIN REPORTE ASISTENCIA (Datos asignados a vista) ---");
     }
 
     // 2. REPORTE DE CALIFICACIONES
