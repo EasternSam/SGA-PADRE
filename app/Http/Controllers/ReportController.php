@@ -3,96 +3,128 @@
 namespace App\Http\Controllers;
 
 use App\Models\Student;
-use Illuminate\Http\Request;
-use Barryvdh\DomPDF\Facade\Pdf; // <-- ¡Importante! Asegúrate de que esto esté.
-
-// --- AÑADIDOS PARA EL NUEVO REPORTE ---
 use App\Models\CourseSchedule;
+use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Attendance as AttendanceModel;
 use Carbon\CarbonPeriod;
-// --- FIN DE AÑADIDOS ---
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
     /**
-     * Genera un reporte de estudiante.
+     * Muestra la página principal de gestión de reportes (Livewire).
+     */
+    public function index()
+    {
+        return view('livewire.reports.index');
+    }
+
+    /**
+     * Genera un reporte PDF del estudiante.
      *
      * @param Student $student
      * @return \Illuminate\Http\Response
      */
     public function generateStudentReport(Student $student)
     {
-        // Cargar las relaciones necesarias para el reporte
-        $student->load(
-            'enrollments.courseSchedule.module.course', 
-            'enrollments.courseSchedule.teacher', 
+        // Cargar relaciones necesarias
+        $student->load([
+            'enrollments.courseSchedule.module.course',
+            'enrollments.courseSchedule.teacher',
             'payments.paymentConcept'
-        );
+        ]);
 
         $data = [
             'student' => $student,
             'enrollments' => $student->enrollments,
             'payments' => $student->payments,
+            'date' => now()->format('d/m/Y')
         ];
 
-        // --- ¡ESTA ES LA CORRECCIÓN! ---
-        
-        // 1. Cargamos la misma vista que ya tenías ('reports.student-report')
-        //    y le pasamos los datos.
+        // Cargar vista y generar PDF
+        // Asegúrate de que 'reports.student-report' sea una vista limpia
         $pdf = Pdf::loadView('reports.student-report', $data);
+        
+        // Opcional: Configurar papel
+        $pdf->setPaper('A4', 'portrait');
 
-        // 2. En lugar de descargar, usamos ->stream() para que se muestre 
-        //    en el navegador (perfecto para nuestro <iframe> en el modal).
         return $pdf->stream('reporte-estudiante-' . $student->id . '.pdf');
     }
 
-    // --- ¡¡¡NUEVO MÉTODO AÑADIDO!!! ---
     /**
-     * Genera un reporte de asistencia completo para una sección.
+     * Genera un reporte PDF de asistencia para una sección.
      *
-     * @param CourseSchedule $section
+     * @param CourseSchedule $schedule
      * @return \Illuminate\Http\Response
      */
-    public function generateAttendanceReport(CourseSchedule $section)
+    public function printAttendance(CourseSchedule $schedule) // Renombrado para consistencia o mantener generateAttendanceReport
     {
-        // Cargar las relaciones necesarias
-        $section->load('module.course', 'teacher', 'enrollments.student');
+        // Definir rango de fechas (Mes actual por defecto)
+        $dateFrom = now()->startOfMonth()->format('Y-m-d');
+        $dateTo = now()->endOfMonth()->format('Y-m-d');
 
-        // Obtener todos los estudiantes inscritos
-        $enrollments = $section->enrollments()->with('student')->get();
+        // Obtener Estudiantes (Excluyendo 'Pendiente')
+        $students = DB::table('students')
+            ->join('enrollments', 'students.id', '=', 'enrollments.student_id')
+            ->where('enrollments.course_schedule_id', $schedule->id)
+            ->whereNotIn('enrollments.status', ['Pendiente', 'pendiente']) 
+            ->select('students.id', 'students.first_name', 'students.last_name')
+            ->distinct()
+            ->orderBy('students.last_name')
+            ->orderBy('students.first_name')
+            ->get();
 
-        // Obtener TODAS las asistencias de esta sección, agrupadas por fecha y luego por ID de inscripción
-        // para una búsqueda súper rápida en la vista
-        $attendances = AttendanceModel::where('course_schedule_id', $section->id)
-            ->get()
-            ->groupBy(function ($date) {
-                // Agrupa por fecha en formato Y-m-d
-                return \Carbon\Carbon::parse($date->attendance_date)->format('Y-m-d');
-            })
-            ->map(function ($day) {
-                // Dentro de cada fecha, indexa por enrollment_id
-                return $day->keyBy('enrollment_id');
-            });
+        // Generar rango de fechas
+        $period = CarbonPeriod::create($dateFrom, $dateTo);
+        $dates = [];
+        foreach ($period as $date) {
+            $dates[] = $date->format('Y-m-d');
+        }
 
-        // Generar el rango de todas las fechas desde el inicio hasta el fin del curso
-        $dates = CarbonPeriod::create($section->start_date, $section->end_date);
+        // Mapeo Enrollment -> Student
+        $enrollmentMap = DB::table('enrollments')
+            ->where('course_schedule_id', $schedule->id)
+            ->whereNotIn('status', ['Pendiente', 'pendiente'])
+            ->pluck('student_id', 'id');
 
-        // Datos para la vista
-        $data = [
-            'section' => $section,
-            'enrollments' => $enrollments,
-            'attendances' => $attendances,
+        // Obtener Asistencias
+        $attendances = DB::table('attendances')
+            ->where('course_schedule_id', $schedule->id)
+            ->whereBetween('attendance_date', [$dateFrom, $dateTo])
+            ->select('enrollment_id', 'attendance_date', 'status')
+            ->get(); 
+
+        // Construir Matriz
+        $attendanceMatrix = [];
+        foreach ($attendances as $record) {
+            $studentId = $enrollmentMap[$record->enrollment_id] ?? null;
+            if ($studentId) {
+                $dateKey = substr($record->attendance_date, 0, 10); 
+                $attendanceMatrix[$studentId][$dateKey] = $record->status;
+            }
+        }
+
+        $reportData = [
+            'schedule' => $schedule->load('module.course', 'teacher'),
+            'students' => $students,
             'dates' => $dates,
+            'matrix' => $attendanceMatrix,
+            'start_date' => Carbon::parse($dateFrom),
+            'end_date' => Carbon::parse($dateTo),
+            'stats' => [
+                'total_days' => count($dates),
+                'total_students' => $students->count(),
+            ]
         ];
 
-        // Generar el PDF
-        $pdf = Pdf::loadView('reports.attendance-report', $data);
+        // Generar PDF usando la vista limpia
+        // Usamos la misma vista que creamos para livewire pero cargada por DomPDF
+        $pdf = Pdf::loadView('livewire.reports.attendance-report', ['reportData' => $reportData]);
         
-        // Configurar para paisaje (landscape) y un tamaño de papel más grande
-        $pdf->setPaper('A3', 'landscape');
+        $pdf->setPaper('A4', 'landscape'); // Paisaje para que quepan las columnas
 
-        // Retornar el PDF al navegador
-        return $pdf->stream('reporte_asistencia_' . $section->id . '.pdf');
+        return $pdf->stream('asistencia-' . $schedule->section_name . '.pdf');
     }
-    // --- FIN DEL NUEVO MÉTODO ---
 }
