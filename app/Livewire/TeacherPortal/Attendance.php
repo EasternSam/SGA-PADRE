@@ -126,33 +126,11 @@ class Attendance extends Component
      */
     public function generateReport()
     {
-        // Obtiene la URL de la ruta del reporte de asistencia general
-        // Asegúrate de que esta ruta esté definida en web.php como 'reports.attendance-report'
-        // y que acepte el ID de la sección como parámetro.
-        
-        // Opción A: Si usas una ruta dedicada para PDF
-        // $url = route('reports.attendance-pdf', $this->section->id);
-
-        // Opción B: Si usas la vista Livewire de reportes con filtros pre-cargados
-        // Esto podría requerir una ruta específica que acepte parámetros GET
-        // Por ahora, asumimos una ruta simple de reporte:
-        
-        // Vamos a usar la ruta del componente de reportes, pasando parámetros si es posible,
-        // o una ruta de impresión directa si la tienes. 
-        // Si no tienes ruta específica de impresión, redirigimos al módulo de reportes con el filtro.
-        
-        $url = route('reports.index', [
-            'reportType' => 'attendance',
-            'course_id' => $this->section->module->course_id,
-            'module_id' => $this->section->module_id,
-            'schedule_id' => $this->section->id
-        ]);
+        // CORRECCIÓN: Ahora apuntamos a una ruta específica que genera el PDF
+        // en lugar de ir al índice de reportes.
+        $url = route('reports.attendance.pdf', ['section' => $this->section->id]);
         
         // Dispara el evento que el modal de Alpine.js está escuchando
-        // Nota: Si 'reports.index' es una página Livewire completa, abrirla en modal puede ser pesado.
-        // Lo ideal sería tener una ruta `Route::get('/report/attendance/{schedule}', ...)` que devuelva solo el PDF/Vista.
-        
-        // Si no existe tal ruta, intentamos abrir la URL generada.
         $this->dispatch('open-pdf-modal', url: $url);
     }
 

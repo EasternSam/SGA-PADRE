@@ -50,7 +50,7 @@
                 <th class="student-col">Estudiante</th>
                 @foreach($dates as $date)
                     <th class="rotate">
-                        {{ $date->format('d-M') }}
+                        <div>{{ $date->format('d-M') }}</div>
                     </th>
                 @endforeach
                 <th width="30">P</th>
@@ -71,7 +71,7 @@
                     @foreach($dates as $date)
                         @php
                             $dateStr = $date->format('Y-m-d');
-                            // Usamos la estructura agrupada que definiste en tu controlador
+                            // Usamos la estructura agrupada que definimos en el controlador
                             // $attendances[$dateStr][$enrollmentId]
                             $record = $attendances[$dateStr][$enrollment->id] ?? null;
                             $status = $record ? $record->status : '-';
