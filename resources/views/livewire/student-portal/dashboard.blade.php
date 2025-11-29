@@ -30,9 +30,9 @@
                     </svg>
                 </div>
                 <div class="ml-3">
-                    <h3 class="text-sm font-medium text-yellow-800">Tienes Pagos Pendientes</h3>
+                    <h3 class="text-sm font-medium text-yellow-800">Tienes {{ $pendingPayments->count() }} Pago(s) Pendiente(s)</h3>
                     <div class="mt-2 text-sm text-yellow-700">
-                        <p>Detectamos una o más inscripciones pendientes de pago.</p>
+                        <p>Por favor regulariza tu situación financiera para evitar bloqueos en el sistema.</p>
                     </div>
                 </div>
             </div>
@@ -88,7 +88,7 @@
                 <div class="overflow-hidden rounded-lg bg-sga-card shadow">
                     <div class="p-4 sm:p-6">
                         <h3 class="text-lg font-medium leading-6 text-sga-text">
-                            <i class="fas fa-book-open mr-2 text-sga-primary"></i> Mis Cursos Activos
+                            <i class="fas fa-book-open mr-2 text-sga-primary"></i> Mis Cursos / Inscripciones
                         </h3>
                     </div>
                     <div class="flow-root">
@@ -100,6 +100,7 @@
                                             <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-sga-text sm:pl-6">Curso</th>
                                             <th class="px-3 py-3.5 text-left text-sm font-semibold text-sga-text">Profesor</th>
                                             <th class="px-3 py-3.5 text-left text-sm font-semibold text-sga-text">Horario</th>
+                                            <th class="px-3 py-3.5 text-center text-sm font-semibold text-sga-text">Estado</th>
                                             <th class="relative py-3.5 pl-3 pr-4 sm:pr-6"><span class="sr-only">Ver</span></th>
                                         </tr>
                                     </thead>
@@ -114,12 +115,27 @@
                                                 <td class="px-3 py-4 text-sm text-sga-text-light">
                                                     {{ $enrollment->courseSchedule->days_of_week ? implode(', ', $enrollment->courseSchedule->days_of_week) : 'N/A' }}
                                                 </td>
+                                                <td class="px-3 py-4 text-sm text-center">
+                                                    @if($enrollment->status === 'Pendiente')
+                                                        <span class="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                                                            Pendiente Pago
+                                                        </span>
+                                                    @else
+                                                        <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                                                            {{ $enrollment->status }}
+                                                        </span>
+                                                    @endif
+                                                </td>
                                                 <td class="py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                                    <a href="{{ route('student.course.detail', $enrollment->id) }}" class="text-sga-secondary hover:text-sga-primary">Ver</a>
+                                                    @if($enrollment->status !== 'Pendiente')
+                                                        <a href="{{ route('student.course.detail', $enrollment->id) }}" class="text-sga-secondary hover:text-sga-primary">Ver</a>
+                                                    @else
+                                                        <span class="text-gray-400 cursor-not-allowed">Ver</span>
+                                                    @endif
                                                 </td>
                                             </tr>
                                         @empty
-                                            <tr><td colspan="4" class="px-3 py-4 text-center text-sm text-sga-text-light">Sin cursos activos.</td></tr>
+                                            <tr><td colspan="5" class="px-3 py-4 text-center text-sm text-sga-text-light">Sin cursos activos.</td></tr>
                                         @endforelse
                                     </tbody>
                                 </table>
@@ -134,7 +150,7 @@
                 <div class="overflow-hidden rounded-lg bg-sga-card shadow">
                     <div class="p-4 sm:p-6">
                         <h3 class="text-lg font-medium leading-6 text-sga-text">
-                            <i class="fas fa-dollar-sign mr-2 text-sga-primary"></i> Pagos Recientes
+                            <i class="fas fa-dollar-sign mr-2 text-sga-primary"></i> Estado de Cuenta
                         </h3>
                     </div>
                     <div class="border-t border-sga-gray p-4 sm:p-6">
@@ -142,13 +158,25 @@
                             @forelse ($paymentHistory->take(5) as $payment)
                                 <li class="flex justify-between py-3">
                                     <div>
-                                        <p class="text-sm font-semibold text-sga-text">{{ $payment->description ?? 'Pago' }}</p>
+                                        <p class="text-sm font-semibold text-sga-text">
+                                            {{ $payment->description ?? 'Concepto General' }}
+                                            @if($payment->enrollment)
+                                                <span class="block text-xs text-gray-500">{{ $payment->enrollment->courseSchedule->module->course->name ?? '' }}</span>
+                                            @endif
+                                        </p>
                                         <p class="text-xs text-sga-text-light">{{ $payment->created_at->format('d/m/Y') }}</p>
                                     </div>
-                                    <span class="text-sm font-bold text-sga-text">${{ number_format($payment->amount, 2) }}</span>
+                                    <div class="text-right">
+                                        <span class="block text-sm font-bold {{ $payment->status == 'Pendiente' ? 'text-red-600' : 'text-green-600' }}">
+                                            ${{ number_format($payment->amount, 2) }}
+                                        </span>
+                                        <span class="text-[10px] uppercase font-bold {{ $payment->status == 'Pendiente' ? 'text-red-500' : 'text-gray-400' }}">
+                                            {{ $payment->status }}
+                                        </span>
+                                    </div>
                                 </li>
                             @empty
-                                <li class="py-3 text-center text-sm text-sga-text-light">Sin pagos registrados.</li>
+                                <li class="py-3 text-center text-sm text-sga-text-light">Sin movimientos registrados.</li>
                             @endforelse
                         </ul>
                     </div>

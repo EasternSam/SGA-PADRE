@@ -65,7 +65,6 @@ class Dashboard extends Component
         );
 
         // 2. Solo abrimos automáticamente si hay datos incompletos Y NO se ha mostrado ya en esta sesión.
-        // Esto evita el bucle infinito si el usuario decide dejarlo vacío.
         if ($hasIncompleteData && !session()->has('profile_onboarding_seen')) {
             $this->showProfileModal = true;
         }
@@ -90,25 +89,32 @@ class Dashboard extends Component
             ])
             ->where('student_id', $this->student->id);
 
+        // CORRECCIÓN PRINCIPAL:
+        // Agregamos 'Pendiente' y 'pendiente' aquí para que aparezcan en la lista principal de cursos.
         $this->activeEnrollments = (clone $baseQuery)
-            ->whereIn('status', ['Cursando', 'cursando', 'Activo', 'activo'])
+            ->whereIn('status', ['Cursando', 'cursando', 'Activo', 'activo', 'Pendiente', 'pendiente']) 
+            ->orderBy('created_at', 'desc')
             ->get();
 
+        // Mantenemos esta colección por si la usas en otro lugar para lógica específica de inscripción
+        // pero quitamos 'Pendiente' para no duplicar si iteraras ambas, o lo dejamos como referencia.
         $this->pendingEnrollments = (clone $baseQuery)
-            ->whereIn('status', ['Pendiente', 'pendiente', 'Enrolled', 'enrolled'])
+            ->whereIn('status', ['Enrolled', 'enrolled'])
             ->get();
 
         $this->completedEnrollments = (clone $baseQuery)
             ->whereIn('status', ['Completado', 'completado'])
             ->get();
 
-        $this->pendingPayments = Payment::with(['paymentConcept', 'enrollment.courseSchedule.module'])
+        // Pagos Pendientes (Deudas)
+        $this->pendingPayments = Payment::with(['paymentConcept', 'enrollment.courseSchedule.module.course'])
             ->where('student_id', $this->student->id)
-            ->where('status', 'Pendiente')
+            ->whereIn('status', ['Pendiente', 'pendiente']) // Asegurar mayúsculas/minúsculas
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $this->paymentHistory = Payment::with(['paymentConcept', 'enrollment.courseSchedule.module'])
+        // Historial completo (incluye deudas para mostrarlas en la lista de recientes)
+        $this->paymentHistory = Payment::with(['paymentConcept', 'enrollment.courseSchedule.module.course'])
             ->where('student_id', $this->student->id)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -116,7 +122,6 @@ class Dashboard extends Component
 
     /**
      * Verifica si el campo está incompleto.
-     * AHORA: Retorna true si es vacío o "N/A".
      */
     private function isIncomplete($value)
     {
@@ -138,9 +143,6 @@ class Dashboard extends Component
         return $value;
     }
 
-    /**
-     * Abre el modal manualmente (Botón Editar)
-     */
     public function openProfileModal()
     {
         $this->showProfileModal = true;
@@ -187,7 +189,6 @@ class Dashboard extends Component
         $this->showProfileModal = false;
         $this->dispatch('close-modal', 'complete-profile-modal');
         
-        // Marcamos en sesión que ya interactuó con el modal para no volver a abrirlo automáticamente
         session()->put('profile_onboarding_seen', true);
     }
 
