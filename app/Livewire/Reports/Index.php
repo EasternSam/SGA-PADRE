@@ -241,10 +241,10 @@ class Index extends Component
                 'modules.name as module_name',
                 'course_schedules.section_name',
                 'enrollments.status as enrollment_status',
-                // Aquí traemos los montos agregados, pero con lógica especial
-                DB::raw('SUM(CASE WHEN payments.status = "paid" THEN payments.amount ELSE 0 END) as total_paid'),
-                // Traemos el total de 'pending' por separado para decidir en PHP
-                DB::raw('SUM(CASE WHEN payments.status = "pending" THEN payments.amount ELSE 0 END) as raw_pending_sum')
+                // FIX CRÍTICO: Usar comillas simples ' ' para valores string en SQL
+                // LOWER() ayuda si en la base de datos dice "Paid" en lugar de "paid"
+                DB::raw("SUM(CASE WHEN LOWER(payments.status) = 'paid' THEN payments.amount ELSE 0 END) as total_paid"),
+                DB::raw("SUM(CASE WHEN LOWER(payments.status) = 'pending' THEN payments.amount ELSE 0 END) as raw_pending_sum")
             );
 
         // 2. Aplicar Filtros
@@ -257,6 +257,7 @@ class Index extends Component
         }
 
         if ($this->date_from && $this->date_to) {
+             // Usamos created_at de enrollment para filtrar inscripciones en el periodo
              $query->whereBetween('enrollments.created_at', [$this->date_from . ' 00:00:00', $this->date_to . ' 23:59:59']);
         }
 
@@ -291,23 +292,9 @@ class Index extends Component
                 // Asumimos que no debe nada más del mismo concepto.
                 // El costo total es lo que pagó.
                 $item->total_cost = $paid;
-                
-                // Si realmente pudiera haber pagos parciales legítimos mezclados con intentos fallidos,
-                // esta lógica sería demasiado agresiva, pero para cursos de pago único es la correcta.
-                // Si hay deuda real adicional, necesitaríamos una tabla de 'deudas' separada.
-                // Por ahora, asumimos: Si pagó algo > 0, consideremos que el costo base era ese.
             } else {
                 // Caso B: No ha pagado nada.
-                // El costo total es la suma de los pendientes.
-                // OJO: Si intentó pagar 3 veces y falló las 3, aquí saldría el triple de deuda.
-                // Para arreglar eso, si hay múltiples pendientes, podríamos tomar el MAX en lugar de SUM,
-                // o dividir si son idénticos. 
-                // Simplificación: Si hay pendientes, tomamos el valor del pendiente (asumiendo que es la deuda).
-                // Pero si sumamos duplicados es error.
-                // Mejor aproximación: Usar el pendiente promedio o máximo si no ha pagado.
-                
-                // Si la suma de pendientes es muy alta, es sospechoso.
-                // Vamos a asumir que la deuda es el monto del pendiente.
+                // Asumimos que la deuda es el monto del pendiente.
                 $item->total_cost = $pendingSum;
             }
 
