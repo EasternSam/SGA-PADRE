@@ -136,8 +136,6 @@ Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student
     Route::get('/course/{enrollmentId}', \App\Livewire\StudentPortal\CourseDetail::class)->name('course.detail');
     Route::get('/requests', \App\Livewire\StudentPortal\Requests::class)->name('requests');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::get('/reports/attendance/{section}/pdf', [App\Http\Controllers\AttendancePdfController::class, 'download'])->name('reports.attendance.pdf');
-
 });
 
 // --- RUTAS DE PROFESOR ---
@@ -152,6 +150,8 @@ Route::middleware(['auth', 'role:Profesor|Admin'])->prefix('teacher')->group(fun
 Route::middleware(['auth'])->group(function () {
     Route::get('/reports/student-report/{student}', [ReportController::class, 'generateStudentReport'])->name('reports.student-report');
     Route::get('/reports/attendance-report/{section}', [ReportController::class, 'generateAttendanceReport'])->name('reports.attendance-report');
+    Route::get('/reports/attendance/{section}/pdf', [App\Http\Controllers\AttendancePdfController::class, 'download'])->name('reports.attendance.pdf');
+
 });
 
 // --- RUTAS PARA CAMBIO DE CONTRASEÑA OBLIGATORIO ---
