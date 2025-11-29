@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class Index extends Component
 {
@@ -81,6 +82,7 @@ class Index extends Component
         // Aumentar el tiempo límite para reportes grandes
         set_time_limit(120);
 
+        // Validamos filtros antes de procesar
         $this->validateFilters();
 
         $this->generatedReportType = $this->reportType;
@@ -135,6 +137,19 @@ class Index extends Component
             'date_from.required' => 'La fecha de inicio es requerida.',
             'date_to.after_or_equal' => 'La fecha fin debe ser igual o posterior a la fecha de inicio.',
         ]);
+
+        // Validación Adicional: Prevenir congelamiento del navegador por exceso de columnas
+        if ($this->reportType === 'attendance') {
+            $start = Carbon::parse($this->date_from);
+            $end = Carbon::parse($this->date_to);
+            $daysDiff = $start->diffInDays($end);
+
+            if ($daysDiff > 62) {
+                throw ValidationException::withMessages([
+                    'date_to' => 'El rango de fechas es demasiado amplio (' . $daysDiff . ' días). Para evitar problemas de rendimiento en la vista previa, seleccione un máximo de 2 meses (60 días).'
+                ]);
+            }
+        }
     }
 
     // --- LÓGICA OPTIMIZADA (SOLUCIÓN AL CONGELAMIENTO) ---
@@ -143,6 +158,7 @@ class Index extends Component
         Log::info("--- INICIO REPORTE ASISTENCIA OPTIMIZADO ---");
 
         // 1. Cargar datos de la sección (CourseSchedule)
+        // Mantenemos Eloquent aquí porque es UN SOLO registro, no afecta el rendimiento.
         $schedule = CourseSchedule::with(['module:id,name,course_id', 'module.course:id,name', 'teacher:id,name'])
             ->select('id', 'module_id', 'teacher_id', 'section_name', 'start_time', 'end_time', 'days_of_week', 'start_date', 'end_date')
             ->find($this->schedule_id);
@@ -151,17 +167,20 @@ class Index extends Component
             return;
         }
 
-        // 2. Obtener Estudiantes (Solo ID y Nombres)
-        // Usamos whereHas para filtrar solo los que tienen enrollment en esta sección
-        $students = Student::whereHas('enrollments', function($q) {
-            $q->where('course_schedule_id', $this->schedule_id);
-        })
-        ->select('id', 'first_name', 'last_name')
-        ->orderBy('last_name')
-        ->orderBy('first_name')
-        ->get();
+        // 2. Obtener Estudiantes (OPTIMIZADO: DB::table)
+        // CAMBIO CRÍTICO: Usamos DB::table en lugar de Student::whereHas.
+        // Esto evita que Livewire intente serializar/hidratar Modelos Eloquent para cada estudiante,
+        // lo cual es la causa principal de que se "trabe" cuando hay muchos datos.
+        $students = DB::table('students')
+            ->join('enrollments', 'students.id', '=', 'enrollments.student_id')
+            ->where('enrollments.course_schedule_id', $this->schedule_id)
+            ->select('students.id', 'students.first_name', 'students.last_name')
+            ->distinct() // Evitar duplicados si hay inconsistencias en enrollments
+            ->orderBy('students.last_name')
+            ->orderBy('students.first_name')
+            ->get();
 
-        // 3. Generar Rango de Fechas (Strings simples para ahorrar memoria)
+        // 3. Generar Rango de Fechas (Strings simples)
         $start = Carbon::parse($this->date_from);
         $end = Carbon::parse($this->date_to);
         $period = CarbonPeriod::create($start, $end);
@@ -172,13 +191,11 @@ class Index extends Component
         }
 
         // 4. Mapeo de Enrollment ID -> Student ID
-        // DB::table es mucho más rápido que Enrollment::all()
         $enrollmentMap = DB::table('enrollments')
             ->where('course_schedule_id', $this->schedule_id)
-            ->pluck('student_id', 'id'); // Retorna [enrollment_id => student_id]
+            ->pluck('student_id', 'id');
 
         // 5. Consulta de Asistencias "CRUDA" (Sin Modelos Eloquent)
-        // ESTO ES LO QUE EVITA QUE SE TRABE EL SISTEMA
         $attendances = DB::table('attendances')
             ->where('course_schedule_id', $this->schedule_id)
             ->whereBetween('attendance_date', [$this->date_from, $this->date_to])
@@ -187,27 +204,24 @@ class Index extends Component
 
         Log::info("Registros raw recuperados: " . $attendances->count());
 
-        // 6. Construcción de la Matriz en Memoria (Arrays simples)
+        // 6. Construcción de la Matriz en Memoria
         $attendanceMatrix = [];
         
         foreach ($attendances as $record) {
-            // $record es un objeto simple stdClass, acceso muy rápido
             $studentId = $enrollmentMap[$record->enrollment_id] ?? null;
             
             if ($studentId) {
-                // Aseguramos formato Y-m-d cortando los primeros 10 caracteres si viene con hora
                 $dateKey = substr($record->attendance_date, 0, 10); 
-                
                 $attendanceMatrix[$studentId][$dateKey] = $record->status;
             }
         }
 
-        // 7. Asignar a la variable pública para la vista
+        // 7. Asignar a la variable pública
         $this->reportData = [
             'schedule' => $schedule,
-            'students' => $students,       // Colección ligera de estudiantes
-            'dates' => $dates,             // Array de strings
-            'matrix' => $attendanceMatrix, // Array puro [student_id][date] => status
+            'students' => $students,       // Ahora es una colección ligera de stdClass
+            'dates' => $dates,
+            'matrix' => $attendanceMatrix,
             'start_date' => $start,
             'end_date' => $end,
         ];
@@ -215,7 +229,7 @@ class Index extends Component
         Log::info("--- FIN REPORTE ASISTENCIA ---");
     }
 
-    // --- OTROS REPORTES (Mantenidos igual, pero seguros) ---
+    // --- OTROS REPORTES (Mantenidos) ---
     
     public function generateGradesReport()
     {
