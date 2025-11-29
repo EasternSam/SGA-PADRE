@@ -30,10 +30,11 @@
 
                     @foreach($data['financials'] as $record)
                         @php
-                            // Cálculos
-                            $totalCost = $record->total_cost; 
-                            $paid = $record->total_paid;
-                            $pending = $totalCost - $paid;
+                            // Cálculos con redondeo para evitar errores de punto flotante (ej: 0.000001)
+                            $totalCost = (float) $record->total_cost; 
+                            $paid = (float) $record->total_paid;
+                            // Redondeamos a 2 decimales para asegurar que la resta sea precisa
+                            $pending = round($totalCost - $paid, 2);
 
                             // Acumuladores globales
                             $grandTotalCost += $totalCost;
@@ -44,7 +45,8 @@
                             $statusLabel = 'Al día';
                             $statusClass = 'bg-green-100 text-green-800';
 
-                            if ($pending > 0) {
+                            // Usamos > 0.00 explícitamente
+                            if ($pending > 0.00) {
                                 $statusLabel = 'Pendiente';
                                 $statusClass = 'bg-red-100 text-red-800';
                             } elseif ($totalCost == 0) {
