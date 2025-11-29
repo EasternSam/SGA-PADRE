@@ -152,7 +152,7 @@ class Index extends Component
         }
     }
 
-    // --- LÓGICA OPTIMIZADA (SOLUCIÓN AL CONGELAMIENTO) ---
+    // --- LÓGICA OPTIMIZADA (SOLUCIÓN AL CONGELAMIENTO + FILTRO PAGO) ---
     public function generateAttendanceReport()
     {
         Log::info("--- INICIO REPORTE ASISTENCIA OPTIMIZADO ---");
@@ -170,6 +170,8 @@ class Index extends Component
         $students = DB::table('students')
             ->join('enrollments', 'students.id', '=', 'enrollments.student_id')
             ->where('enrollments.course_schedule_id', $this->schedule_id)
+            // FILTRO CRÍTICO: Excluir 'Pendiente' (No han pagado)
+            ->whereNotIn('enrollments.status', ['Pendiente', 'pendiente']) 
             ->select('students.id', 'students.first_name', 'students.last_name')
             ->distinct() 
             ->orderBy('students.last_name')
@@ -189,6 +191,8 @@ class Index extends Component
         // 4. Mapeo de Enrollment ID -> Student ID
         $enrollmentMap = DB::table('enrollments')
             ->where('course_schedule_id', $this->schedule_id)
+            // FILTRO CRÍTICO: Asegurar consistencia, solo enrollments activos
+            ->whereNotIn('status', ['Pendiente', 'pendiente'])
             ->pluck('student_id', 'id');
 
         // 5. Consulta de Asistencias "CRUDA"
@@ -204,6 +208,7 @@ class Index extends Component
         foreach ($attendances as $record) {
             $studentId = $enrollmentMap[$record->enrollment_id] ?? null;
             
+            // Solo procesamos asistencias de estudiantes válidos (no pendientes)
             if ($studentId) {
                 $dateKey = substr($record->attendance_date, 0, 10); 
                 $attendanceMatrix[$studentId][$dateKey] = $record->status;
@@ -239,14 +244,14 @@ class Index extends Component
                 'students.phone',
                 'courses.name as course_name',
                 'modules.name as module_name',
-                'modules.price as module_price', // <-- PRECIO BASE DEL MÓDULO (Fuente de Verdad)
+                'modules.price as module_price', 
                 'course_schedules.section_name',
                 'enrollments.status as enrollment_status',
                 
-                // Sumamos pagos confirmados (buscando varios estados posibles para asegurar)
+                // Sumamos pagos confirmados
                 DB::raw("SUM(CASE WHEN LOWER(payments.status) IN ('paid', 'pagado', 'completado', 'succeeded', 'aprobado') THEN payments.amount ELSE 0 END) as total_paid"),
                 
-                // Sumamos pagos pendientes solo como referencia secundaria
+                // Sumamos pagos pendientes
                 DB::raw("SUM(CASE WHEN LOWER(payments.status) IN ('pending', 'pendiente', 'created') THEN payments.amount ELSE 0 END) as raw_pending_sum")
             );
 
@@ -260,8 +265,6 @@ class Index extends Component
         }
 
         if ($this->date_from && $this->date_to) {
-             // Filtramos por fecha de inscripción para ver el estado de cuentas generadas en este periodo
-             // O si prefieres ver pagos en este periodo, habría que cambiar la lógica, pero para "Estado de Cuenta" es mejor enrollment.
              $query->whereBetween('enrollments.created_at', [$this->date_from . ' 00:00:00', $this->date_to . ' 23:59:59']);
         }
 
@@ -274,7 +277,7 @@ class Index extends Component
             'students.phone',
             'courses.name', 
             'modules.name', 
-            'modules.price', // Importante agrupar por precio
+            'modules.price', 
             'course_schedules.section_name',
             'enrollments.status'
         );
@@ -287,18 +290,13 @@ class Index extends Component
             $paid = (float) $item->total_paid;
             $modulePrice = (float) $item->module_price;
             
-            // Lógica de Negocio:
-            // El Costo Total es el precio del módulo.
+            // Costo Total = Precio del Módulo
             $item->total_cost = $modulePrice;
 
-            // Caso borde: Si por alguna razón pagó más que el precio (o el precio es 0 pero pagó),
-            // ajustamos el costo para reflejar la realidad de la transacción.
             if ($paid > $item->total_cost) {
                 $item->total_cost = $paid;
             }
             
-            // Caso borde 2: Si el precio es 0 y no ha pagado nada, el costo es 0.
-
             return $item;
         });
 
@@ -307,11 +305,10 @@ class Index extends Component
             $financials = $financials->filter(function($item) {
                 $paid = (float) $item->total_paid;
                 $cost = (float) $item->total_cost;
-                // Usamos round para evitar problemas de flotantes (ej: 0.0000001)
                 $balance = round($cost - $paid, 2);
 
-                if ($this->payment_status == 'paid') return $balance <= 0 && $paid > 0; // Pagado y sin deuda
-                if ($this->payment_status == 'pending') return $balance > 0; // Tiene deuda
+                if ($this->payment_status == 'paid') return $balance <= 0 && $paid > 0; 
+                if ($this->payment_status == 'pending') return $balance > 0; 
                 return true;
             });
         }
@@ -324,7 +321,7 @@ class Index extends Component
         ];
     }
     
-    // --- OTROS REPORTES ---
+    // --- OTROS REPORTES (ACTUALIZADOS PARA EXCLUIR PENDIENTES) ---
     
     public function generateGradesReport()
     {
@@ -332,6 +329,7 @@ class Index extends Component
         
         $enrollments = Enrollment::with('student')
             ->where('course_schedule_id', $this->schedule_id)
+            ->whereNotIn('status', ['Pendiente', 'pendiente']) // Excluir pendientes
             ->get()
             ->sortBy('student.last_name');
 
@@ -347,6 +345,7 @@ class Index extends Component
         
         $enrollments = Enrollment::with('student')
             ->where('course_schedule_id', $this->schedule_id)
+            ->whereNotIn('status', ['Pendiente', 'pendiente']) // Excluir pendientes
             ->get()
             ->sortBy('student.last_name');
 
