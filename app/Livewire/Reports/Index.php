@@ -158,7 +158,6 @@ class Index extends Component
         Log::info("--- INICIO REPORTE ASISTENCIA OPTIMIZADO ---");
 
         // 1. Cargar datos de la sección (CourseSchedule)
-        // Mantenemos Eloquent aquí porque es UN SOLO registro, no afecta el rendimiento.
         $schedule = CourseSchedule::with(['module:id,name,course_id', 'module.course:id,name', 'teacher:id,name'])
             ->select('id', 'module_id', 'teacher_id', 'section_name', 'start_time', 'end_time', 'days_of_week', 'start_date', 'end_date')
             ->find($this->schedule_id);
@@ -168,19 +167,16 @@ class Index extends Component
         }
 
         // 2. Obtener Estudiantes (OPTIMIZADO: DB::table)
-        // CAMBIO CRÍTICO: Usamos DB::table en lugar de Student::whereHas.
-        // Esto evita que Livewire intente serializar/hidratar Modelos Eloquent para cada estudiante,
-        // lo cual es la causa principal de que se "trabe" cuando hay muchos datos.
         $students = DB::table('students')
             ->join('enrollments', 'students.id', '=', 'enrollments.student_id')
             ->where('enrollments.course_schedule_id', $this->schedule_id)
             ->select('students.id', 'students.first_name', 'students.last_name')
-            ->distinct() // Evitar duplicados si hay inconsistencias en enrollments
+            ->distinct() 
             ->orderBy('students.last_name')
             ->orderBy('students.first_name')
             ->get();
 
-        // 3. Generar Rango de Fechas (Strings simples)
+        // 3. Generar Rango de Fechas
         $start = Carbon::parse($this->date_from);
         $end = Carbon::parse($this->date_to);
         $period = CarbonPeriod::create($start, $end);
@@ -195,14 +191,12 @@ class Index extends Component
             ->where('course_schedule_id', $this->schedule_id)
             ->pluck('student_id', 'id');
 
-        // 5. Consulta de Asistencias "CRUDA" (Sin Modelos Eloquent)
+        // 5. Consulta de Asistencias "CRUDA"
         $attendances = DB::table('attendances')
             ->where('course_schedule_id', $this->schedule_id)
             ->whereBetween('attendance_date', [$this->date_from, $this->date_to])
             ->select('enrollment_id', 'attendance_date', 'status')
             ->get(); 
-
-        Log::info("Registros raw recuperados: " . $attendances->count());
 
         // 6. Construcción de la Matriz en Memoria
         $attendanceMatrix = [];
@@ -216,10 +210,9 @@ class Index extends Component
             }
         }
 
-        // 7. Asignar a la variable pública
         $this->reportData = [
             'schedule' => $schedule,
-            'students' => $students,       // Ahora es una colección ligera de stdClass
+            'students' => $students,
             'dates' => $dates,
             'matrix' => $attendanceMatrix,
             'start_date' => $start,
@@ -229,13 +222,91 @@ class Index extends Component
         Log::info("--- FIN REPORTE ASISTENCIA ---");
     }
 
-    // --- OTROS REPORTES (Mantenidos) ---
+    // --- REPORTE FINANCIERO (NUEVO) ---
+    public function generatePaymentsReport()
+    {
+        // 1. Base Query: Empezamos desde las Matrículas (Enrollments)
+        // Esto nos asegura que vemos a TODOS los estudiantes inscritos, hayan pagado o no.
+        $query = DB::table('enrollments')
+            ->join('students', 'enrollments.student_id', '=', 'students.id')
+            ->join('course_schedules', 'enrollments.course_schedule_id', '=', 'course_schedules.id')
+            ->join('modules', 'course_schedules.module_id', '=', 'modules.id')
+            ->join('courses', 'modules.course_id', '=', 'courses.id')
+            ->leftJoin('payments', 'enrollments.id', '=', 'payments.enrollment_id') // Left join para traer pagos si existen
+            ->select(
+                'enrollments.id as enrollment_id',
+                'students.first_name',
+                'students.last_name',
+                'students.phone',
+                'courses.name as course_name',
+                'modules.name as module_name',
+                'course_schedules.section_name',
+                'enrollments.status as enrollment_status',
+                // Cálculos Financieros
+                DB::raw('SUM(CASE WHEN payments.status = "paid" THEN payments.amount ELSE 0 END) as total_paid'),
+                DB::raw('SUM(CASE WHEN payments.status != "paid" AND payments.status IS NOT NULL THEN payments.amount ELSE 0 END) as total_pending'),
+                DB::raw('SUM(payments.amount) as total_cost') // Asumimos que la suma de todos los registros de pago es el costo total
+            );
+
+        // 2. Aplicar Filtros
+        if ($this->course_id) {
+            $query->where('courses.id', $this->course_id);
+        }
+
+        if ($this->teacher_id) {
+            $query->where('course_schedules.teacher_id', $this->teacher_id);
+        }
+
+        if ($this->date_from && $this->date_to) {
+            // Filtramos por fecha de inscripción o pagos creados en el rango
+            // Para un reporte de estado, es mejor ver los inscritos activos, pero usaremos created_at de pagos para ser consistentes
+            // Opcional: restringir por fecha de enrollment si se desea
+             $query->whereBetween('enrollments.created_at', [$this->date_from . ' 00:00:00', $this->date_to . ' 23:59:59']);
+        }
+
+        // 3. Agrupación
+        $query->groupBy(
+            'enrollments.id', 
+            'students.id', 
+            'students.first_name', 
+            'students.last_name', 
+            'students.phone',
+            'courses.name', 
+            'modules.name', 
+            'course_schedules.section_name',
+            'enrollments.status'
+        );
+
+        // 4. Ejecución
+        $financials = $query->get();
+
+        // 5. Post-procesamiento para estado (opcional si queremos lógica compleja)
+        // Convertimos a array para facilidad en la vista o lo pasamos directo.
+        
+        // Si el filtro de estado está activo, filtramos la colección resultante
+        if ($this->payment_status !== 'all') {
+            $financials = $financials->filter(function($item) {
+                $balance = $item->total_cost - $item->total_paid;
+                if ($this->payment_status == 'paid') return $balance <= 0 && $item->total_cost > 0;
+                if ($this->payment_status == 'pending') return $balance > 0;
+                return true;
+            });
+        }
+
+        $this->reportData = [
+            'financials' => $financials,
+            'filter_status' => $this->payment_status,
+            'date_from' => $this->date_from,
+            'date_to' => $this->date_to,
+        ];
+    }
+    
+    // --- OTROS REPORTES ---
     
     public function generateGradesReport()
     {
         $schedule = CourseSchedule::with(['module.course', 'teacher'])->find($this->schedule_id);
         
-        // CORRECCIÓN: Eliminada la relación 'grades' que no existe en el modelo Enrollment
         $enrollments = Enrollment::with('student')
             ->where('course_schedule_id', $this->schedule_id)
             ->get()
@@ -244,52 +315,6 @@ class Index extends Component
         $this->reportData = [
             'schedule' => $schedule,
             'enrollments' => $enrollments,
-        ];
-    }
-
-    public function generatePaymentsReport()
-    {
-        $query = Payment::with(['student', 'paymentConcept', 'enrollment.courseSchedule.module.course']);
-
-        if ($this->date_from && $this->date_to) {
-            $query->whereBetween('created_at', [$this->date_from . ' 00:00:00', $this->date_to . ' 23:59:59']);
-        }
-
-        if ($this->teacher_id) {
-            $query->whereHas('enrollment.courseSchedule', function($q) {
-                $q->where('teacher_id', $this->teacher_id);
-            });
-        }
-
-        if ($this->course_id) {
-            $query->whereHas('enrollment.courseSchedule', function($q) {
-                $q->where('course_id', $this->course_id);
-            });
-        }
-        
-        if ($this->payment_status !== 'all') {
-            $query->where('status', $this->payment_status);
-        }
-
-        $payments = $query->latest()->limit(500)->get();
-
-        $debts = [];
-        if ($this->payment_status === 'pending' || $this->payment_status === 'all') {
-            $debts = Enrollment::with(['student', 'courseSchedule.module.course'])
-                ->whereDoesntHave('payment', function($q) {
-                    $q->where('status', 'paid');
-                })
-                ->where('status', 'Cursando') 
-                ->limit(50) 
-                ->get();
-        }
-
-        $this->reportData = [
-            'payments' => $payments,
-            'debts' => $debts,
-            'filter_status' => $this->payment_status,
-            'date_from' => $this->date_from,
-            'date_to' => $this->date_to,
         ];
     }
 
