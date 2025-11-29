@@ -1,30 +1,36 @@
 <?php
 
-namespace App\Livewire\TeacherPortal; // <-- Namespace correcto
+namespace App\Livewire\TeacherPortal;
 
 use Livewire\Component;
 use App\Models\CourseSchedule;
 use App\Models\Enrollment;
-use App\Models\Attendance as AttendanceModel; // <-- Alias para el Modelo
+use App\Models\Attendance as AttendanceModel;
 use Illuminate\Contracts\View\View;
 use Carbon\Carbon;
-use Livewire\Attributes\Computed; // <-- ¡AÑADIDO! Para la lista de fechas
+use Livewire\Attributes\Computed;
 
-class Attendance extends Component // <-- Clase correcta (Component)
+class Attendance extends Component
 {
     public CourseSchedule $section;
     public $enrollments = [];
     public $attendanceDate;
     public $attendanceData = []; // ['enrollment_id' => 'status']
 
-    public $isLocked = false; // <-- ¡AÑADIDO! Para bloquear la edición
+    public $isLocked = false; 
 
     /**
      * Carga la sección y los estudiantes.
      */
     public function mount(CourseSchedule $section)
     {
-        $this->section = $section->load('module.course', 'enrollments.student');
+        // Cargar sección y estudiantes, PERO filtrando los que no han pagado
+        $this->section = $section->load(['module.course', 'enrollments' => function($query) {
+            // EXCLUIMOS estudiantes con estado 'Pendiente' (sin pagar)
+            $query->whereNotIn('status', ['Pendiente', 'pendiente'])
+                  ->with('student');
+        }]);
+        
         $this->enrollments = $this->section->enrollments;
         $this->attendanceDate = now()->format('Y-m-d');
         
@@ -45,22 +51,14 @@ class Attendance extends Component // <-- Clase correcta (Component)
             ->get()
             ->keyBy('enrollment_id');
 
-        // --- ¡LÓGICA AÑADIDA! ---
         // Si se encontraron asistencias, bloquea la edición
         $this->isLocked = $attendances->isNotEmpty();
-        // --- FIN LÓGICA AÑADIDA ---
 
         foreach ($this->enrollments as $enrollment) {
-            // --- ¡¡¡ESTA ES LA CORRECCIÓN!!! ---
             // 1. Obtenemos la asistencia existente. Puede ser 'null' si no hay registro para hoy.
             $existingAttendance = $attendances->get($enrollment->id);
 
-            // 2. Usamos el 'optional chaining operator' (?->) para leer 'status' de forma segura.
-            //    Si $existingAttendance es null, $existingAttendance?->status devolverá null.
-            // 3. Usamos el 'null coalescing operator' (??) para asignar 'Presente' si el resultado es null.
-            //    Esto soluciona el error 'Attempt to read property "status" on null'
-            
-            // Esta única línea reemplaza y corrige la lógica 'if/else' anterior (líneas 55-60)
+            // 2. Asignamos estado. Si es null, por defecto 'Presente' (o vacío si prefieres que seleccionen)
             $this->attendanceData[$enrollment->id] = $existingAttendance?->status ?? 'Presente';
         }
     }
@@ -88,7 +86,6 @@ class Attendance extends Component // <-- Clase correcta (Component)
 
         foreach ($this->attendanceData as $enrollmentId => $status) {
             
-            // Usamos el alias
             AttendanceModel::updateOrCreate(
                 [
                     'enrollment_id' => $enrollmentId,
@@ -103,7 +100,6 @@ class Attendance extends Component // <-- Clase correcta (Component)
 
         session()->flash('message', 'Asistencia guardada para el ' . $date->format('d/m/Y'));
         
-        // --- ¡AÑADIDO! ---
         // Recargamos la asistencia, lo que ahora también la bloqueará
         $this->loadAttendance();
         
@@ -112,10 +108,9 @@ class Attendance extends Component // <-- Clase correcta (Component)
     }
 
     /**
-     * ¡NUEVA PROPIEDAD COMPUTADA!
      * Obtiene la lista de fechas donde ya se pasó lista.
      */
-    #[Computed(persist: true)] // Persiste para no consultar la DB en cada render
+    #[Computed(persist: true)] 
     public function completedDates()
     {
         return AttendanceModel::where('course_schedule_id', $this->section->id)
@@ -123,27 +118,46 @@ class Attendance extends Component // <-- Clase correcta (Component)
             ->distinct()
             ->orderBy('attendance_date', 'desc')
             ->get()
-            ->pluck('attendance_date'); // Solo queremos las fechas
+            ->pluck('attendance_date'); 
     }
 
-    // --- ¡¡¡NUEVO MÉTODO AÑADIDO!!! ---
     /**
      * Prepara y emite el evento para abrir el reporte en el modal.
      */
     public function generateReport()
     {
-        // Obtiene la URL de la nueva ruta del reporte
-        $url = route('reports.attendance-report', $this->section);
+        // Obtiene la URL de la ruta del reporte de asistencia general
+        // Asegúrate de que esta ruta esté definida en web.php como 'reports.attendance-report'
+        // y que acepte el ID de la sección como parámetro.
+        
+        // Opción A: Si usas una ruta dedicada para PDF
+        // $url = route('reports.attendance-pdf', $this->section->id);
+
+        // Opción B: Si usas la vista Livewire de reportes con filtros pre-cargados
+        // Esto podría requerir una ruta específica que acepte parámetros GET
+        // Por ahora, asumimos una ruta simple de reporte:
+        
+        // Vamos a usar la ruta del componente de reportes, pasando parámetros si es posible,
+        // o una ruta de impresión directa si la tienes. 
+        // Si no tienes ruta específica de impresión, redirigimos al módulo de reportes con el filtro.
+        
+        $url = route('reports.index', [
+            'reportType' => 'attendance',
+            'course_id' => $this->section->module->course_id,
+            'module_id' => $this->section->module_id,
+            'schedule_id' => $this->section->id
+        ]);
         
         // Dispara el evento que el modal de Alpine.js está escuchando
+        // Nota: Si 'reports.index' es una página Livewire completa, abrirla en modal puede ser pesado.
+        // Lo ideal sería tener una ruta `Route::get('/report/attendance/{schedule}', ...)` que devuelva solo el PDF/Vista.
+        
+        // Si no existe tal ruta, intentamos abrir la URL generada.
         $this->dispatch('open-pdf-modal', url: $url);
     }
-    // --- FIN DEL NUEVO MÉTODO ---
-
 
     public function render(): View
     {
-        // CORRECCIÓN: Apuntar a 'livewire' (l minúscula) de nuevo
         return view('livewire.teacher-portal.attendance', [
             'title' => 'Asistencia - ' . $this->section->module->name
         ])->layout('layouts.dashboard');
