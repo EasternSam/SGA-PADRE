@@ -113,7 +113,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 8px;
-            table-layout: fixed;
+            table-layout: fixed; /* Mantiene el ancho fijo de celdas */
         }
         
         /* Cabeceras */
@@ -132,7 +132,7 @@
         .rotate-wrapper {
             position: relative;
             height: 65px;
-            width: 16px;
+            width: 14px; /* Ancho reducido de fechas */
             margin: 0 auto;
         }
         .rotate {
@@ -141,7 +141,7 @@
             white-space: nowrap;
             position: absolute;
             bottom: 2px;
-            left: 10px;
+            left: 9px; /* Ajuste fino para centrar la rotación */
             width: 65px;
             text-align: left;
             font-size: 7px;
@@ -150,7 +150,7 @@
         /* Filas y Celdas */
         .attendance-table td {
             border: 1px solid #bdc3c7;
-            padding: 3px 1px;
+            padding: 2px 1px;
             text-align: center;
             vertical-align: middle;
         }
@@ -164,12 +164,13 @@
         
         .col-student { 
             text-align: left !important; 
-            padding: 2px 4px !important; /* Ajuste fino de padding */
+            padding: 2px 4px !important; 
             font-weight: 600; 
             color: #2c3e50; 
-            width: 160px; /* Más ancho para que quepan mejor */
-            font-size: 7px; /* Fuente ligeramente más pequeña para nombres largos */
+            width: 200px; /* AUMENTADO considerablemente para evitar cortes */
+            font-size: 7px;
             white-space: normal; /* Permite saltos de línea */
+            word-wrap: break-word; /* Fuerza el salto si la palabra es muy larga */
             line-height: 1.1;
             text-transform: uppercase;
         }
@@ -191,6 +192,7 @@
             text-align: center !important;
             vertical-align: middle !important;
             padding: 2px !important;
+            width: 20px; /* Ancho explícito para el header */
         }
 
         /* --- ESTADOS --- */
@@ -276,10 +278,10 @@
             <thead>
                 <tr>
                     <th style="width: 15px; height: auto; text-align: center;">No.</th>
-                    <th style="width: 160px; height: auto; text-align: left; padding-left: 4px;">ESTUDIANTE</th>
+                    <th style="width: 200px; height: auto; text-align: left; padding-left: 4px;">ESTUDIANTE</th>
                     
                     @foreach($dates as $date)
-                        <th style="width: 16px;">
+                        <th style="width: 14px;"> <!-- Ancho reducido para dar espacio a nombres -->
                             <div class="rotate-wrapper">
                                 <div class="rotate">
                                     {{ $date->format('d') }}-{{ substr($date->translatedFormat('M'), 0, 3) }}
