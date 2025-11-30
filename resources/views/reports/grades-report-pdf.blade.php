@@ -23,9 +23,10 @@
         .header-logo-cell {
             width: 100px; /* Espacio reservado para el logo */
             vertical-align: middle;
+            text-align: left; /* Alineación del logo a la izquierda */
         }
         .header-text-cell {
-            text-align: center;
+            text-align: right; /* CAMBIO: Alineación del texto a la derecha */
             vertical-align: middle;
         }
         .logo {
@@ -130,7 +131,6 @@
                     </h2>
                 </div>
             </td>
-            <td style="width: 100px;"></td> {{-- Celda vacía para balancear si es necesario --}}
         </tr>
     </table>
 
