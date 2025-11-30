@@ -37,13 +37,16 @@ class AttendancePdfController extends Controller
         $allowedDays = $this->parseCourseDays($section->days);
         $scheduleDates = collect();
 
-        // Solo generamos fechas si hay días configurados
-        if (!empty($allowedDays)) {
-            $period = CarbonPeriod::create($startDate, $endDate);
-            foreach ($period as $date) {
-                if (in_array($date->dayOfWeekIso, $allowedDays)) {
-                    $scheduleDates->push($date);
-                }
+        // Generamos fechas para TODO el periodo
+        $period = CarbonPeriod::create($startDate, $endDate);
+        
+        foreach ($period as $date) {
+            // LOGICA FALLBACK:
+            // 1. Si hay días definidos ($allowedDays no está vacío), filtramos solo esos días.
+            // 2. Si NO hay días definidos (está vacío), incluimos el día (para que no salga vacío el reporte).
+            if (empty($allowedDays) || in_array($date->dayOfWeekIso, $allowedDays)) {
+                // Usamos copy() para asegurar que no se guarde referencia mutable
+                $scheduleDates->push($date->copy());
             }
         }
 
@@ -57,7 +60,7 @@ class AttendancePdfController extends Controller
             ->map(fn($date) => Carbon::parse($date));
 
         // C) Fusión: Unimos horario teórico + registros reales y ordenamos
-        // Esto elimina duplicados y asegura que "Solo días de la sección" (y excepciones) aparezcan.
+        // Esto asegura que aparezcan las fechas futuras del horario Y las fechas pasadas registradas
         $finalDates = $scheduleDates->merge($recordedDates)
             ->unique(fn($d) => $d->format('Y-m-d'))
             ->sortBy(fn($d) => $d->timestamp)
