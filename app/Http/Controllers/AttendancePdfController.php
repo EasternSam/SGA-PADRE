@@ -19,7 +19,9 @@ class AttendancePdfController extends Controller
         // 1. Cargar relaciones necesarias
         // Cargamos los estudiantes activos y ordenados alfabéticamente
         $section->load(['module.course', 'teacher', 'enrollments' => function($query) {
-            $query->whereNotIn('status', ['Pendiente', 'pendiente'])
+            // CORRECCIÓN: Especificar 'enrollments.status' para evitar la ambigüedad de columnas
+            // debido al JOIN con la tabla 'students'.
+            $query->whereNotIn('enrollments.status', ['Pendiente', 'pendiente'])
                   ->with('student')
                   ->join('students', 'enrollments.student_id', '=', 'students.id')
                   ->orderBy('students.last_name')
@@ -32,15 +34,14 @@ class AttendancePdfController extends Controller
         $endDate = Carbon::parse($section->end_date);
         
         // Determinar qué días de la semana se imparte la clase
-        // Asumimos que $section->days puede ser un array o string "Lunes, Miércoles"
         $allowedDays = $this->parseCourseDays($section->days);
         
         $dates = collect();
         $period = CarbonPeriod::create($startDate, $endDate);
 
         foreach ($period as $date) {
-            // Si no hay días definidos, mostramos todos (o podrías limitar a Lunes-Viernes)
-            // Si hay días definidos, filtramos para mostrar solo esos días
+            // Si no hay días definidos, mostramos todos.
+            // Si hay días definidos, filtramos para mostrar solo esos días.
             if (empty($allowedDays) || in_array($date->dayOfWeekIso, $allowedDays)) {
                 $dates->push($date);
             }
