@@ -5,27 +5,24 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Reporte de Asistencia</title>
     <style>
-        /* --- Configuración de Página: Carta Horizontal --- */
+        /* --- Configuración General --- */
         @page { 
-            margin: 0.5in; /* Márgenes superior, izquierdo y derecho */
-            margin-bottom: 1in; /* Espacio reservado EXCLUSIVAMENTE para el footer */
-            size: letter landscape;
+            margin: 1cm; 
+            size: a4 landscape; /* Orientación Horizontal para máxima calidad y espacio */
         }
         body { 
             font-family: 'Helvetica', 'Arial', sans-serif; 
             font-size: 10px; 
             color: #333; 
             line-height: 1.2; 
-            margin: 0;
-            padding: 0;
         }
 
         /* --- Encabezado --- */
         .header-container {
             width: 100%;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             border-bottom: 2px solid #2c3e50;
-            padding-bottom: 5px;
+            padding-bottom: 8px;
         }
         
         .header-layout {
@@ -40,8 +37,8 @@
         }
         
         .logo-cell img {
-            max-width: 120px;
-            max-height: 50px;
+            max-width: 120px; /* Logo más grande en horizontal */
+            max-height: 60px;
             height: auto;
         }
         
@@ -59,33 +56,33 @@
             letter-spacing: 1px;
         }
         .report-title {
-            font-size: 18px;
+            font-size: 20px; /* Título más grande */
             font-weight: bold;
             color: #2c3e50;
-            margin: 2px 0;
+            margin: 4px 0;
             text-transform: uppercase;
         }
         .report-subtitle {
-            font-size: 11px;
+            font-size: 12px;
             color: #2c3e50;
         }
 
         /* --- Información del Curso --- */
         .info-container {
             width: 100%;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
         .info-table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 5px 0;
-            margin: 0 -5px;
+            border-spacing: 10px 0;
+            margin: 0 -10px;
         }
         .info-box {
             background-color: #f8f9fa;
             border: 1px solid #e9ecef;
             border-radius: 4px;
-            padding: 6px 8px;
+            padding: 8px 12px; /* Más padding para que se vea premium */
             width: 25%;
             vertical-align: top;
         }
@@ -100,7 +97,7 @@
         }
         .value {
             display: block;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: bold;
             color: #34495e;
             white-space: nowrap;
@@ -115,15 +112,11 @@
         .attendance-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9px;
-            table-layout: fixed; /* OBLIGATORIO para respetar anchos */
+            font-size: 9px; /* Fuente legible */
+            table-layout: fixed; 
         }
         
-        /* Cabeceras Generales */
-        .attendance-table thead {
-            display: table-header-group; /* Repite cabecera en cada página nueva */
-        }
-
+        /* Cabeceras */
         .attendance-table th {
             background-color: #2c3e50;
             color: #ecf0f1;
@@ -131,95 +124,83 @@
             border: 1px solid #34495e;
             vertical-align: bottom;
             padding: 0;
-            height: 70px;
+            height: 80px; /* Altura generosa para fechas */
             overflow: hidden;
         }
 
-        /* Rotación de Texto (Fechas) */
+        /* Rotación de Texto */
         .rotate-wrapper {
             position: relative;
-            height: 65px;
-            width: 100%; 
+            height: 75px;
+            width: 18px; /* Ancho cómodo por fecha */
             margin: 0 auto;
-            overflow: hidden;
         }
         .rotate {
             transform: rotate(-90deg);
-            transform-origin: left bottom; /* Ajuste crítico para PDF */
+            transform-origin: left bottom;
             white-space: nowrap;
             position: absolute;
-            bottom: 5px;
-            left: 50%; /* Centrar origen */
-            margin-left: 2px;
-            width: 65px;
+            bottom: 4px;
+            left: 10px; 
+            width: 75px;
             text-align: left;
             font-size: 8px;
-            line-height: 1;
         }
 
         /* Filas y Celdas */
         .attendance-table td {
             border: 1px solid #bdc3c7;
-            padding: 3px 2px;
+            padding: 4px 2px; /* Espaciado cómodo */
             text-align: center;
             vertical-align: middle;
         }
         
-        .attendance-table tr {
-            page-break-inside: avoid; /* Evitar partir filas por la mitad */
-        }
-
         .attendance-table tr:nth-child(even) {
             background-color: #fbfcfc;
         }
 
-        /* === ANCHOS DE COLUMNA ESTRICTOS === 
-           Total aproximado: 100% de la tabla
-        */
+        /* --- Columnas --- */
+        .col-index { 
+            width: 25px; 
+            color: #7f8c8d; 
+            font-size: 8px;
+        }
         
-        .th-index { width: 3%; }
-        .col-index { color: #7f8c8d; font-size: 8px; }
-
-        .th-student { width: 22%; }
         .col-student { 
             text-align: left !important; 
-            padding: 2px 5px !important;
+            padding: 4px 8px !important;
             font-weight: 600; 
             color: #2c3e50; 
+            width: 220px; /* ANCHO AMPLIO: Nombres nunca se cortarán */
             font-size: 9px;
-            white-space: normal;
-            word-wrap: break-word; /* Romper palabras largas si es necesario */
+            white-space: normal; 
+            word-wrap: break-word;
             line-height: 1.1;
             text-transform: uppercase;
         }
 
-        /* Ajuste dinámico de columnas de fecha */
-        /* Si tienes exactamente 31 días, 1.9% está bien. Si son menos, la tabla puede encogerse. 
-           Considera dejar esto en auto si varía mucho, o calcularlo en backend. */
-        .th-date { width: 1.9%; } 
-        .col-date { }
-
-        .th-summary { width: 3.25%; } /* ~3.25% x 4 cols = 13% */
-        
-        /* Estilos específicos de cabecera de resumen */
-        .header-summary {
-            background-color: #95a5a6 !important;
-            color: white !important;
-            border-color: #7f8c8d !important;
-            height: auto !important; /* Altura normal, sin rotación */
-            text-align: center !important;
-            vertical-align: middle !important;
-            padding: 4px !important;
-            font-size: 8px;
+        .col-date {
+            width: 18px; /* Espacio suficiente para marcar P/A */
         }
 
-        /* Celdas de resumen */
         .col-summary {
             background-color: #ecf0f1 !important;
             color: #2c3e50 !important;
             font-weight: bold;
+            width: 25px;
             border-color: #bdc3c7 !important;
             font-size: 9px;
+        }
+        
+        .th-summary {
+            background-color: #95a5a6 !important;
+            color: white !important;
+            border-color: #7f8c8d !important;
+            height: auto !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+            padding: 4px !important;
+            font-size: 8px;
         }
 
         /* --- ESTADOS --- */
@@ -234,10 +215,8 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 40px; /* Altura fija definida para evitar colisiones */
             padding-top: 5px;
             border-top: 1px solid #e5e5e5;
-            background-color: white;
         }
         
         .legend {
@@ -274,15 +253,12 @@
         <table class="header-layout">
             <tr>
                 <td class="logo-cell">
-                    <!-- Usamos public_path para PDFs, asegurate de que el archivo exista -->
                     <img src="{{ public_path('centuu.png') }}" onerror="this.style.display='none'" alt="Logo">
                 </td>
                 <td class="title-cell">
                     <div class="institution-name">{{ config('app.name', 'Sistema Académico') }}</div>
                     <div class="report-title">Reporte de Asistencia</div>
-                    <div class="report-subtitle">
-                        {{ $section->module->course->name ?? 'Curso' }} &bull; {{ $section->module->name ?? 'Módulo' }}
-                    </div>
+                    <div class="report-subtitle">{{ $section->module->course->name }} &bull; {{ $section->module->name }}</div>
                 </td>
             </tr>
         </table>
@@ -307,12 +283,8 @@
                 <td class="info-box">
                     <span class="label">Periodo</span>
                     <span class="value">
-                        @if(isset($section->start_date) && isset($section->end_date))
-                            {{ \Carbon\Carbon::parse($section->start_date)->format('d/m/Y') }} - 
-                            {{ \Carbon\Carbon::parse($section->end_date)->format('d/m/Y') }}
-                        @else
-                            N/A
-                        @endif
+                        {{ \Carbon\Carbon::parse($section->start_date)->format('d/m/Y') }} - 
+                        {{ \Carbon\Carbon::parse($section->end_date)->format('d/m/Y') }}
                     </span>
                 </td>
             </tr>
@@ -324,11 +296,11 @@
         <table class="attendance-table">
             <thead>
                 <tr>
-                    <th class="th-index" style="text-align: center;">No.</th>
-                    <th class="th-student" style="text-align: left; padding-left: 5px;">ESTUDIANTE</th>
+                    <th style="width: 25px; height: auto; text-align: center;">No.</th>
+                    <th style="width: 220px; height: auto; text-align: left; padding-left: 8px;">ESTUDIANTE</th>
                     
                     @foreach($dates as $date)
-                        <th class="th-date">
+                        <th class="col-date">
                             <div class="rotate-wrapper">
                                 <div class="rotate">
                                     {{ $date->format('d') }}-{{ substr($date->translatedFormat('M'), 0, 3) }}
@@ -337,11 +309,10 @@
                         </th>
                     @endforeach
                     
-                    <!-- Definimos el ancho explícito en la clase header-summary -->
-                    <th class="th-summary header-summary">P</th>
-                    <th class="th-summary header-summary">A</th>
-                    <th class="th-summary header-summary">T</th>
-                    <th class="th-summary header-summary">%</th>
+                    <th class="th-summary">P</th>
+                    <th class="th-summary">A</th>
+                    <th class="th-summary">T</th>
+                    <th class="th-summary">%</th>
                 </tr>
             </thead>
             <tbody>
@@ -355,40 +326,34 @@
                     <tr>
                         <td class="col-index">{{ $index + 1 }}</td>
                         <td class="col-student">
-                            {{ $enrollment->student->last_name ?? '' }}, {{ $enrollment->student->first_name ?? 'Estudiante' }}
+                            {{ $enrollment->student->last_name }}, {{ $enrollment->student->first_name }}
                         </td>
                         
                         @foreach($dates as $date)
                             @php
                                 $dateStr = $date->format('Y-m-d');
-                                // CORRECCIÓN CRÍTICA: Acceso seguro a arrays anidados
-                                // Verifica primero si existe el día, luego si existe el estudiante en ese día
-                                $dayRecords = $attendances[$dateStr] ?? [];
-                                $record = $dayRecords[$enrollment->id] ?? null;
+                                $record = $attendances[$dateStr][$enrollment->id] ?? null;
                                 
                                 $char = '';
                                 $class = 'st-none';
 
                                 if ($record) {
-                                    // Aseguramos que status exista en el objeto record
-                                    $status = $record->status ?? '';
-                                    
-                                    if ($status == 'Presente') { 
+                                    if ($record->status == 'Presente') { 
                                         $present++; $totalRecorded++; 
                                         $char = 'P'; 
                                         $class = 'st-P';
-                                    } elseif ($status == 'Ausente') { 
+                                    } elseif ($record->status == 'Ausente') { 
                                         $absent++; $totalRecorded++; 
                                         $char = 'A'; 
                                         $class = 'st-A';
-                                    } elseif ($status == 'Tardanza') { 
+                                    } elseif ($record->status == 'Tardanza') { 
                                         $tardy++; $totalRecorded++; 
                                         $char = 'T'; 
                                         $class = 'st-T';
                                     }
                                 }
                             @endphp
-                            <td class="col-date {{ $class }}">{{ $char }}</td>
+                            <td class="{{ $class }}">{{ $char }}</td>
                         @endforeach
 
                         @php
