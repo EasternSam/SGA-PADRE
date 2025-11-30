@@ -150,10 +150,9 @@
         /* Filas y Celdas */
         .attendance-table td {
             border: 1px solid #bdc3c7;
-            padding: 3px 1px; /* Un poco más de padding vertical para nombres largos */
+            padding: 3px 1px;
             text-align: center;
             vertical-align: middle;
-            /* height: 14px;  <-- ELIMINADO para permitir que la celda crezca si el nombre es largo */
         }
         
         .attendance-table tr:nth-child(even) {
@@ -165,13 +164,13 @@
         
         .col-student { 
             text-align: left !important; 
-            padding-left: 4px !important; 
+            padding: 2px 4px !important; /* Ajuste fino de padding */
             font-weight: 600; 
             color: #2c3e50; 
-            width: 150px; /* AUMENTADO de 130px a 150px para más espacio */
+            width: 160px; /* Más ancho para que quepan mejor */
+            font-size: 7px; /* Fuente ligeramente más pequeña para nombres largos */
             white-space: normal; /* Permite saltos de línea */
             line-height: 1.1;
-            /* overflow: hidden; <-- ELIMINADO para que no corte el texto */
             text-transform: uppercase;
         }
 
@@ -277,7 +276,7 @@
             <thead>
                 <tr>
                     <th style="width: 15px; height: auto; text-align: center;">No.</th>
-                    <th style="width: 150px; height: auto; text-align: left; padding-left: 4px;">ESTUDIANTE</th>
+                    <th style="width: 160px; height: auto; text-align: left; padding-left: 4px;">ESTUDIANTE</th>
                     
                     @foreach($dates as $date)
                         <th style="width: 16px;">
