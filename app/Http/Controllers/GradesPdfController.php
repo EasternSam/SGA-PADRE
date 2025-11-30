@@ -31,7 +31,8 @@ class GradesPdfController extends Controller
             'enrollments' => $enrollments,
         ];
 
-        // 3. Generar PDF usando una vista específica para impresión
+        // 3. Generar PDF usando la vista creada 'reports.grades-report-pdf'
+        // Asegúrate de que el archivo resources/views/reports/grades-report-pdf.blade.php exista.
         $pdf = Pdf::loadView('reports.grades-report-pdf', ['data' => $data]);
 
         $pdf->setPaper('a4', 'portrait'); // Vertical suele ser mejor para notas

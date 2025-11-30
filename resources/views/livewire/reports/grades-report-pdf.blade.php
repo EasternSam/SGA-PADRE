@@ -25,10 +25,6 @@
             width: 80px; /* Ajusta el tamaño según tu preferencia */
             height: auto;
         }
-        .header-content {
-            /* Dejar espacio para el logo si es necesario, o centrar independientemente */
-            /* margin-left: 100px; si quisieras alinearlo a la izquierda junto al logo */
-        }
         .header h1 {
             font-size: 18pt;
             font-weight: bold;
@@ -167,6 +163,7 @@
                 <tr>
                     <td>{{ $index + 1 }}</td>
                     <td style="font-family: monospace; font-size: 10pt;">
+                        {{-- Prioridad: student_code > cedula > id --}}
                         {{ $enrollment->student->student_code ?? $enrollment->student->cedula ?? $enrollment->student->id }}
                     </td>
                     <td class="student-name" style="text-transform: uppercase;">
