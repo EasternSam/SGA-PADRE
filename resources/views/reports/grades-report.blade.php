@@ -25,6 +25,7 @@
         <thead class="bg-gray-100">
             <tr>
                 <th class="border border-gray-300 px-3 py-2 text-left w-12">#</th>
+                <th class="border border-gray-300 px-3 py-2 text-left w-24">Matrícula</th>
                 <th class="border border-gray-300 px-3 py-2 text-left">Estudiante</th>
                 <th class="border border-gray-300 px-3 py-2 text-center w-32">Estado</th>
                 <th class="border border-gray-300 px-3 py-2 text-center w-24">Nota Final</th>
@@ -34,6 +35,9 @@
             @foreach($data['enrollments'] as $index => $enrollment)
                 <tr class="{{ $loop->even ? 'bg-gray-50' : '' }}">
                     <td class="border border-gray-300 px-3 py-2 text-center">{{ $index + 1 }}</td>
+                    <td class="border border-gray-300 px-3 py-2 text-center font-mono text-xs">
+                        {{ $enrollment->student->id }}
+                    </td>
                     <td class="border border-gray-300 px-3 py-2 uppercase">
                         {{ $enrollment->student->last_name }}, {{ $enrollment->student->first_name }}
                     </td>
