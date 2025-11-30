@@ -100,7 +100,7 @@
         
         /* Colores Estado Pago */
         .payment-pending { color: #991b1b; font-weight: bold; font-size: 8pt; }
-        .payment-paid { color: #166534; font-size: 9pt; }
+        .payment-paid { color: #166534; font-weight: bold; font-size: 9pt; } /* Agregué font-weight bold */
 
         .footer { margin-top: 50px; width: 100%; }
         .signature-box { float: right; width: 250px; text-align: center; }
@@ -117,7 +117,7 @@
             </td>
             <td class="header-text-cell">
                 <div class="header">
-                    <h1>Listado de Estudiantes</h1> {{-- CAMBIO: De "Nómina" a "Listado de Estudiantes" --}}
+                    <h1>Listado de Estudiantes</h1>
                     <h2>
                         {{ $data['schedule']->module->course->name ?? 'Curso' }} - 
                         {{ $data['schedule']->module->name ?? 'Módulo' }}
@@ -154,7 +154,7 @@
                 <th class="text-left">Nombre del Estudiante</th>
                 <th style="width: 90px;">Teléfono</th>
                 <th style="width: 80px;">Inscripción</th>
-                <th style="width: 80px;">Fecha Pago</th>
+                <th style="width: 80px;">Estado Pago</th> {{-- Cambié el título de la columna --}}
             </tr>
         </thead>
         <tbody>
@@ -174,11 +174,9 @@
                         {{ \Carbon\Carbon::parse($enrollment->created_at)->format('d/m/Y') }}
                     </td>
                     <td class="text-center">
-                        {{-- Lógica para Fecha de Pago --}}
-                        @if($enrollment->payment && ($enrollment->payment->status == 'Paid' || $enrollment->payment->status == 'Pagado' || $enrollment->payment->payment_date))
-                            <span class="payment-paid">
-                                {{ \Carbon\Carbon::parse($enrollment->payment->payment_date ?? $enrollment->payment->updated_at)->format('d/m/Y') }}
-                            </span>
+                        {{-- Lógica SIMPLIFICADA para Estado de Pago --}}
+                        @if($enrollment->payment && ($enrollment->payment->status == 'Paid' || $enrollment->payment->status == 'Pagado' || $enrollment->payment->status == 'paid'))
+                            <span class="payment-paid">PAGADO</span>
                         @else
                             <span class="payment-pending">PENDIENTE</span>
                         @endif
