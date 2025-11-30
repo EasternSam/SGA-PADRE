@@ -3,8 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\AttendancePdfController; // <--- Controlador Asistencia
-use App\Http\Controllers\GradesPdfController;     // <--- IMPORTANTE: Nuevo Controlador Notas
+use App\Http\Controllers\AttendancePdfController; 
+use App\Http\Controllers\GradesPdfController;     
+use App\Http\Controllers\FinancialPdfController;  // <--- NUEVO CONTROLADOR
 use Illuminate\Support\Facades\Auth;
 use App\Livewire\Admin\DatabaseImport; 
 use Illuminate\Support\Facades\Http;
@@ -105,7 +106,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
     // --- NUEVO MÓDULO DE REPORTES ---
-    // Accesible para usuarios autenticados (se pueden añadir roles específicos si se desea)
     Route::get('/reports', \App\Livewire\Reports\Index::class)->name('reports.index');
 });
 
@@ -149,10 +149,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/reports/attendance-report/{section}', [ReportController::class, 'generateAttendanceReport'])->name('reports.attendance-report');
     
     // --- RUTAS PDF ---
-    // PDF Asistencia
     Route::get('/reports/attendance/{section}/pdf', [AttendancePdfController::class, 'download'])->name('reports.attendance.pdf');
-    // PDF Calificaciones
     Route::get('/reports/grades/{section}/pdf', [GradesPdfController::class, 'download'])->name('reports.grades.pdf');
+    // PDF Financiero
+    Route::get('/reports/financial/pdf', [FinancialPdfController::class, 'download'])->name('reports.financial.pdf');
 });
 
 // --- RUTAS PARA CAMBIO DE CONTRASEÑA OBLIGATORIO ---

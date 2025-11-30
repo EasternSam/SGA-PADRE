@@ -180,6 +180,14 @@
                                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                         {{ __('Descargar PDF') }}
                                     </a>
+                                @elseif($generatedReportType === 'payments')
+                                    {{-- Botón PDF para Reporte Financiero --}}
+                                    <a href="{{ route('reports.financial.pdf', ['date_from' => $date_from, 'date_to' => $date_to, 'course_id' => $course_id, 'teacher_id' => $teacher_id, 'status' => $payment_status]) }}" 
+                                       onclick="window.open(this.href, 'ReporteFinancieroPDF', 'width=1000,height=800,scrollbars=yes,resizable=yes'); return false;"
+                                       class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                        {{ __('Descargar PDF') }}
+                                    </a>
                                 @else
                                     {{-- Botón JS Print para otros reportes --}}
                                     <button onclick="printReport()" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150">
