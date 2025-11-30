@@ -31,9 +31,9 @@ class AttendancePdfController extends Controller
         $startDate = Carbon::parse($section->start_date);
         $endDate = Carbon::parse($section->end_date);
         
-        // --- LÓGICA DE FECHAS MEJORADA ---
+        // --- LÓGICA DE FECHAS ---
         
-        // A) Obtener días teóricos del horario (Ej: Lunes, Miércoles)
+        // A) Obtener días teóricos del horario (Ej: [6] para solo Sábados)
         $allowedDays = $this->parseCourseDays($section->days);
         $scheduleDates = collect();
 
@@ -41,17 +41,16 @@ class AttendancePdfController extends Controller
         $period = CarbonPeriod::create($startDate, $endDate);
         
         foreach ($period as $date) {
-            // LOGICA FALLBACK:
-            // 1. Si hay días definidos ($allowedDays no está vacío), filtramos solo esos días.
-            // 2. Si NO hay días definidos (está vacío), incluimos el día (para que no salga vacío el reporte).
-            if (empty($allowedDays) || in_array($date->dayOfWeekIso, $allowedDays)) {
-                // Usamos copy() para asegurar que no se guarde referencia mutable
+            // CAMBIO IMPORTANTE: Eliminamos el "|| empty($allowedDays)".
+            // Ahora, solo agregamos el día si ESTÁ explícitamente en la lista de días permitidos.
+            // Si la configuración de días está vacía, no asumimos nada (solo saldrán las fechas registradas en el paso B).
+            if (!empty($allowedDays) && in_array($date->dayOfWeekIso, $allowedDays)) {
                 $scheduleDates->push($date->copy());
             }
         }
 
         // B) Obtener fechas reales donde YA se registró asistencia
-        // Esto es crucial para incluir clases de recuperación o días fuera del horario habitual
+        // Esto asegura que si diste una clase extra un día fuera de horario, aparezca en el reporte.
         $recordedDates = Attendance::where('course_schedule_id', $section->id)
             ->select('attendance_date')
             ->distinct()
@@ -60,7 +59,6 @@ class AttendancePdfController extends Controller
             ->map(fn($date) => Carbon::parse($date));
 
         // C) Fusión: Unimos horario teórico + registros reales y ordenamos
-        // Esto asegura que aparezcan las fechas futuras del horario Y las fechas pasadas registradas
         $finalDates = $scheduleDates->merge($recordedDates)
             ->unique(fn($d) => $d->format('Y-m-d'))
             ->sortBy(fn($d) => $d->timestamp)
@@ -80,7 +78,7 @@ class AttendancePdfController extends Controller
         $pdf = Pdf::loadView('livewire.reports.attendance-report', [
             'section' => $section,
             'enrollments' => $section->enrollments,
-            'dates' => $finalDates, // Usamos la colección filtrada y fusionada
+            'dates' => $finalDates,
             'attendances' => $attendances
         ]);
 
@@ -111,33 +109,36 @@ class AttendancePdfController extends Controller
         }
 
         $map = [
-            'lunes' => 1, 'martes' => 2, 'miercoles' => 3, 'miércoles' => 3,
-            'jueves' => 4, 'viernes' => 5, 'sabado' => 6, 'sábado' => 6, 'domingo' => 7,
-            'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6, 'sun' => 7,
+            // ISO Standards
+            1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 6 => 6, 7 => 7,
+            
+            // Español (sin tildes para búsqueda fácil)
+            'lunes' => 1, 'martes' => 2, 'miercoles' => 3, 'jueves' => 4, 'viernes' => 5, 'sabado' => 6, 'domingo' => 7,
             'lu' => 1, 'ma' => 2, 'mi' => 3, 'ju' => 4, 'vi' => 5, 'sa' => 6, 'do' => 7,
-            '1' => 1, '2' => 2, '3' => 3, '4' => 4, '5' => 5, '6' => 6, '7' => 7
+            
+            // English
+            'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6, 'sun' => 7,
         ];
 
         $result = [];
 
         foreach ($list as $day) {
-            if (is_int($day) && $day >= 1 && $day <= 7) {
-                $result[] = $day;
+            // Limpieza robusta: minúsculas UTF8, quitar acentos básicos y caracteres extraños
+            $clean = mb_strtolower(trim(str_replace(['"', "'", '[', ']', '{', '}'], '', (string)$day)), 'UTF-8');
+            $clean = str_replace(['á', 'é', 'í', 'ó', 'ú'], ['a', 'e', 'i', 'o', 'u'], $clean);
+
+            // 1. Coincidencia Exacta
+            if (isset($map[$clean])) {
+                $result[] = $map[$clean];
                 continue;
             }
 
-            $clean = strtolower(trim(str_replace(['"', "'", '[', ']', '{', '}'], '', (string)$day)));
-
-            // Búsqueda exacta
-            if (isset($map[$clean])) {
-                $result[] = $map[$clean];
-            } else {
-                // Búsqueda parcial (ej: "Lun" coincide con "lunes")
-                foreach ($map as $key => $val) {
-                    if (str_starts_with($key, $clean) || str_contains($clean, $key)) {
-                        $result[] = $val;
-                        break;
-                    }
+            // 2. Coincidencia Parcial (ej: "Sábados" contiene "sabado" o empieza por "sab")
+            foreach ($map as $key => $val) {
+                // Evitamos coincidir números con strings vacíos
+                if (is_string($key) && (str_contains($clean, $key) || str_starts_with($key, $clean))) {
+                    $result[] = $val;
+                    break;
                 }
             }
         }
