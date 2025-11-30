@@ -5,11 +5,11 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Reporte de Asistencia</title>
     <style>
-        /* --- Configuración General --- */
+        /* --- Configuración General (Márgenes de la Versión Vieja) --- */
         @page { 
             margin: 0.5cm; 
             margin-top: 0.5cm; 
-            size: a4 portrait; /* Configuración explícita para Vertical */
+            size: letter landscape; /* Mantenemos Landscape para que quepa la tabla actual */
         }
         body { 
             font-family: 'Helvetica', 'Arial', sans-serif; 
@@ -18,7 +18,7 @@
             line-height: 1.2; 
         }
 
-        /* --- Encabezado con Tabla para centrado perfecto --- */
+        /* --- Encabezado (Versión Vieja) --- */
         .header-container {
             width: 100%;
             margin-bottom: 10px;
@@ -32,8 +32,8 @@
         }
         
         .logo-cell {
-            width: 15%; /* Espacio para el logo a la izquierda */
-            vertical-align: middle; /* Centrado vertical */
+            width: 15%; 
+            vertical-align: middle; 
             text-align: left;
         }
         
@@ -46,7 +46,7 @@
         .title-cell {
             width: 85%;
             vertical-align: middle;
-            text-align: right; /* Títulos alineados a la derecha */
+            text-align: right; 
         }
 
         .institution-name {
@@ -67,7 +67,7 @@
             color: #2c3e50;
         }
 
-        /* --- Tarjetas de Información (Diseño Anterior) --- */
+        /* --- Información del Curso (Estilo Actual/Híbrido) --- */
         .info-container {
             width: 100%;
             margin-bottom: 10px;
@@ -82,18 +82,18 @@
             background-color: #f8f9fa;
             border: 1px solid #e9ecef;
             border-radius: 4px;
-            padding: 5px 8px;
+            padding: 5px 8px; /* Padding ajustado versión vieja */
             width: 25%;
             vertical-align: top;
         }
         .label {
             display: block;
-            font-size: 7px;
+            font-size: 8px;
             text-transform: uppercase;
             color: #95a5a6;
             font-weight: bold;
             letter-spacing: 0.5px;
-            margin-bottom: 1px;
+            margin-bottom: 2px;
         }
         .value {
             display: block;
@@ -105,15 +105,15 @@
             text-overflow: ellipsis;
         }
 
-        /* --- Tabla de Asistencia Compacta --- */
+        /* --- Tabla de Asistencia (DISEÑO ACTUAL MANTENIDO) --- */
         .table-container {
             width: 100%;
         }
         .attendance-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 8px;
-            table-layout: fixed;
+            font-size: 9px;
+            table-layout: fixed; 
         }
         
         /* Cabeceras */
@@ -123,7 +123,7 @@
             font-weight: normal;
             border: 1px solid #34495e;
             vertical-align: bottom;
-            padding: 1px;
+            padding: 0;
             height: 70px;
             overflow: hidden;
         }
@@ -132,74 +132,88 @@
         .rotate-wrapper {
             position: relative;
             height: 65px;
-            width: 16px;
+            width: 100%; 
             margin: 0 auto;
+            overflow: hidden;
         }
         .rotate {
             transform: rotate(-90deg);
             transform-origin: left bottom;
             white-space: nowrap;
             position: absolute;
-            bottom: 2px;
-            left: 10px;
+            bottom: 5px;
+            left: 50%;
+            margin-left: 2px;
             width: 65px;
             text-align: left;
-            font-size: 7px;
+            font-size: 8px;
+            line-height: 1;
         }
 
         /* Filas y Celdas */
         .attendance-table td {
             border: 1px solid #bdc3c7;
-            padding: 3px 1px;
+            padding: 3px 2px;
             text-align: center;
             vertical-align: middle;
+        }
+        
+        .attendance-table tr {
+            page-break-inside: avoid; /* Mantenemos esto para evitar cortes */
         }
         
         .attendance-table tr:nth-child(even) {
             background-color: #fbfcfc;
         }
 
-        /* Columnas Específicas */
-        .col-index { width: 15px; color: #7f8c8d; font-size: 7px; }
-        
+        /* === ANCHOS DE COLUMNA DEL DISEÑO ACTUAL === */
+        .th-index { width: 3%; }
+        .col-index { color: #7f8c8d; font-size: 8px; }
+
+        .th-student { width: 22%; }
         .col-student { 
             text-align: left !important; 
-            padding: 2px 4px !important; /* Ajuste fino de padding */
+            padding: 2px 5px !important;
             font-weight: 600; 
             color: #2c3e50; 
-            width: 160px; /* Más ancho para que quepan mejor */
-            font-size: 7px; /* Fuente ligeramente más pequeña para nombres largos */
-            white-space: normal; /* Permite saltos de línea */
+            font-size: 9px;
+            white-space: normal;
+            word-wrap: break-word;
             line-height: 1.1;
             text-transform: uppercase;
         }
 
-        .col-summary {
-            background-color: #ecf0f1 !important;
-            color: #2c3e50 !important;
-            font-weight: bold;
-            width: 20px;
-            border-color: #bdc3c7 !important;
-            font-size: 8px;
-        }
+        .th-date { width: 1.9%; } 
+        .col-date { }
+
+        .th-summary { width: 3.25%; }
         
-        .th-summary {
+        .header-summary {
             background-color: #95a5a6 !important;
             color: white !important;
             border-color: #7f8c8d !important;
             height: auto !important;
             text-align: center !important;
             vertical-align: middle !important;
-            padding: 2px !important;
+            padding: 4px !important;
+            font-size: 8px;
+        }
+
+        .col-summary {
+            background-color: #ecf0f1 !important;
+            color: #2c3e50 !important;
+            font-weight: bold;
+            border-color: #bdc3c7 !important;
+            font-size: 9px;
         }
 
         /* --- ESTADOS --- */
-        .st-P { background-color: #d5f5e3; color: #196f3d; }
-        .st-A { background-color: #fadbd8; color: #c0392b; }
-        .st-T { background-color: #fdebd0; color: #d35400; }
+        .st-P { background-color: #d5f5e3; color: #196f3d; font-weight: bold; }
+        .st-A { background-color: #fadbd8; color: #c0392b; font-weight: bold; }
+        .st-T { background-color: #fdebd0; color: #d35400; font-weight: bold; }
         .st-none { color: #ecf0f1; }
 
-        /* --- Footer --- */
+        /* --- Footer (Estilo Versión Vieja - Más limpio) --- */
         .footer {
             position: fixed;
             bottom: 0;
@@ -211,6 +225,7 @@
             color: #999;
             text-align: center;
         }
+        
         .legend {
             margin-top: 5px;
             font-size: 8px;
@@ -218,16 +233,21 @@
         }
         .legend span {
             display: inline-block;
-            margin-right: 10px;
-            padding: 1px 4px;
-            border-radius: 2px;
+            margin-right: 15px;
+        }
+        .legend-box {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            margin-right: 4px;
             border: 1px solid #ccc;
+            vertical-align: middle;
         }
     </style>
 </head>
 <body>
 
-    <!-- Encabezado Restaurado (Con Logo a la izquierda y centrado) -->
+    <!-- Encabezado (Versión Vieja) -->
     <div class="header-container">
         <table class="header-layout">
             <tr>
@@ -237,13 +257,15 @@
                 <td class="title-cell">
                     <div class="institution-name">{{ config('app.name', 'Sistema Académico') }}</div>
                     <div class="report-title">Reporte de Asistencia</div>
-                    <div class="report-subtitle">{{ $section->module->course->name }} &bull; {{ $section->module->name }}</div>
+                    <div class="report-subtitle">
+                        {{ $section->module->course->name ?? 'Curso' }} &bull; {{ $section->module->name ?? 'Módulo' }}
+                    </div>
                 </td>
             </tr>
         </table>
     </div>
 
-    <!-- Información (Estilo Anterior: Cajas separadas) -->
+    <!-- Información -->
     <div class="info-container">
         <table class="info-table">
             <tr>
@@ -262,8 +284,12 @@
                 <td class="info-box">
                     <span class="label">Periodo</span>
                     <span class="value">
-                        {{ \Carbon\Carbon::parse($section->start_date)->format('d/m/y') }} - 
-                        {{ \Carbon\Carbon::parse($section->end_date)->format('d/m/y') }}
+                        @if(isset($section->start_date) && isset($section->end_date))
+                            {{ \Carbon\Carbon::parse($section->start_date)->format('d/m/Y') }} - 
+                            {{ \Carbon\Carbon::parse($section->end_date)->format('d/m/Y') }}
+                        @else
+                            N/A
+                        @endif
                     </span>
                 </td>
             </tr>
@@ -275,11 +301,11 @@
         <table class="attendance-table">
             <thead>
                 <tr>
-                    <th style="width: 15px; height: auto; text-align: center;">No.</th>
-                    <th style="width: 160px; height: auto; text-align: left; padding-left: 4px;">ESTUDIANTE</th>
+                    <th class="th-index" style="text-align: center;">No.</th>
+                    <th class="th-student" style="text-align: left; padding-left: 5px;">ESTUDIANTE</th>
                     
                     @foreach($dates as $date)
-                        <th style="width: 16px;">
+                        <th class="th-date">
                             <div class="rotate-wrapper">
                                 <div class="rotate">
                                     {{ $date->format('d') }}-{{ substr($date->translatedFormat('M'), 0, 3) }}
@@ -288,10 +314,10 @@
                         </th>
                     @endforeach
                     
-                    <th class="th-summary">P</th>
-                    <th class="th-summary">A</th>
-                    <th class="th-summary">T</th>
-                    <th class="th-summary">%</th>
+                    <th class="th-summary header-summary">P</th>
+                    <th class="th-summary header-summary">A</th>
+                    <th class="th-summary header-summary">T</th>
+                    <th class="th-summary header-summary">%</th>
                 </tr>
             </thead>
             <tbody>
@@ -305,34 +331,33 @@
                     <tr>
                         <td class="col-index">{{ $index + 1 }}</td>
                         <td class="col-student">
-                            {{ $enrollment->student->last_name }}, {{ $enrollment->student->first_name }}
+                            {{ $enrollment->student->last_name ?? '' }}, {{ $enrollment->student->first_name ?? 'Estudiante' }}
                         </td>
                         
                         @foreach($dates as $date)
                             @php
                                 $dateStr = $date->format('Y-m-d');
-                                $record = $attendances[$dateStr][$enrollment->id] ?? null;
+                                $dayRecords = $attendances[$dateStr] ?? [];
+                                $record = $dayRecords[$enrollment->id] ?? null;
                                 
                                 $char = '';
                                 $class = 'st-none';
 
                                 if ($record) {
-                                    if ($record->status == 'Presente') { 
+                                    $status = $record->status ?? '';
+                                    if ($status == 'Presente') { 
                                         $present++; $totalRecorded++; 
-                                        $char = 'P'; 
-                                        $class = 'st-P';
-                                    } elseif ($record->status == 'Ausente') { 
+                                        $char = 'P'; $class = 'st-P';
+                                    } elseif ($status == 'Ausente') { 
                                         $absent++; $totalRecorded++; 
-                                        $char = 'A'; 
-                                        $class = 'st-A';
-                                    } elseif ($record->status == 'Tardanza') { 
+                                        $char = 'A'; $class = 'st-A';
+                                    } elseif ($status == 'Tardanza') { 
                                         $tardy++; $totalRecorded++; 
-                                        $char = 'T'; 
-                                        $class = 'st-T';
+                                        $char = 'T'; $class = 'st-T';
                                     }
                                 }
                             @endphp
-                            <td class="{{ $class }}">{{ $char }}</td>
+                            <td class="col-date {{ $class }}">{{ $char }}</td>
                         @endforeach
 
                         @php
@@ -354,11 +379,12 @@
         </table>
     </div>
     
+    <!-- Footer (Estilo Versión Vieja) -->
     <div class="legend">
-        <strong>Leyenda:</strong> 
-        <span class="st-P">P = Presente</span>
-        <span class="st-A">A = Ausente</span>
-        <span class="st-T">T = Tardanza</span>
+        <strong>Leyenda:</strong>
+        <span><div class="legend-box" style="background-color: #d5f5e3;"></div> Presente</span>
+        <span><div class="legend-box" style="background-color: #fadbd8;"></div> Ausente</span>
+        <span><div class="legend-box" style="background-color: #fdebd0;"></div> Tardanza</span>
     </div>
 
     <div class="footer">
