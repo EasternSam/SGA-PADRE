@@ -140,7 +140,7 @@ class Index extends Component
         ]);
     }
 
-    // --- LÓGICA OPTIMIZADA (SOLUCIÓN AL CONGELAMIENTO + FILTRO PAGO) ---
+    // --- LÓGICA OPTIMIZADA (SOLUCIÓN AL CONGELAMIENTO + FILTRO PAGO + FECHAS INTELIGENTES) ---
     public function generateAttendanceReport()
     {
         Log::info("--- INICIO REPORTE ASISTENCIA OPTIMIZADO ---");
@@ -183,13 +183,38 @@ class Index extends Component
             ->orderBy('students.first_name')
             ->get();
 
-        // 3. Generar Rango de Fechas
+        // 3. Generar Rango de Fechas Inteligente (Lógica de AttendancePdfController)
+        
+        // A) Obtener días teóricos del horario
+        $allowedDays = $this->normalizeDays($schedule->days_of_week);
+        $scheduleDates = collect();
+
+        // Generamos todas las fechas del periodo
         $period = CarbonPeriod::create($start, $end);
         
-        $dates = [];
         foreach ($period as $date) {
-            $dates[] = $date->format('Y-m-d');
+            // Solo agregamos si el día coincide con la configuración de la sección (ej. Sábados)
+            if (!empty($allowedDays) && in_array($date->dayOfWeekIso, $allowedDays)) {
+                $scheduleDates->push($date->copy());
+            }
         }
+
+        // B) Obtener fechas reales donde YA se registró asistencia
+        // Esto captura días extras o cambios de fecha que tienen asistencia
+        $recordedDates = Attendance::where('course_schedule_id', $this->schedule_id)
+            ->select('attendance_date')
+            ->distinct()
+            ->get()
+            ->pluck('attendance_date')
+            ->map(fn($date) => Carbon::parse($date));
+
+        // C) Fusión: Días Programados + Días Extras con asistencia
+        $datesCollection = $scheduleDates->merge($recordedDates)
+            ->unique(fn($d) => $d->format('Y-m-d'))
+            ->sortBy(fn($d) => $d->timestamp);
+
+        // Convertimos a array de strings para la vista y consultas
+        $dates = $datesCollection->map(fn($d) => $d->format('Y-m-d'))->values()->toArray();
 
         // 4. Mapeo de Enrollment ID -> Student ID
         $enrollmentMap = DB::table('enrollments')
@@ -199,10 +224,10 @@ class Index extends Component
             ->pluck('student_id', 'id');
 
         // 5. Consulta de Asistencias "CRUDA"
-        // Ahora usa $this->date_from y $this->date_to que vienen del $schedule
+        // Usamos whereIn para traer solo las asistencias de los días calculados
         $attendances = DB::table('attendances')
             ->where('course_schedule_id', $this->schedule_id)
-            ->whereBetween('attendance_date', [$this->date_from, $this->date_to])
+            ->whereIn('attendance_date', $dates)
             ->select('enrollment_id', 'attendance_date', 'status')
             ->get(); 
 
@@ -229,6 +254,71 @@ class Index extends Component
         ];
         
         Log::info("--- FIN REPORTE ASISTENCIA ---");
+    }
+
+    /**
+     * Normaliza los días a un array de enteros ISO (1=Lunes ... 7=Domingo).
+     */
+    private function normalizeDays($days)
+    {
+        if (empty($days)) return [];
+
+        // Si viene como string JSON o lista separada por comas, decodificar
+        if (is_string($days)) {
+            $decoded = json_decode($days, true);
+            $days = (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) 
+                ? $decoded 
+                : explode(',', $days);
+        }
+
+        if (!is_array($days)) return [];
+
+        $map = [
+            // ISO Standards
+            1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 6 => 6, 7 => 7,
+            
+            // Español (sin tildes para búsqueda fácil)
+            'lunes' => 1, 'martes' => 2, 'miercoles' => 3, 'miércoles' => 3, 
+            'jueves' => 4, 'viernes' => 5, 'sabado' => 6, 'sábado' => 6, 'domingo' => 7,
+            'lu' => 1, 'ma' => 2, 'mi' => 3, 'ju' => 4, 'vi' => 5, 'sa' => 6, 'do' => 7,
+            
+            // English
+            'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6, 'sun' => 7,
+        ];
+
+        $result = [];
+
+        foreach ($days as $day) {
+            // Caso 1: Entero o string numérico simple
+            if (is_numeric($day)) {
+                $val = (int)$day;
+                if ($val >= 1 && $val <= 7) {
+                    $result[] = $val;
+                    continue;
+                }
+            }
+
+            // Caso 2: Texto (Nombre del día)
+            if (is_string($day)) {
+                $clean = mb_strtolower(trim(str_replace(['"', "'", '[', ']', '{', '}'], '', $day)), 'UTF-8');
+                $clean = str_replace(['á', 'é', 'í', 'ó', 'ú'], ['a', 'e', 'i', 'o', 'u'], $clean);
+
+                if (isset($map[$clean])) {
+                    $result[] = $map[$clean];
+                    continue;
+                }
+
+                // Búsqueda parcial (ej: "Sáb" coincide con "sabado")
+                foreach ($map as $key => $val) {
+                    if (is_string($key) && (str_starts_with($key, $clean) || str_starts_with($clean, $key))) {
+                        $result[] = $val;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return array_unique($result);
     }
 
     // --- REPORTE FINANCIERO (CORREGIDO Y ROBUSTO) ---
