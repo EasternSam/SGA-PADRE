@@ -71,7 +71,7 @@
         .grades-table td {
             border: 1px solid #ddd;
             padding: 8px;
-            text-align: center;
+            text-align: center; /* Por defecto centrado para notas, #, estado */
         }
         .grades-table th {
             background-color: #f9fafb;
@@ -79,8 +79,9 @@
             text-transform: uppercase;
             font-size: 8pt;
         }
+        /* Clase específica para alinear nombres a la izquierda */
         .student-name {
-            text-align: left;
+            text-align: left !important; /* Forzar alineación a la izquierda */
             padding-left: 10px;
         }
         .status-aprobado { color: #166534; font-weight: bold; }
@@ -167,7 +168,7 @@
             <tr>
                 <th style="width: 40px;">#</th>
                 <th style="width: 100px;">Matrícula</th>
-                <th>Estudiante</th>
+                <th style="text-align: left; padding-left: 10px;">Estudiante</th> {{-- Alineado también en el encabezado --}}
                 <th style="width: 120px;">Estado</th>
                 <th style="width: 80px;">Nota Final</th>
             </tr>
