@@ -30,22 +30,17 @@
 
                     @foreach($data['financials'] as $record)
                         @php
-                            // Cálculos con redondeo para evitar errores de punto flotante (ej: 0.000001)
                             $totalCost = (float) $record->total_cost; 
                             $paid = (float) $record->total_paid;
-                            // Redondeamos a 2 decimales para asegurar que la resta sea precisa
                             $pending = round($totalCost - $paid, 2);
 
-                            // Acumuladores globales
                             $grandTotalCost += $totalCost;
                             $grandTotalPaid += $paid;
                             $grandTotalPending += $pending;
 
-                            // Lógica de estado visual
                             $statusLabel = 'Al día';
                             $statusClass = 'bg-green-100 text-green-800';
 
-                            // Usamos > 0.00 explícitamente
                             if ($pending > 0.00) {
                                 $statusLabel = 'Pendiente';
                                 $statusClass = 'bg-red-100 text-red-800';
@@ -57,7 +52,10 @@
                         <tr class="hover:bg-gray-50">
                             <td class="border border-gray-300 p-2 font-medium uppercase">
                                 {{ $record->last_name }}, {{ $record->first_name }}
-                                <div class="text-[10px] text-gray-500">{{ $record->phone ?? 'Sin teléfono' }}</div>
+                                <div class="text-[10px] text-gray-500">
+                                    {{-- CORRECCIÓN: Si hay teléfono, muéstralo. Si no, muestra vacío o un guion --}}
+                                    {{ $record->mobile_phone ?? $record->student_phone ?? '-' }}
+                                </div>
                             </td>
                             <td class="border border-gray-300 p-2">
                                 {{ $record->course_name }}
@@ -65,7 +63,6 @@
                             </td>
                             <td class="border border-gray-300 p-2 text-center">{{ $record->section_name }}</td>
                             
-                            {{-- Columnas Financieras --}}
                             <td class="border border-gray-300 p-2 text-right font-mono">
                                 {{ number_format($totalCost, 2) }}
                             </td>
