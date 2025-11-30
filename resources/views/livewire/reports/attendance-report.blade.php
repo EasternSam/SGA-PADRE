@@ -9,16 +9,16 @@
         @page { 
             margin: 0.5cm; 
             margin-top: 0.5cm; 
-            size: a4 portrait; /* Configuración explícita para Vertical */
+            size: a4 portrait; /* Hoja Vertical */
         }
         body { 
             font-family: 'Helvetica', 'Arial', sans-serif; 
-            font-size: 10px; 
+            font-size: 9px; 
             color: #333; 
-            line-height: 1.2; 
+            line-height: 1.1; 
         }
 
-        /* --- Encabezado con Tabla para centrado perfecto --- */
+        /* --- Encabezado --- */
         .header-container {
             width: 100%;
             margin-bottom: 10px;
@@ -32,42 +32,42 @@
         }
         
         .logo-cell {
-            width: 15%; /* Espacio para el logo a la izquierda */
-            vertical-align: middle; /* Centrado vertical */
+            width: 15%;
+            vertical-align: middle;
             text-align: left;
         }
         
         .logo-cell img {
             max-width: 100px;
-            max-height: 60px;
+            max-height: 50px;
             height: auto;
         }
         
         .title-cell {
             width: 85%;
             vertical-align: middle;
-            text-align: right; /* Títulos alineados a la derecha */
+            text-align: right;
         }
 
         .institution-name {
-            font-size: 12px;
+            font-size: 10px;
             font-weight: bold;
             color: #7f8c8d;
             text-transform: uppercase;
         }
         .report-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             color: #2c3e50;
             margin: 2px 0;
             text-transform: uppercase;
         }
         .report-subtitle {
-            font-size: 11px;
+            font-size: 10px;
             color: #2c3e50;
         }
 
-        /* --- Tarjetas de Información (Diseño Anterior) --- */
+        /* --- Información del Curso --- */
         .info-container {
             width: 100%;
             margin-bottom: 10px;
@@ -75,20 +75,20 @@
         .info-table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 5px 0;
-            margin: 0 -5px;
+            border-spacing: 2px 0;
+            margin: 0 -2px;
         }
         .info-box {
             background-color: #f8f9fa;
             border: 1px solid #e9ecef;
             border-radius: 4px;
-            padding: 5px 8px;
+            padding: 4px 6px;
             width: 25%;
             vertical-align: top;
         }
         .label {
             display: block;
-            font-size: 7px;
+            font-size: 6px;
             text-transform: uppercase;
             color: #95a5a6;
             font-weight: bold;
@@ -97,7 +97,7 @@
         }
         .value {
             display: block;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: bold;
             color: #34495e;
             white-space: nowrap;
@@ -105,15 +105,15 @@
             text-overflow: ellipsis;
         }
 
-        /* --- Tabla de Asistencia Compacta --- */
+        /* --- Tabla de Asistencia Ajustada para Vertical --- */
         .table-container {
             width: 100%;
         }
         .attendance-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 8px;
-            table-layout: fixed; /* Mantiene el ancho fijo de celdas */
+            font-size: 7px; /* Fuente pequeña para que quepa */
+            table-layout: fixed; /* Crucial para respetar anchos */
         }
         
         /* Cabeceras */
@@ -123,16 +123,16 @@
             font-weight: normal;
             border: 1px solid #34495e;
             vertical-align: bottom;
-            padding: 1px;
-            height: 70px;
+            padding: 0;
+            height: 65px; /* Altura para rotación */
             overflow: hidden;
         }
 
         /* Rotación de Texto */
         .rotate-wrapper {
             position: relative;
-            height: 65px;
-            width: 14px; /* Ancho reducido de fechas */
+            height: 60px;
+            width: 11px; /* Ancho muy estrecho para que quepan 31 días */
             margin: 0 auto;
         }
         .rotate {
@@ -141,10 +141,10 @@
             white-space: nowrap;
             position: absolute;
             bottom: 2px;
-            left: 9px; /* Ajuste fino para centrar la rotación */
-            width: 65px;
+            left: 8px; 
+            width: 60px;
             text-align: left;
-            font-size: 7px;
+            font-size: 6px;
         }
 
         /* Filas y Celdas */
@@ -159,29 +159,37 @@
             background-color: #fbfcfc;
         }
 
-        /* Columnas Específicas */
-        .col-index { width: 15px; color: #7f8c8d; font-size: 7px; }
+        /* --- Dimensiones de Columnas Calculadas (Total ~560px) --- */
+        .col-index { 
+            width: 15px; 
+            color: #7f8c8d; 
+        }
         
         .col-student { 
             text-align: left !important; 
-            padding: 2px 4px !important; 
+            padding: 2px 3px !important;
             font-weight: 600; 
             color: #2c3e50; 
-            width: 200px; /* AUMENTADO considerablemente para evitar cortes */
+            width: 115px; /* Ancho optimizado para vertical */
             font-size: 7px;
-            white-space: normal; /* Permite saltos de línea */
-            word-wrap: break-word; /* Fuerza el salto si la palabra es muy larga */
-            line-height: 1.1;
+            white-space: normal; /* Permitir salto de línea */
+            word-wrap: break-word; /* Romper palabras largas si es necesario */
+            line-height: 1;
             text-transform: uppercase;
+        }
+
+        /* Celdas de fechas */
+        .col-date {
+            width: 11px; /* 31 columnas * 11px = 341px */
         }
 
         .col-summary {
             background-color: #ecf0f1 !important;
             color: #2c3e50 !important;
             font-weight: bold;
-            width: 20px;
+            width: 18px; /* 4 columnas * 18px = 72px */
             border-color: #bdc3c7 !important;
-            font-size: 8px;
+            font-size: 7px;
         }
         
         .th-summary {
@@ -192,7 +200,7 @@
             text-align: center !important;
             vertical-align: middle !important;
             padding: 2px !important;
-            width: 20px; /* Ancho explícito para el header */
+            font-size: 7px;
         }
 
         /* --- ESTADOS --- */
@@ -229,7 +237,7 @@
 </head>
 <body>
 
-    <!-- Encabezado Restaurado (Con Logo a la izquierda y centrado) -->
+    <!-- Encabezado -->
     <div class="header-container">
         <table class="header-layout">
             <tr>
@@ -245,7 +253,7 @@
         </table>
     </div>
 
-    <!-- Información (Estilo Anterior: Cajas separadas) -->
+    <!-- Información -->
     <div class="info-container">
         <table class="info-table">
             <tr>
@@ -278,10 +286,11 @@
             <thead>
                 <tr>
                     <th style="width: 15px; height: auto; text-align: center;">No.</th>
-                    <th style="width: 200px; height: auto; text-align: left; padding-left: 4px;">ESTUDIANTE</th>
+                    <!-- Ajuste de ancho a 115px para que quepa en A4 Vertical -->
+                    <th style="width: 115px; height: auto; text-align: left; padding-left: 3px;">ESTUDIANTE</th>
                     
                     @foreach($dates as $date)
-                        <th style="width: 14px;"> <!-- Ancho reducido para dar espacio a nombres -->
+                        <th class="col-date">
                             <div class="rotate-wrapper">
                                 <div class="rotate">
                                     {{ $date->format('d') }}-{{ substr($date->translatedFormat('M'), 0, 3) }}
