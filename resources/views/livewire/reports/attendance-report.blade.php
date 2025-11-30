@@ -6,7 +6,11 @@
     <title>Reporte de Asistencia</title>
     <style>
         /* --- Configuración General --- */
-        @page { margin: 0.5cm; margin-top: 0.5cm; }
+        @page { 
+            margin: 0.5cm; 
+            margin-top: 0.5cm; 
+            size: a4 portrait; /* Configuración explícita para Vertical */
+        }
         body { 
             font-family: 'Helvetica', 'Arial', sans-serif; 
             font-size: 10px; 
@@ -42,7 +46,7 @@
         .title-cell {
             width: 85%;
             vertical-align: middle;
-            text-align: right; /* Títulos alineados a la derecha (o center si prefieres) */
+            text-align: right; /* Títulos alineados a la derecha */
         }
 
         .institution-name {
