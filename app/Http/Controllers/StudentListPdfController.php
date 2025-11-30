@@ -14,11 +14,11 @@ class StudentListPdfController extends Controller
         // 1. Cargar relaciones necesarias
         $section->load(['module.course', 'teacher']);
 
-        // 2. Obtener inscripciones (excluyendo pendientes de inscripción, 
-        // pero incluimos aquellos que deben pago si están inscritos)
+        // 2. Obtener inscripciones
         $enrollments = Enrollment::with(['student', 'payment']) // Cargar 'payment' para ver la fecha
             ->where('course_schedule_id', $section->id)
-            ->whereNotIn('status', ['Pendiente', 'pendiente']) // Ajusta según tu lógica de "inscrito"
+            // CORRECCIÓN: Especificar la tabla 'enrollments' para evitar ambigüedad con 'students.status'
+            ->whereNotIn('enrollments.status', ['Pendiente', 'pendiente']) 
             ->join('students', 'enrollments.student_id', '=', 'students.id')
             ->orderBy('students.last_name')
             ->orderBy('students.first_name')
