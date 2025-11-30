@@ -36,8 +36,8 @@
                 <tr class="{{ $loop->even ? 'bg-gray-50' : '' }}">
                     <td class="border border-gray-300 px-3 py-2 text-center">{{ $index + 1 }}</td>
                     <td class="border border-gray-300 px-3 py-2 text-center font-mono text-xs">
-                        {{-- Corregido: Priorizar 'code' (matricula real) sobre 'id' --}}
-                        {{ $enrollment->student->code ?? $enrollment->student->id }}
+                        {{-- Corregido: Usar 'student_code' según la migración --}}
+                        {{ $enrollment->student->student_code ?? $enrollment->student->cedula ?? $enrollment->student->id }}
                     </td>
                     <td class="border border-gray-300 px-3 py-2 uppercase">
                         {{ $enrollment->student->last_name }}, {{ $enrollment->student->first_name }}
