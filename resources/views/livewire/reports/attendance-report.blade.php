@@ -7,7 +7,8 @@
     <style>
         /* --- Configuración de Página: Carta Horizontal --- */
         @page { 
-            margin: 0.5in; /* 1.27cm */
+            margin: 0.5in; /* Márgenes superior, izquierdo y derecho */
+            margin-bottom: 1in; /* Espacio reservado EXCLUSIVAMENTE para el footer */
             size: letter landscape;
         }
         body { 
@@ -119,6 +120,10 @@
         }
         
         /* Cabeceras Generales */
+        .attendance-table thead {
+            display: table-header-group; /* Repite cabecera en cada página nueva */
+        }
+
         .attendance-table th {
             background-color: #2c3e50;
             color: #ecf0f1;
@@ -229,6 +234,7 @@
             bottom: 0;
             left: 0;
             right: 0;
+            height: 40px; /* Altura fija definida para evitar colisiones */
             padding-top: 5px;
             border-top: 1px solid #e5e5e5;
             background-color: white;
