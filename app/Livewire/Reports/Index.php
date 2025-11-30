@@ -200,8 +200,11 @@ class Index extends Component
         }
 
         // B) Obtener fechas reales donde YA se registró asistencia
-        // Esto captura días extras o cambios de fecha que tienen asistencia
-        $recordedDates = Attendance::where('course_schedule_id', $this->schedule_id)
+        // Esto captura días extras o cambios de fecha que tienen asistencia DENTRO del periodo
+        // Aseguramos que la consulta sea agnóstica a la hora
+        $recordedDates = DB::table('attendances')
+            ->where('course_schedule_id', $this->schedule_id)
+            ->whereBetween('attendance_date', [$this->date_from, $this->date_to])
             ->select('attendance_date')
             ->distinct()
             ->get()
@@ -209,6 +212,7 @@ class Index extends Component
             ->map(fn($date) => Carbon::parse($date));
 
         // C) Fusión: Días Programados + Días Extras con asistencia
+        // IMPORTANTE: El merge añade las fechas registradas a las programadas
         $datesCollection = $scheduleDates->merge($recordedDates)
             ->unique(fn($d) => $d->format('Y-m-d'))
             ->sortBy(fn($d) => $d->timestamp);
@@ -224,23 +228,46 @@ class Index extends Component
             ->pluck('student_id', 'id');
 
         // 5. Consulta de Asistencias "CRUDA"
-        // Usamos whereIn para traer solo las asistencias de los días calculados
-        $attendances = DB::table('attendances')
-            ->where('course_schedule_id', $this->schedule_id)
-            ->whereIn('attendance_date', $dates)
-            ->select('enrollment_id', 'attendance_date', 'status')
-            ->get(); 
+        // Si no hay fechas calculadas, no ejecutamos la consulta
+        if (empty($dates)) {
+            $attendances = collect();
+        } else {
+            // Usamos whereIn con las fechas YA formateadas (Y-m-d) que coinciden con el formato de BD o cast
+            // Nota: Si en BD es datetime, mejor usar whereBetween global para asegurar traer todo y filtrar en memoria
+            // Pero como ya tenemos las fechas específicas que queremos mostrar, usamos whereIn para ser precisos
+            // OJO: Si attendance_date es DATETIME en BD, whereIn con strings Y-m-d puede fallar si no son exactos.
+            // Para mayor seguridad, usamos whereBetween general y filtramos en PHP, 
+            // O asumimos que attendance_date es DATE.
+            
+            $attendances = DB::table('attendances')
+                ->where('course_schedule_id', $this->schedule_id)
+                // Usamos el rango completo para traer todo y luego mapear
+                ->whereBetween('attendance_date', [$this->date_from, $this->date_to])
+                ->select('enrollment_id', 'attendance_date', 'status')
+                ->get(); 
+        }
 
         // 6. Construcción de la Matriz en Memoria
         $attendanceMatrix = [];
         
+        // Convertimos el array de fechas válidas a un mapa para búsqueda rápida O(1)
+        $validDatesMap = array_flip($dates);
+
         foreach ($attendances as $record) {
             $studentId = $enrollmentMap[$record->enrollment_id] ?? null;
             
             // Solo procesamos asistencias de estudiantes válidos (no pendientes)
             if ($studentId) {
+                // Normalizamos la fecha del registro (quitamos hora si existe)
                 $dateKey = substr($record->attendance_date, 0, 10); 
-                $attendanceMatrix[$studentId][$dateKey] = $record->status;
+                
+                // Solo incluimos si la fecha está en nuestro array de fechas final (programadas + extras)
+                // Esto es opcional: si quieres mostrar TODAS las asistencias encontradas, 
+                // incluso si nuestra lógica de fechas falló en predecirlas, quita el if(isset).
+                // Pero para mantener consistencia visual con las columnas:
+                if (isset($validDatesMap[$dateKey])) {
+                    $attendanceMatrix[$studentId][$dateKey] = $record->status;
+                }
             }
         }
 
