@@ -125,7 +125,8 @@ class Index extends Component
             $rules['schedule_id'] = 'required';
         }
 
-        if (in_array($this->reportType, ['attendance', 'payments', 'calendar'])) {
+        // MODIFICADO: Quitamos 'attendance' de aquí porque las fechas vendrán de la BD
+        if (in_array($this->reportType, ['payments', 'calendar'])) {
             $rules['date_from'] = 'required|date';
             $rules['date_to'] = 'required|date|after_or_equal:date_from';
         }
@@ -138,18 +139,8 @@ class Index extends Component
             'date_to.after_or_equal' => 'La fecha fin debe ser igual o posterior a la fecha de inicio.',
         ]);
 
-        // Validación Adicional: Prevenir congelamiento del navegador por exceso de columnas
-        if ($this->reportType === 'attendance') {
-            $start = Carbon::parse($this->date_from);
-            $end = Carbon::parse($this->date_to);
-            $daysDiff = $start->diffInDays($end);
-
-            if ($daysDiff > 62) {
-                throw ValidationException::withMessages([
-                    'date_to' => 'El rango de fechas es demasiado amplio (' . $daysDiff . ' días). Para evitar problemas de rendimiento en la vista previa, seleccione un máximo de 2 meses (60 días).'
-                ]);
-            }
-        }
+        // La validación de los 62 días se movió dentro de generateAttendanceReport
+        // para ejecutarse DESPUÉS de obtener las fechas de la sección.
     }
 
     // --- LÓGICA OPTIMIZADA (SOLUCIÓN AL CONGELAMIENTO + FILTRO PAGO) ---
@@ -166,6 +157,24 @@ class Index extends Component
             return;
         }
 
+        // --- LÓGICA AGREGADA: USAR FECHAS DE LA SECCIÓN ---
+        $this->date_from = $schedule->start_date;
+        $this->date_to = $schedule->end_date;
+        // ------------------------------------------------
+
+        // Validación de Rango (Movida aquí)
+        $start = Carbon::parse($this->date_from);
+        $end = Carbon::parse($this->date_to);
+        $daysDiff = $start->diffInDays($end);
+
+        if ($daysDiff > 62) {
+            // Nota: Si tus secciones duran más de 2 meses, este límite bloqueará el reporte.
+            // Considera aumentar el límite o paginar si es necesario.
+            throw ValidationException::withMessages([
+                'schedule_id' => 'El rango de fechas de la sección es demasiado amplio (' . $daysDiff . ' días). Para evitar problemas de rendimiento en la vista previa, el sistema limita a 60 días.'
+            ]);
+        }
+
         // 2. Obtener Estudiantes (OPTIMIZADO: DB::table)
         $students = DB::table('students')
             ->join('enrollments', 'students.id', '=', 'enrollments.student_id')
@@ -179,8 +188,6 @@ class Index extends Component
             ->get();
 
         // 3. Generar Rango de Fechas
-        $start = Carbon::parse($this->date_from);
-        $end = Carbon::parse($this->date_to);
         $period = CarbonPeriod::create($start, $end);
         
         $dates = [];
@@ -196,6 +203,7 @@ class Index extends Component
             ->pluck('student_id', 'id');
 
         // 5. Consulta de Asistencias "CRUDA"
+        // Ahora usa $this->date_from y $this->date_to que vienen del $schedule
         $attendances = DB::table('attendances')
             ->where('course_schedule_id', $this->schedule_id)
             ->whereBetween('attendance_date', [$this->date_from, $this->date_to])

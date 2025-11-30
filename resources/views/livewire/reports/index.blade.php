@@ -65,7 +65,8 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
                             {{-- Filtros de Fecha --}}
-                            @if(in_array($reportType, ['attendance', 'payments', 'calendar']))
+                            {{-- MODIFICADO: Se quitó 'attendance' de este array para ocultar las fechas --}}
+                            @if(in_array($reportType, ['payments', 'calendar']))
                                 <div class="md:col-span-3">
                                     <x-input-label for="date_from" :value="__('Desde')" />
                                     <input type="date" id="date_from" wire:model="date_from" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
