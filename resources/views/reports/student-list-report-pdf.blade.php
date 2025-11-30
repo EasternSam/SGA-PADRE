@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Nómina de Estudiantes - {{ $data['schedule']->section_name }}</title>
+    <title>Listado de Estudiantes - {{ $data['schedule']->section_name }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -117,7 +117,7 @@
             </td>
             <td class="header-text-cell">
                 <div class="header">
-                    <h1>Nómina de Estudiantes</h1>
+                    <h1>Listado de Estudiantes</h1> {{-- CAMBIO: De "Nómina" a "Listado de Estudiantes" --}}
                     <h2>
                         {{ $data['schedule']->module->course->name ?? 'Curso' }} - 
                         {{ $data['schedule']->module->name ?? 'Módulo' }}
