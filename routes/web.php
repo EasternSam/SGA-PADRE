@@ -5,7 +5,8 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AttendancePdfController; 
 use App\Http\Controllers\GradesPdfController;     
-use App\Http\Controllers\FinancialPdfController;  // <--- NUEVO CONTROLADOR
+use App\Http\Controllers\FinancialPdfController;
+use App\Http\Controllers\StudentListPdfController; // <--- NUEVO CONTROLADOR
 use Illuminate\Support\Facades\Auth;
 use App\Livewire\Admin\DatabaseImport; 
 use Illuminate\Support\Facades\Http;
@@ -151,8 +152,9 @@ Route::middleware(['auth'])->group(function () {
     // --- RUTAS PDF ---
     Route::get('/reports/attendance/{section}/pdf', [AttendancePdfController::class, 'download'])->name('reports.attendance.pdf');
     Route::get('/reports/grades/{section}/pdf', [GradesPdfController::class, 'download'])->name('reports.grades.pdf');
-    // PDF Financiero
     Route::get('/reports/financial/pdf', [FinancialPdfController::class, 'download'])->name('reports.financial.pdf');
+    // PDF Lista Estudiantes
+    Route::get('/reports/students-list/{section}/pdf', [StudentListPdfController::class, 'download'])->name('reports.students.pdf');
 });
 
 // --- RUTAS PARA CAMBIO DE CONTRASEÑA OBLIGATORIO ---
