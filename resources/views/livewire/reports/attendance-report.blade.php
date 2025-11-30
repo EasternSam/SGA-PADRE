@@ -5,42 +5,53 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Reporte de Asistencia</title>
     <style>
-        body {
-            font-family: sans-serif;
-            font-size: 10px;
-            color: #000;
+        /* --- Configuración General --- */
+        @page { margin: 1cm; }
+        body { 
+            font-family: 'Helvetica', 'Arial', sans-serif; 
+            font-size: 10px; 
+            color: #333; 
+            line-height: 1.3; 
         }
-        
-        /* Layout del Encabezado */
-        .header-container {
+
+        /* --- Encabezado --- */
+        .header {
             width: 100%;
             margin-bottom: 20px;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 10px;
         }
-        .logo-wrapper {
+        .header-logo {
             float: left;
-            width: 20%;
+            width: 80px;
         }
-        .logo-wrapper img {
-            max-width: 120px;
+        .header-logo img {
+            max-width: 100%;
             height: auto;
         }
-        .title-wrapper {
+        .header-content {
             float: left;
-            width: 80%;
-            text-align: right;
+            margin-left: 15px;
+            padding-top: 5px;
         }
-        .main-title {
-            font-size: 16px;
+        .institution-name {
+            font-size: 14px;
             font-weight: bold;
+            color: #7f8c8d;
             text-transform: uppercase;
-            margin-bottom: 5px;
+        }
+        .report-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 2px 0;
+            text-transform: uppercase;
+        }
+        .report-subtitle {
+            font-size: 12px;
             color: #2c3e50;
         }
-        .sub-title {
-            font-size: 12px;
-            margin-bottom: 10px;
-        }
-        
+
         /* Limpiar floats */
         .clearfix::after {
             content: "";
@@ -48,199 +59,311 @@
             display: table;
         }
 
-        /* Tabla de Información del Curso */
+        /* --- Tarjetas de Información --- */
+        .info-container {
+            width: 100%;
+            margin-bottom: 20px;
+        }
         .info-table {
             width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 15px;
-            font-size: 11px;
+            border-collapse: separate;
+            border-spacing: 10px 0; /* Espacio horizontal entre celdas */
+            margin: 0 -10px; /* Compensar el spacing externo */
         }
-        .info-table td {
-            padding: 3px 5px;
-            border: 1px solid #999;
+        .info-box {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 8px 12px;
+            width: 25%; /* 4 columnas */
+            vertical-align: top;
         }
-        .info-label {
-            background-color: #f0f0f0;
+        .label {
+            display: block;
+            font-size: 8px;
+            text-transform: uppercase;
+            color: #95a5a6;
             font-weight: bold;
-            width: 12%;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
         }
-        .info-value {
-            width: 38%;
+        .value {
+            display: block;
+            font-size: 11px;
+            font-weight: bold;
+            color: #34495e;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        /* Tabla de Asistencia */
+        /* --- Tabla de Asistencia --- */
+        .table-container {
+            width: 100%;
+        }
         .attendance-table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 9px;
         }
-        .attendance-table th, .attendance-table td {
-            border: 1px solid #000;
-            padding: 2px;
+        
+        /* Cabeceras */
+        .attendance-table th {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            font-weight: normal;
+            border: 1px solid #34495e;
+            vertical-align: bottom;
+            padding: 4px;
+            height: 90px; /* Altura para la rotación */
+            white-space: nowrap;
+        }
+
+        /* Rotación de Texto */
+        .rotate-wrapper {
+            position: relative;
+            height: 80px;
+            width: 20px; /* Ancho fijo para columnas de fecha */
+        }
+        .rotate {
+            transform: rotate(-90deg);
+            transform-origin: left bottom;
+            white-space: nowrap;
+            position: absolute;
+            bottom: 5px;
+            left: 12px;
+            width: 80px; /* Debe coincidir con height de rotate-wrapper aprox */
+            text-align: left;
+        }
+
+        /* Filas y Celdas */
+        .attendance-table td {
+            border: 1px solid #bdc3c7;
+            padding: 4px;
             text-align: center;
             vertical-align: middle;
         }
         
-        /* Encabezados */
-        .attendance-table thead th {
-            background-color: #e0e0e0;
-            font-weight: bold;
-            font-size: 9px;
+        .attendance-table tr:nth-child(even) {
+            background-color: #fbfcfc;
         }
 
-        /* Columnas específicas */
-        .col-index { width: 25px; }
-        .col-name { 
+        /* Columnas Específicas */
+        .col-index { width: 20px; color: #7f8c8d; }
+        .col-student { 
             text-align: left !important; 
-            padding-left: 5px !important; 
-            width: 180px; 
-            text-transform: uppercase;
+            padding-left: 8px !important; 
+            font-weight: 600; 
+            color: #2c3e50; 
+            width: 180px;
         }
-        .col-stats { width: 25px; background-color: #f9f9f9; }
-
-        /* Rotación de fechas */
-        .rotate-wrapper {
-            height: 60px;
-            vertical-align: bottom;
-            position: relative;
+        .col-summary {
+            background-color: #ecf0f1 !important;
+            color: #2c3e50 !important;
+            font-weight: bold;
+            width: 25px;
+            border-color: #bdc3c7 !important;
         }
-        .rotate {
-            transform: rotate(-90deg);
-            white-space: nowrap;
-            display: block;
-            width: 20px; /* Ancho forzado para la celda rotada */
-            margin: 0 auto;
-            margin-bottom: 5px; 
+        .th-summary {
+            background-color: #95a5a6 !important;
+            color: white !important;
+            border-color: #7f8c8d !important;
+            height: auto !important; /* No rotar estos */
+            text-align: center !important;
+            vertical-align: middle !important;
         }
 
-        /* Estados */
-        .status-P { color: #000; font-weight: bold; }
-        .status-A { color: red; font-weight: bold; background-color: #ffeeee; }
-        .status-T { color: orange; font-weight: bold; }
-        .status-empty { color: #ddd; }
+        /* --- ESTADOS (La parte clave) --- */
+        .status-cell {
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        /* Presente: Verde */
+        .st-P {
+            background-color: #d5f5e3; /* Fondo verde muy claro */
+            color: #196f3d; /* Texto verde oscuro */
+        }
+        /* Ausente: Rojo */
+        .st-A {
+            background-color: #fadbd8; /* Fondo rojo muy claro */
+            color: #c0392b; /* Texto rojo oscuro */
+        }
+        /* Tardanza: Naranja */
+        .st-T {
+            background-color: #fdebd0; /* Fondo naranja claro */
+            color: #d35400; /* Texto naranja */
+        }
+        /* Vacío/Sin registro */
+        .st-none {
+            color: #ecf0f1;
+        }
 
-        /* Footer */
+        /* --- Footer --- */
         .footer {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            font-size: 9px;
+            border-top: 1px solid #e5e5e5;
+            padding-top: 8px;
+            font-size: 8px;
+            color: #999;
             text-align: center;
-            color: #666;
-            border-top: 1px solid #ccc;
-            padding-top: 5px;
+        }
+        .legend {
+            margin-top: 10px;
+            font-size: 9px;
+            text-align: left;
+        }
+        .legend span {
+            display: inline-block;
+            margin-right: 15px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid #ccc;
         }
     </style>
 </head>
 <body>
 
     <!-- Encabezado -->
-    <div class="header-container clearfix">
-        <div class="logo-wrapper">
-            <!-- Intenta usar public_path para imágenes locales en DOMPDF -->
-            <img src="{{ public_path('centuu.png') }}" alt="Logo" onerror="this.style.display='none'">
+    <div class="header clearfix">
+        <div class="header-logo">
+            <img src="{{ public_path('centuu.png') }}" onerror="this.style.display='none'" alt="Logo">
         </div>
-        <div class="title-wrapper">
-            <div class="main-title">Listado de Asistencia</div>
-            <div class="sub-title">{{ $section->module->course->name }} - {{ $section->module->name }}</div>
+        <div class="header-content">
+            <div class="institution-name">{{ config('app.name', 'SGA') }}</div>
+            <div class="report-title">Reporte de Asistencia</div>
+            <div class="report-subtitle">{{ $section->module->course->name }} &bull; {{ $section->module->name }}</div>
         </div>
     </div>
 
-    <!-- Información del Curso -->
-    <table class="info-table">
-        <tr>
-            <td class="info-label">Profesor:</td>
-            <td class="info-value">{{ $section->teacher->name ?? 'Sin asignar' }}</td>
-            <td class="info-label">Sección:</td>
-            <td class="info-value">{{ $section->section_name }}</td>
-        </tr>
-        <tr>
-            <td class="info-label">Duración:</td>
-            <td class="info-value">
-                {{ \Carbon\Carbon::parse($section->start_date)->format('d/m/Y') }} - 
-                {{ \Carbon\Carbon::parse($section->end_date)->format('d/m/Y') }}
-            </td>
-            <td class="info-label">Inscritos:</td>
-            <td class="info-value">{{ $enrollments->count() }} Estudiantes</td>
-        </tr>
-    </table>
+    <!-- Información en Cuadrícula -->
+    <div class="info-container">
+        <table class="info-table">
+            <tr>
+                <td class="info-box">
+                    <span class="label">Profesor</span>
+                    <span class="value">{{ $section->teacher->name ?? 'Sin Asignar' }}</span>
+                </td>
+                <td class="info-box">
+                    <span class="label">Sección</span>
+                    <span class="value">{{ $section->section_name }}</span>
+                </td>
+                <td class="info-box">
+                    <span class="label">Estudiantes</span>
+                    <span class="value">{{ $enrollments->count() }} Inscritos</span>
+                </td>
+                <td class="info-box">
+                    <span class="label">Periodo</span>
+                    <span class="value">
+                        {{ \Carbon\Carbon::parse($section->start_date)->format('d/m/Y') }} - 
+                        {{ \Carbon\Carbon::parse($section->end_date)->format('d/m/Y') }}
+                    </span>
+                </td>
+            </tr>
+        </table>
+    </div>
 
     <!-- Tabla Principal -->
-    <table class="attendance-table">
-        <thead>
-            <tr>
-                <th class="col-index">No.</th>
-                <th class="col-name">Estudiante</th>
-                
-                @foreach($dates as $date)
-                    <th class="rotate-wrapper">
-                        <span class="rotate">
-                            {{ $date->format('d') }}/{{ $date->format('m') }}
-                        </span>
-                    </th>
-                @endforeach
-                
-                <th class="col-stats">P</th>
-                <th class="col-stats">A</th>
-                <th class="col-stats">%</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($enrollments as $index => $enrollment)
-                @php
-                    $present = 0;
-                    $absent = 0;
-                    $totalRecorded = 0;
-                @endphp
+    <div class="table-container">
+        <table class="attendance-table">
+            <thead>
                 <tr>
-                    <td>{{ $index + 1 }}</td>
-                    <td class="col-name">
-                        {{ $enrollment->student->last_name }}, {{ $enrollment->student->first_name }}
-                    </td>
+                    <th style="width: 20px; height: auto; text-align: center;">#</th>
+                    <th style="width: 180px; height: auto; text-align: left; padding-left: 8px;">Estudiante</th>
                     
                     @foreach($dates as $date)
-                        @php
-                            $dateStr = $date->format('Y-m-d');
-                            $record = $attendances[$dateStr][$enrollment->id] ?? null;
-                            
-                            $char = '';
-                            $class = 'status-empty';
-
-                            if ($record) {
-                                if ($record->status == 'Presente') { 
-                                    $present++; $totalRecorded++; 
-                                    $char = '•'; // Punto para presente o 'P'
-                                    $class = 'status-P';
-                                } elseif ($record->status == 'Ausente') { 
-                                    $absent++; $totalRecorded++; 
-                                    $char = 'A'; 
-                                    $class = 'status-A';
-                                } elseif ($record->status == 'Tardanza') { 
-                                    $present++; $totalRecorded++; 
-                                    $char = 'T'; 
-                                    $class = 'status-T';
-                                }
-                            }
-                        @endphp
-                        <td class="{{ $class }}">{{ $char }}</td>
+                        <th>
+                            <div class="rotate-wrapper">
+                                <div class="rotate">
+                                    {{ $date->format('d') }}-{{ substr($date->translatedFormat('F'), 0, 3) }}
+                                </div>
+                            </div>
+                        </th>
                     @endforeach
-
-                    {{-- Totales --}}
-                    @php
-                        // Calcular porcentaje basado en el total de clases registradas hasta ahora
-                        // O basado en el total de clases del curso si se prefiere proyección
-                        $percentage = $totalRecorded > 0 ? round(($present / $totalRecorded) * 100) : 0;
-                    @endphp
-                    <td class="col-stats">{{ $present }}</td>
-                    <td class="col-stats">{{ $absent }}</td>
-                    <td class="col-stats">{{ $percentage }}%</td>
+                    
+                    <th class="th-summary">P</th>
+                    <th class="th-summary">A</th>
+                    <th class="th-summary">T</th>
+                    <th class="th-summary">%</th>
                 </tr>
-            @endforeach
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach($enrollments as $index => $enrollment)
+                    @php
+                        $present = 0;
+                        $absent = 0;
+                        $tardy = 0;
+                        $totalRecorded = 0;
+                    @endphp
+                    <tr>
+                        <td class="col-index">{{ $index + 1 }}</td>
+                        <td class="col-student">
+                            {{ $enrollment->student->last_name }}, {{ $enrollment->student->first_name }}
+                        </td>
+                        
+                        @foreach($dates as $date)
+                            @php
+                                $dateStr = $date->format('Y-m-d');
+                                $record = $attendances[$dateStr][$enrollment->id] ?? null;
+                                
+                                $char = '';
+                                $class = 'st-none';
 
+                                if ($record) {
+                                    if ($record->status == 'Presente') { 
+                                        $present++; $totalRecorded++; 
+                                        $char = 'P'; 
+                                        $class = 'st-P';
+                                    } elseif ($record->status == 'Ausente') { 
+                                        $absent++; $totalRecorded++; 
+                                        $char = 'A'; 
+                                        $class = 'st-A';
+                                    } elseif ($record->status == 'Tardanza') { 
+                                        $tardy++; $totalRecorded++; // Tardanza cuenta como asistencia generalmente
+                                        $char = 'T'; 
+                                        $class = 'st-T';
+                                    }
+                                }
+                            @endphp
+                            <td class="status-cell {{ $class }}">{{ $char }}</td>
+                        @endforeach
+
+                        {{-- Cálculos finales --}}
+                        @php
+                            // Total asistencias (Presente + Tardanza)
+                            $totalPresent = $present + $tardy;
+                            $percentage = $totalRecorded > 0 ? round(($totalPresent / $totalRecorded) * 100) : 0;
+                            
+                            // Color del porcentaje
+                            $percentColor = 'black';
+                            if($percentage < 70) $percentColor = '#c0392b';
+                            elseif($percentage < 85) $percentColor = '#d35400';
+                        @endphp
+
+                        <td class="col-summary">{{ $totalPresent }}</td>
+                        <td class="col-summary" style="{{ $absent > 0 ? 'color:#c0392b;' : '' }}">{{ $absent }}</td>
+                        <td class="col-summary">{{ $tardy }}</td>
+                        <td class="col-summary" style="color: {{ $percentColor }}">{{ $percentage }}%</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Leyenda -->
+    <div class="legend">
+        <strong>Leyenda:</strong> 
+        <span class="st-P">P = Presente</span>
+        <span class="st-A">A = Ausente</span>
+        <span class="st-T">T = Tardanza</span>
+    </div>
+
+    <!-- Footer -->
     <div class="footer">
-        Generado el: {{ now()->format('d/m/Y H:i A') }} | Sistema de Gestión Académica
+        Generado el: {{ now()->format('d/m/Y h:i A') }} &bull; Documento interno de control de asistencia
     </div>
 
 </body>
