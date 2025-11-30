@@ -18,7 +18,8 @@ class GradesPdfController extends Controller
         // Usamos la misma lógica de ordenamiento que en la vista web
         $enrollments = Enrollment::with('student')
             ->where('course_schedule_id', $section->id)
-            ->whereNotIn('status', ['Pendiente', 'pendiente'])
+            // CORRECCIÓN: Especificar la tabla 'enrollments' para evitar ambigüedad
+            ->whereNotIn('enrollments.status', ['Pendiente', 'pendiente'])
             ->join('students', 'enrollments.student_id', '=', 'students.id')
             ->orderBy('students.last_name')
             ->orderBy('students.first_name')
