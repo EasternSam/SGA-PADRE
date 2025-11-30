@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\AttendancePdfController; // Importación añadida
+use App\Http\Controllers\AttendancePdfController; // <--- IMPORTANTE: Importar el controlador
 use Illuminate\Support\Facades\Auth;
 use App\Livewire\Admin\DatabaseImport; 
 use Illuminate\Support\Facades\Http;
@@ -153,6 +153,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/reports/attendance-report/{section}', [ReportController::class, 'generateAttendanceReport'])->name('reports.attendance-report');
     
     // --- RUTA PDF DE ASISTENCIA ---
+    // Esta ruta usa el controlador dedicado AttendancePdfController
     Route::get('/reports/attendance/{section}/pdf', [AttendancePdfController::class, 'download'])->name('reports.attendance.pdf');
 });
 

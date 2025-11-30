@@ -15,15 +15,14 @@ class AttendancePdfController extends Controller
      */
     public function download(CourseSchedule $section)
     {
-        // 1. Cargar relaciones necesarias (Sección, Curso, Profesor, Estudiantes activos)
+        // 1. Cargar relaciones necesarias
         $section->load(['module.course', 'teacher', 'enrollments' => function($query) {
             $query->whereNotIn('status', ['Pendiente', 'pendiente'])
                   ->with('student')
-                  ->orderBy('id'); // O ordenar por apellido si es posible en la relación
+                  ->orderBy('id');
         }]);
 
-        // 2. Obtener fechas únicas de asistencia registradas para esta sección
-        // Ordenamos ascendente para que aparezcan cronológicamente en las columnas
+        // 2. Obtener fechas únicas de asistencia
         $dates = Attendance::where('course_schedule_id', $section->id)
             ->select('attendance_date')
             ->distinct()
@@ -32,29 +31,27 @@ class AttendancePdfController extends Controller
             ->pluck('attendance_date')
             ->map(fn($date) => Carbon::parse($date));
 
-        // 3. Obtener todos los registros de asistencia crudos
+        // 3. Obtener registros de asistencia crudos
         $attendanceRecords = Attendance::where('course_schedule_id', $section->id)->get();
 
-        // 4. Estructurar datos para la vista: [fecha_Y-m-d][enrollment_id] = registro
-        // Esto permite un acceso rápido en la vista sin hacer consultas en el loop
+        // 4. Estructurar datos: [fecha_Y-m-d][enrollment_id] = registro
         $attendances = [];
         foreach ($attendanceRecords as $record) {
             $dateStr = Carbon::parse($record->attendance_date)->format('Y-m-d');
             $attendances[$dateStr][$record->enrollment_id] = $record;
         }
 
-        // 5. Generar PDF usando la vista 'reports.attendance-report'
-        $pdf = Pdf::loadView('reports.attendance-report', [
+        // 5. Generar PDF
+        // CORRECCIÓN: Apuntando a la vista en la carpeta livewire/reports
+        $pdf = Pdf::loadView('livewire.reports.attendance-report', [
             'section' => $section,
             'enrollments' => $section->enrollments,
             'dates' => $dates,
             'attendances' => $attendances
         ]);
 
-        // Configuración opcional de papel (horizontal suele ser mejor para asistencia)
         $pdf->setPaper('a4', 'landscape');
 
-        // Retornar el stream para visualización en el navegador/iframe
         return $pdf->stream('Reporte_Asistencia_' . $section->module->name . '.pdf');
     }
 }
