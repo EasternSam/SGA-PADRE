@@ -138,9 +138,6 @@ class Index extends Component
             'date_from.required' => 'La fecha de inicio es requerida.',
             'date_to.after_or_equal' => 'La fecha fin debe ser igual o posterior a la fecha de inicio.',
         ]);
-
-        // La validación de los 62 días se movió dentro de generateAttendanceReport
-        // para ejecutarse DESPUÉS de obtener las fechas de la sección.
     }
 
     // --- LÓGICA OPTIMIZADA (SOLUCIÓN AL CONGELAMIENTO + FILTRO PAGO) ---
@@ -162,16 +159,15 @@ class Index extends Component
         $this->date_to = $schedule->end_date;
         // ------------------------------------------------
 
-        // Validación de Rango (Movida aquí)
+        // Validación de Rango (Movida aquí y aumentada)
         $start = Carbon::parse($this->date_from);
         $end = Carbon::parse($this->date_to);
         $daysDiff = $start->diffInDays($end);
 
-        if ($daysDiff > 62) {
-            // Nota: Si tus secciones duran más de 2 meses, este límite bloqueará el reporte.
-            // Considera aumentar el límite o paginar si es necesario.
+        // Aumentado a 180 días (aprox 6 meses) para permitir semestres completos
+        if ($daysDiff > 180) {
             throw ValidationException::withMessages([
-                'schedule_id' => 'El rango de fechas de la sección es demasiado amplio (' . $daysDiff . ' días). Para evitar problemas de rendimiento en la vista previa, el sistema limita a 60 días.'
+                'schedule_id' => 'El rango de fechas de la sección es demasiado amplio (' . $daysDiff . ' días). El sistema limita a 180 días (aprox. 6 meses) para garantizar el rendimiento.'
             ]);
         }
 
