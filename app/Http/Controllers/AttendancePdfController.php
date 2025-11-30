@@ -33,17 +33,17 @@ class AttendancePdfController extends Controller
         
         // --- LÓGICA DE FECHAS ---
         
-        // A) Obtener días teóricos del horario (Ej: [6] para solo Sábados)
-        $allowedDays = $this->parseCourseDays($section->days);
+        // A) Obtener días teóricos del horario usando la propiedad correcta 'days_of_week'
+        // 'days_of_week' ya debería ser un array o cast de JSON gracias al modelo
+        $allowedDays = $this->normalizeDays($section->days_of_week);
         $scheduleDates = collect();
 
         // Generamos fechas para TODO el periodo
         $period = CarbonPeriod::create($startDate, $endDate);
         
         foreach ($period as $date) {
-            // CAMBIO IMPORTANTE: Eliminamos el "|| empty($allowedDays)".
-            // Ahora, solo agregamos el día si ESTÁ explícitamente en la lista de días permitidos.
-            // Si la configuración de días está vacía, no asumimos nada (solo saldrán las fechas registradas en el paso B).
+            // Si hay días definidos (ej: [1, 3] para Lunes y Miércoles), filtramos.
+            // Carbon dayOfWeekIso: 1 (Lunes) - 7 (Domingo)
             if (!empty($allowedDays) && in_array($date->dayOfWeekIso, $allowedDays)) {
                 $scheduleDates->push($date->copy());
             }
@@ -88,61 +88,24 @@ class AttendancePdfController extends Controller
     }
 
     /**
-     * Convierte la configuración de días a ISO-8601 (1=Lunes ... 7=Domingo).
+     * Normaliza los días a un array de enteros ISO (1=Lunes ... 7=Domingo).
+     * Se adapta a lo que CourseSchedule guarda en 'days_of_week'.
      */
-    private function parseCourseDays($days)
+    private function normalizeDays($days)
     {
         if (empty($days)) return [];
 
-        $list = [];
-
-        // Normalizar entrada
-        if (is_array($days)) {
-            $list = $days;
-        } elseif (is_string($days)) {
+        // Si viene como string JSON, decodificar (aunque el cast del modelo debería hacerlo)
+        if (is_string($days)) {
             $decoded = json_decode($days, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                $list = $decoded;
-            } else {
-                $list = explode(',', $days);
-            }
+            $days = (json_last_error() === JSON_ERROR_NONE) ? $decoded : explode(',', $days);
         }
 
-        $map = [
-            // ISO Standards
-            1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 6 => 6, 7 => 7,
-            
-            // Español (sin tildes para búsqueda fácil)
-            'lunes' => 1, 'martes' => 2, 'miercoles' => 3, 'jueves' => 4, 'viernes' => 5, 'sabado' => 6, 'domingo' => 7,
-            'lu' => 1, 'ma' => 2, 'mi' => 3, 'ju' => 4, 'vi' => 5, 'sa' => 6, 'do' => 7,
-            
-            // English
-            'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6, 'sun' => 7,
-        ];
+        if (!is_array($days)) return [];
 
-        $result = [];
-
-        foreach ($list as $day) {
-            // Limpieza robusta: minúsculas UTF8, quitar acentos básicos y caracteres extraños
-            $clean = mb_strtolower(trim(str_replace(['"', "'", '[', ']', '{', '}'], '', (string)$day)), 'UTF-8');
-            $clean = str_replace(['á', 'é', 'í', 'ó', 'ú'], ['a', 'e', 'i', 'o', 'u'], $clean);
-
-            // 1. Coincidencia Exacta
-            if (isset($map[$clean])) {
-                $result[] = $map[$clean];
-                continue;
-            }
-
-            // 2. Coincidencia Parcial (ej: "Sábados" contiene "sabado" o empieza por "sab")
-            foreach ($map as $key => $val) {
-                // Evitamos coincidir números con strings vacíos
-                if (is_string($key) && (str_contains($clean, $key) || str_starts_with($key, $clean))) {
-                    $result[] = $val;
-                    break;
-                }
-            }
-        }
-
-        return array_unique($result);
+        // Asegurar que sean enteros para comparación estricta con Carbon
+        return array_map(function($day) {
+            return (int) $day;
+        }, $days);
     }
 }
