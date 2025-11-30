@@ -6,24 +6,24 @@
     <title>Reporte de Asistencia</title>
     <style>
         /* --- Configuración General --- */
-        @page { margin: 1cm; }
+        @page { margin: 0.5cm; } /* Margen reducido para ganar espacio horizontal */
         body { 
             font-family: 'Helvetica', 'Arial', sans-serif; 
             font-size: 10px; 
             color: #333; 
-            line-height: 1.3; 
+            line-height: 1.2; 
         }
 
         /* --- Encabezado --- */
         .header {
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             border-bottom: 2px solid #2c3e50;
-            padding-bottom: 10px;
+            padding-bottom: 5px;
         }
         .header-logo {
             float: left;
-            width: 80px;
+            width: 60px;
         }
         .header-logo img {
             max-width: 100%;
@@ -31,24 +31,24 @@
         }
         .header-content {
             float: left;
-            margin-left: 15px;
+            margin-left: 10px;
             padding-top: 5px;
         }
         .institution-name {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
             color: #7f8c8d;
             text-transform: uppercase;
         }
         .report-title {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: bold;
             color: #2c3e50;
             margin: 2px 0;
             text-transform: uppercase;
         }
         .report-subtitle {
-            font-size: 12px;
+            font-size: 10px;
             color: #2c3e50;
         }
 
@@ -62,34 +62,34 @@
         /* --- Tarjetas de Información --- */
         .info-container {
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         .info-table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 10px 0; /* Espacio horizontal entre celdas */
-            margin: 0 -10px; /* Compensar el spacing externo */
+            border-spacing: 5px 0;
+            margin: 0 -5px;
         }
         .info-box {
             background-color: #f8f9fa;
             border: 1px solid #e9ecef;
-            border-radius: 5px;
-            padding: 8px 12px;
-            width: 25%; /* 4 columnas */
+            border-radius: 4px;
+            padding: 5px 8px;
+            width: 25%;
             vertical-align: top;
         }
         .label {
             display: block;
-            font-size: 8px;
+            font-size: 7px;
             text-transform: uppercase;
             color: #95a5a6;
             font-weight: bold;
             letter-spacing: 0.5px;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
         .value {
             display: block;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
             color: #34495e;
             white-space: nowrap;
@@ -104,7 +104,8 @@
         .attendance-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9px;
+            font-size: 8px; /* Fuente pequeña para compactar */
+            table-layout: fixed; /* Ayuda a respetar anchos */
         }
         
         /* Cabeceras */
@@ -114,34 +115,37 @@
             font-weight: normal;
             border: 1px solid #34495e;
             vertical-align: bottom;
-            padding: 4px;
-            height: 90px; /* Altura para la rotación */
-            white-space: nowrap;
+            padding: 1px; /* Padding mínimo */
+            height: 70px;
+            overflow: hidden;
         }
 
-        /* Rotación de Texto */
+        /* Rotación de Texto Compacta */
         .rotate-wrapper {
             position: relative;
-            height: 80px;
-            width: 20px; /* Ancho fijo para columnas de fecha */
+            height: 65px;
+            width: 16px; /* Ancho muy reducido por fecha */
+            margin: 0 auto;
         }
         .rotate {
             transform: rotate(-90deg);
             transform-origin: left bottom;
             white-space: nowrap;
             position: absolute;
-            bottom: 5px;
-            left: 12px;
-            width: 80px; /* Debe coincidir con height de rotate-wrapper aprox */
+            bottom: 2px;
+            left: 10px;
+            width: 65px;
             text-align: left;
+            font-size: 7px;
         }
 
         /* Filas y Celdas */
         .attendance-table td {
             border: 1px solid #bdc3c7;
-            padding: 4px;
+            padding: 1px; /* Padding mínimo */
             text-align: center;
             vertical-align: middle;
+            height: 14px;
         }
         
         .attendance-table tr:nth-child(even) {
@@ -149,55 +153,47 @@
         }
 
         /* Columnas Específicas */
-        .col-index { width: 20px; color: #7f8c8d; }
+        .col-index { width: 15px; color: #7f8c8d; font-size: 7px; }
+        
         .col-student { 
             text-align: left !important; 
-            padding-left: 8px !important; 
+            padding-left: 4px !important; 
             font-weight: 600; 
             color: #2c3e50; 
-            width: 180px;
+            width: 130px; /* Reducido para dar espacio a fechas */
+            white-space: normal; /* Permitir salto de línea en nombres largos */
+            line-height: 1;
+            overflow: hidden;
         }
+
         .col-summary {
             background-color: #ecf0f1 !important;
             color: #2c3e50 !important;
             font-weight: bold;
-            width: 25px;
+            width: 20px;
             border-color: #bdc3c7 !important;
+            font-size: 8px;
         }
         .th-summary {
             background-color: #95a5a6 !important;
             color: white !important;
             border-color: #7f8c8d !important;
-            height: auto !important; /* No rotar estos */
+            height: auto !important;
             text-align: center !important;
             vertical-align: middle !important;
+            padding: 2px !important;
         }
 
-        /* --- ESTADOS (La parte clave) --- */
+        /* --- ESTADOS --- */
         .status-cell {
             font-weight: bold;
-            font-size: 10px;
+            font-size: 8px;
         }
         
-        /* Presente: Verde */
-        .st-P {
-            background-color: #d5f5e3; /* Fondo verde muy claro */
-            color: #196f3d; /* Texto verde oscuro */
-        }
-        /* Ausente: Rojo */
-        .st-A {
-            background-color: #fadbd8; /* Fondo rojo muy claro */
-            color: #c0392b; /* Texto rojo oscuro */
-        }
-        /* Tardanza: Naranja */
-        .st-T {
-            background-color: #fdebd0; /* Fondo naranja claro */
-            color: #d35400; /* Texto naranja */
-        }
-        /* Vacío/Sin registro */
-        .st-none {
-            color: #ecf0f1;
-        }
+        .st-P { background-color: #d5f5e3; color: #196f3d; }
+        .st-A { background-color: #fadbd8; color: #c0392b; }
+        .st-T { background-color: #fdebd0; color: #d35400; }
+        .st-none { color: #ecf0f1; }
 
         /* --- Footer --- */
         .footer {
@@ -206,21 +202,21 @@
             left: 0;
             right: 0;
             border-top: 1px solid #e5e5e5;
-            padding-top: 8px;
-            font-size: 8px;
+            padding-top: 4px;
+            font-size: 7px;
             color: #999;
             text-align: center;
         }
         .legend {
-            margin-top: 10px;
-            font-size: 9px;
+            margin-top: 5px;
+            font-size: 8px;
             text-align: left;
         }
         .legend span {
             display: inline-block;
-            margin-right: 15px;
-            padding: 2px 6px;
-            border-radius: 3px;
+            margin-right: 10px;
+            padding: 1px 4px;
+            border-radius: 2px;
             border: 1px solid #ccc;
         }
     </style>
@@ -239,7 +235,7 @@
         </div>
     </div>
 
-    <!-- Información en Cuadrícula -->
+    <!-- Información -->
     <div class="info-container">
         <table class="info-table">
             <tr>
@@ -258,8 +254,8 @@
                 <td class="info-box">
                     <span class="label">Periodo</span>
                     <span class="value">
-                        {{ \Carbon\Carbon::parse($section->start_date)->format('d/m/Y') }} - 
-                        {{ \Carbon\Carbon::parse($section->end_date)->format('d/m/Y') }}
+                        {{ \Carbon\Carbon::parse($section->start_date)->format('d/m/y') }} - 
+                        {{ \Carbon\Carbon::parse($section->end_date)->format('d/m/y') }}
                     </span>
                 </td>
             </tr>
@@ -271,11 +267,11 @@
         <table class="attendance-table">
             <thead>
                 <tr>
-                    <th style="width: 20px; height: auto; text-align: center;">#</th>
-                    <th style="width: 180px; height: auto; text-align: left; padding-left: 8px;">Estudiante</th>
+                    <th style="width: 15px; height: auto; text-align: center;">#</th>
+                    <th style="width: 130px; height: auto; text-align: left; padding-left: 4px;">Estudiante</th>
                     
                     @foreach($dates as $date)
-                        <th>
+                        <th style="width: 16px;">
                             <div class="rotate-wrapper">
                                 <div class="rotate">
                                     {{ $date->format('d') }}-{{ substr($date->translatedFormat('F'), 0, 3) }}
@@ -322,7 +318,7 @@
                                         $char = 'A'; 
                                         $class = 'st-A';
                                     } elseif ($record->status == 'Tardanza') { 
-                                        $tardy++; $totalRecorded++; // Tardanza cuenta como asistencia generalmente
+                                        $tardy++; $totalRecorded++; 
                                         $char = 'T'; 
                                         $class = 'st-T';
                                     }
@@ -331,13 +327,10 @@
                             <td class="status-cell {{ $class }}">{{ $char }}</td>
                         @endforeach
 
-                        {{-- Cálculos finales --}}
                         @php
-                            // Total asistencias (Presente + Tardanza)
                             $totalPresent = $present + $tardy;
                             $percentage = $totalRecorded > 0 ? round(($totalPresent / $totalRecorded) * 100) : 0;
                             
-                            // Color del porcentaje
                             $percentColor = 'black';
                             if($percentage < 70) $percentColor = '#c0392b';
                             elseif($percentage < 85) $percentColor = '#d35400';
@@ -353,7 +346,6 @@
         </table>
     </div>
     
-    <!-- Leyenda -->
     <div class="legend">
         <strong>Leyenda:</strong> 
         <span class="st-P">P = Presente</span>
@@ -361,7 +353,6 @@
         <span class="st-T">T = Tardanza</span>
     </div>
 
-    <!-- Footer -->
     <div class="footer">
         Generado el: {{ now()->format('d/m/Y h:i A') }} &bull; Documento interno de control de asistencia
     </div>
