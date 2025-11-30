@@ -7,8 +7,8 @@
     <style>
         /* --- Configuración de Página: Carta Horizontal --- */
         @page { 
-            margin: 0.5in; /* Margen estándar de 1.27cm */
-            size: letter landscape; /* Formato Carta Horizontal */
+            margin: 0.5in; /* 1.27cm */
+            size: letter landscape;
         }
         body { 
             font-family: 'Helvetica', 'Arial', sans-serif; 
@@ -20,9 +20,9 @@
         /* --- Encabezado --- */
         .header-container {
             width: 100%;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             border-bottom: 2px solid #2c3e50;
-            padding-bottom: 8px;
+            padding-bottom: 5px;
         }
         
         .header-layout {
@@ -38,7 +38,7 @@
         
         .logo-cell img {
             max-width: 120px;
-            max-height: 60px;
+            max-height: 50px;
             height: auto;
         }
         
@@ -56,33 +56,33 @@
             letter-spacing: 1px;
         }
         .report-title {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
             color: #2c3e50;
-            margin: 4px 0;
+            margin: 2px 0;
             text-transform: uppercase;
         }
         .report-subtitle {
-            font-size: 12px;
+            font-size: 11px;
             color: #2c3e50;
         }
 
         /* --- Información del Curso --- */
         .info-container {
             width: 100%;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
         .info-table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 10px 0;
-            margin: 0 -10px;
+            border-spacing: 5px 0;
+            margin: 0 -5px;
         }
         .info-box {
             background-color: #f8f9fa;
             border: 1px solid #e9ecef;
             border-radius: 4px;
-            padding: 8px 12px;
+            padding: 6px 8px;
             width: 25%;
             vertical-align: top;
         }
@@ -97,7 +97,7 @@
         }
         .value {
             display: block;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
             color: #34495e;
             white-space: nowrap;
@@ -113,10 +113,10 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 9px;
-            table-layout: fixed; /* Mantiene las columnas firmes */
+            table-layout: fixed; /* OBLIGATORIO para respetar anchos */
         }
         
-        /* Cabeceras */
+        /* Cabeceras Generales */
         .attendance-table th {
             background-color: #2c3e50;
             color: #ecf0f1;
@@ -124,25 +124,27 @@
             border: 1px solid #34495e;
             vertical-align: bottom;
             padding: 0;
-            height: 80px;
+            height: 70px;
             overflow: hidden;
         }
 
-        /* Rotación de Texto */
+        /* Rotación de Texto (Fechas) */
         .rotate-wrapper {
             position: relative;
-            height: 75px;
-            width: 18px; /* Ancho ajustado para Letter */
+            height: 65px;
+            width: 100%; 
             margin: 0 auto;
+            overflow: hidden;
         }
         .rotate {
             transform: rotate(-90deg);
             transform-origin: left bottom;
             white-space: nowrap;
             position: absolute;
-            bottom: 4px;
-            left: 10px; 
-            width: 75px;
+            bottom: 3px;
+            left: 50%; /* Centrar origen */
+            margin-left: -2px; /* Ajuste fino */
+            width: 65px;
             text-align: left;
             font-size: 8px;
         }
@@ -150,7 +152,7 @@
         /* Filas y Celdas */
         .attendance-table td {
             border: 1px solid #bdc3c7;
-            padding: 4px 2px;
+            padding: 3px 2px;
             text-align: center;
             vertical-align: middle;
         }
@@ -159,50 +161,50 @@
             background-color: #fbfcfc;
         }
 
-        /* --- Columnas (Ajustadas para ~950px útiles de Letter Landscape) --- */
-        .col-index { 
-            width: 25px; 
-            color: #7f8c8d; 
-            font-size: 8px;
-        }
+        /* === ANCHOS DE COLUMNA ESTRICTOS === 
+           Total aproximado: 100% de la tabla
+        */
         
+        .th-index { width: 3%; }
+        .col-index { color: #7f8c8d; font-size: 8px; }
+
+        .th-student { width: 22%; }
         .col-student { 
             text-align: left !important; 
-            padding: 4px 6px !important;
+            padding: 2px 5px !important;
             font-weight: 600; 
             color: #2c3e50; 
-            width: 240px; /* Suficiente para nombres largos */
             font-size: 9px;
             white-space: normal;
-            word-wrap: normal; /* No partir palabras si es posible */
+            word-wrap: break-word; /* Romper palabras largas si es necesario */
             line-height: 1.1;
             text-transform: uppercase;
         }
 
-        /* 31 días * 18px = 558px */
-        .col-date {
-            width: 18px; 
-        }
+        .th-date { width: 1.9%; } /* ~2% x 31 dias = 62% */
+        .col-date { }
 
-        /* 4 columnas * 25px = 100px */
-        .col-summary {
-            background-color: #ecf0f1 !important;
-            color: #2c3e50 !important;
-            font-weight: bold;
-            width: 25px;
-            border-color: #bdc3c7 !important;
-            font-size: 9px;
-        }
+        .th-summary { width: 3.25%; } /* ~3.25% x 4 cols = 13% */
         
-        .th-summary {
+        /* Estilos específicos de cabecera de resumen */
+        .header-summary {
             background-color: #95a5a6 !important;
             color: white !important;
             border-color: #7f8c8d !important;
-            height: auto !important;
+            height: auto !important; /* Altura normal, sin rotación */
             text-align: center !important;
             vertical-align: middle !important;
             padding: 4px !important;
             font-size: 8px;
+        }
+
+        /* Celdas de resumen */
+        .col-summary {
+            background-color: #ecf0f1 !important;
+            color: #2c3e50 !important;
+            font-weight: bold;
+            border-color: #bdc3c7 !important;
+            font-size: 9px;
         }
 
         /* --- ESTADOS --- */
@@ -298,11 +300,11 @@
         <table class="attendance-table">
             <thead>
                 <tr>
-                    <th style="width: 25px; height: auto; text-align: center;">No.</th>
-                    <th style="width: 240px; height: auto; text-align: left; padding-left: 8px;">ESTUDIANTE</th>
+                    <th class="th-index" style="text-align: center;">No.</th>
+                    <th class="th-student" style="text-align: left; padding-left: 5px;">ESTUDIANTE</th>
                     
                     @foreach($dates as $date)
-                        <th class="col-date">
+                        <th class="th-date">
                             <div class="rotate-wrapper">
                                 <div class="rotate">
                                     {{ $date->format('d') }}-{{ substr($date->translatedFormat('M'), 0, 3) }}
@@ -311,10 +313,11 @@
                         </th>
                     @endforeach
                     
-                    <th class="th-summary">P</th>
-                    <th class="th-summary">A</th>
-                    <th class="th-summary">T</th>
-                    <th class="th-summary">%</th>
+                    <!-- Definimos el ancho explícito en la clase header-summary -->
+                    <th class="th-summary header-summary">P</th>
+                    <th class="th-summary header-summary">A</th>
+                    <th class="th-summary header-summary">T</th>
+                    <th class="th-summary header-summary">%</th>
                 </tr>
             </thead>
             <tbody>
@@ -355,7 +358,7 @@
                                     }
                                 }
                             @endphp
-                            <td class="{{ $class }}">{{ $char }}</td>
+                            <td class="col-date {{ $class }}">{{ $char }}</td>
                         @endforeach
 
                         @php
