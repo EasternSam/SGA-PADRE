@@ -100,7 +100,7 @@
         
         /* Colores Estado Pago */
         .payment-pending { color: #991b1b; font-weight: bold; font-size: 8pt; }
-        .payment-paid { color: #166534; font-weight: bold; font-size: 9pt; } /* Agregué font-weight bold */
+        .payment-paid { color: #166534; font-weight: bold; font-size: 9pt; }
 
         .footer { margin-top: 50px; width: 100%; }
         .signature-box { float: right; width: 250px; text-align: center; }
@@ -154,7 +154,7 @@
                 <th class="text-left">Nombre del Estudiante</th>
                 <th style="width: 90px;">Teléfono</th>
                 <th style="width: 80px;">Inscripción</th>
-                <th style="width: 80px;">Estado Pago</th> {{-- Cambié el título de la columna --}}
+                <th style="width: 80px;">Estado Pago</th>
             </tr>
         </thead>
         <tbody>
@@ -174,8 +174,21 @@
                         {{ \Carbon\Carbon::parse($enrollment->created_at)->format('d/m/Y') }}
                     </td>
                     <td class="text-center">
-                        {{-- Lógica SIMPLIFICADA para Estado de Pago --}}
-                        @if($enrollment->payment && ($enrollment->payment->status == 'Paid' || $enrollment->payment->status == 'Pagado' || $enrollment->payment->status == 'paid'))
+                        @php
+                            $isPaid = false;
+                            if ($enrollment->payment) {
+                                // Lista extendida de estados que se consideran pagados (case-insensitive)
+                                $paidStatuses = ['paid', 'pagado', 'completado', 'aprobado', 'succeeded', 'active', 'activo'];
+                                $paymentStatus = strtolower($enrollment->payment->status ?? '');
+                                
+                                // Se considera pagado si el estado coincide O si tiene fecha de pago registrada
+                                if (in_array($paymentStatus, $paidStatuses) || !empty($enrollment->payment->payment_date)) {
+                                    $isPaid = true;
+                                }
+                            }
+                        @endphp
+
+                        @if($isPaid)
                             <span class="payment-paid">PAGADO</span>
                         @else
                             <span class="payment-pending">PENDIENTE</span>
