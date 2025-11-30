@@ -3,7 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\AttendancePdfController; // <--- IMPORTANTE: Importar el controlador
+use App\Http\Controllers\AttendancePdfController; // <--- Controlador Asistencia
+use App\Http\Controllers\GradesPdfController;     // <--- IMPORTANTE: Nuevo Controlador Notas
 use Illuminate\Support\Facades\Auth;
 use App\Livewire\Admin\DatabaseImport; 
 use Illuminate\Support\Facades\Http;
@@ -13,11 +14,6 @@ use Illuminate\Support\Str;
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
 */
 
 Route::get('/', function () {
@@ -152,9 +148,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/reports/student-report/{student}', [ReportController::class, 'generateStudentReport'])->name('reports.student-report');
     Route::get('/reports/attendance-report/{section}', [ReportController::class, 'generateAttendanceReport'])->name('reports.attendance-report');
     
-    // --- RUTA PDF DE ASISTENCIA ---
-    // Esta ruta usa el controlador dedicado AttendancePdfController
+    // --- RUTAS PDF ---
+    // PDF Asistencia
     Route::get('/reports/attendance/{section}/pdf', [AttendancePdfController::class, 'download'])->name('reports.attendance.pdf');
+    // PDF Calificaciones
+    Route::get('/reports/grades/{section}/pdf', [GradesPdfController::class, 'download'])->name('reports.grades.pdf');
 });
 
 // --- RUTAS PARA CAMBIO DE CONTRASEÑA OBLIGATORIO ---
