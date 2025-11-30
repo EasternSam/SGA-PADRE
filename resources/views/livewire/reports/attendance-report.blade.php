@@ -15,6 +15,8 @@
             font-size: 10px; 
             color: #333; 
             line-height: 1.2; 
+            margin: 0;
+            padding: 0;
         }
 
         /* --- Encabezado --- */
@@ -138,15 +140,16 @@
         }
         .rotate {
             transform: rotate(-90deg);
-            transform-origin: left bottom;
+            transform-origin: left bottom; /* Ajuste crítico para PDF */
             white-space: nowrap;
             position: absolute;
-            bottom: 3px;
+            bottom: 5px;
             left: 50%; /* Centrar origen */
-            margin-left: -2px; /* Ajuste fino */
+            margin-left: 2px;
             width: 65px;
             text-align: left;
             font-size: 8px;
+            line-height: 1;
         }
 
         /* Filas y Celdas */
@@ -157,6 +160,10 @@
             vertical-align: middle;
         }
         
+        .attendance-table tr {
+            page-break-inside: avoid; /* Evitar partir filas por la mitad */
+        }
+
         .attendance-table tr:nth-child(even) {
             background-color: #fbfcfc;
         }
@@ -181,7 +188,10 @@
             text-transform: uppercase;
         }
 
-        .th-date { width: 1.9%; } /* ~2% x 31 dias = 62% */
+        /* Ajuste dinámico de columnas de fecha */
+        /* Si tienes exactamente 31 días, 1.9% está bien. Si son menos, la tabla puede encogerse. 
+           Considera dejar esto en auto si varía mucho, o calcularlo en backend. */
+        .th-date { width: 1.9%; } 
         .col-date { }
 
         .th-summary { width: 3.25%; } /* ~3.25% x 4 cols = 13% */
@@ -221,6 +231,7 @@
             right: 0;
             padding-top: 5px;
             border-top: 1px solid #e5e5e5;
+            background-color: white;
         }
         
         .legend {
@@ -257,12 +268,15 @@
         <table class="header-layout">
             <tr>
                 <td class="logo-cell">
+                    <!-- Usamos public_path para PDFs, asegurate de que el archivo exista -->
                     <img src="{{ public_path('centuu.png') }}" onerror="this.style.display='none'" alt="Logo">
                 </td>
                 <td class="title-cell">
                     <div class="institution-name">{{ config('app.name', 'Sistema Académico') }}</div>
                     <div class="report-title">Reporte de Asistencia</div>
-                    <div class="report-subtitle">{{ $section->module->course->name }} &bull; {{ $section->module->name }}</div>
+                    <div class="report-subtitle">
+                        {{ $section->module->course->name ?? 'Curso' }} &bull; {{ $section->module->name ?? 'Módulo' }}
+                    </div>
                 </td>
             </tr>
         </table>
@@ -287,8 +301,12 @@
                 <td class="info-box">
                     <span class="label">Periodo</span>
                     <span class="value">
-                        {{ \Carbon\Carbon::parse($section->start_date)->format('d/m/Y') }} - 
-                        {{ \Carbon\Carbon::parse($section->end_date)->format('d/m/Y') }}
+                        @if(isset($section->start_date) && isset($section->end_date))
+                            {{ \Carbon\Carbon::parse($section->start_date)->format('d/m/Y') }} - 
+                            {{ \Carbon\Carbon::parse($section->end_date)->format('d/m/Y') }}
+                        @else
+                            N/A
+                        @endif
                     </span>
                 </td>
             </tr>
@@ -331,27 +349,33 @@
                     <tr>
                         <td class="col-index">{{ $index + 1 }}</td>
                         <td class="col-student">
-                            {{ $enrollment->student->last_name }}, {{ $enrollment->student->first_name }}
+                            {{ $enrollment->student->last_name ?? '' }}, {{ $enrollment->student->first_name ?? 'Estudiante' }}
                         </td>
                         
                         @foreach($dates as $date)
                             @php
                                 $dateStr = $date->format('Y-m-d');
-                                $record = $attendances[$dateStr][$enrollment->id] ?? null;
+                                // CORRECCIÓN CRÍTICA: Acceso seguro a arrays anidados
+                                // Verifica primero si existe el día, luego si existe el estudiante en ese día
+                                $dayRecords = $attendances[$dateStr] ?? [];
+                                $record = $dayRecords[$enrollment->id] ?? null;
                                 
                                 $char = '';
                                 $class = 'st-none';
 
                                 if ($record) {
-                                    if ($record->status == 'Presente') { 
+                                    // Aseguramos que status exista en el objeto record
+                                    $status = $record->status ?? '';
+                                    
+                                    if ($status == 'Presente') { 
                                         $present++; $totalRecorded++; 
                                         $char = 'P'; 
                                         $class = 'st-P';
-                                    } elseif ($record->status == 'Ausente') { 
+                                    } elseif ($status == 'Ausente') { 
                                         $absent++; $totalRecorded++; 
                                         $char = 'A'; 
                                         $class = 'st-A';
-                                    } elseif ($record->status == 'Tardanza') { 
+                                    } elseif ($status == 'Tardanza') { 
                                         $tardy++; $totalRecorded++; 
                                         $char = 'T'; 
                                         $class = 'st-T';
