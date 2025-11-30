@@ -31,26 +31,26 @@ class AttendancePdfController extends Controller
         $startDate = Carbon::parse($section->start_date);
         $endDate = Carbon::parse($section->end_date);
         
-        // --- LÓGICA DE FECHAS ---
+        // --- LÓGICA DE FECHAS (Ajustada a requerimientos) ---
         
-        // A) Obtener días teóricos del horario usando la propiedad correcta 'days_of_week'
-        // 'days_of_week' ya debería ser un array o cast de JSON gracias al modelo
+        // A) Obtener días teóricos del horario (días de la sección)
+        // Normalizamos el array de días guardado en BD
         $allowedDays = $this->normalizeDays($section->days_of_week);
         $scheduleDates = collect();
 
-        // Generamos fechas para TODO el periodo
+        // Generamos fechas para TODO el periodo (incluyendo fechas futuras/próximas)
         $period = CarbonPeriod::create($startDate, $endDate);
         
         foreach ($period as $date) {
-            // Si hay días definidos (ej: [1, 3] para Lunes y Miércoles), filtramos.
-            // Carbon dayOfWeekIso: 1 (Lunes) - 7 (Domingo)
+            // "haz que aparezcan los días de la seccion proximos, aunque estén en N/A"
+            // Solo agregamos si el día coincide con la configuración de la sección (ej. Sábados)
             if (!empty($allowedDays) && in_array($date->dayOfWeekIso, $allowedDays)) {
                 $scheduleDates->push($date->copy());
             }
         }
 
         // B) Obtener fechas reales donde YA se registró asistencia
-        // Esto asegura que si diste una clase extra un día fuera de horario, aparezca en el reporte.
+        // "en caso de que se haya pasado lista un dia que no está programado... solo agrega ese día"
         $recordedDates = Attendance::where('course_schedule_id', $section->id)
             ->select('attendance_date')
             ->distinct()
@@ -58,11 +58,14 @@ class AttendancePdfController extends Controller
             ->pluck('attendance_date')
             ->map(fn($date) => Carbon::parse($date));
 
-        // C) Fusión: Unimos horario teórico + registros reales y ordenamos
+        // C) Fusión: Días Programados + Días Extras con asistencia
+        // El merge asegura que aparezcan:
+        // 1. Todos los días oficiales del curso (pasados y futuros).
+        // 2. Cualquier día extra (recuperación, cambio de día) que tenga asistencia registrada.
         $finalDates = $scheduleDates->merge($recordedDates)
             ->unique(fn($d) => $d->format('Y-m-d'))
             ->sortBy(fn($d) => $d->timestamp)
-            ->values(); // Reindexar
+            ->values(); 
 
         // 3. Obtener registros de asistencia
         $attendanceRecords = Attendance::where('course_schedule_id', $section->id)->get();
@@ -89,13 +92,11 @@ class AttendancePdfController extends Controller
 
     /**
      * Normaliza los días a un array de enteros ISO (1=Lunes ... 7=Domingo).
-     * Se adapta a lo que CourseSchedule guarda en 'days_of_week'.
      */
     private function normalizeDays($days)
     {
         if (empty($days)) return [];
 
-        // Si viene como string JSON, decodificar (aunque el cast del modelo debería hacerlo)
         if (is_string($days)) {
             $decoded = json_decode($days, true);
             $days = (json_last_error() === JSON_ERROR_NONE) ? $decoded : explode(',', $days);
@@ -103,7 +104,6 @@ class AttendancePdfController extends Controller
 
         if (!is_array($days)) return [];
 
-        // Asegurar que sean enteros para comparación estricta con Carbon
         return array_map(function($day) {
             return (int) $day;
         }, $days);
