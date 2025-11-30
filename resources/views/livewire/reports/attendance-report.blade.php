@@ -14,104 +14,94 @@
             line-height: 1.2; 
         }
 
-        /* --- Encabezado Moderno --- */
-        .header-wrapper {
+        /* --- Encabezado con Tabla para centrado perfecto --- */
+        .header-container {
             width: 100%;
-            border-bottom: 2px solid #2c3e50; /* Línea separadora gruesa */
-            padding-bottom: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 5px;
         }
         
-        .header-table {
+        .header-layout {
             width: 100%;
             border-collapse: collapse;
         }
         
         .logo-cell {
-            width: 20%;
-            vertical-align: middle;
+            width: 15%; /* Espacio para el logo a la izquierda */
+            vertical-align: middle; /* Centrado vertical */
+            text-align: left;
+        }
+        
+        .logo-cell img {
+            max-width: 100px;
+            max-height: 60px;
+            height: auto;
         }
         
         .title-cell {
-            width: 60%;
-            text-align: center;
+            width: 85%;
             vertical-align: middle;
-        }
-        
-        .meta-cell {
-            width: 20%;
-            text-align: right;
-            vertical-align: bottom;
-            font-size: 8px;
-            color: #7f8c8d;
+            text-align: right; /* Títulos alineados a la derecha (o center si prefieres) */
         }
 
+        .institution-name {
+            font-size: 12px;
+            font-weight: bold;
+            color: #7f8c8d;
+            text-transform: uppercase;
+        }
         .report-title {
             font-size: 18px;
             font-weight: bold;
             color: #2c3e50;
+            margin: 2px 0;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin: 0;
         }
-        
-        .institution-name {
-            font-size: 10px;
-            color: #7f8c8d;
-            font-weight: bold;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-bottom: 5px;
+        .report-subtitle {
+            font-size: 11px;
+            color: #2c3e50;
         }
 
-        /* --- Bloque de Información del Curso (Estilo Tarjeta) --- */
-        .course-info-panel {
-            background-color: #f4f6f7;
-            border: 1px solid #e5e7e9;
-            border-radius: 4px;
-            padding: 10px;
-            margin-bottom: 15px;
-        }
-
-        .info-grid {
+        /* --- Tarjetas de Información (Diseño Anterior) --- */
+        .info-container {
             width: 100%;
-            border-collapse: collapse;
+            margin-bottom: 10px;
         }
-        
-        .info-grid td {
+        .info-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 5px 0;
+            margin: 0 -5px;
+        }
+        .info-box {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 5px 8px;
+            width: 25%;
             vertical-align: top;
-            padding: 0 10px;
-            border-right: 1px solid #d0d3d4; /* Separador vertical */
         }
-        
-        .info-grid td:last-child {
-            border-right: none;
-        }
-
         .label {
             display: block;
             font-size: 7px;
             text-transform: uppercase;
-            color: #7f8c8d;
+            color: #95a5a6;
             font-weight: bold;
-            margin-bottom: 2px;
+            letter-spacing: 0.5px;
+            margin-bottom: 1px;
         }
-        
         .value {
             display: block;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
-            color: #2c3e50;
-        }
-        
-        .sub-value {
-            display: block;
-            font-size: 9px;
-            color: #555;
-            margin-top: 1px;
+            color: #34495e;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        /* --- Tabla de Asistencia --- */
+        /* --- Tabla de Asistencia Compacta --- */
         .table-container {
             width: 100%;
         }
@@ -122,6 +112,7 @@
             table-layout: fixed;
         }
         
+        /* Cabeceras */
         .attendance-table th {
             background-color: #2c3e50;
             color: #ecf0f1;
@@ -129,17 +120,17 @@
             border: 1px solid #34495e;
             vertical-align: bottom;
             padding: 1px;
-            height: 70px; /* Altura para rotación */
+            height: 70px;
             overflow: hidden;
         }
 
+        /* Rotación de Texto */
         .rotate-wrapper {
             position: relative;
             height: 65px;
             width: 16px;
             margin: 0 auto;
         }
-        
         .rotate {
             transform: rotate(-90deg);
             transform-origin: left bottom;
@@ -152,6 +143,7 @@
             font-size: 7px;
         }
 
+        /* Filas y Celdas */
         .attendance-table td {
             border: 1px solid #bdc3c7;
             padding: 1px;
@@ -160,10 +152,13 @@
             height: 14px;
         }
         
-        .attendance-table tr:nth-child(even) { background-color: #fbfcfc; }
+        .attendance-table tr:nth-child(even) {
+            background-color: #fbfcfc;
+        }
 
-        /* Columnas */
+        /* Columnas Específicas */
         .col-index { width: 15px; color: #7f8c8d; font-size: 7px; }
+        
         .col-student { 
             text-align: left !important; 
             padding-left: 4px !important; 
@@ -172,10 +167,10 @@
             width: 130px;
             white-space: normal;
             line-height: 1;
-            overflow: hidden; 
+            overflow: hidden;
             text-transform: uppercase;
         }
-        
+
         .col-summary {
             background-color: #ecf0f1 !important;
             color: #2c3e50 !important;
@@ -195,94 +190,77 @@
             padding: 2px !important;
         }
 
-        /* --- Estados --- */
-        .st-P { background-color: #d5f5e3; color: #196f3d; font-weight: bold; }
-        .st-A { background-color: #fadbd8; color: #c0392b; font-weight: bold; }
-        .st-T { background-color: #fdebd0; color: #d35400; font-weight: bold; }
+        /* --- ESTADOS --- */
+        .st-P { background-color: #d5f5e3; color: #196f3d; }
+        .st-A { background-color: #fadbd8; color: #c0392b; }
+        .st-T { background-color: #fdebd0; color: #d35400; }
         .st-none { color: #ecf0f1; }
 
         /* --- Footer --- */
-        .footer-wrapper {
+        .footer {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            padding-top: 5px;
             border-top: 1px solid #e5e5e5;
+            padding-top: 4px;
+            font-size: 7px;
+            color: #999;
+            text-align: center;
         }
-        
+        .legend {
+            margin-top: 5px;
+            font-size: 8px;
+            text-align: left;
+        }
         .legend span {
             display: inline-block;
             margin-right: 10px;
-            font-size: 8px;
-            color: #555;
-        }
-        
-        .legend-box {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            margin-right: 3px;
+            padding: 1px 4px;
+            border-radius: 2px;
             border: 1px solid #ccc;
-            vertical-align: middle;
-        }
-        
-        .page-info {
-            float: right;
-            font-size: 7px;
-            color: #999;
         }
     </style>
 </head>
 <body>
 
-    <!-- Encabezado Estilizado -->
-    <div class="header-wrapper">
-        <table class="header-table">
+    <!-- Encabezado Restaurado (Con Logo a la izquierda y centrado) -->
+    <div class="header-container">
+        <table class="header-layout">
             <tr>
-                <!-- Columna Logo -->
                 <td class="logo-cell">
-                    <img src="{{ public_path('centuu.png') }}" onerror="this.style.display='none'" style="max-height: 50px; width: auto;">
+                    <img src="{{ public_path('centuu.png') }}" onerror="this.style.display='none'" alt="Logo">
                 </td>
-                
-                <!-- Columna Títulos -->
                 <td class="title-cell">
                     <div class="institution-name">{{ config('app.name', 'Sistema Académico') }}</div>
-                    <div class="report-title">Control de Asistencia</div>
-                </td>
-                
-                <!-- Columna Meta Info (Fecha impresión) -->
-                <td class="meta-cell">
-                    <div>Generado el:</div>
-                    <div>{{ now()->format('d/m/Y H:i') }}</div>
+                    <div class="report-title">Reporte de Asistencia</div>
+                    <div class="report-subtitle">{{ $section->module->course->name }} &bull; {{ $section->module->name }}</div>
                 </td>
             </tr>
         </table>
     </div>
 
-    <!-- Bloque de Información del Curso (Estilo Tarjeta con separadores) -->
-    <div class="course-info-panel">
-        <table class="info-grid">
+    <!-- Información (Estilo Anterior: Cajas separadas) -->
+    <div class="info-container">
+        <table class="info-table">
             <tr>
-                <td style="width: 35%;">
-                    <span class="label">Curso / Módulo</span>
-                    <span class="value">{{ $section->module->course->name }}</span>
-                    <span class="sub-value">{{ $section->module->name }}</span>
-                </td>
-                <td style="width: 25%;">
+                <td class="info-box">
                     <span class="label">Profesor</span>
                     <span class="value">{{ $section->teacher->name ?? 'Sin Asignar' }}</span>
                 </td>
-                <td style="width: 15%;">
+                <td class="info-box">
                     <span class="label">Sección</span>
                     <span class="value">{{ $section->section_name }}</span>
-                    <span class="sub-value">{{ $enrollments->count() }} Estudiantes</span>
                 </td>
-                <td style="width: 25%;">
-                    <span class="label">Duración</span>
+                <td class="info-box">
+                    <span class="label">Estudiantes</span>
+                    <span class="value">{{ $enrollments->count() }} Inscritos</span>
+                </td>
+                <td class="info-box">
+                    <span class="label">Periodo</span>
                     <span class="value">
-                        {{ \Carbon\Carbon::parse($section->start_date)->format('d M') }} - 
-                        {{ \Carbon\Carbon::parse($section->end_date)->format('d M, Y') }}
+                        {{ \Carbon\Carbon::parse($section->start_date)->format('d/m/y') }} - 
+                        {{ \Carbon\Carbon::parse($section->end_date)->format('d/m/y') }}
                     </span>
                 </td>
             </tr>
@@ -359,7 +337,8 @@
                             $percentage = $totalRecorded > 0 ? round(($totalPresent / $totalRecorded) * 100) : 0;
                             
                             $percentColor = 'black';
-                            if($percentage < 70) $percentColor = '#c0392b'; // Rojo si es bajo
+                            if($percentage < 70) $percentColor = '#c0392b';
+                            elseif($percentage < 85) $percentColor = '#d35400';
                         @endphp
 
                         <td class="col-summary">{{ $totalPresent }}</td>
@@ -372,17 +351,15 @@
         </table>
     </div>
     
-    <!-- Footer y Leyenda -->
-    <div class="footer-wrapper">
-        <div style="float: left;" class="legend">
-            <strong>Leyenda:</strong>
-            <span><div class="legend-box" style="background-color: #d5f5e3;"></div> Presente</span>
-            <span><div class="legend-box" style="background-color: #fadbd8;"></div> Ausente</span>
-            <span><div class="legend-box" style="background-color: #fdebd0;"></div> Tardanza</span>
-        </div>
-        <div class="page-info">
-            Documento Oficial
-        </div>
+    <div class="legend">
+        <strong>Leyenda:</strong> 
+        <span class="st-P">P = Presente</span>
+        <span class="st-A">A = Ausente</span>
+        <span class="st-T">T = Tardanza</span>
+    </div>
+
+    <div class="footer">
+        Generado el: {{ now()->format('d/m/Y h:i A') }} &bull; Documento interno de control de asistencia
     </div>
 
 </body>
