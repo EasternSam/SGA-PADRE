@@ -76,7 +76,6 @@ class Attendance extends Component
      */
     public function saveAttendance()
     {
-        // Si por alguna razón trata de guardar en un día bloqueado, lo evitamos.
         if ($this->isLocked) {
              session()->flash('error', 'La asistencia para este día ya está guardada y bloqueada.');
              return;
@@ -85,7 +84,6 @@ class Attendance extends Component
         $date = Carbon::parse($this->attendanceDate);
 
         foreach ($this->attendanceData as $enrollmentId => $status) {
-            
             AttendanceModel::updateOrCreate(
                 [
                     'enrollment_id' => $enrollmentId,
@@ -99,11 +97,7 @@ class Attendance extends Component
         }
 
         session()->flash('message', 'Asistencia guardada para el ' . $date->format('d/m/Y'));
-        
-        // Recargamos la asistencia, lo que ahora también la bloqueará
         $this->loadAttendance();
-        
-        // Limpiamos la caché de la lista de fechas completadas
         unset($this->completedDates);
     }
 
@@ -126,11 +120,13 @@ class Attendance extends Component
      */
     public function generateReport()
     {
-        // CORRECCIÓN: Ahora apuntamos a una ruta específica que genera el PDF
-        // en lugar de ir al índice de reportes.
+        // CORRECCIÓN IMPORTANTE:
+        // Apuntar a la ruta 'reports.attendance.pdf' que definimos para el controlador PDF.
+        // NO apuntar a 'reports.index', porque eso carga la página web de reportes.
+        
         $url = route('reports.attendance.pdf', ['section' => $this->section->id]);
         
-        // Dispara el evento que el modal de Alpine.js está escuchando
+        // Dispara el evento para abrir el modal con la URL del PDF
         $this->dispatch('open-pdf-modal', url: $url);
     }
 

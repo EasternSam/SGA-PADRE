@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\AttendancePdfController; // Importación añadida
 use Illuminate\Support\Facades\Auth;
 use App\Livewire\Admin\DatabaseImport; 
 use Illuminate\Support\Facades\Http;
@@ -146,12 +147,13 @@ Route::middleware(['auth', 'role:Profesor|Admin'])->prefix('teacher')->group(fun
     Route::get('/profile', [ProfileController::class, 'edit'])->name('teacher.profile.edit');
 });
 
-// --- RUTAS DE REPORTES (Controlador Legacy, mantenido por compatibilidad si existen links antiguos) ---
+// --- RUTAS DE REPORTES ---
 Route::middleware(['auth'])->group(function () {
     Route::get('/reports/student-report/{student}', [ReportController::class, 'generateStudentReport'])->name('reports.student-report');
     Route::get('/reports/attendance-report/{section}', [ReportController::class, 'generateAttendanceReport'])->name('reports.attendance-report');
-    Route::get('/reports/attendance/{section}/pdf', [App\Http\Controllers\AttendancePdfController::class, 'download'])->name('reports.attendance.pdf');
-
+    
+    // --- RUTA PDF DE ASISTENCIA ---
+    Route::get('/reports/attendance/{section}/pdf', [AttendancePdfController::class, 'download'])->name('reports.attendance.pdf');
 });
 
 // --- RUTAS PARA CAMBIO DE CONTRASEÑA OBLIGATORIO ---
