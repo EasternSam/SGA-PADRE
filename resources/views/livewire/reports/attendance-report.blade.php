@@ -5,10 +5,10 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Reporte de Asistencia</title>
     <style>
-        /* --- Configuración General --- */
+        /* --- Configuración de Página: Carta Horizontal --- */
         @page { 
-            margin: 1cm; 
-            size: a4 landscape; /* Orientación Horizontal para máxima calidad y espacio */
+            margin: 0.5in; /* Margen estándar de 1.27cm */
+            size: letter landscape; /* Formato Carta Horizontal */
         }
         body { 
             font-family: 'Helvetica', 'Arial', sans-serif; 
@@ -37,7 +37,7 @@
         }
         
         .logo-cell img {
-            max-width: 120px; /* Logo más grande en horizontal */
+            max-width: 120px;
             max-height: 60px;
             height: auto;
         }
@@ -56,7 +56,7 @@
             letter-spacing: 1px;
         }
         .report-title {
-            font-size: 20px; /* Título más grande */
+            font-size: 20px;
             font-weight: bold;
             color: #2c3e50;
             margin: 4px 0;
@@ -82,7 +82,7 @@
             background-color: #f8f9fa;
             border: 1px solid #e9ecef;
             border-radius: 4px;
-            padding: 8px 12px; /* Más padding para que se vea premium */
+            padding: 8px 12px;
             width: 25%;
             vertical-align: top;
         }
@@ -112,8 +112,8 @@
         .attendance-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9px; /* Fuente legible */
-            table-layout: fixed; 
+            font-size: 9px;
+            table-layout: fixed; /* Mantiene las columnas firmes */
         }
         
         /* Cabeceras */
@@ -124,7 +124,7 @@
             border: 1px solid #34495e;
             vertical-align: bottom;
             padding: 0;
-            height: 80px; /* Altura generosa para fechas */
+            height: 80px;
             overflow: hidden;
         }
 
@@ -132,7 +132,7 @@
         .rotate-wrapper {
             position: relative;
             height: 75px;
-            width: 18px; /* Ancho cómodo por fecha */
+            width: 18px; /* Ancho ajustado para Letter */
             margin: 0 auto;
         }
         .rotate {
@@ -150,7 +150,7 @@
         /* Filas y Celdas */
         .attendance-table td {
             border: 1px solid #bdc3c7;
-            padding: 4px 2px; /* Espaciado cómodo */
+            padding: 4px 2px;
             text-align: center;
             vertical-align: middle;
         }
@@ -159,7 +159,7 @@
             background-color: #fbfcfc;
         }
 
-        /* --- Columnas --- */
+        /* --- Columnas (Ajustadas para ~950px útiles de Letter Landscape) --- */
         .col-index { 
             width: 25px; 
             color: #7f8c8d; 
@@ -168,21 +168,23 @@
         
         .col-student { 
             text-align: left !important; 
-            padding: 4px 8px !important;
+            padding: 4px 6px !important;
             font-weight: 600; 
             color: #2c3e50; 
-            width: 220px; /* ANCHO AMPLIO: Nombres nunca se cortarán */
+            width: 240px; /* Suficiente para nombres largos */
             font-size: 9px;
-            white-space: normal; 
-            word-wrap: break-word;
+            white-space: normal;
+            word-wrap: normal; /* No partir palabras si es posible */
             line-height: 1.1;
             text-transform: uppercase;
         }
 
+        /* 31 días * 18px = 558px */
         .col-date {
-            width: 18px; /* Espacio suficiente para marcar P/A */
+            width: 18px; 
         }
 
+        /* 4 columnas * 25px = 100px */
         .col-summary {
             background-color: #ecf0f1 !important;
             color: #2c3e50 !important;
@@ -297,7 +299,7 @@
             <thead>
                 <tr>
                     <th style="width: 25px; height: auto; text-align: center;">No.</th>
-                    <th style="width: 220px; height: auto; text-align: left; padding-left: 8px;">ESTUDIANTE</th>
+                    <th style="width: 240px; height: auto; text-align: left; padding-left: 8px;">ESTUDIANTE</th>
                     
                     @foreach($dates as $date)
                         <th class="col-date">
