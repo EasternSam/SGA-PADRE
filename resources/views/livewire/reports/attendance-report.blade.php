@@ -7,8 +7,9 @@
     <style>
         /* --- Configuración General --- */
         @page { 
-            margin: 1cm; 
-            size: a4 landscape; /* Orientación Horizontal para máxima calidad y espacio */
+            margin: 0.5cm; 
+            margin-top: 0.5cm; 
+            size: a4 portrait; /* Configuración explícita para Vertical */
         }
         body { 
             font-family: 'Helvetica', 'Arial', sans-serif; 
@@ -17,12 +18,12 @@
             line-height: 1.2; 
         }
 
-        /* --- Encabezado --- */
+        /* --- Encabezado con Tabla para centrado perfecto --- */
         .header-container {
             width: 100%;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             border-bottom: 2px solid #2c3e50;
-            padding-bottom: 8px;
+            padding-bottom: 5px;
         }
         
         .header-layout {
@@ -31,13 +32,13 @@
         }
         
         .logo-cell {
-            width: 15%;
-            vertical-align: middle;
+            width: 15%; /* Espacio para el logo a la izquierda */
+            vertical-align: middle; /* Centrado vertical */
             text-align: left;
         }
         
         .logo-cell img {
-            max-width: 120px; /* Logo más grande en horizontal */
+            max-width: 100px;
             max-height: 60px;
             height: auto;
         }
@@ -45,7 +46,7 @@
         .title-cell {
             width: 85%;
             vertical-align: middle;
-            text-align: right;
+            text-align: right; /* Títulos alineados a la derecha */
         }
 
         .institution-name {
@@ -53,51 +54,50 @@
             font-weight: bold;
             color: #7f8c8d;
             text-transform: uppercase;
-            letter-spacing: 1px;
         }
         .report-title {
-            font-size: 20px; /* Título más grande */
+            font-size: 18px;
             font-weight: bold;
             color: #2c3e50;
-            margin: 4px 0;
+            margin: 2px 0;
             text-transform: uppercase;
         }
         .report-subtitle {
-            font-size: 12px;
+            font-size: 11px;
             color: #2c3e50;
         }
 
-        /* --- Información del Curso --- */
+        /* --- Tarjetas de Información (Diseño Anterior) --- */
         .info-container {
             width: 100%;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
         .info-table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 10px 0;
-            margin: 0 -10px;
+            border-spacing: 5px 0;
+            margin: 0 -5px;
         }
         .info-box {
             background-color: #f8f9fa;
             border: 1px solid #e9ecef;
             border-radius: 4px;
-            padding: 8px 12px; /* Más padding para que se vea premium */
+            padding: 5px 8px;
             width: 25%;
             vertical-align: top;
         }
         .label {
             display: block;
-            font-size: 8px;
+            font-size: 7px;
             text-transform: uppercase;
             color: #95a5a6;
             font-weight: bold;
             letter-spacing: 0.5px;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
         .value {
             display: block;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
             color: #34495e;
             white-space: nowrap;
@@ -105,15 +105,15 @@
             text-overflow: ellipsis;
         }
 
-        /* --- Tabla de Asistencia --- */
+        /* --- Tabla de Asistencia Compacta --- */
         .table-container {
             width: 100%;
         }
         .attendance-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9px; /* Fuente legible */
-            table-layout: fixed; 
+            font-size: 8px;
+            table-layout: fixed;
         }
         
         /* Cabeceras */
@@ -123,16 +123,16 @@
             font-weight: normal;
             border: 1px solid #34495e;
             vertical-align: bottom;
-            padding: 0;
-            height: 80px; /* Altura generosa para fechas */
+            padding: 1px;
+            height: 70px;
             overflow: hidden;
         }
 
         /* Rotación de Texto */
         .rotate-wrapper {
             position: relative;
-            height: 75px;
-            width: 18px; /* Ancho cómodo por fecha */
+            height: 65px;
+            width: 16px;
             margin: 0 auto;
         }
         .rotate {
@@ -140,17 +140,17 @@
             transform-origin: left bottom;
             white-space: nowrap;
             position: absolute;
-            bottom: 4px;
-            left: 10px; 
-            width: 75px;
+            bottom: 2px;
+            left: 10px;
+            width: 65px;
             text-align: left;
-            font-size: 8px;
+            font-size: 7px;
         }
 
         /* Filas y Celdas */
         .attendance-table td {
             border: 1px solid #bdc3c7;
-            padding: 4px 2px; /* Espaciado cómodo */
+            padding: 3px 1px;
             text-align: center;
             vertical-align: middle;
         }
@@ -159,37 +159,28 @@
             background-color: #fbfcfc;
         }
 
-        /* --- Columnas --- */
-        .col-index { 
-            width: 25px; 
-            color: #7f8c8d; 
-            font-size: 8px;
-        }
+        /* Columnas Específicas */
+        .col-index { width: 15px; color: #7f8c8d; font-size: 7px; }
         
         .col-student { 
             text-align: left !important; 
-            padding: 4px 8px !important;
+            padding: 2px 4px !important; /* Ajuste fino de padding */
             font-weight: 600; 
             color: #2c3e50; 
-            width: 220px; /* ANCHO AMPLIO: Nombres nunca se cortarán */
-            font-size: 9px;
-            white-space: normal; 
-            word-wrap: break-word;
+            width: 160px; /* Más ancho para que quepan mejor */
+            font-size: 7px; /* Fuente ligeramente más pequeña para nombres largos */
+            white-space: normal; /* Permite saltos de línea */
             line-height: 1.1;
             text-transform: uppercase;
-        }
-
-        .col-date {
-            width: 18px; /* Espacio suficiente para marcar P/A */
         }
 
         .col-summary {
             background-color: #ecf0f1 !important;
             color: #2c3e50 !important;
             font-weight: bold;
-            width: 25px;
+            width: 20px;
             border-color: #bdc3c7 !important;
-            font-size: 9px;
+            font-size: 8px;
         }
         
         .th-summary {
@@ -199,56 +190,44 @@
             height: auto !important;
             text-align: center !important;
             vertical-align: middle !important;
-            padding: 4px !important;
-            font-size: 8px;
+            padding: 2px !important;
         }
 
         /* --- ESTADOS --- */
-        .st-P { background-color: #d5f5e3; color: #196f3d; font-weight: bold; }
-        .st-A { background-color: #fadbd8; color: #c0392b; font-weight: bold; }
-        .st-T { background-color: #fdebd0; color: #d35400; font-weight: bold; }
+        .st-P { background-color: #d5f5e3; color: #196f3d; }
+        .st-A { background-color: #fadbd8; color: #c0392b; }
+        .st-T { background-color: #fdebd0; color: #d35400; }
         .st-none { color: #ecf0f1; }
 
         /* --- Footer --- */
-        .footer-wrapper {
+        .footer {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            padding-top: 5px;
             border-top: 1px solid #e5e5e5;
+            padding-top: 4px;
+            font-size: 7px;
+            color: #999;
+            text-align: center;
         }
-        
         .legend {
-            float: left;
+            margin-top: 5px;
             font-size: 8px;
-            color: #555;
+            text-align: left;
         }
-        
         .legend span {
             display: inline-block;
-            margin-right: 15px;
-        }
-        
-        .legend-box {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            margin-right: 4px;
+            margin-right: 10px;
+            padding: 1px 4px;
+            border-radius: 2px;
             border: 1px solid #ccc;
-            vertical-align: middle;
-        }
-        
-        .page-info {
-            float: right;
-            font-size: 8px;
-            color: #999;
         }
     </style>
 </head>
 <body>
 
-    <!-- Encabezado -->
+    <!-- Encabezado Restaurado (Con Logo a la izquierda y centrado) -->
     <div class="header-container">
         <table class="header-layout">
             <tr>
@@ -264,7 +243,7 @@
         </table>
     </div>
 
-    <!-- Información -->
+    <!-- Información (Estilo Anterior: Cajas separadas) -->
     <div class="info-container">
         <table class="info-table">
             <tr>
@@ -283,8 +262,8 @@
                 <td class="info-box">
                     <span class="label">Periodo</span>
                     <span class="value">
-                        {{ \Carbon\Carbon::parse($section->start_date)->format('d/m/Y') }} - 
-                        {{ \Carbon\Carbon::parse($section->end_date)->format('d/m/Y') }}
+                        {{ \Carbon\Carbon::parse($section->start_date)->format('d/m/y') }} - 
+                        {{ \Carbon\Carbon::parse($section->end_date)->format('d/m/y') }}
                     </span>
                 </td>
             </tr>
@@ -296,11 +275,11 @@
         <table class="attendance-table">
             <thead>
                 <tr>
-                    <th style="width: 25px; height: auto; text-align: center;">No.</th>
-                    <th style="width: 220px; height: auto; text-align: left; padding-left: 8px;">ESTUDIANTE</th>
+                    <th style="width: 15px; height: auto; text-align: center;">No.</th>
+                    <th style="width: 160px; height: auto; text-align: left; padding-left: 4px;">ESTUDIANTE</th>
                     
                     @foreach($dates as $date)
-                        <th class="col-date">
+                        <th style="width: 16px;">
                             <div class="rotate-wrapper">
                                 <div class="rotate">
                                     {{ $date->format('d') }}-{{ substr($date->translatedFormat('M'), 0, 3) }}
@@ -375,17 +354,15 @@
         </table>
     </div>
     
-    <!-- Footer -->
-    <div class="footer-wrapper">
-        <div class="legend">
-            <strong>Leyenda:</strong>
-            <span><div class="legend-box" style="background-color: #d5f5e3;"></div> Presente</span>
-            <span><div class="legend-box" style="background-color: #fadbd8;"></div> Ausente</span>
-            <span><div class="legend-box" style="background-color: #fdebd0;"></div> Tardanza</span>
-        </div>
-        <div class="page-info">
-            Generado el: {{ now()->format('d/m/Y h:i A') }}
-        </div>
+    <div class="legend">
+        <strong>Leyenda:</strong> 
+        <span class="st-P">P = Presente</span>
+        <span class="st-A">A = Ausente</span>
+        <span class="st-T">T = Tardanza</span>
+    </div>
+
+    <div class="footer">
+        Generado el: {{ now()->format('d/m/Y h:i A') }} &bull; Documento interno de control de asistencia
     </div>
 
 </body>
