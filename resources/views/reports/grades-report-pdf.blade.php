@@ -13,16 +13,23 @@
         @page {
             margin: 1.5cm;
         }
-        .header-container {
-            position: relative;
+        /* Encabezado usando tabla para alineación perfecta en PDF */
+        .header-table {
+            width: 100%;
             margin-bottom: 20px;
+            border-bottom: 2px solid #1e3a8a; /* Línea separadora opcional */
+            padding-bottom: 10px;
+        }
+        .header-logo-cell {
+            width: 100px; /* Espacio reservado para el logo */
+            vertical-align: middle;
+        }
+        .header-text-cell {
             text-align: center;
+            vertical-align: middle;
         }
         .logo {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 80px; /* Ajusta el tamaño según tu preferencia */
+            width: 80px;
             height: auto;
         }
         .header h1 {
@@ -32,11 +39,12 @@
             margin: 0;
         }
         .header h2 {
-            font-size: 14pt;
+            font-size: 12pt;
             font-weight: normal;
-            margin: 5px 0;
+            margin: 5px 0 0 0;
             color: #374151; /* Gris oscuro */
         }
+        
         .info-table {
             width: 100%;
             border-collapse: collapse;
@@ -107,18 +115,24 @@
     </style>
 </head>
 <body>
-    <div class="header-container">
-        {{-- Logo: Usamos public_path para asegurar que DOMPDF encuentre el archivo localmente --}}
-        <img src="{{ public_path('centuu.png') }}" class="logo" alt="Logo">
-        
-        <div class="header">
-            <h1>Reporte de Calificaciones</h1>
-            <h2>
-                {{ $data['schedule']->module->course->name ?? 'Curso' }} - 
-                {{ $data['schedule']->module->name ?? 'Módulo' }}
-            </h2>
-        </div>
-    </div>
+    {{-- Encabezado con Tabla para mejor alineación logo-texto --}}
+    <table class="header-table">
+        <tr>
+            <td class="header-logo-cell">
+                <img src="{{ public_path('centuu.png') }}" class="logo" alt="Logo">
+            </td>
+            <td class="header-text-cell">
+                <div class="header">
+                    <h1>Reporte de Calificaciones</h1>
+                    <h2>
+                        {{ $data['schedule']->module->course->name ?? 'Curso' }} - 
+                        {{ $data['schedule']->module->name ?? 'Módulo' }}
+                    </h2>
+                </div>
+            </td>
+            <td style="width: 100px;"></td> {{-- Celda vacía para balancear si es necesario --}}
+        </tr>
+    </table>
 
     <table class="info-table">
         <tr>
