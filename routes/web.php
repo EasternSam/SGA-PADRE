@@ -105,9 +105,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    
-    // --- NUEVO MÓDULO DE REPORTES ---
-    Route::get('/reports', \App\Livewire\Reports\Index::class)->name('reports.index');
 });
 
 
@@ -124,6 +121,9 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
 
     Route::get('/requests', \App\Livewire\Admin\RequestsManagement::class)->name('admin.requests');
     Route::get('/import', DatabaseImport::class)->name('admin.import');
+    
+    // --- GESTIÓN DE REPORTES (Solo Admin) ---
+    Route::get('/reports', \App\Livewire\Reports\Index::class)->name('reports.index');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
 });
@@ -144,8 +144,9 @@ Route::middleware(['auth', 'role:Profesor|Admin'])->prefix('teacher')->group(fun
     Route::get('/profile', [ProfileController::class, 'edit'])->name('teacher.profile.edit');
 });
 
-// --- RUTAS DE REPORTES ---
+// --- RUTAS DE REPORTES (Generación PDF) ---
 Route::middleware(['auth'])->group(function () {
+    // Estas rutas de generación individual pueden ser usadas por profesores o admins
     Route::get('/reports/student-report/{student}', [ReportController::class, 'generateStudentReport'])->name('reports.student-report');
     Route::get('/reports/attendance-report/{section}', [ReportController::class, 'generateAttendanceReport'])->name('reports.attendance-report');
     
