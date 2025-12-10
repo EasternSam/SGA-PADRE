@@ -4,13 +4,25 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AttendancePdfController; 
-use App\Http\Controllers\GradesPdfController;     
+use App\Http\Controllers\GradesPdfController; 
 use App\Http\Controllers\FinancialPdfController;
 use App\Http\Controllers\StudentListPdfController; // <--- NUEVO CONTROLADOR
 use Illuminate\Support\Facades\Auth;
 use App\Livewire\Admin\DatabaseImport; 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+
+// Imports para Portales
+use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
+use App\Livewire\StudentPortal\CourseDetail as StudentPortalCourseDetail;
+use App\Livewire\StudentPortal\Requests as StudentPortalRequests;
+use App\Livewire\StudentPortal\MyPayments as StudentPortalPayments; // <-- AÑADIDO
+
+use App\Livewire\TeacherPortal\Dashboard as TeacherPortalDashboard;
+use App\Livewire\TeacherPortal\Grades as TeacherPortalGrades;
+use App\Livewire\TeacherPortal\Attendance as TeacherPortalAttendance;
+
+use App\Livewire\Admin\RequestsManagement;
 
 /*
 |--------------------------------------------------------------------------
@@ -133,6 +145,8 @@ Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student
     Route::get('/dashboard', \App\Livewire\StudentPortal\Dashboard::class)->name('dashboard');
     Route::get('/course/{enrollmentId}', \App\Livewire\StudentPortal\CourseDetail::class)->name('course.detail');
     Route::get('/requests', \App\Livewire\StudentPortal\Requests::class)->name('requests');
+    // --- NUEVA RUTA DE PAGOS ---
+    Route::get('/payments', StudentPortalPayments::class)->name('payments');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
 });
 
