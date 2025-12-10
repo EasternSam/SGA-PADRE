@@ -25,10 +25,10 @@ class Payment extends Model
         'status',
         'gateway',
         'transaction_id',
-        // No incluimos 'user_id' porque no está en la migración
+        'user_id', // <-- IMPORTANTE: Necesario para que Auth::id() se guarde
+        'notes',   // <-- Sugerido: Para guardar observaciones si la tabla lo permite
     ];
 
-    // --- ¡¡¡AÑADIDO!!! ---
     /**
      * Los atributos que deben ser casteados.
      * Esto asegura que el 'amount' se trate como un número decimal.
@@ -38,7 +38,6 @@ class Payment extends Model
     protected $casts = [
         'amount' => 'decimal:2',
     ];
-    // --- FIN DE LA ACTUALIZACIÓN ---
 
     /**
      * Obtiene el estudiante al que pertenece el pago.
@@ -50,7 +49,6 @@ class Payment extends Model
 
     /**
      * Obtiene el concepto del pago.
-     * ¡ESTA ES LA RELACIÓN QUE FALTABA!
      */
     public function paymentConcept(): BelongsTo
     {
