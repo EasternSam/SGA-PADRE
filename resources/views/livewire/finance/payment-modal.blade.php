@@ -34,7 +34,7 @@
             
             {{-- 
                 PANEL DEL MODAL
-                - max-w-6xl: Ancho controlado (ni muy ancho ni muy angosto).
+                - max-w-6xl: Ancho controlado.
                 - rounded-2xl: Esquinas más modernas.
                 - shadow-2xl: Profundidad.
             --}}
@@ -67,14 +67,18 @@
                     </button>
                 </div>
 
-                {{-- CONTENIDO PRINCIPAL (GRID) --}}
-                <div class="grid grid-cols-12 min-h-[500px]">
+                {{-- 
+                    CONTENIDO PRINCIPAL (FLEXBOX) 
+                    Cambiado de Grid a Flex para mejor control de columnas.
+                --}}
+                <div class="flex flex-col lg:flex-row min-h-[500px]">
                     
                     {{-- 
-                        COLUMNA 1: SELECCIÓN DE ESTUDIANTE (35% Ancho)
-                        Fondo gris muy suave para diferenciar el contexto de la acción.
+                        COLUMNA 1: SELECCIÓN DE ESTUDIANTE 
+                        Ancho: 4/12 (aprox 33%) en desktop.
+                        Fondo gris muy suave.
                     --}}
-                    <div class="col-span-12 lg:col-span-4 bg-gray-50/50 border-r border-gray-200 flex flex-col">
+                    <div class="w-full lg:w-4/12 bg-gray-50/50 border-r border-gray-200 flex flex-col">
                         
                         {{-- Buscador --}}
                         <div class="p-5 border-b border-gray-200/60 bg-gray-50/80">
@@ -95,7 +99,7 @@
                         {{-- Lista / Resultados --}}
                         <div class="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
                             @if($student)
-                                {{-- Tarjeta de Estudiante Seleccionado (Sticky top en la lista) --}}
+                                {{-- Tarjeta de Estudiante Seleccionado --}}
                                 <div class="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm relative group animate-fade-in">
                                     <button 
                                         wire:click="clearStudent" 
@@ -164,10 +168,11 @@
                     </div>
 
                     {{-- 
-                        COLUMNA 2: FORMULARIO DE PAGO (65% Ancho)
-                        Fondo blanco, espacioso y limpio.
+                        COLUMNA 2: FORMULARIO DE PAGO 
+                        Ancho: 8/12 (aprox 67%) en desktop.
+                        Fondo blanco.
                     --}}
-                    <div class="col-span-12 lg:col-span-8 bg-white flex flex-col relative">
+                    <div class="w-full lg:w-8/12 bg-white flex flex-col relative">
                         
                         {{-- Overlay de Bloqueo --}}
                         <div 
