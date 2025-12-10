@@ -16,8 +16,7 @@
         x-transition:leave="ease-in duration-200"
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
-        class="fixed inset-0 bg-gray-900 transition-opacity backdrop-blur-sm"
-        style="background-color: rgba(17, 24, 39, 0.85);" 
+        class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm transition-opacity"
         aria-hidden="true"
     ></div>
 
@@ -28,14 +27,14 @@
     >
         {{-- 
             FLEX CONTAINER
-            Padding de 8px (p-2) para evitar bordes pegados en móviles/tablets
-            y centrado vertical/horizontal.
+            Centrado vertical/horizontal.
         --}}
-        <div class="flex min-h-full items-center justify-center p-2 text-center">
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
             
             {{-- 
                 PANEL DEL MODAL
-                Borde sólido y sombra profunda para destacar sobre el fondo.
+                Cambio clave: `h-[90vh]` o `max-h-[90vh]` con `flex flex-col`.
+                Esto fuerza al modal a tener una altura máxima y permite scrolls internos.
             --}}
             <div 
                 x-show="show"
@@ -47,11 +46,11 @@
                 x-transition:leave="ease-in duration-200" 
                 x-transition:leave-start="opacity-100 translate-y-0 scale-100" 
                 x-transition:leave-end="opacity-0 translate-y-4 scale-95"
-                class="relative w-full max-w-7xl bg-white rounded-xl shadow-2xl overflow-hidden text-left transform transition-all border border-gray-300"
+                class="relative w-full max-w-7xl h-full sm:h-[90vh] bg-white sm:rounded-xl shadow-2xl text-left transform transition-all flex flex-col overflow-hidden border border-gray-300"
             >
                 
-                {{-- HEADER --}}
-                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50 sticky top-0 z-20 shadow-sm">
+                {{-- HEADER (Fijo arriba) --}}
+                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50 shrink-0 z-20">
                     <div class="flex items-center gap-3">
                         <div class="bg-indigo-600 p-2 rounded-lg text-white shadow-md flex-shrink-0">
                             <!-- Icono Caja -->
@@ -71,32 +70,28 @@
                     </button>
                 </div>
 
-                {{-- CONTENIDO PRINCIPAL --}}
-                <div class="flex flex-col lg:flex-row min-h-[550px]">
+                {{-- 
+                    CONTENIDO PRINCIPAL (Scrollable)
+                    Usamos `flex-1 overflow-hidden` para que este contenedor ocupe el espacio restante
+                    pero no haga scroll global. Los hijos harán el scroll.
+                --}}
+                <div class="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
                     
                     {{-- 
                         COLUMNA 1: SELECCIÓN DE ESTUDIANTE 
-                        Fondo gris claro para contraste con el área blanca de trabajo.
+                        `overflow-y-auto` permite que solo esta lista haga scroll.
                     --}}
-                    <div class="w-full lg:w-4/12 bg-gray-100 border-r border-gray-300 flex flex-col">
+                    <div class="w-full lg:w-4/12 bg-gray-100 border-b lg:border-b-0 lg:border-r border-gray-300 flex flex-col h-full overflow-hidden">
                         
-                        {{-- Buscador --}}
-                        <div class="p-5 border-b border-gray-300 bg-gray-100">
+                        {{-- Buscador (Sticky top dentro de la columna) --}}
+                        <div class="p-4 border-b border-gray-300 bg-gray-100 shrink-0 z-10">
                             <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">Buscar Cliente</label>
                             <div class="relative group">
                                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 pointer-events-none">
-                                    <!-- Lupa SVG -->
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                                     </svg>
                                 </span>
-                                {{-- 
-                                    Corrección de Diseño:
-                                    - pl-11: Padding izquierdo extra para que el texto no toque la lupa.
-                                    - bg-white: Fondo blanco explícito.
-                                    - text-gray-900: Texto negro fuerte.
-                                    - border-gray-300: Borde visible.
-                                --}}
                                 <input 
                                     type="text" 
                                     wire:model.live.debounce.300ms="search_query"
@@ -106,7 +101,7 @@
                             </div>
                         </div>
 
-                        {{-- Lista / Resultados --}}
+                        {{-- Lista / Resultados con Scroll Independiente --}}
                         <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
                             @if($student)
                                 {{-- Tarjeta de Estudiante Seleccionado --}}
@@ -147,7 +142,7 @@
                                     </div>
                                 </div>
                                 
-                                <div class="text-center mt-4">
+                                <div class="text-center mt-4 pb-4">
                                     <button wire:click="clearStudent" class="text-xs text-indigo-600 font-bold hover:underline hover:text-indigo-800">
                                         Cambiar Estudiante
                                     </button>
@@ -184,15 +179,15 @@
 
                     {{-- 
                         COLUMNA 2: FORMULARIO DE PAGO 
-                        Fondo blanco puro.
+                        Flex column para separar el cuerpo (scrollable) del footer (fijo).
                     --}}
-                    <div class="w-full lg:w-8/12 bg-white flex flex-col relative">
+                    <div class="w-full lg:w-8/12 bg-white flex flex-col relative h-full overflow-hidden">
                         
                         {{-- Overlay de Bloqueo --}}
                         <div 
                             x-show="!$wire.student_id"
                             x-transition.opacity
-                            class="absolute inset-0 bg-white/90 z-10 flex flex-col items-center justify-center text-center backdrop-blur-sm"
+                            class="absolute inset-0 bg-white/95 z-30 flex flex-col items-center justify-center text-center backdrop-blur-[2px]"
                         >
                             <div class="bg-white p-8 rounded-2xl border border-gray-200 shadow-xl max-w-xs">
                                 <div class="mx-auto h-16 w-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-4 border border-indigo-100">
@@ -205,15 +200,15 @@
                             </div>
                         </div>
 
-                        {{-- Cuerpo del Formulario --}}
-                        <div class="flex-1 overflow-y-auto p-6 lg:p-10">
-                            <form wire:submit.prevent="savePayment" class="space-y-8">
+                        {{-- Cuerpo del Formulario (Scrollable) --}}
+                        <div class="flex-1 overflow-y-auto p-6 lg:p-8 space-y-8 custom-scrollbar">
+                            <form wire:submit.prevent="savePayment" id="payment-form">
                                 
                                 {{-- 1. Alerta de Deuda Pendiente --}}
                                 @if($studentEnrollments && $studentEnrollments->count() > 0)
-                                    <div class="bg-amber-50 border border-amber-300 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-fade-in-down">
+                                    <div class="bg-amber-50 border border-amber-300 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-fade-in-down mb-6">
                                         <div class="flex items-center gap-3 text-amber-900">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 shrink-0">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
                                             </svg>
                                             <span class="text-sm font-bold">Pagos pendientes detectados</span>
@@ -233,7 +228,7 @@
                                 @endif
 
                                 {{-- 2. Configuración Financiera --}}
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                                     <div>
                                         <label class="block text-sm font-bold text-gray-700 mb-2">Concepto de Pago</label>
                                         <div class="relative">
@@ -278,7 +273,7 @@
                                                     type="number" 
                                                     step="0.01" 
                                                     wire:model.live="amount" 
-                                                    class="w-full pl-10 pr-4 py-4 bg-white border border-gray-300 rounded-xl text-4xl font-black text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-right shadow-sm placeholder-gray-300 transition-all"
+                                                    class="w-full pl-10 pr-4 py-4 bg-white border border-gray-300 rounded-xl text-3xl lg:text-4xl font-black text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-right shadow-sm placeholder-gray-300 transition-all"
                                                     placeholder="0.00"
                                                     {{ $isAmountDisabled ? 'readonly' : '' }}
                                                 >
@@ -296,7 +291,6 @@
                                                         wire:click="$set('gateway', '{{ $method }}')"
                                                         class="py-3 px-2 text-xs font-bold rounded-lg border transition-all flex items-center justify-center gap-2 {{ $gateway === $method ? 'bg-indigo-600 text-white border-indigo-600 shadow-md ring-1 ring-indigo-600' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400 hover:bg-gray-100' }}"
                                                     >
-                                                        <!-- Iconos condicionales -->
                                                         @if($method === 'Efectivo')
                                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
                                                         @elseif($method === 'Tarjeta')
@@ -359,12 +353,11 @@
                                         </div>
                                     </div>
                                 </div>
-
                             </form>
                         </div>
 
-                        {{-- FOOTER (BOTONES) --}}
-                        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3 sticky bottom-0 z-10">
+                        {{-- FOOTER (BOTONES) (Sticky Bottom estructural) --}}
+                        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3 shrink-0 z-20">
                             <button 
                                 wire:click="closeModal"
                                 class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 shadow-sm transition-colors focus:outline-none"
@@ -375,6 +368,7 @@
                             <button 
                                 wire:click="savePayment"
                                 wire:loading.attr="disabled"
+                                form="payment-form"
                                 class="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg shadow-md hover:shadow-lg transition-all transform active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <span wire:loading wire:target="savePayment" class="animate-spin">
