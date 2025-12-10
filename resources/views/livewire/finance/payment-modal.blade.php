@@ -1,16 +1,18 @@
 {{-- 
-Modal de Pago con Diseño Premium / Terminal POS (Versión Horizontal)
+Modal de Pago con Diseño Premium / Terminal POS (Versión Horizontal Corregida)
 --}}
 <div 
     x-data="{ show: $wire.entangle('show') }" 
-    x-show="show" 
     @keydown.escape.window="show = false" 
     x-cloak
     class="relative z-50"
 >
-    <!-- Backdrop con desenfoque -->
+    <!-- 
+      Backdrop (Fondo Oscuro)
+      - Se maneja con su propio x-show para que la transición funcione independientemente.
+      - Usamos bg-opacity-75 para mayor compatibilidad.
+    -->
     <div 
-        class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm transition-opacity" 
         x-show="show"
         x-transition:enter="ease-out duration-300"
         x-transition:enter-start="opacity-0"
@@ -18,15 +20,28 @@ Modal de Pago con Diseño Premium / Terminal POS (Versión Horizontal)
         x-transition:leave="ease-in duration-200"
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
+        class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity backdrop-blur-sm"
     ></div>
 
-    <!-- Contenedor del Modal -->
-    <div class="fixed inset-0 z-10 overflow-y-auto">
+    <!-- 
+      Contenedor del Modal (Wrapper)
+      - Usamos x-show aquí también para ocultarlo cuando se cierre,
+        pero permitimos que el contenido interno maneje sus transiciones.
+    -->
+    <div 
+        x-show="show"
+        class="fixed inset-0 z-10 overflow-y-auto"
+    >
         <div class="flex min-h-full items-center justify-center p-4 text-center">
             
+            <!-- 
+              Panel del Modal 
+              - x-trap asegura que el foco se quede dentro del modal.
+              - @click.away cierra el modal al hacer clic fuera.
+            -->
             <div 
-                class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all w-full max-w-7xl border border-gray-100 my-4"
                 x-show="show"
+                x-trap.noscroll="show"
                 @click.away="show = false"
                 x-transition:enter="ease-out duration-300" 
                 x-transition:enter-start="opacity-0 translate-y-8 sm:translate-y-0 sm:scale-95" 
@@ -34,6 +49,7 @@ Modal de Pago con Diseño Premium / Terminal POS (Versión Horizontal)
                 x-transition:leave="ease-in duration-200" 
                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
                 x-transition:leave-end="opacity-0 translate-y-8 sm:translate-y-0 sm:scale-95"
+                class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all w-full max-w-7xl border border-gray-100 my-4"
             >
                 
                 <!-- Header con Degradado -->
@@ -53,7 +69,7 @@ Modal de Pago con Diseño Premium / Terminal POS (Versión Horizontal)
                         </div>
                     </div>
 
-                    <button @click="show = false" class="text-indigo-100 hover:text-white hover:bg-white/10 rounded-full p-2 transition-colors relative z-10">
+                    <button @click="show = false" class="text-indigo-100 hover:text-white hover:bg-white/10 rounded-full p-2 transition-colors relative z-10 focus:outline-none focus:ring-2 focus:ring-white/50">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -102,7 +118,7 @@ Modal de Pago con Diseño Premium / Terminal POS (Versión Horizontal)
 
                         <!-- Tarjeta de Estudiante -->
                         @if($student)
-                            <div class="flex-1 flex flex-col items-center p-5 bg-white rounded-2xl border-2 border-indigo-50 shadow-sm relative overflow-hidden group shrink-0">
+                            <div class="flex-1 flex flex-col items-center p-5 bg-white rounded-2xl border-2 border-indigo-50 shadow-sm relative overflow-hidden group shrink-0 transition-all">
                                 <button 
                                     wire:click="clearStudent" 
                                     class="absolute top-2 right-2 text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all opacity-0 group-hover:opacity-100"
@@ -119,7 +135,7 @@ Modal de Pago con Diseño Premium / Terminal POS (Versión Horizontal)
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="absolute bottom-3 right-0 h-5 w-5 bg-green-400 border-4 border-white rounded-full"></div>
+                                    <div class="absolute bottom-3 right-0 h-5 w-5 bg-green-400 border-4 border-white rounded-full ring-2 ring-white"></div>
                                 </div>
 
                                 <h4 class="text-lg font-bold text-gray-900 text-center leading-tight">{{ $student->first_name }} {{ $student->last_name }}</h4>
@@ -141,7 +157,7 @@ Modal de Pago con Diseño Premium / Terminal POS (Versión Horizontal)
                                 <div class="h-16 w-16 bg-gray-200 rounded-full mb-3 flex items-center justify-center">
                                     <i class="fas fa-user text-3xl text-gray-400"></i>
                                 </div>
-                                <p class="text-sm text-gray-500 font-medium">Sin Cliente</p>
+                                <p class="text-sm text-gray-500 font-medium">Sin Cliente Seleccionado</p>
                             </div>
                         @endif
                     </div>
@@ -164,13 +180,13 @@ Modal de Pago con Diseño Premium / Terminal POS (Versión Horizontal)
                                 
                                 <!-- Pagos Pendientes (Barra Superior) -->
                                 @if($studentEnrollments && $studentEnrollments->count() > 0)
-                                    <div class="mb-5 bg-amber-50 rounded-lg p-3 border border-amber-200 shadow-sm flex items-center gap-4">
+                                    <div class="mb-5 bg-amber-50 rounded-lg p-3 border border-amber-200 shadow-sm flex items-center gap-4 animate-fade-in-down">
                                         <label class="text-sm font-bold text-amber-800 whitespace-nowrap">
                                             <i class="fas fa-file-invoice-dollar mr-1"></i> Pendientes:
                                         </label>
                                         <select 
                                             wire:model.live="enrollment_id" 
-                                            class="block w-full py-1.5 pl-3 pr-8 text-sm border-amber-300 focus:outline-none focus:ring-amber-500 focus:border-amber-500 rounded-md bg-white"
+                                            class="block w-full py-1.5 pl-3 pr-8 text-sm border-amber-300 focus:outline-none focus:ring-amber-500 focus:border-amber-500 rounded-md bg-white text-gray-700"
                                         >
                                             <option value="">-- Seleccionar Pago Pendiente --</option>
                                             @foreach($studentEnrollments as $enrollment)
@@ -219,7 +235,7 @@ Modal de Pago con Diseño Premium / Terminal POS (Versión Horizontal)
                                         </div>
 
                                         <!-- Tarjeta de Monto (Más grande y clara) -->
-                                        <div class="bg-indigo-50/60 rounded-xl p-5 border border-indigo-100 mt-auto">
+                                        <div class="bg-indigo-50/60 rounded-xl p-5 border border-indigo-100 mt-auto shadow-sm">
                                             <div class="flex justify-between items-center mb-1">
                                                 <label class="text-xs font-bold text-indigo-800 uppercase">Total a Cobrar</label>
                                                 <span class="text-[10px] font-bold text-white bg-indigo-400 px-1.5 py-0.5 rounded">DOP</span>
@@ -249,7 +265,7 @@ Modal de Pago con Diseño Premium / Terminal POS (Versión Horizontal)
                                                 @foreach(['Efectivo', 'Transferencia', 'Tarjeta', 'Otro'] as $method)
                                                     <label class="cursor-pointer relative">
                                                         <input type="radio" wire:model.live="gateway" value="{{ $method }}" class="peer sr-only">
-                                                        <div class="w-full py-2.5 px-2 text-center rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white transition-all shadow-sm">
+                                                        <div class="w-full py-2.5 px-2 text-center rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white transition-all shadow-sm select-none">
                                                             {{ $method }}
                                                         </div>
                                                     </label>
