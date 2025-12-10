@@ -13,12 +13,13 @@ class Payment extends Model
         'student_id',
         'enrollment_id',
         'payment_concept_id',
+        'user_id', // Agregamos user_id al fillable por si usas la asignación masiva
         'amount',
         'currency',
         'status',
         'gateway',
         'transaction_id',
-        'due_date', // Agregado
+        'due_date',
     ];
 
     protected $casts = [
@@ -36,8 +37,21 @@ class Payment extends Model
         return $this->belongsTo(Enrollment::class);
     }
 
-    public function concept()
+    /**
+     * Relación con el concepto de pago.
+     * Renombrado de 'concept' a 'paymentConcept' para coincidir con tu código Livewire.
+     */
+    public function paymentConcept()
     {
         return $this->belongsTo(PaymentConcept::class, 'payment_concept_id');
+    }
+
+    /**
+     * Relación con el usuario (quien registró o procesó el pago, si aplica).
+     * Agregado porque tu código intenta hacer ->with('user').
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }
