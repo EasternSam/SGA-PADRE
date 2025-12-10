@@ -4,18 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\User;
 
 class Payment extends Model
 {
     use HasFactory;
 
-    /**
-     * Los atributos que se pueden asignar masivamente.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'student_id',
         'enrollment_id',
@@ -25,46 +18,26 @@ class Payment extends Model
         'status',
         'gateway',
         'transaction_id',
-        'user_id', // <-- IMPORTANTE: Necesario para que Auth::id() se guarde
-        'notes',   // <-- Sugerido: Para guardar observaciones si la tabla lo permite
+        'due_date', // Agregado
     ];
 
-    /**
-     * Los atributos que deben ser casteados.
-     * Esto asegura que el 'amount' se trate como un número decimal.
-     *
-     * @var array
-     */
     protected $casts = [
+        'due_date' => 'date',
         'amount' => 'decimal:2',
     ];
 
-    /**
-     * Obtiene el estudiante al que pertenece el pago.
-     */
-    public function student(): BelongsTo
+    public function student()
     {
         return $this->belongsTo(Student::class);
     }
 
-    /**
-     * Obtiene el concepto del pago.
-     */
-    public function paymentConcept(): BelongsTo
-    {
-        return $this->belongsTo(PaymentConcept::class);
-    }
-
-    /**
-     * Obtiene la inscripción (opcional) a la que pertenece el pago.
-     */
-    public function enrollment(): BelongsTo
+    public function enrollment()
     {
         return $this->belongsTo(Enrollment::class);
     }
 
-    public function user(): BelongsTo
+    public function concept()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(PaymentConcept::class, 'payment_concept_id');
     }
 }

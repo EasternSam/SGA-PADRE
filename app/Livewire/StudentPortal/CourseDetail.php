@@ -5,14 +5,14 @@ namespace App\Livewire\StudentPortal;
 use Livewire\Component;
 use App\Models\Enrollment;
 use App\Models\Attendance;
-use App\Models\Module; // Añadido
-use App\Models\Course; // Añadido
+use App\Models\Module;
+use App\Models\Course;
+use App\Models\Payment; // Importante para verificar pagos
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class CourseDetail extends Component
 {
-    // Usar '?' para permitir que $enrollment sea nulo temporalmente si falla la carga
     public ?Enrollment $enrollment = null; 
     public $attendances = [];
     public $totalClasses = 0;
@@ -20,57 +20,76 @@ class CourseDetail extends Component
     public $absentClasses = 0;
     public $tardyClasses = 0;
 
-    // NUEVAS PROPIEDADES PARA NAVEGACIÓN Y LÓGICA SECUENCIAL
     public $course = null;
     public $allModules = [];
 
-    /**
-     * Mounta el componente y carga la información de la inscripción (enrollment).
-     *
-     * @param int $enrollmentId El ID de la inscripción a mostrar.
-     */
+    // --- NUEVO: Control de Bloqueo ---
+    public $isBlocked = false;
+    public $pendingAmount = 0;
+    // ---------------------------------
+
     public function mount($enrollmentId)
     {
-        // 1. Obtener el ID del estudiante de forma segura
         $studentId = Auth::user()?->student?->id;
 
-        // 2. Si no hay ID de estudiante, no podemos continuar.
         if (!$studentId) {
             session()->flash('error', 'No se pudo verificar su perfil de estudiante.');
             return redirect()->route('student.dashboard'); 
         }
 
-        // 3. Buscar la inscripción
         $enrollment = Enrollment::with(['student', 'courseSchedule.module.course', 'courseSchedule.teacher'])
                                 ->where('id', $enrollmentId)
                                 ->where('student_id', $studentId)
                                 ->first();
 
-        // 4. Verificar si se encontró la inscripción
         if (!$enrollment) {
             session()->flash('error', 'La inscripción solicitada no se encontró o no le pertenece.');
             return redirect()->route('student.dashboard');
         }
 
-        // 5. Si todo está bien, asignamos la inscripción y cargamos la asistencia
         $this->enrollment = $enrollment;
         
-        // --- NUEVO: Cargar contexto del curso y otros módulos ---
+        // Cargar contexto del curso
         if ($this->enrollment->courseSchedule && $this->enrollment->courseSchedule->module) {
             $this->course = $this->enrollment->courseSchedule->module->course;
-            // Cargar todos los módulos del curso para mostrarlos
             $this->allModules = $this->course->modules()->orderBy('id')->get();
         }
-        // --- FIN NUEVO ---
 
-        $this->loadAttendanceSummary();
+        // --- LÓGICA DE BLOQUEO POR MENSUALIDAD VENCIDA ---
+        $this->checkOutstandingDebt($studentId);
+
+        if (!$this->isBlocked) {
+            // Solo cargamos los datos sensibles si NO está bloqueado
+            $this->loadAttendanceSummary();
+        }
     }
 
     /**
-     * NUEVA FUNCIÓN: Inscribirse en un módulo siguiente (Lógica Secuencial)
+     * Verifica si el estudiante tiene pagos vencidos para este curso/inscripción
      */
+    private function checkOutstandingDebt($studentId)
+    {
+        // Buscamos pagos pendientes asociados a esta inscripción cuya fecha de vencimiento ya pasó
+        $pendingPayment = Payment::where('student_id', $studentId)
+            ->where('enrollment_id', $this->enrollment->id) // Específico de este curso
+            ->where('status', 'Pendiente')
+            ->where('due_date', '<', now()) // Si la fecha límite ya pasó
+            ->first();
+
+        if ($pendingPayment) {
+            $this->isBlocked = true;
+            $this->pendingAmount = $pendingPayment->amount;
+        }
+    }
+
     public function enroll($moduleId)
     {
+        // Evitar inscripción si está bloqueado
+        if ($this->isBlocked) {
+            $this->dispatch('error', 'Debes regularizar tus pagos antes de inscribirte en nuevos módulos.');
+            return;
+        }
+
         $student = Auth::user()->student;
 
         if (!$student) {
@@ -84,7 +103,6 @@ class CourseDetail extends Component
             return;
         }
 
-        // Verificar si ya está inscrito
         $alreadyEnrolled = Enrollment::where('student_id', $student->id)
             ->where('module_id', $moduleId)
             ->exists();
@@ -94,23 +112,18 @@ class CourseDetail extends Component
             return;
         }
 
-        // LÓGICA DE PRERREQUISITOS (Secuencial)
         if ($this->course && $this->course->is_sequential) {
             
-            // Buscar el primer módulo del curso (asumiendo orden por ID)
             $firstModule = $this->course->modules()->orderBy('id', 'asc')->first();
 
-            // Si el módulo al que queremos inscribirnos NO es el primero
             if ($firstModule && $moduleToEnroll->id !== $firstModule->id) {
                 
-                // Buscar el módulo inmediatamente anterior
                 $previousModule = $this->course->modules()
                     ->where('id', '<', $moduleToEnroll->id)
                     ->orderBy('id', 'desc')
                     ->first();
 
                 if ($previousModule) {
-                    // Verificar si el estudiante aprobó (o completó) el módulo anterior
                     $passedPrevious = Enrollment::where('student_id', $student->id)
                         ->where('module_id', $previousModule->id)
                         ->where(function($q) {
@@ -121,13 +134,12 @@ class CourseDetail extends Component
 
                     if (!$passedPrevious) {
                         session()->flash('error', 'Requisito no cumplido: Debes aprobar el módulo "' . $previousModule->name . '" antes de inscribirte en este.');
-                        return; // Detener proceso
+                        return; 
                     }
                 }
             }
         }
 
-        // Si pasa validaciones, crear inscripción
         Enrollment::create([
             'student_id' => $student->id,
             'module_id' => $moduleId,
@@ -137,13 +149,9 @@ class CourseDetail extends Component
 
         session()->flash('success', 'Inscripción exitosa en el módulo: ' . $moduleToEnroll->name);
         
-        // Recargar la página para ver cambios
         return redirect()->route('student.course-detail', ['enrollmentId' => $this->enrollment->id]);
     }
 
-    /**
-     * Carga y calcula el resumen de asistencia para esta inscripción.
-     */
     public function loadAttendanceSummary()
     {
         if (!$this->enrollment) {
@@ -176,9 +184,6 @@ class CourseDetail extends Component
         session()->flash('message', 'Tu solicitud de cambio de sección ha sido enviada.');
     }
 
-    /**
-     * Renderiza la vista.
-     */
     public function render()
     {
         if (!$this->enrollment) {
@@ -186,9 +191,23 @@ class CourseDetail extends Component
                     ->layout('layouts.dashboard');
         }
 
+        // --- RENDERIZADO CONDICIONAL DE BLOQUEO ---
+        // Si hay deuda, retornamos una vista bloqueada o pasamos la variable para que la vista lo maneje
+        if ($this->isBlocked) {
+             // Opción A: Renderizar una vista específica de bloqueo (Recomendado)
+             // return view('livewire.student-portal.course-blocked', ['amount' => $this->pendingAmount]);
+             
+             // Opción B: Usar la misma vista pero pasar la bandera (requiere modificar el blade)
+             // Asumiré Opción B para mantener compatibilidad con tu estructura actual.
+             // En tu blade deberías poner: @if($isBlocked) <div...>PAGUE AHORA</div> @else ... @endif
+        }
+        // -------------------------------------------
+
         return view('livewire.student-portal.course-detail', [
-            'course' => $this->course, // Pasar variable extra a la vista
-            'allModules' => $this->allModules // Pasar módulos para listar opciones
+            'course' => $this->course, 
+            'allModules' => $this->allModules,
+            'isBlocked' => $this->isBlocked, // Pasamos la variable a la vista
+            'pendingAmount' => $this->pendingAmount
         ])->layout('layouts.dashboard'); 
     }
 }

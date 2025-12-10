@@ -18,7 +18,9 @@ class Course extends Model
         'name',
         'description',
         'code',
-        'is_sequential', // Nuevo campo añadido
+        'is_sequential',
+        'registration_fee', // Nuevo
+        'monthly_fee',      // Nuevo
     ];
 
     /**
@@ -28,6 +30,8 @@ class Course extends Model
      */
     protected $casts = [
         'is_sequential' => 'boolean',
+        'registration_fee' => 'decimal:2',
+        'monthly_fee' => 'decimal:2',
     ];
 
     /**

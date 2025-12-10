@@ -16,6 +16,12 @@ return new class extends Migration
             $table->id();
             $table->string('name')->unique(); // Ej: "Informática"
             $table->text('description')->nullable();
+            
+            // --- NUEVOS CAMPOS DE PRECIOS ---
+            $table->decimal('registration_fee', 10, 2)->default(0); // Precio de Inscripción
+            $table->decimal('monthly_fee', 10, 2)->default(0);      // Precio de Mensualidad
+            // --------------------------------
+
             $table->string('status')->default('Activo'); // Activo, Inactivo
             $table->timestamps();
         });
