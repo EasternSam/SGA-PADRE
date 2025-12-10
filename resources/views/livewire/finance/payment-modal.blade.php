@@ -6,7 +6,8 @@
 >
     {{-- 
         BACKDROP
-        Fondo oscuro con desenfoque (backdrop-blur) para modernidad.
+        Uso style inline para garantizar la opacidad sin importar la versión de Tailwind.
+        Esto asegura que el fondo SIEMPRE se vea oscuro.
     --}}
     <div 
         x-show="show"
@@ -16,7 +17,8 @@
         x-transition:leave="ease-in duration-200"
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
-        class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm transition-opacity"
+        class="fixed inset-0 bg-gray-900 transition-opacity backdrop-blur-sm"
+        style="background-color: rgba(17, 24, 39, 0.8);" 
         aria-hidden="true"
     ></div>
 
@@ -27,16 +29,12 @@
     >
         {{-- 
             FLEX CONTAINER
-            Aquí aplicamos el padding (p-4 sm:p-6 md:p-10) para que el modal flote
-            y no toque los bordes. Centrado vertical y horizontalmente.
+            Padding generoso para efecto flotante.
         --}}
-        <div class="flex min-h-full items-center justify-center p-4 sm:p-6 md:p-10 text-center">
+        <div class="flex min-h-full items-center justify-center p-4 sm:p-6 md:p-8 text-center">
             
             {{-- 
                 PANEL DEL MODAL
-                - max-w-6xl: Ancho controlado.
-                - rounded-2xl: Esquinas más modernas.
-                - shadow-2xl: Profundidad.
             --}}
             <div 
                 x-show="show"
@@ -51,7 +49,7 @@
                 class="relative w-full max-w-6xl bg-white rounded-2xl shadow-2xl overflow-hidden text-left transform transition-all border border-gray-100"
             >
                 
-                {{-- HEADER SIMPLE Y LIMPIO --}}
+                {{-- HEADER --}}
                 <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-20">
                     <div class="flex items-center gap-3">
                         <div class="bg-indigo-50 p-2 rounded-lg text-indigo-600">
@@ -69,14 +67,12 @@
 
                 {{-- 
                     CONTENIDO PRINCIPAL (FLEXBOX) 
-                    Cambiado de Grid a Flex para mejor control de columnas.
                 --}}
                 <div class="flex flex-col lg:flex-row min-h-[500px]">
                     
                     {{-- 
                         COLUMNA 1: SELECCIÓN DE ESTUDIANTE 
-                        Ancho: 4/12 (aprox 33%) en desktop.
-                        Fondo gris muy suave.
+                        Ancho: 35% aprox
                     --}}
                     <div class="w-full lg:w-4/12 bg-gray-50/50 border-r border-gray-200 flex flex-col">
                         
@@ -169,8 +165,7 @@
 
                     {{-- 
                         COLUMNA 2: FORMULARIO DE PAGO 
-                        Ancho: 8/12 (aprox 67%) en desktop.
-                        Fondo blanco.
+                        Ancho: 65% aprox
                     --}}
                     <div class="w-full lg:w-8/12 bg-white flex flex-col relative">
                         
