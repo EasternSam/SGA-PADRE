@@ -1,5 +1,4 @@
-{{-- Eliminamos el @php de Carbon, ya que se usará en el controlador o en helpers de Blade --}}
-{{-- --- ¡MODIFICACIÓN! Se quita el listener 'open-new-tab' --- --}}
+{{-- Eliminamos el @php de Carbon --}}
 <div class="container mx-auto p-4 md:p-6 lg:p-8"
      x-data="{ activeTab: 'enrollments' }">
 
@@ -62,8 +61,6 @@
                 <div class="flex justify-between items-start mb-4">
                     <h2 class="text-xl font-semibold text-gray-800">Detalles del Estudiante</h2>
                     <div>
-                        {{-- --- ¡¡¡BOTÓN MODIFICADO!!! --- --}}
-                        {{-- Llama al método 'editStudent' del componente PHP --}}
                         <button 
                             type="button" 
                             wire:click="editStudent"
@@ -73,9 +70,6 @@
                     </div>
                 </div>
 
-                <!-- ============================================= -->
-                <!--     ACTUALIZADO: Detalles del Estudiante      -->
-                <!-- ============================================= -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
                         <strong class="text-gray-500 block">Matrícula (Student Code):</strong>
@@ -116,9 +110,6 @@
                         <span class="text-gray-900">{{ $student->sector ?? 'N/A' }}</span>
                     </div>
                 </div>
-                <!-- ============================================= -->
-                <!--        FIN DE LA ACTUALIZACIÓN                -->
-                <!-- ============================================= -->
 
                 <hr class="my-6 border-gray-200">
 
@@ -127,13 +118,10 @@
                         <i class="fas fa-plus-circle mr-2"></i>Inscribir a Curso
                     </button>
                     
-                    {{-- Este es el botón que dispara el evento para abrir el PDF en el modal --}}
                     <button wire:click="generateReport" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
                         <i class="fas fa-file-pdf mr-2"></i>Generar Reporte
                     </button>
 
-                    {{-- ¡¡¡CORRECCIÓN #1!!! --}}
-                    {{-- Llama al evento 'openPaymentModal' que el componente PaymentModal está escuchando --}}
                     <button wire:click="$dispatch('openPaymentModal')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
                         <i class="fas fa-dollar-sign mr-2"></i>Registrar Pago
                     </button>
@@ -147,7 +135,6 @@
         <!-- Pestañas -->
         <div class="border-b border-gray-200">
             <nav class="-mb-px flex space-x-6 px-6" aria-label="Tabs">
-                {{-- Se usa '@click' de Alpine para manejar las pestañas --}}
                 <button @click="activeTab = 'enrollments'"
                         :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'enrollments', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'enrollments' }"
                         class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
@@ -166,9 +153,6 @@
             </nav>
         </div>
 
-        <!-- ============================================= -->
-        <!--   ACTUALIZADO: Contenido Pestaña Inscripciones  -->
-        <!-- ============================================= -->
         <div class="p-6 space-y-8" x-show="activeTab === 'enrollments'" x-cloak>
             
             <!-- 1. Inscripciones Pendientes de Pago -->
@@ -204,9 +188,6 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                                        
-                                        {{-- ¡¡¡CORRECCIÓN AQUÍ!!! --}}
-                                        {{-- Despachar el nuevo evento 'payEnrollment' con el ID --}}
                                         <button 
                                             wire:click="$dispatch('payEnrollment', { enrollmentId: {{ $enrollment->id }} })" 
                                             class="text-yellow-600 hover:text-yellow-900 transition ease-in-out duration-150" 
@@ -322,17 +303,12 @@
             </div>
 
         </div>
-        <!-- ============================================= -->
-        <!--        FIN DE LA ACTUALIZACIÓN                -->
-        <!-- ============================================= -->
 
-
-        {{-- Historial de Pagos (Pestaña Original) --}}
+        {{-- Historial de Pagos --}}
         <div class="p-6" x-show="activeTab === 'payments'" x-cloak>
              <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-gray-800">Historial de Pagos</h3>
                 @can('create payments')
-                    {{-- ¡¡¡CORRECCIÓN #3!!! --}}
                     <button wire:click="$dispatch('openPaymentModal')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
                         <i class="fas fa-plus-circle mr-2"></i>Registrar Pago
                     </button>
@@ -353,7 +329,7 @@
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        @forelse ($payments as $payment) {{-- $payments es la variable paginada $allPayments --}}
+                        @forelse ($payments as $payment)
                             <tr class="hover:bg-gray-50" wire:key="payment-{{ $payment->id }}">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $payment->created_at->format('d/m/Y') }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -364,7 +340,7 @@
                                     <span class="text-xs text-gray-400">({{ $payment->enrollment->courseSchedule->module->name ?? 'N/A' }})</span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${{ number_format($payment->amount, 2) }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $payment->gateway ?? 'N/A' }}</td> {{-- Corregido de payment_method a gateway --}}
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $payment->gateway ?? 'N/A' }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span @class([
                                             'px-2 inline-flex text-xs leading-5 font-semibold rounded-full',
@@ -393,7 +369,7 @@
              </div>
         </div>
 
-        {{-- Próximamente (Pestaña Original) --}}
+        {{-- Próximamente --}}
         <div class="p-6" x-show="activeTab === 'communication'" x-cloak>
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-medium leading-6 text-gray-900">
@@ -407,7 +383,7 @@
     </div>
 
 
-    {{-- Modal para Inscribir Estudiante (Original) --}}
+    {{-- Modal para Inscribir Estudiante (MODIFICADO) --}}
     <x-modal name="enroll-student-modal" maxWidth="3xl">
         <form wire:submit.prevent="enrollStudent">
             <div class="p-6 bg-white">
@@ -415,12 +391,17 @@
                     Inscribir Estudiante a Nueva Sección
                 </h2>
 
-                {{-- (ACTUALIZADO) Mostrar el error de validación de las reglas de negocio --}}
                 <x-input-error :messages="$errors->get('selectedScheduleId')" class="mt-2 mb-4" />
 
                 <div class="mb-4">
                     <x-input-label for="searchCourse" value="Buscar Curso o Módulo" />
-                    <x-text-input wire:model.live.debounce.300ms="searchAvailableCourse" id="searchCourse" class="block mt-1 w-full" type="text" placeholder="Escriba para buscar..." />
+                    <x-text-input 
+                        wire:model.live.debounce.300ms="searchAvailableCourse" 
+                        id="searchCourse" 
+                        class="block mt-1 w-full" 
+                        type="text" 
+                        placeholder="Escriba el nombre del curso, módulo o código..." 
+                    />
                 </div>
 
                 <div class="max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
@@ -451,10 +432,10 @@
                             @empty
                             <tr>
                                 <td colspan="4" class="px-6 py-12 text-center text-gray-500">
-                                    @if(strlen($searchAvailableCourse) < 3)
-                                        Escriba al menos 3 caracteres para buscar...
+                                    @if(strlen($searchAvailableCourse) > 0)
+                                        No se encontraron secciones.
                                     @else
-                                        No se encontraron secciones (el estudiante puede ya estar inscrito).
+                                        Escriba para buscar cursos disponibles...
                                     @endif
                                 </td>
                             </tr>
@@ -508,13 +489,11 @@
         </div>
     </x-modal>
 
-    {{-- Incluir el modal de pago en la página (Original) --}}
+    {{-- Incluir el modal de pago en la página --}}
     @livewire('finance.payment-modal', ['student' => $student], key('payment-modal-'.$student->id))
 
-    {{-- Alinear esto con el resto de la página (Original) --}}
     @can('view courses')
     <div class="mt-6 bg-white overflow-hidden shadow-xl sm:rounded-lg">
-        {{-- Esto estaba causando que se renderizara la página de cursos aquí, lo comento --}}
         {{-- <livewire:courses.index /> --}}
     </div>
     @endcan
@@ -528,14 +507,12 @@
                     {{ $modalTitle }}
                 </h2>
 
-                {{-- Contenedor Flex para dividir el formulario en dos columnas --}}
                 <div class="flex flex-col md:flex-row gap-6">
 
                     {{-- Columna 1: Información Personal --}}
                     <div class="flex-1 space-y-4">
                         <h3 class="text-md font-semibold text-gray-700 border-b pb-2">Información Personal</h3>
                         
-                        {{-- Fila para Nombre y Apellido --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <x-input-label for="first_name" value="Nombre" />
@@ -549,7 +526,6 @@
                             </div>
                         </div>
 
-                        {{-- Fila para Cédula y Email --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <x-input-label for="cedula" value="Cédula/DNI" />
@@ -563,7 +539,6 @@
                             </div>
                         </div>
 
-                        {{-- Fila para Teléfonos --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <x-input-label for="mobile_phone" value="Teléfono Móvil" />
@@ -577,14 +552,12 @@
                             </div>
                         </div>
                         
-                        {{-- Fila para Dirección --}}
                         <div>
                             <x-input-label for="address" value="Dirección (Opcional)" />
                             <x-text-input wire:model="address" id="address" class="block mt-1 w-full" type="text" />
                             <x-input-error :messages="$errors->get('address')" class="mt-2" />
                         </div>
 
-                        {{-- Fila para Ciudad y Sector --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <x-input-label for="city" value="Ciudad (Opcional)" />
@@ -598,7 +571,6 @@
                             </div>
                         </div>
 
-                        {{-- Fila para Fecha Nacimiento y Género --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <x-input-label for="birth_date" value="Fecha de Nacimiento" />
@@ -617,7 +589,6 @@
                             </div>
                         </div>
 
-                        {{-- Fila para Nacionalidad y Cómo se enteró --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <x-input-label for="nationality" value="Nacionalidad (Opcional)" />
@@ -636,7 +607,6 @@
                     <div class="flex-1 space-y-4">
                         <h3 class="text-md font-semibold text-gray-700 border-b pb-2">Información del Tutor</h3>
                         
-                        {{-- Checkbox para ¿Es menor? --}}
                         <div class="block">
                             <label for="is_minor" class="inline-flex items-center">
                                 <input wire:model.live="is_minor" id="is_minor" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
@@ -644,7 +614,6 @@
                             </label>
                         </div>
 
-                        {{-- Campos del Tutor (condicionales) --}}
                         @if ($is_minor)
                             <div class="space-y-4 p-4 bg-gray-50 rounded-lg border">
                                 <div>
@@ -682,9 +651,7 @@
                 </div>
             </div>
 
-            {{-- Pie del Modal --}}
             <div class="flex justify-end mt-6 p-6 bg-gray-100 rounded-b-lg">
-                {{-- ¡¡¡MODIFICADO!!! Llama a closeStudentModal --}}
                 <x-secondary-button x-on:click="$dispatch('close')" wire:click="closeStudentModal">
                     Cancelar
                 </x-secondary-button>
@@ -695,16 +662,11 @@
             </div>
         </form>
     </x-modal>
-    {{-- --- ¡¡¡FIN DEL CÓDIGO AÑADIDO PARA MODAL DE ESTUDIANTE!!! --- --}}
     
-    
-    {{-- --- ¡¡¡INICIO DEL CÓDIGO AÑADIDO PARA MODAL DE PDF!!! --- --}}
     <div
         x-data="{ show: false, pdfUrl: '' }"
         @open-pdf-modal.window="
-            console.log('Evento open-pdf-modal recibido.');
             pdfUrl = $event.detail.url;
-            console.log('URL recibida:', pdfUrl);
             show = true;
         "
         x-show="show"
@@ -716,10 +678,8 @@
         style="display: none;"
     >
         <div class="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <!-- Fondo oscuro -->
             <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" @click="show = false; pdfUrl = ''" aria-hidden="true"></div>
 
-            <!-- Contenedor del Modal -->
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             <div
                 x-show="show"
@@ -731,7 +691,6 @@
                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 class="inline-block w-full max-w-6xl p-4 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg"
             >
-                <!-- Encabezado del Modal -->
                 <div class="flex justify-between items-center pb-3 border-b">
                     <h3 class="text-lg font-medium leading-6 text-gray-900" id="modal-title">
                         Visor de Reporte
@@ -744,14 +703,12 @@
                     </button>
                 </div>
 
-                <!-- Contenido del Modal (iframe) -->
                 <div class="mt-4" style="width: 100%; height: 75vh;">
                     <iframe :src="pdfUrl" frameborder="0" width="100%" height="100%">
                         Tu navegador no soporta iframes. Por favor, descarga el reporte.
                     </iframe>
                 </div>
 
-                <!-- Pie del Modal -->
                 <div class="flex justify-end pt-4 mt-4 border-t">
                     <a :href="pdfUrl" download class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                         <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -766,6 +723,5 @@
             </div>
         </div>
     </div>
-    {{-- --- ¡¡¡FIN DEL CÓDIGO AÑADIDO PARA MODAL DE PDF!!! --- --}}
 
 </div>
