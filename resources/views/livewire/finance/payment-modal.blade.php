@@ -120,7 +120,7 @@
                                             <div class="min-w-0">
                                                 <h4 class="font-bold text-gray-900 text-sm leading-tight truncate">{{ $student->first_name }} {{ $student->last_name }}</h4>
                                                 <div class="flex items-center gap-1">
-                                                    <span class="text-[10px] uppercase font-bold text-indigo-400">ID</span>
+                                                    <span class="text-[10px] uppercase font-bold text-indigo-400">Matricula</span>
                                                     <span class="text-xs text-indigo-700 font-bold truncate">{{ $student->student_code }}</span>
                                                 </div>
                                             </div>
