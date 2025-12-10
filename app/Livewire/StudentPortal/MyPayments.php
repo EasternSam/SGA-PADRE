@@ -6,32 +6,36 @@ use Livewire\Component;
 use App\Models\Student;
 use App\Models\Enrollment;
 use App\Models\Payment;
+use App\Models\PaymentConcept;
 use App\Services\MatriculaService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\WithPagination;
+use Livewire\Attributes\Layout; // Importar atributo Layout
 
+// Especificar el layout que usa tu aplicación (layouts.app o layouts.dashboard)
+#[Layout('layouts.dashboard')] 
 class MyPayments extends Component
 {
     use WithPagination;
 
     public $student;
     
-    // Propiedades del Modal de Pago
+    // --- Modal de Pago ---
     public $showPaymentModal = false;
     public $selectedEnrollmentId;
     public $selectedEnrollment;
     public $amountToPay = 0;
-    public $paymentMethod = 'card'; // 'card', 'transfer'
+    public $paymentMethod = 'card'; // 'card' o 'transfer'
     
-    // Campos simulados de tarjeta
+    // Campos Tarjeta (Simulados)
     public $cardName;
     public $cardNumber;
     public $cardExpiry;
     public $cardCvc;
 
-    // Campos de transferencia
+    // Campos Transferencia
     public $transferReference;
 
     protected $rules = [
@@ -44,29 +48,32 @@ class MyPayments extends Component
     ];
 
     protected $messages = [
-        'required_if' => 'Este campo es obligatorio para el método seleccionado.',
-        'cardNumber.min' => 'El número de tarjeta es inválido.',
+        'required_if' => 'Este campo es obligatorio.',
+        'cardNumber.min' => 'Número de tarjeta inválido.',
         'cardCvc.min' => 'CVC inválido.',
     ];
 
     public function mount()
     {
-        // Obtener el estudiante asociado al usuario logueado
-        $this->student = Student::where('user_id', Auth::id())->firstOrFail();
+        // Buscar el estudiante vinculado al usuario logueado
+        $this->student = Student::where('user_id', Auth::id())->first();
     }
 
     public function openPaymentModal($enrollmentId)
     {
         $this->resetValidation();
         $this->reset(['cardName', 'cardNumber', 'cardExpiry', 'cardCvc', 'transferReference', 'paymentMethod']);
-        $this->paymentMethod = 'card'; // Default
+        $this->paymentMethod = 'card';
 
         $this->selectedEnrollmentId = $enrollmentId;
         $this->selectedEnrollment = Enrollment::with('courseSchedule.module')->findOrFail($enrollmentId);
         
-        // Calcular monto (precio del módulo - pagos parciales si hubieran)
-        // Por ahora asumimos pago total del módulo
-        $this->amountToPay = $this->selectedEnrollment->courseSchedule->module->price ?? 0;
+        // Determinar el monto a pagar
+        if ($this->selectedEnrollment->payment && $this->selectedEnrollment->payment->status == 'Pendiente') {
+            $this->amountToPay = $this->selectedEnrollment->payment->amount;
+        } else {
+            $this->amountToPay = $this->selectedEnrollment->courseSchedule->module->price ?? 0;
+        }
 
         $this->showPaymentModal = true;
     }
@@ -80,67 +87,75 @@ class MyPayments extends Component
     {
         $this->validate();
 
+        if (!$this->student) return;
+
         try {
             DB::transaction(function () use ($matriculaService) {
                 
-                // 1. Determinar estado según método de pago
-                // Tarjeta = Completado (Simulación de éxito)
-                // Transferencia = Pendiente (Requiere revisión administrativa)
                 $status = ($this->paymentMethod === 'card') ? 'Completado' : 'Pendiente';
-                $gateway = ($this->paymentMethod === 'card') ? 'Tarjeta de Crédito (Online)' : 'Transferencia Bancaria';
-                $reference = ($this->paymentMethod === 'card') ? 'ONLINE-' . strtoupper(uniqid()) : $this->transferReference;
+                $gateway = ($this->paymentMethod === 'card') ? 'Tarjeta Online' : 'Transferencia Bancaria';
+                
+                $reference = ($this->paymentMethod === 'card') 
+                    ? 'TX-' . strtoupper(uniqid()) 
+                    : $this->transferReference;
 
-                // 2. Crear el registro de Pago
-                $payment = Payment::create([
-                    'student_id' => $this->student->id,
-                    'enrollment_id' => $this->selectedEnrollmentId,
-                    'payment_concept_id' => $this->selectedEnrollment->courseSchedule->module->payment_concept_id ?? 1, // Fallback a ID 1 o buscar 'Mensualidad'
-                    'amount' => $this->amountToPay,
-                    'currency' => 'DOP',
-                    'status' => $status,
-                    'gateway' => $gateway,
-                    'transaction_id' => $reference,
-                    'user_id' => Auth::id(), // El propio estudiante registra su acción
-                ]);
+                $payment = Payment::updateOrCreate(
+                    [
+                        'enrollment_id' => $this->selectedEnrollmentId,
+                        'status' => 'Pendiente'
+                    ],
+                    [
+                        'student_id' => $this->student->id,
+                        'payment_concept_id' => $this->selectedEnrollment->courseSchedule->module->payment_concept_id ?? 1, 
+                        'amount' => $this->amountToPay,
+                        'currency' => 'DOP',
+                        'status' => $status,
+                        'gateway' => $gateway,
+                        'transaction_id' => $reference,
+                        'user_id' => Auth::id(),
+                    ]
+                );
 
-                // 3. Actualizar la Inscripción si el pago fue exitoso (Tarjeta)
                 if ($status === 'Completado') {
-                    
-                    // Si el estudiante es nuevo (sin matrícula), generar matrícula
                     if (!$this->student->student_code) {
                         $matriculaService->generarMatricula($payment);
+                        $this->student->refresh();
                     }
 
-                    // Activar la inscripción
                     $enrollment = Enrollment::find($this->selectedEnrollmentId);
-                    $enrollment->status = 'Cursando';
-                    $enrollment->save();
+                    if ($enrollment) {
+                        $enrollment->status = 'Cursando';
+                        $enrollment->save();
+                    }
 
-                    session()->flash('message', '¡Pago procesado con éxito! Tu inscripción está activa.');
+                    session()->flash('message', '¡Pago realizado con éxito! Tu inscripción está activa.');
                 } else {
-                    session()->flash('message', 'Pago reportado correctamente. Esperando validación administrativa.');
+                    session()->flash('message', 'Pago reportado. Tu inscripción se activará al validar la transferencia.');
                 }
-
             });
 
             $this->closeModal();
-            // No necesitamos $this->dispatch('$refresh') porque Livewire refresca automáticamente al cambiar estado
 
         } catch (\Exception $e) {
-            Log::error('Error en pago estudiante: ' . $e->getMessage());
-            $this->addError('general', 'Ocurrió un error al procesar el pago. Intente nuevamente.');
+            Log::error('Error pago estudiante: ' . $e->getMessage());
+            $this->addError('general', 'Error procesando el pago. Intente más tarde.');
         }
     }
 
     public function render()
     {
-        // 1. Deudas Pendientes (Inscripciones en estado Pendiente)
+        if (!$this->student) {
+            return view('livewire.student-portal.my-payments', [
+                'pendingDebts' => collect(),
+                'paymentHistory' => collect()
+            ]);
+        }
+
         $pendingDebts = Enrollment::where('student_id', $this->student->id)
             ->whereIn('status', ['Pendiente', 'pendiente'])
-            ->with(['courseSchedule.module.course', 'courseSchedule.teacher'])
+            ->with(['courseSchedule.module.course', 'courseSchedule.teacher', 'payment'])
             ->get();
 
-        // 2. Historial de Pagos
         $paymentHistory = Payment::where('student_id', $this->student->id)
             ->with(['paymentConcept', 'enrollment.courseSchedule.module'])
             ->orderBy('created_at', 'desc')
