@@ -6,7 +6,7 @@
 >
     {{-- 
         BACKDROP
-        Opacidad fija y oscura para resaltar el modal.
+        Fondo oscuro fijo.
     --}}
     <div 
         x-show="show"
@@ -26,12 +26,16 @@
         x-show="show"
         class="fixed inset-0 z-10 overflow-y-auto"
     >
-        {{-- FLEX CONTAINER: Padding ajustado a 8px (p-2) según instrucción --}}
+        {{-- 
+            FLEX CONTAINER
+            Padding de 8px (p-2) para evitar bordes pegados en móviles/tablets
+            y centrado vertical/horizontal.
+        --}}
         <div class="flex min-h-full items-center justify-center p-2 text-center">
             
             {{-- 
                 PANEL DEL MODAL
-                Borde reforzado y sombra suave.
+                Borde sólido y sombra profunda para destacar sobre el fondo.
             --}}
             <div 
                 x-show="show"
@@ -43,14 +47,14 @@
                 x-transition:leave="ease-in duration-200" 
                 x-transition:leave-start="opacity-100 translate-y-0 scale-100" 
                 x-transition:leave-end="opacity-0 translate-y-4 scale-95"
-                class="relative w-full max-w-7xl bg-white rounded-xl shadow-2xl overflow-hidden text-left transform transition-all border border-gray-200"
+                class="relative w-full max-w-7xl bg-white rounded-xl shadow-2xl overflow-hidden text-left transform transition-all border border-gray-300"
             >
                 
                 {{-- HEADER --}}
-                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-white sticky top-0 z-20 shadow-sm">
+                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50 sticky top-0 z-20 shadow-sm">
                     <div class="flex items-center gap-3">
-                        <div class="bg-indigo-600 p-2 rounded-lg text-white shadow-md">
-                            <!-- Icono Caja Registradora SVG -->
+                        <div class="bg-indigo-600 p-2 rounded-lg text-white shadow-md flex-shrink-0">
+                            <!-- Icono Caja -->
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" />
                             </svg>
@@ -72,25 +76,31 @@
                     
                     {{-- 
                         COLUMNA 1: SELECCIÓN DE ESTUDIANTE 
-                        Fondo gris claro para diferenciar del área de trabajo.
+                        Fondo gris claro para contraste con el área blanca de trabajo.
                     --}}
-                    <div class="w-full lg:w-4/12 bg-gray-50 border-r border-gray-200 flex flex-col">
+                    <div class="w-full lg:w-4/12 bg-gray-100 border-r border-gray-300 flex flex-col">
                         
                         {{-- Buscador --}}
-                        <div class="p-5 border-b border-gray-200 bg-white">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Buscar Cliente</label>
+                        <div class="p-5 border-b border-gray-300 bg-gray-100">
+                            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">Buscar Cliente</label>
                             <div class="relative group">
-                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 group-focus-within:text-indigo-600 transition-colors">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 pointer-events-none">
                                     <!-- Lupa SVG -->
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                                     </svg>
                                 </span>
-                                {{-- Input con texto oscuro forzado y fondo blanco --}}
+                                {{-- 
+                                    Corrección de Diseño:
+                                    - pl-11: Padding izquierdo extra para que el texto no toque la lupa.
+                                    - bg-white: Fondo blanco explícito.
+                                    - text-gray-900: Texto negro fuerte.
+                                    - border-gray-300: Borde visible.
+                                --}}
                                 <input 
                                     type="text" 
                                     wire:model.live.debounce.300ms="search_query"
-                                    class="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
+                                    class="w-full pl-11 pr-4 py-3 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
                                     placeholder="Nombre, Matrícula o Cédula..."
                                 >
                             </div>
@@ -100,7 +110,7 @@
                         <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
                             @if($student)
                                 {{-- Tarjeta de Estudiante Seleccionado --}}
-                                <div class="bg-white p-5 rounded-xl border-2 border-indigo-100 shadow-md relative group animate-fade-in">
+                                <div class="bg-white p-5 rounded-xl border border-indigo-200 shadow-md relative group animate-fade-in">
                                     <button 
                                         wire:click="clearStudent" 
                                         class="absolute top-2 right-2 text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors z-10"
@@ -112,19 +122,19 @@
                                     </button>
 
                                     <div class="flex items-center gap-4 mb-4">
-                                        <div class="h-14 w-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md ring-2 ring-white">
+                                        <div class="h-14 w-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md ring-2 ring-white flex-shrink-0">
                                             {{ substr($student->first_name, 0, 1) }}{{ substr($student->last_name, 0, 1) }}
                                         </div>
-                                        <div>
-                                            <h4 class="font-bold text-gray-900 text-lg leading-tight">{{ $student->first_name }}</h4>
-                                            <h4 class="text-gray-600 text-sm font-medium">{{ $student->last_name }}</h4>
+                                        <div class="min-w-0">
+                                            <h4 class="font-bold text-gray-900 text-lg leading-tight truncate">{{ $student->first_name }}</h4>
+                                            <h4 class="text-gray-600 text-sm font-medium truncate">{{ $student->last_name }}</h4>
                                         </div>
                                     </div>
                                     
                                     <div class="space-y-3 pt-2 border-t border-gray-100">
                                         <div class="flex justify-between items-center">
                                             <span class="text-xs text-gray-500 uppercase font-bold">Matrícula</span>
-                                            <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">{{ $student->id_number }}</span>
+                                            <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded border border-indigo-100">{{ $student->id_number }}</span>
                                         </div>
                                         <div class="flex flex-col">
                                             <span class="text-xs text-gray-500 uppercase font-bold mb-0.5">Email</span>
@@ -145,17 +155,17 @@
 
                             @elseif(count($student_results) > 0)
                                 <div class="px-1 pb-1">
-                                    <span class="text-xs font-bold text-gray-400 uppercase">Resultados encontrados</span>
+                                    <span class="text-xs font-bold text-gray-500 uppercase">Resultados encontrados</span>
                                 </div>
                                 @foreach($student_results as $result)
                                     <div 
                                         wire:click="selectStudent({{ $result->id }})"
-                                        class="p-3 bg-white rounded-lg border border-gray-200 hover:border-indigo-400 hover:shadow-md cursor-pointer transition-all flex items-center gap-3 group"
+                                        class="p-3 bg-white rounded-lg border border-gray-300 hover:border-indigo-500 hover:shadow-md cursor-pointer transition-all flex items-center gap-3 group"
                                     >
-                                        <div class="h-10 w-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors border border-indigo-100">
+                                        <div class="h-10 w-10 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors border border-indigo-200 flex-shrink-0">
                                             {{ substr($result->first_name, 0, 1) }}
                                         </div>
-                                        <div class="min-w-0">
+                                        <div class="min-w-0 flex-1">
                                             <div class="font-bold text-sm text-gray-900 truncate">{{ $result->first_name }} {{ $result->last_name }}</div>
                                             <div class="text-xs text-gray-500 truncate font-medium">ID: {{ $result->id_number }}</div>
                                         </div>
@@ -163,10 +173,10 @@
                                 @endforeach
                             @else
                                 <div class="h-64 flex flex-col items-center justify-center text-gray-400 opacity-60">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16 mb-3 text-gray-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16 mb-3 text-gray-400">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                                     </svg>
-                                    <p class="text-sm font-medium">Busque para ver resultados</p>
+                                    <p class="text-sm font-medium text-gray-500">Busque para ver resultados</p>
                                 </div>
                             @endif
                         </div>
@@ -174,7 +184,7 @@
 
                     {{-- 
                         COLUMNA 2: FORMULARIO DE PAGO 
-                        Fondo blanco puro para claridad.
+                        Fondo blanco puro.
                     --}}
                     <div class="w-full lg:w-8/12 bg-white flex flex-col relative">
                         
@@ -184,7 +194,7 @@
                             x-transition.opacity
                             class="absolute inset-0 bg-white/90 z-10 flex flex-col items-center justify-center text-center backdrop-blur-sm"
                         >
-                            <div class="bg-white p-8 rounded-2xl border border-gray-200 shadow-lg max-w-xs">
+                            <div class="bg-white p-8 rounded-2xl border border-gray-200 shadow-xl max-w-xs">
                                 <div class="mx-auto h-16 w-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-4 border border-indigo-100">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
@@ -201,8 +211,8 @@
                                 
                                 {{-- 1. Alerta de Deuda Pendiente --}}
                                 @if($studentEnrollments && $studentEnrollments->count() > 0)
-                                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-fade-in-down">
-                                        <div class="flex items-center gap-3 text-amber-800">
+                                    <div class="bg-amber-50 border border-amber-300 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-fade-in-down">
+                                        <div class="flex items-center gap-3 text-amber-900">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
                                             </svg>
@@ -210,7 +220,7 @@
                                         </div>
                                         <select 
                                             wire:model.live="enrollment_id" 
-                                            class="text-sm border-amber-300 rounded-md focus:ring-amber-500 focus:border-amber-500 bg-white text-gray-800 font-medium py-2 pl-3 pr-8 w-full sm:w-auto shadow-sm"
+                                            class="text-sm border-amber-300 rounded-md focus:ring-amber-500 focus:border-amber-500 bg-white text-gray-900 font-medium py-2 pl-3 pr-8 w-full sm:w-auto shadow-sm"
                                         >
                                             <option value="">-- Seleccionar Deuda para Pagar --</option>
                                             @foreach($studentEnrollments as $enrollment)
@@ -229,7 +239,7 @@
                                         <div class="relative">
                                             <select 
                                                 wire:model.live="payment_concept_id" 
-                                                class="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 pl-4 pr-10 text-gray-900 font-medium transition-colors {{ $isConceptDisabled ? 'bg-gray-100 text-gray-500' : '' }}"
+                                                class="w-full h-12 bg-white border border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 pl-4 pr-10 text-gray-900 font-medium transition-colors {{ $isConceptDisabled ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : '' }}"
                                                 {{ $isConceptDisabled ? 'disabled' : '' }}
                                             >
                                                 <option value="">Seleccione...</option>
@@ -246,7 +256,7 @@
                                         <div class="relative">
                                             <select 
                                                 wire:model="status" 
-                                                class="w-full h-11 bg-white border border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 pl-4 pr-10 text-gray-900 font-medium"
+                                                class="w-full h-12 bg-white border border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 pl-4 pr-10 text-gray-900 font-medium"
                                             >
                                                 <option value="Completado">Completado (Pagado)</option>
                                                 <option value="Pendiente">Pendiente (Por Cobrar)</option>
@@ -256,14 +266,14 @@
                                 </div>
 
                                 {{-- 3. Área Principal: Monto y Método --}}
-                                <div class="bg-gray-50 rounded-xl p-6 border border-gray-200 shadow-inner">
+                                <div class="bg-gray-50 rounded-xl p-6 border border-gray-300 shadow-inner">
                                     <div class="flex flex-col md:flex-row gap-8">
                                         
                                         {{-- Input Monto --}}
                                         <div class="flex-1">
                                             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Monto a Cobrar (DOP)</label>
                                             <div class="relative group">
-                                                <span class="absolute left-0 top-1/2 -translate-y-1/2 pl-4 text-gray-400 text-3xl font-light group-focus-within:text-indigo-500 transition-colors">$</span>
+                                                <span class="absolute left-0 top-1/2 -translate-y-1/2 pl-4 text-gray-500 text-3xl font-light group-focus-within:text-indigo-600 transition-colors">$</span>
                                                 <input 
                                                     type="number" 
                                                     step="0.01" 
@@ -284,7 +294,7 @@
                                                     <button 
                                                         type="button"
                                                         wire:click="$set('gateway', '{{ $method }}')"
-                                                        class="py-3 px-2 text-xs font-bold rounded-lg border transition-all flex items-center justify-center gap-2 {{ $gateway === $method ? 'bg-indigo-600 text-white border-indigo-600 shadow-md ring-1 ring-indigo-600' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400 hover:bg-gray-50' }}"
+                                                        class="py-3 px-2 text-xs font-bold rounded-lg border transition-all flex items-center justify-center gap-2 {{ $gateway === $method ? 'bg-indigo-600 text-white border-indigo-600 shadow-md ring-1 ring-indigo-600' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400 hover:bg-gray-100' }}"
                                                     >
                                                         <!-- Iconos condicionales -->
                                                         @if($method === 'Efectivo')
@@ -304,14 +314,14 @@
                                     </div>
 
                                     {{-- Detalles Dinámicos (Caja / Referencia) --}}
-                                    <div class="mt-6 pt-6 border-t border-gray-200">
+                                    <div class="mt-6 pt-6 border-t border-gray-300">
                                         
                                         {{-- CAJA EFECTIVO --}}
                                         <div x-show="$wire.gateway === 'Efectivo'" class="flex flex-col sm:flex-row items-center justify-between gap-6 animate-fade-in">
                                             <div class="w-full sm:w-1/2">
                                                 <label class="block text-sm font-bold text-gray-700 mb-1">Efectivo Recibido</label>
                                                 <div class="relative">
-                                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
+                                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</span>
                                                     <input 
                                                         type="number" 
                                                         step="0.01" 
@@ -321,7 +331,7 @@
                                                     >
                                                 </div>
                                             </div>
-                                            <div class="w-full sm:w-auto text-center sm:text-right bg-white sm:bg-transparent p-3 sm:p-0 rounded-lg border sm:border-0 border-gray-200">
+                                            <div class="w-full sm:w-auto text-center sm:text-right bg-white sm:bg-transparent p-3 sm:p-0 rounded-lg border sm:border-0 border-gray-300">
                                                 <span class="block text-xs font-bold text-gray-500 uppercase tracking-wide">Cambio / Devuelta</span>
                                                 <span class="text-3xl font-black {{ $change_amount < 0 ? 'text-red-500' : 'text-green-600' }}">
                                                     ${{ number_format($change_amount, 2) }}
@@ -335,7 +345,7 @@
                                                 <span x-text="$wire.gateway === 'Tarjeta' ? 'Número de Aprobación (Auth Code)' : 'Referencia de Transacción'"></span>
                                             </label>
                                             <div class="relative">
-                                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
                                                 </span>
                                                 <input 
