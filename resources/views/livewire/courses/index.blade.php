@@ -59,6 +59,11 @@
                                         <span class="block font-medium text-gray-900">{{ $course->name }}</span>
                                         <span class="block text-sm text-gray-500">{{ $course->code }}</span>
                                         
+                                        <!-- Mostrar precios en lista (Opcional) -->
+                                        <span class="block text-xs text-gray-500 mt-1">
+                                            Insc: ${{ number_format($course->registration_fee, 2) }} | Mes: ${{ number_format($course->monthly_fee, 2) }}
+                                        </span>
+
                                         <!-- Indicador Secuencial -->
                                         @if($course->is_sequential)
                                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 mt-1">
@@ -114,7 +119,7 @@
                                     <div class="flex justify-between items-center">
                                         <div>
                                             <span class="block font-medium text-gray-900">{{ $module->name }}</span>
-                                            <span class="block text-sm text-gray-500">Precio: ${{ number_format($module->price, 2) }}</span>
+                                            <span class="block text-sm text-gray-500">Precio Extra: ${{ number_format($module->price, 2) }}</span>
                                         </div>
                                         <button wire:click.stop="editModule({{ $module->id }})" class="text-gray-400 hover:text-indigo-600 text-xs">
                                             <i class="fas fa-pencil-alt"></i>
@@ -263,6 +268,30 @@
                     @error('course_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
 
+                <!-- NUEVOS CAMPOS DE PRECIOS -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <x-input-label for="registration_fee" value="Precio de Inscripción" />
+                        <div class="relative mt-1 rounded-md shadow-sm">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <span class="text-gray-500 sm:text-sm">$</span>
+                            </div>
+                            <x-text-input wire:model="registration_fee" id="registration_fee" class="block w-full pl-7" type="number" step="0.01" />
+                        </div>
+                        @error('registration_fee') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <x-input-label for="monthly_fee" value="Mensualidad" />
+                        <div class="relative mt-1 rounded-md shadow-sm">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <span class="text-gray-500 sm:text-sm">$</span>
+                            </div>
+                            <x-text-input wire:model="monthly_fee" id="monthly_fee" class="block w-full pl-7" type="number" step="0.01" />
+                        </div>
+                        @error('monthly_fee') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+
                 <!-- Checkbox para Módulos Secuenciales -->
                 <div class="mt-4 flex items-center">
                     <input type="checkbox" id="is_sequential" wire:model="is_sequential" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
@@ -292,7 +321,7 @@
                 </div>
 
                 <div class="mt-4">
-                    <label for="module_price" class="block text-sm font-medium text-gray-700">Precio</label>
+                    <label for="module_price" class="block text-sm font-medium text-gray-700">Precio (Opcional/Extra)</label>
                     <input id="module_price" wire:model="module_price" type="number" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                     @error('module_price') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>

@@ -32,6 +32,8 @@ class Index extends Component
     // --- Propiedades para el modal de Cursos ---
     public $course_id, $course_name, $course_code;
     public $is_sequential = false;
+    public $registration_fee = 0; // Nuevo: Precio de Inscripción
+    public $monthly_fee = 0;      // Nuevo: Precio de Mensualidad
     public $courseModalTitle = '';
 
     // --- Propiedades para el modal de Módulos ---
@@ -190,6 +192,8 @@ class Index extends Component
                 Rule::unique('courses', 'code')->ignore($this->course_id)
             ],
             'is_sequential' => 'boolean', 
+            'registration_fee' => 'required|numeric|min:0', // Nueva validación
+            'monthly_fee' => 'required|numeric|min:0',      // Nueva validación
         ];
     }
 
@@ -211,6 +215,10 @@ class Index extends Component
             $this->course_code = $course->code;
             $this->is_sequential = $course->is_sequential;
             
+            // Cargar precios existentes
+            $this->registration_fee = $course->registration_fee;
+            $this->monthly_fee = $course->monthly_fee;
+            
             $this->courseModalTitle = 'Editar Curso: ' . $course->name;
             $this->dispatch('open-modal', 'course-modal'); 
         } catch (\Exception $e) {
@@ -228,6 +236,8 @@ class Index extends Component
                 'name' => $this->course_name,
                 'code' => $this->course_code,
                 'is_sequential' => $this->is_sequential, 
+                'registration_fee' => $this->registration_fee, // Guardar precio inscripción
+                'monthly_fee' => $this->monthly_fee,           // Guardar mensualidad
             ]
         );
 
@@ -241,6 +251,8 @@ class Index extends Component
         $this->course_name = '';
         $this->course_code = '';
         $this->is_sequential = false;
+        $this->registration_fee = 0;
+        $this->monthly_fee = 0;
     }
 
     // --- MÉTODOS PARA MODAL DE MÓDULO ---
