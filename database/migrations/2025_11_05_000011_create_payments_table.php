@@ -21,13 +21,9 @@ return new class extends Migration
             $table->decimal('amount', 10, 2);
             $table->string('currency', 3)->default('DOP');
             $table->string('status'); // 'Completado', 'Fallido', 'Pendiente'
-            $table->string('gateway'); // 'Azul', 'Cardnet', 'Manual', 'Sistema'
+            $table->string('gateway'); // 'Azul', 'Cardnet', 'Manual'
             $table->string('transaction_id')->nullable()->index();
             
-            // --- NUEVO CAMPO ---
-            $table->date('due_date')->nullable(); // Fecha límite de pago
-            // -------------------
-
             $table->timestamps();
         });
     }
