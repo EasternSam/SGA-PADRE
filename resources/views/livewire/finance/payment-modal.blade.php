@@ -26,8 +26,8 @@
         x-show="show"
         class="fixed inset-0 z-10 overflow-y-auto"
     >
-        {{-- FLEX CONTAINER: Centrado y con padding para efecto flotante --}}
-        <div class="flex min-h-full items-center justify-center p-4 sm:p-6 text-center">
+        {{-- FLEX CONTAINER: Padding ajustado a 8px (p-2) según instrucción --}}
+        <div class="flex min-h-full items-center justify-center p-2 text-center">
             
             {{-- 
                 PANEL DEL MODAL
