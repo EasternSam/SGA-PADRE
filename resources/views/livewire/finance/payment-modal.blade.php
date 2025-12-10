@@ -7,6 +7,7 @@
     {{-- 
         BACKDROP
         Fondo oscuro fijo.
+        CORRECCIÓN: Se agrega `bg-opacity-75` y estilo inline para asegurar oscurecimiento.
     --}}
     <div 
         x-show="show"
@@ -16,7 +17,8 @@
         x-transition:leave="ease-in duration-200"
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
-        class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm transition-opacity"
+        class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity backdrop-blur-sm"
+        style="background-color: rgba(17, 24, 39, 0.8);"
         aria-hidden="true"
     ></div>
 
@@ -104,48 +106,54 @@
                         {{-- Lista / Resultados con Scroll Independiente --}}
                         <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
                             @if($student)
-                                {{-- Tarjeta de Estudiante Seleccionado --}}
-                                <div class="bg-white p-5 rounded-xl border border-indigo-200 shadow-md relative group animate-fade-in">
-                                    <button 
-                                        wire:click="clearStudent" 
-                                        class="absolute top-2 right-2 text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors z-10"
-                                        title="Quitar estudiante"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-
-                                    <div class="flex items-center gap-4 mb-4">
-                                        <div class="h-14 w-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md ring-2 ring-white flex-shrink-0">
-                                            {{ substr($student->first_name, 0, 1) }}{{ substr($student->last_name, 0, 1) }}
+                                {{-- 
+                                    DISEÑO REVISADO: TARJETA DE ESTUDIANTE 
+                                    Estilo más compacto tipo "Widget" seleccionado.
+                                --}}
+                                <div class="bg-indigo-50 rounded-xl border border-indigo-200 p-4 relative animate-fade-in shadow-sm">
+                                    {{-- Header: Avatar + Nombre + Botón Cerrar --}}
+                                    <div class="flex items-start justify-between gap-3 mb-3">
+                                        <div class="flex items-center gap-3 overflow-hidden">
+                                            <div class="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0 ring-2 ring-indigo-200">
+                                                {{ substr($student->first_name, 0, 1) }}{{ substr($student->last_name, 0, 1) }}
+                                            </div>
+                                            <div class="min-w-0">
+                                                <h4 class="font-bold text-gray-900 text-sm leading-tight truncate">{{ $student->first_name }} {{ $student->last_name }}</h4>
+                                                <div class="flex items-center gap-1">
+                                                    <span class="text-[10px] uppercase font-bold text-indigo-400">ID</span>
+                                                    <span class="text-xs text-indigo-700 font-bold truncate">{{ $student->id_number }}</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="min-w-0">
-                                            <h4 class="font-bold text-gray-900 text-lg leading-tight truncate">{{ $student->first_name }}</h4>
-                                            <h4 class="text-gray-600 text-sm font-medium truncate">{{ $student->last_name }}</h4>
+                                        <button 
+                                            wire:click="clearStudent" 
+                                            class="text-indigo-400 hover:text-red-500 hover:bg-white p-1.5 rounded-lg transition-colors shrink-0"
+                                            title="Cambiar estudiante"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                                <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z" clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    {{-- Grid de Detalles --}}
+                                    <div class="grid grid-cols-1 gap-2 text-xs border-t border-indigo-200/60 pt-3">
+                                        <div class="flex items-center justify-between group">
+                                            <span class="text-gray-500 font-medium">Email:</span>
+                                            <span class="text-gray-900 font-medium truncate max-w-[160px]" title="{{ $student->email }}">{{ $student->email }}</span>
+                                        </div>
+                                        <div class="flex items-center justify-between group">
+                                            <span class="text-gray-500 font-medium">Teléfono:</span>
+                                            <span class="text-gray-900 font-medium">{{ $student->mobile_phone ?? 'N/A' }}</span>
                                         </div>
                                     </div>
                                     
-                                    <div class="space-y-3 pt-2 border-t border-gray-100">
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-xs text-gray-500 uppercase font-bold">Matrícula</span>
-                                            <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded border border-indigo-100">{{ $student->id_number }}</span>
-                                        </div>
-                                        <div class="flex flex-col">
-                                            <span class="text-xs text-gray-500 uppercase font-bold mb-0.5">Email</span>
-                                            <span class="text-sm font-medium text-gray-900 truncate" title="{{ $student->email }}">{{ $student->email }}</span>
-                                        </div>
-                                        <div class="flex flex-col">
-                                            <span class="text-xs text-gray-500 uppercase font-bold mb-0.5">Teléfono</span>
-                                            <span class="text-sm font-medium text-gray-900">{{ $student->mobile_phone ?? 'N/A' }}</span>
-                                        </div>
+                                    {{-- Botón explícito de acción secundaria --}}
+                                    <div class="mt-3 pt-2 border-t border-indigo-200/60 text-center">
+                                        <button wire:click="clearStudent" class="text-xs text-indigo-600 font-bold hover:text-indigo-800 hover:underline transition-all">
+                                            Seleccionar otro cliente
+                                        </button>
                                     </div>
-                                </div>
-                                
-                                <div class="text-center mt-4 pb-4">
-                                    <button wire:click="clearStudent" class="text-xs text-indigo-600 font-bold hover:underline hover:text-indigo-800">
-                                        Cambiar Estudiante
-                                    </button>
                                 </div>
 
                             @elseif(count($student_results) > 0)
