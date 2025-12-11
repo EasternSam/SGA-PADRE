@@ -28,39 +28,133 @@ use App\Livewire\StudentPortal\Requests as StudentRequests;
 use App\Livewire\TeacherPortal\Dashboard as TeacherDashboard;
 use App\Livewire\TeacherPortal\Attendance as TeacherAttendance;
 use App\Livewire\TeacherPortal\Grades as TeacherGrades;
+use Illuminate\Support\Facades\Http; // <-- Añadido
+use Illuminate\Support\Str; // <-- Añadido
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('auth.login'); // Tu ruta raíz original
+});
+
+// --- INICIO: RUTA DE PRUEBA (Health Check) ---
+Route::get('/test', function () {
+    try {
+        \Illuminate\Support\Facades\DB::connection()->getPdo();
+        $dbStatus = 'Conectado a ' . \Illuminate\Support\Facades\DB::connection()->getDatabaseName();
+    } catch (\Exception $e) {
+        $dbStatus = 'Error de conexión: ' . $e->getMessage();
+    }
+
+    return response()->json([
+        'status' => 'OK',
+        'message' => '¡Conexión exitosa! Laravel en cPanel está vivo.',
+        'server_time' => now()->toDateTimeString(),
+        'database_status' => $dbStatus,
+        'php_version' => phpversion(),
+    ]);
+});
+
+// --- RUTA DE DIAGNÓSTICO WP API ---
+Route::get('/test-wp', function () {
+    $baseUri = config('services.wordpress.base_uri') ?? env('WP_API_BASE_URI');
+    $secret = config('services.wordpress.secret') ?? env('WP_API_SECRET');
+    $endpoint = 'sga/v1/get-courses/';
+    $fullUrl = rtrim($baseUri, '/') . '/' . ltrim($endpoint, '/');
+
+    $startTime = microtime(true);
+    try {
+        $response = Http::withoutVerifying()
+            ->timeout(60)
+            ->withHeaders([
+                'X-SGA-Signature' => $secret,
+                'Accept' => 'application/json',
+                'User-Agent' => 'Laravel-Debug/1.0'
+            ])
+            ->get($fullUrl);
+            
+        $duration = microtime(true) - $startTime;
+
+        return response()->json([
+            'test' => 'Conexión Directa WP API',
+            'url_intentada' => $fullUrl,
+            'credenciales' => [
+                'base_uri_configurado' => $baseUri,
+                'tiene_secret' => !empty($secret) ? 'SÍ' : 'NO',
+            ],
+            'resultado' => [
+                'http_status' => $response->status(),
+                'exito_laravel' => $response->successful(),
+                'duracion' => round($duration, 2) . 's',
+                'body_preview' => Str::limit($response->body(), 500),
+                'json_decodificado' => $response->json(),
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'test' => 'FALLO CRÍTICO',
+            'error_tipo' => get_class($e),
+            'mensaje' => $e->getMessage(),
+            'url_intentada' => $fullUrl
+        ], 500);
+    }
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
     
-    Route::get('/dashboard', DashboardIndex::class)->name('dashboard');
+    // Dashboard Genérico con Redirección
+    Route::get('/dashboard', function () {
+        $user = Auth::user();
+
+        if ($user->hasRole('Admin') || $user->hasRole('Administrador')) {
+            return redirect()->route('admin.dashboard');
+        } elseif ($user->hasRole('Estudiante')) {
+            return redirect()->route('student.dashboard');
+        } elseif ($user->hasRole('Profesor')) {
+            return redirect()->route('teacher.dashboard');
+        }
+
+        return redirect()->route('profile.edit');
+    })->name('dashboard');
 
     // --- Rutas de Administración ---
-    Route::middleware(['role:Administrador|Secretaria'])->group(function () {
-        Route::get('/students', StudentsIndex::class)->name('students.index');
-        Route::get('/admin/students/profile/{student}', StudentProfileIndex::class)->name('students.profile');
+    Route::middleware(['role:Administrador|Secretaria|Admin'])->prefix('admin')->group(function () {
+        Route::get('/dashboard', DashboardIndex::class)->name('admin.dashboard');
+        Route::get('/students', StudentsIndex::class)->name('admin.students.index'); // Ojo con el nombre de ruta duplicado si usas students.index arriba
+        Route::get('/students/profile/{student}', StudentProfileIndex::class)->name('admin.students.profile');
         
-        Route::get('/courses', CoursesIndex::class)->name('courses.index');
+        Route::get('/courses', CoursesIndex::class)->name('admin.courses.index');
         
-        Route::get('/teachers', TeachersIndex::class)->name('teachers.index');
-        Route::get('/teachers/profile/{user}', TeacherProfileIndex::class)->name('teachers.profile');
+        Route::get('/teachers', TeachersIndex::class)->name('admin.teachers.index');
+        Route::get('/teachers/profile/{user}', TeacherProfileIndex::class)->name('admin.teachers.profile');
         
         Route::get('/reports', ReportsIndex::class)->name('reports.index');
-        Route::get('/admin/database-import', DatabaseImport::class)->name('admin.database-import');
-        Route::get('/admin/requests', RequestsManagement::class)->name('admin.requests');
+        Route::get('/database-import', DatabaseImport::class)->name('admin.database-import');
+        Route::get('/requests', RequestsManagement::class)->name('admin.requests');
+        
+        // Perfil Admin
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
     });
-
-    // --- Rutas de Reportes PDF ---
+    
+    // --- RUTAS DE REPORTES PDF (Accesibles por roles autorizados) ---
+    // NOTA: Estas rutas deben estar fuera del grupo 'admin' si el estudiante las va a usar, 
+    // o deben tener permisos específicos. Aquí las dejo accesibles para 'auth' general, 
+    // pero idealmente deberías protegerlas con policies en el controlador.
+    
     Route::get('/reports/student/{student}', [ReportController::class, 'generateStudentReport'])->name('reports.student-report');
     Route::get('/reports/student-list/{courseSchedule}', [StudentListPdfController::class, 'generate'])->name('reports.student-list-pdf');
     Route::get('/reports/grades/{courseSchedule}', [GradesPdfController::class, 'generate'])->name('reports.grades-pdf');
     
-    // --> AQUÍ AGREGAMOS LA RUTA FALTANTE DEL REPORTE FINANCIERO <--
+    // --> ESTA ES LA RUTA QUE FALTABA <--
     Route::get('/reports/financial/{student}', [FinancialPdfController::class, 'generate'])->name('reports.financial-report');
     
     Route::get('/reports/attendance/{courseSchedule}', [AttendancePdfController::class, 'generate'])->name('reports.attendance-pdf');
+
 
     // --- Rutas del Portal Estudiante ---
     Route::middleware(['role:Estudiante'])->prefix('student')->name('student.')->group(function () {
@@ -68,18 +162,29 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/course/{enrollmentId}', StudentCourseDetail::class)->name('course-detail');
         Route::get('/payments', StudentMyPayments::class)->name('payments');
         Route::get('/requests', StudentRequests::class)->name('requests');
+        // Perfil Estudiante
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     });
 
     // --- Rutas del Portal Profesor ---
-    Route::middleware(['role:Profesor'])->prefix('teacher')->name('teacher.')->group(function () {
+    Route::middleware(['role:Profesor|Admin'])->prefix('teacher')->name('teacher.')->group(function () {
         Route::get('/dashboard', TeacherDashboard::class)->name('dashboard');
         Route::get('/attendance/{scheduleId}', TeacherAttendance::class)->name('attendance');
         Route::get('/grades/{scheduleId}', TeacherGrades::class)->name('grades');
+         // Perfil Profesor
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     });
 
+    // Rutas de Perfil Genéricas (usadas por el dashboard.blade.php original si existe)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // --- RUTAS PARA CAMBIO DE CONTRASEÑA OBLIGATORIO ---
+    Route::get('/force-password-change', [\App\Http\Controllers\Auth\ForcePasswordChangeController::class, 'show'])
+        ->name('password.force_change');
+    Route::post('/force-password-change', [\App\Http\Controllers\Auth\ForcePasswordChangeController::class, 'update'])
+        ->name('password.force_update');
 });
 
 require __DIR__.'/auth.php';
