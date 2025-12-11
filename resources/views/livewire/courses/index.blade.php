@@ -59,7 +59,7 @@
                                         <span class="block font-medium text-gray-900">{{ $course->name }}</span>
                                         <span class="block text-sm text-gray-500">{{ $course->code }}</span>
                                         
-                                        <!-- Mostrar precios en lista (Opcional) -->
+                                        <!-- Mostrar precios en lista -->
                                         <span class="block text-xs text-gray-500 mt-1">
                                             Insc: ${{ number_format($course->registration_fee, 2) }} | Mes: ${{ number_format($course->monthly_fee, 2) }}
                                         </span>
@@ -119,7 +119,7 @@
                                     <div class="flex justify-between items-center">
                                         <div>
                                             <span class="block font-medium text-gray-900">{{ $module->name }}</span>
-                                            <span class="block text-sm text-gray-500">Precio Extra: ${{ number_format($module->price, 2) }}</span>
+                                            {{-- Eliminado: Mostrar precio del módulo aquí --}}
                                         </div>
                                         <button wire:click.stop="editModule({{ $module->id }})" class="text-gray-400 hover:text-indigo-600 text-xs">
                                             <i class="fas fa-pencil-alt"></i>
@@ -162,7 +162,7 @@
                                                 {{ implode(', ', $schedule->days_of_week ?? []) }} | {{ $schedule->start_time ? \Carbon\Carbon::parse($schedule->start_time)->format('h:i A') : 'N/A' }} - {{ $schedule->end_time ? \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') : 'N/A' }}
                                             </span>
                                             
-                                            {{-- NUEVO: Etiqueta de Modalidad --}}
+                                            {{-- Etiqueta de Modalidad --}}
                                             <span class="block text-xs font-semibold mt-1 {{ $schedule->modality === 'Virtual' ? 'text-purple-600' : ($schedule->modality === 'Semi-Presencial' ? 'text-orange-600' : 'text-blue-600') }}">
                                                 {{ $schedule->modality ?? 'Presencial' }}
                                             </span>
@@ -320,11 +320,7 @@
                     @error('module_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
 
-                <div class="mt-4">
-                    <label for="module_price" class="block text-sm font-medium text-gray-700">Precio (Opcional/Extra)</label>
-                    <input id="module_price" wire:model="module_price" type="number" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                    @error('module_price') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                </div>
+                {{-- ELIMINADO: Campo de Precio de Módulo --}}
                 
                 <div class="flex justify-end mt-6">
                     <button type="button" x-on:click="$dispatch('close-modal', 'module-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
@@ -358,7 +354,7 @@
                     </div>
                 </div>
 
-                <!-- CAMPO MODALIDAD AÑADIDO (CORREGIDO DENTRO DEL FORM) -->
+                <!-- CAMPO MODALIDAD -->
                 <div class="mt-4">
                     <label for="modality" class="block text-sm font-medium text-gray-700">Modalidad</label>
                     <select id="modality" wire:model="modality" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
