@@ -176,7 +176,7 @@
                                         @else
                                             <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>
                                         @endif
-                                        {{ $payment->gateway }}
+                                        <span class="font-medium text-gray-700">{{ $payment->gateway }}</span>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
@@ -220,7 +220,7 @@
 
             <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
                 <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-                    <div class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-gray-200">
+                    <div class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-gray-200" style="margin-top: 28px;">
                         
                         {{-- Modal Header --}}
                         <div class="bg-white px-6 py-5 border-b border-gray-100 flex items-center justify-between">
@@ -257,7 +257,7 @@
                                 <div class="grid grid-cols-2 gap-3">
                                     {{-- Opción Tarjeta --}}
                                     <label class="cursor-pointer relative">
-                                        <input type="radio" wire:model="paymentMethod" value="card" class="peer sr-only">
+                                        <input type="radio" wire:model.live="paymentMethod" value="card" class="peer sr-only">
                                         <div class="p-4 rounded-lg border border-gray-200 hover:border-gray-300 peer-checked:border-gray-900 peer-checked:ring-1 peer-checked:ring-gray-900 transition-all bg-white flex flex-col items-center gap-2 h-full">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-600 peer-checked:text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -269,7 +269,7 @@
 
                                     {{-- Opción Transferencia --}}
                                     <label class="cursor-pointer relative">
-                                        <input type="radio" wire:model="paymentMethod" value="transfer" class="peer sr-only">
+                                        <input type="radio" wire:model.live="paymentMethod" value="transfer" class="peer sr-only">
                                         <div class="p-4 rounded-lg border border-gray-200 hover:border-gray-300 peer-checked:border-gray-900 peer-checked:ring-1 peer-checked:ring-gray-900 transition-all bg-white flex flex-col items-center gap-2 h-full">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-600 peer-checked:text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
