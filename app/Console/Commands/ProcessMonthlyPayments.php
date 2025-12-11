@@ -23,28 +23,41 @@ class ProcessMonthlyPayments extends Command
      *
      * @var string
      */
-    protected $description = 'Genera cargos mensuales automáticos para inscripciones activas';
+    protected $description = 'Genera cargos mensuales automáticos para estudiantes activos en cursos con mensualidad.';
 
     /**
-     * Ejecuta el comando de consola.
+     * Ejecuta el comando.
      */
     public function handle()
     {
-        Log::info('Iniciando proceso de generación de mensualidades...');
+        $this->info('Iniciando proceso de cobro de mensualidades...');
+        Log::info('CRON Mensualidades: Iniciando ejecución.');
 
-        // 1. Buscar inscripciones activas (Cursando) que tengan horarios asignados
-        $activeEnrollments = Enrollment::with(['courseSchedule.module.course', 'student'])
-            ->where('status', 'Cursando')
-            ->whereHas('courseSchedule')
+        // 1. Obtener concepto de 'Mensualidad'
+        $monthlyConcept = PaymentConcept::firstOrCreate(
+            ['name' => 'Mensualidad'],
+            ['description' => 'Pago recurrente del curso']
+        );
+
+        // 2. Buscar inscripciones activas (Cursando)
+        // Cargamos la relación profunda para llegar al precio del curso
+        $activeEnrollments = Enrollment::where('status', 'Cursando')
+            ->with(['courseSchedule.module.course', 'student'])
             ->get();
 
         $count = 0;
 
         foreach ($activeEnrollments as $enrollment) {
             $schedule = $enrollment->courseSchedule;
+            
+            // Validaciones de integridad
+            if (!$schedule || !$schedule->module || !$schedule->module->course) {
+                continue;
+            }
+
             $course = $schedule->module->course;
 
-            // Si el curso no tiene costo mensual, saltamos
+            // Si el curso no tiene costo mensual o es gratuito, saltar
             if ($course->monthly_fee <= 0) {
                 continue;
             }
@@ -54,67 +67,61 @@ class ProcessMonthlyPayments extends Command
             $endDate = Carbon::parse($schedule->end_date);
             $today = Carbon::today();
 
-            // Validación: ¿Estamos dentro del periodo del curso?
+            // A. ¿Estamos dentro del periodo del curso?
+            // Si hoy es antes del inicio O después del fin, no cobramos.
             if ($today->lt($startDate) || $today->gt($endDate)) {
                 continue;
             }
 
-            // LÓGICA DE FECHA DE CORTE:
-            // Generamos cargo si hoy es el mismo día del mes que la fecha de inicio.
-            // Ejemplo: Inició el 15 de Enero. Cobramos el 15 de Febrero, 15 de Marzo, etc.
-            if ($today->day !== $startDate->day) {
-                // Manejo especial para meses cortos (ej: inicio día 31, pero estamos en febrero)
-                if (!($today->isLastOfMonth() && $startDate->day > $today->day)) {
-                    continue; 
+            // B. ¿Hoy toca cobrar?
+            // Cobramos el mismo día del mes en que inició el curso.
+            // Ej: Si inició el 15, cobramos los 15 de cada mes.
+            $paymentDay = $startDate->day;
+            
+            // Ajuste para fin de mes (ej: si inició el 31 y estamos en Febrero, cobramos el 28/29)
+            if ($today->day !== $paymentDay) {
+                // Si hoy NO es el día de pago, verificamos si es fin de mes y el día de pago era mayor
+                // Ej: Inició el 31, hoy es 28 Feb (fin de mes). 31 > 28, entonces sí cobramos hoy.
+                if (! ($today->isLastOfMonth() && $paymentDay > $today->day) ) {
+                    continue; // No es día de cobro
                 }
             }
 
-            // Verificar si ya existe un cargo generado para este mes y año específico
-            // para evitar duplicados si el comando corre dos veces.
-            $exists = Payment::where('enrollment_id', $enrollment->id)
-                ->where('student_id', $enrollment->student_id)
-                ->where('payment_concept_id', $this->getMonthlyConceptId())
+            // C. Evitar duplicados del mes actual
+            // Verificamos si ya existe un pago de "Mensualidad" para este estudiante/inscripción en este mes/año.
+            $alreadyBilled = Payment::where('enrollment_id', $enrollment->id)
+                ->where('payment_concept_id', $monthlyConcept->id)
                 ->whereMonth('created_at', $today->month)
                 ->whereYear('created_at', $today->year)
                 ->exists();
 
-            if ($exists) {
+            if ($alreadyBilled) {
                 continue;
             }
 
-            // Generar el cargo pendiente
+            // D. GENERAR EL COBRO
             try {
                 Payment::create([
                     'student_id' => $enrollment->student_id,
                     'enrollment_id' => $enrollment->id,
-                    'payment_concept_id' => $this->getMonthlyConceptId(),
+                    'payment_concept_id' => $monthlyConcept->id,
                     'amount' => $course->monthly_fee,
                     'currency' => 'DOP',
-                    'status' => 'Pendiente', // El estudiante debe pagarlo
-                    'gateway' => 'Sistema',
-                    'due_date' => $today->copy()->addDays(5), // Damos 5 días de gracia antes de bloquear/vencer
+                    'status' => 'Pendiente', // Se genera como deuda
+                    'gateway' => 'Sistema Automático',
+                    'due_date' => $today->copy()->addDays(5), // 5 días para pagar antes de vencerse
                 ]);
 
+                $this->info("Cobro generado: Estudiante #{$enrollment->student_id} - Curso {$course->name}");
+                Log::info("CRON Mensualidades: Cobro generado enrollment #{$enrollment->id}");
                 $count++;
-                Log::info("Cargo mensual generado para Estudiante ID: {$enrollment->student_id}, Curso: {$course->name}");
 
             } catch (\Exception $e) {
-                Log::error("Error generando pago para enrollment {$enrollment->id}: " . $e->getMessage());
+                Log::error("CRON Mensualidades Error: Enrollment #{$enrollment->id} - " . $e->getMessage());
             }
         }
 
-        $this->info("Proceso finalizado. Se generaron {$count} cargos mensuales.");
-    }
-
-    /**
-     * Helper para obtener o crear el concepto de pago "Mensualidad"
-     */
-    private function getMonthlyConceptId()
-    {
-        $concept = PaymentConcept::firstOrCreate(
-            ['name' => 'Mensualidad'],
-            ['description' => 'Pago mensual recurrente del curso', 'amount' => 0]
-        );
-        return $concept->id;
+        $this->info("Proceso finalizado. Se generaron {$count} cobros.");
+        Log::info("CRON Mensualidades: Finalizado. Total generados: {$count}");
     }
 }
