@@ -2,44 +2,33 @@
 
 namespace App\Http\Controllers;
 
-// INICIO DE LA CORRECCIÓN
-use Illuminate\Routing\Controller; // <-- ESTA LÍNEA FALTABA
-// FIN DE LA CORRECCIÓN
-
+use Illuminate\Routing\Controller;
 use Illuminate\Http\Request;
 use App\Models\Student;
 use App\Models\Course;
-// ... (el resto de tus 'use' statements) ...
 use App\Models\Module;
 use App\Models\CourseSchedule;
 use App\Models\Enrollment;
-use App\Models\Payment; // <-- IMPORTAR
-use App\Models\User; // <-- IMPORTAR
-// --- INICIO DE LA MODIFICACIÓN (Laravel) ---
+use App\Models\Payment;
+use App\Models\User;
 use App\Models\CourseMapping;
-use App\Models\ScheduleMapping; // <-- Importar el nuevo modelo
-// --- FIN DE LA MODIFICACIÓN (Laravel) ---
+use App\Models\ScheduleMapping;
+use App\Models\PaymentConcept; // <-- IMPORTAR
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash; // <-- IMPORTAR
-use Illuminate\Support\Facades\Log; // <-- AÑADIDO PARA LOGGING
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Carbon\Carbon; // <-- IMPORTAR
+use Carbon\Carbon;
 
 class EnrollmentController extends Controller
 {
     /**
      * Maneja la recepción de una nueva inscripción desde la API (página web).
-     * Este es el núcleo de la lógica que solicitaste.
      */
     public function store(Request $request): JsonResponse
     {
-        // --- LOG DE DIAGNÓSTICO ELIMINADO ---
-        // Log::info('EnrollmentController@store: Datos crudos recibidos.', $request->all());
-        // --- FIN DE LOG DE DIAGNÓSTICO ---
-
-
         // 1. Validar datos básicos para identificar al estudiante
         $preValidator = Validator::make($request->all(), [
             'cedula' => 'required|string|max:20',
@@ -47,7 +36,6 @@ class EnrollmentController extends Controller
         ]);
 
         if ($preValidator->fails()) {
-            // LOG AÑADIDO
             Log::warning('EnrollmentController: Falló el PreValidator (cédula/email).', ['errors' => $preValidator->errors()]);
             return response()->json([
                 'status' => 'error',
@@ -57,7 +45,6 @@ class EnrollmentController extends Controller
         }
 
         // 2. Regla especial: Si el estudiante YA existe (por cédula o email)
-        // CORRECCIÓN: Tu migración 'create_students_table' usa 'cedula', no 'document_number'.
         $existingStudent = Student::where('cedula', $request->cedula)->first();
         $existingUser = User::where('email', $request->email)->first();
 
@@ -76,17 +63,9 @@ class EnrollmentController extends Controller
             'mobile_phone' => 'nullable|string|max:20',
             'address' => 'nullable|string',
 
-            // --- INICIO DE LA MODIFICACIÓN (Laravel) ---
             'wp_course_id' => 'required|integer', // ID de WP ahora es requerido
             'course_name_from_wp' => 'nullable|string', // Nombre de WP para logs
-            
-            // CORRECCIÓN DE TYPO: Se alinea con el campo enviado por WP
             'wp_schedule_string' => 'required|string|max:255', // String crudo de WP
-            
-            // 'schedule_string_from_wp' => 'required|string|max:255', // <-- ANTERIOR (INCORRECTO)
-            // 'course_name' => 'required|string|max:255', // <-- ELIMINADO
-            // 'schedule_string' => 'required|string|max:255', // <-- ELIMINADO
-            // --- FIN DE LA MODIFICACIÓN (Laravel) ---
             
             // Campos adicionales de tu validador
             'is_minor_flag' => 'nullable|string',
@@ -105,7 +84,6 @@ class EnrollmentController extends Controller
         ]);
 
         if ($validator->fails()) {
-            // LOG AÑADIDO
             Log::warning('EnrollmentController: Falló el validador de nuevo estudiante.', ['errors' => $validator->errors()]);
             return response()->json([
                 'status' => 'error',
@@ -119,7 +97,7 @@ class EnrollmentController extends Controller
 
         // 4. Lógica para Estudiante NUEVO
         try {
-            $result = DB::transaction(function () use ($data, $isMinor) {
+            $result = DB::transaction(function () use ($data, $request, $isMinor) {
                 
                 // 5. Crear el Usuario (User) con acceso temporal
                 $user = User::create([
@@ -142,11 +120,6 @@ class EnrollmentController extends Controller
                     'address' => $data['address'] ?? null,
                     'status' => 'Activo', // Status del estudiante
                     
-                    // =================================================================
-                    // CORRECCIÓN: Columna 'balance' no existe en tu migración.
-                    // (Línea eliminada)
-                    // =================================================================
-                    
                     // Campos adicionales
                     'city' => $data['city'] ?? null,
                     'sector' => $data['sector'] ?? null,
@@ -163,48 +136,53 @@ class EnrollmentController extends Controller
                     'tutor_relationship' => $data['tutor_relationship'] ?? null,
                 ]);
 
-                // --- INICIO DE LA MODIFICACIÓN (Laravel) ---
-                
                 // 7. Encontrar el Curso (Course)
                 $course = $this->findCourseFromWpId($data['wp_course_id'], $data['course_name_from_wp'] ?? null);
 
                 // 8. Encontrar el Horario (CourseSchedule) usando el mapeo
-                // CORRECCIÓN DE TYPO: Usar el campo correcto de $data
                 $schedule = $this->findScheduleFromWpString($data['wp_schedule_string']);
                 
                 // 9. VERIFICACIÓN: Asegurarse de que el horario pertenece al curso
                 $course_modules_ids = $course->modules()->pluck('id');
                 if (!$course_modules_ids->contains($schedule->module_id)) {
-                    // CORRECCIÓN DE TYPO: Mostrar el valor correcto en el error
                     throw new \Exception("Conflicto de Mapeo: El horario '{$data['wp_schedule_string']}' (ID: {$schedule->id}) no pertenece al curso '{$course->name}'.");
                 }
 
                 // 10. Validar reglas de negocio para la sección
-                // (La regla de 'balance' se omitirá para estudiantes nuevos)
                 $this->validateCourseRules($schedule, $student, true); // true = esNuevoEstudiante
                 
                 // 11. Crear la Inscripción (Enrollment)
                 $enrollment = Enrollment::create([
                     'student_id' => $student->id,
+                    'course_id' => $course->id, // <-- Guardamos el curso padre
                     'course_schedule_id' => $schedule->id, 
                     'status' => 'Pendiente', // <-- CORREGIDO: Debe estar pendiente, igual que el pago
                     'final_grade' => null,
+                    'enrollment_date' => now(),
                 ]);
 
-                // 12. Crear el registro de Pago (Payment) pendiente
+                // 12. Crear el registro de Pago (Payment) - MODIFICADO PRECIO INSCRIPCIÓN
+                
+                // Buscar o crear el concepto de Inscripción
+                $inscriptionConcept = PaymentConcept::firstOrCreate(
+                    ['name' => 'Inscripción'],
+                    ['description' => 'Pago único de inscripción al curso', 'amount' => 0]
+                );
+
+                // Usar el registration_fee del Curso
+                $amount = $course->registration_fee ?? 0;
+
                 Payment::create([
                     'student_id' => $student->id,
                     'enrollment_id' => $enrollment->id,
-                    // Usamos el 'payment_concept_id' y 'price' del MÓDULO al que pertenece el horario
-                    'payment_concept_id' => $schedule->module->payment_concept_id ?? null,
-                    'amount' => $schedule->module->price ?? 0,
+                    'payment_concept_id' => $inscriptionConcept->id,
+                    'amount' => $amount, 
                     'currency' => 'DOP',
                     'status' => 'Pendiente', // <-- PAGO PENDIENTE
                     'gateway' => 'Por Pagar',
+                    'due_date' => now()->addDays(3),
                 ]);
                 
-                // --- FIN DE LA MODIFICACIÓN (Laravel) ---
-
                 return [
                     'status' => 'success',
                     'message' => 'Pre-inscripción realizada. Usuario temporal creado por 3 meses.',
@@ -217,7 +195,7 @@ class EnrollmentController extends Controller
             return response()->json($result, 201); // 201 Created
 
         } catch (\Exception $e) {
-            \Log::error("Error en EnrollmentController@store (Nuevo Estudiante): " . $e->getMessage());
+            Log::error("Error en EnrollmentController@store (Nuevo Estudiante): " . $e->getMessage());
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage() // Devolver el mensaje de error de la regla de negocio
@@ -250,21 +228,12 @@ class EnrollmentController extends Controller
 
         // 1. Validar datos de la solicitud de inscripción
          $validator = Validator::make($request->all(), [
-            // --- INICIO DE LA MODIFICACIÓN (Laravel) ---
-            'wp_course_id' => 'required|integer', // ID de WP ahora es requerido
-            'course_name_from_wp' => 'nullable|string', // Nombre de WP para logs
-            
-            // CORRECCIÓN DE TYPO: Se alinea con el campo enviado por WP
-            'wp_schedule_string' => 'required|string|max:255', // String crudo de WP
-            
-            // 'schedule_string_from_wp' => 'required|string|max:255', // <-- ANTERIOR (INCORRECTO)
-            // 'course_name' => 'required|string|max:255', // <-- ELIMINADO
-            // 'schedule_string' => 'required|string|max:255', // <-- ELIMINADO
-            // --- FIN DE LA MODIFICACIÓN (Laravel) ---
+            'wp_course_id' => 'required|integer', 
+            'course_name_from_wp' => 'nullable|string', 
+            'wp_schedule_string' => 'required|string|max:255', 
         ]);
 
         if ($validator->fails()) {
-            // LOG AÑADIDO
             Log::warning('EnrollmentController: Falló el validador de estudiante existente.', ['errors' => $validator->errors()]);
             return response()->json([
                 'status' => 'error',
@@ -278,19 +247,15 @@ class EnrollmentController extends Controller
         try {
             $result = DB::transaction(function () use ($data, $student) {
 
-                // --- INICIO DE LA MODIFICACIÓN (Laravel) ---
-                
                 // 2. Encontrar el Curso (Course)
                 $course = $this->findCourseFromWpId($data['wp_course_id'], $data['course_name_from_wp'] ?? null);
 
                 // 3. Encontrar el Horario (CourseSchedule) usando el mapeo
-                // CORRECCIÓN DE TYPO: Usar el campo correcto de $data
                 $schedule = $this->findScheduleFromWpString($data['wp_schedule_string']);
                 
                 // 4. VERIFICACIÓN: Asegurarse de que el horario pertenece al curso
                 $course_modules_ids = $course->modules()->pluck('id');
                 if (!$course_modules_ids->contains($schedule->module_id)) {
-                    // CORRECCIÓN DE TYPO: Mostrar el valor correcto en el error
                     throw new \Exception("Conflicto de Mapeo: El horario '{$data['wp_schedule_string']}' (ID: {$schedule->id}) no pertenece al curso '{$course->name}'.");
                 }
 
@@ -309,24 +274,33 @@ class EnrollmentController extends Controller
                 // 7. Crear la Inscripción (Enrollment)
                 $enrollment = Enrollment::create([
                     'student_id' => $student->id,
+                    'course_id' => $course->id,
                     'course_schedule_id' => $schedule->id,
-                    'status' => 'Pendiente', // <-- CORREGIDO: Debe estar pendiente, igual que el pago
+                    'status' => 'Pendiente', 
                     'final_grade' => null,
+                    'enrollment_date' => now(),
                 ]);
 
-                // 8. Crear el registro de Pago (Payment) pendiente
+                // 8. Crear el registro de Pago (Payment) - MODIFICADO PRECIO INSCRIPCIÓN
+                
+                $inscriptionConcept = PaymentConcept::firstOrCreate(
+                    ['name' => 'Inscripción'],
+                    ['description' => 'Pago único de inscripción al curso', 'amount' => 0]
+                );
+
+                $amount = $course->registration_fee ?? 0;
+
                 Payment::create([
                     'student_id' => $student->id,
                     'enrollment_id' => $enrollment->id,
-                    'payment_concept_id' => $schedule->module->payment_concept_id ?? null,
-                    'amount' => $schedule->module->price ?? 0,
+                    'payment_concept_id' => $inscriptionConcept->id,
+                    'amount' => $amount,
                     'currency' => 'DOP',
-                    'status' => 'Pendiente', // <-- PAGO PENDIENTE
+                    'status' => 'Pendiente', 
                     'gateway' => 'Por Pagar',
+                    'due_date' => now()->addDays(3),
                 ]);
                 
-                // --- FIN DE LA MODIFICACIÓN (Laravel) ---
-
                 return [
                     'status' => 'success',
                     'message' => 'Inscripción pendiente de pago registrada para estudiante existente.',
@@ -338,15 +312,14 @@ class EnrollmentController extends Controller
             return response()->json($result, 201); // 201 Created
 
         } catch (\Exception $e) {
-            \Log::error("Error en handleExistingStudentEnrollment: " . $e->getMessage());
+            Log::error("Error en handleExistingStudentEnrollment: " . $e->getMessage());
             return response()->json([
                 'status' => 'error',
-                'message' => $e->getMessage() // Devolver el mensaje de error
+                'message' => $e->getMessage() 
             ], 400); // 400 Bad Request
         }
     }
 
-    // --- INICIO DE NUEVA FUNCIÓN HELPER ---
     /**
      * Helper para buscar el Curso (Course) interno
      * usando el ID de WordPress y la tabla de mapeo.
@@ -363,16 +336,12 @@ class EnrollmentController extends Controller
             throw new \Exception("Error de Base de Datos: El curso interno (ID: {$mapping->course_id}) enlazado al ID de WP '{$wp_course_id}' no fue encontrado.");
         }
         
-        // --- INICIO DE LA MODIFICACIÓN (Laravel) ---
-        // Cargar la relación con los módulos, ya que la necesitaremos
+        // Cargar la relación con los módulos
         $course->load('modules');
-        // --- FIN DE LA MODIFICACIÓN (Laravel) ---
         
         return $course;
     }
-    // --- FIN DE NUEVA FUNCIÓN HELPER ---
 
-    // --- INICIO DE NUEVA FUNCIÓN HELPER (MAPEADO DE HORARIO) ---
     /**
      * Helper para buscar la sección (CourseSchedule)
      * usando el string de WP y la tabla 'schedule_mappings'.
@@ -394,14 +363,10 @@ class EnrollmentController extends Controller
         
         return $schedule;
     }
-    // --- FIN DE NUEVA FUNCIÓN HELPER ---
-
 
     /**
      * Helper para buscar la sección (CourseSchedule)
-     * (No crea, solo busca)
-     *
-     * --- ESTA FUNCIÓN YA NO SE USA DIRECTAMENTE POR store(), PERO SE MANTIENE POR SI OTROS MÉTODOS LA USAN ---
+     * (No crea, solo busca) - Mantenido por compatibilidad
      */
     private function findCourseSchedule(string $moduleName, string $sectionName): CourseSchedule
     {
@@ -410,75 +375,54 @@ class EnrollmentController extends Controller
             throw new \Exception("El módulo '{$moduleName}' no fue encontrado. Verifique el nombre.");
         }
 
-        // --- INICIO DE LA MODIFICACIÓN (Búsqueda por Horario) ---
-        // El $sectionName que llega de WP ahora es "Sábado | 09:00 AM - 12:00 PM"
-        
-        // 1. Buscamos por 'section_name' (de la migración 2025_11_05_000018)
+        // 1. Buscamos por 'section_name'
         $schedule = CourseSchedule::where('module_id', $module->id)
                                      ->where('section_name', $sectionName)
                                      ->first();
         
-        // 2. Fallback por si se guardó en 'days_of_week' (de la migración 2025_11_05_000015)
+        // 2. Fallback 'days_of_week' string
         if (!$schedule) {
              $schedule = CourseSchedule::where('module_id', $module->id)
-                                       ->where('days_of_week', $sectionName) // Asumiendo que 'days_of_week' es un string
-                                       ->first();
+                                     ->where('days_of_week', $sectionName) 
+                                     ->first();
         }
         
-        // 3. Fallback por si 'days_of_week' es un JSON
+        // 3. Fallback 'days_of_week' json
         if (!$schedule) {
              $schedule = CourseSchedule::where('module_id', $module->id)
-                                       ->whereJsonContains('days_of_week', $sectionName) // Asumiendo JSON
-                                       ->first();
+                                     ->whereJsonContains('days_of_week', $sectionName)
+                                     ->first();
         }
-
-        // 4. Fallback: Búsqueda con el string de horario (schedule_string)
-        // Esto es por si el campo 'schedule_string' de la tabla 'course_schedules'
-        // contiene el valor "Sábado | 09:00 AM - 12:00 PM".
-        if (!$schedule) {
-            $schedule = CourseSchedule::where('module_id', $module->id)
-                                      ->where('schedule_string', $sectionName)
-                                      ->first();
-        }
-        // --- FIN DE LA MODIFICACIÓN (Búsqueda por Horario) ---
-
 
         if (!$schedule) {
             throw new \Exception("La sección '{$sectionName}' para '{$moduleName}' no fue encontrada.");
         }
         
-        // Cargar las relaciones necesarias para las reglas
         $schedule->load('module');
 
         return $schedule;
     }
 
     /**
-     * Helper para validar las 3 reglas de negocio.
+     * Helper para validar las reglas de negocio.
      * @param bool $isNewStudent Si es true, omite la validación de balance.
      */
     private function validateCourseRules(CourseSchedule $schedule, Student $student, bool $isNewStudent = false): void
     {
-        // 1. "En caso de ser estudiante existente, no debe tener balances pendientes."
-        // (Asumimos que balance > 0 es tener deuda)
-        // =================================================================
-        // CORRECCIÓN: Tu tabla 'students' no tiene 'balance'.
-        // Comentamos esta regla temporalmente.
-        // =================================================================
+        // 1. Balance: Comentado temporalmente por falta de columna
         // if (!$isNewStudent && $student->balance > 0) {
-        //     throw new \Exception('El estudiante tiene un balance pendiente y no puede inscribirse.');
+        //    throw new \Exception('El estudiante tiene un balance pendiente y no puede inscribirse.');
         // }
-        // =================================================================
 
-        // 2. "Deben haber cupos disponibles en el curso que se solicita."
+        // 2. Cupos
         $enrolledCount = Enrollment::where('course_schedule_id', $schedule->id)
-                                     ->whereIn('status', ['Activo', 'Cursando', 'Pendiente', 'Inscrito']) // Contar pendientes e inscritos también
+                                     ->whereIn('status', ['Activo', 'Cursando', 'Pendiente', 'Inscrito']) 
                                      ->count();
-        if ($schedule->capacity > 0 && $enrolledCount >= $schedule->capacity) { // capacity > 0 para evitar bloqueo si es 0
+        if ($schedule->capacity > 0 && $enrolledCount >= $schedule->capacity) { 
             throw new \Exception('La sección está llena. No hay cupos disponibles.');
         }
 
-        // 3. "Una vez inicia el curso, no se puede inscribir"
+        // 3. Fecha
         if ($schedule->start_date && Carbon::now()->gt($schedule->start_date)) {
             throw new \Exception('Este curso ya ha comenzado. No se permiten nuevas inscripciones.');
         }

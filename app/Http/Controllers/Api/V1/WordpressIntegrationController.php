@@ -2,11 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-// INICIO DE LA CORRECCIÓN:
-// Se cambió 'App\Http\Controllers\Controller' por el controlador base de Laravel
 use Illuminate\Routing\Controller; 
-// FIN DE LA CORRECCIÓN
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -17,15 +13,16 @@ use App\Models\Student;
 use App\Models\User;
 use App\Models\CourseMapping;
 use App\Models\Enrollment;
-use App\Models\Payment; // Importar Payment
-use App\Models\ScheduleMapping; // <-- INCLUIR MODELO DE MAPEO DE SECCIÓN
-use App\Models\CourseSchedule; // <-- INCLUIR MODELO DE SECCIÓN
+use App\Models\Payment; 
+use App\Models\ScheduleMapping;
+use App\Models\CourseSchedule;
+use App\Models\PaymentConcept; // Modelo necesario para buscar 'Inscripción'
 
 class WordpressIntegrationController extends Controller
 {
     /**
      * Maneja la solicitud de una nueva inscripción desde WordPress (Fluent Forms).
-     * Este controlador SÍ usa la lógica de CourseMapping (Punto 3).
+     * Este controlador SÍ usa la lógica de CourseMapping.
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -41,9 +38,8 @@ class WordpressIntegrationController extends Controller
             'phone'        => 'nullable|string|max:20',
             'wp_course_id' => 'required|integer', // <-- El ID del CPT 'curso' de WP
             
-            // INICIO: CAMBIO REQUERIDO
-            'wp_schedule_string' => 'required|string|max:255', // <-- El ID del horario de WP (ej: sabado_0900_1200)
-            // FIN: CAMBIO REQUERIDO
+            // El ID del horario de WP (ej: sabado_0900_1200)
+            'wp_schedule_string' => 'required|string|max:255', 
 
             // Campos opcionales que enviaremos desde WP
             'address'      => 'nullable|string',
@@ -71,7 +67,7 @@ class WordpressIntegrationController extends Controller
         $isMinor = !empty($data['is_minor_flag']) && $data['is_minor_flag'] !== 'No soy menor';
 
         try {
-            // 2. Encontrar el curso de Laravel usando el Mapeo (Punto 3)
+            // 2. Encontrar el curso de Laravel usando el Mapeo
             $mapping = CourseMapping::with('course.modules')->where('wp_course_id', $data['wp_course_id'])->first();
 
             if (!$mapping) {
@@ -81,7 +77,7 @@ class WordpressIntegrationController extends Controller
 
             $laravelCourse = $mapping->course; // El objeto Course de Laravel
             
-            // INICIO: Buscar la sección (schedule) usando el mapeo
+            // Buscar la sección (schedule) usando el mapeo
             $scheduleMapping = ScheduleMapping::where('wp_course_id', $data['wp_course_id'])
                                               ->where('wp_schedule_string', $data['wp_schedule_string'])
                                               ->first();
@@ -95,15 +91,11 @@ class WordpressIntegrationController extends Controller
             }
             
             $laravel_schedule_id = $scheduleMapping->course_schedule_id;
-            // FIN: Buscar la sección
             
-            // INICIO: CAMBIO DE LÓGICA DE TRANSACCIÓN
-            // Pasamos el $laravel_schedule_id a la transacción
+            // Pasamos las variables necesarias a la transacción
             $result = DB::transaction(function () use ($data, $isMinor, $laravelCourse, $laravel_schedule_id) {
-            // FIN: CAMBIO DE LÓGICA DE TRANSACCIÓN
 
                 // 3. Encontrar o Crear al Estudiante y Usuario
-                // (Lógica copiada de tu EnrollmentController)
                 $student = Student::where('cedula', $data['cedula'])->first();
                 $user = User::where('email', $data['email'])->first();
 
@@ -130,7 +122,7 @@ class WordpressIntegrationController extends Controller
                         'password' => Hash::make($data['cedula']), // Cédula como contraseña inicial
                         'access_expires_at' => Carbon::now()->addMonths(3), // ACCESO TEMPORAL
                     ]);
-                    // Asumimos que tienes 'spatie/laravel-permission' instalado por tu EnrollmentController
+                    // Asumimos que tienes 'spatie/laravel-permission' instalado
                     $user->assignRole('Estudiante');
 
                     // Crear Estudiante
@@ -144,7 +136,6 @@ class WordpressIntegrationController extends Controller
                         'mobile_phone' => $data['phone'], // Usamos 'phone' como fallback
                         'address' => $data['address'] ?? null,
                         'status' => 'Activo',
-                        // 'balance' => 0, // Comentado (Columna no existe, según log anterior)
                         'city' => $data['city'] ?? null,
                         'sector' => $data['sector'] ?? null,
                         'birth_date' => $data['birth_date'] ?? null,
@@ -161,11 +152,10 @@ class WordpressIntegrationController extends Controller
 
                 // 4. Crear la Inscripción (Enrollment) pendiente de pago
                 
-                // INICIO: CAMBIO DE LÓGICA DE INSCRIPCIÓN
                 // Verificamos si ya tiene una inscripción PENDIENTE para esta SECCIÓN
                 $existingEnrollment = Enrollment::where('student_id', $student->id)
-                                                ->where('course_schedule_id', $laravel_schedule_id) // <-- Buscamos por SECCIÓN
-                                                ->where('status', 'Pendiente') // Asumiendo 'Pendiente'
+                                                ->where('course_schedule_id', $laravel_schedule_id)
+                                                ->where('status', 'Pendiente')
                                                 ->exists();
 
                 if ($existingEnrollment) {
@@ -185,39 +175,34 @@ class WordpressIntegrationController extends Controller
                     'status' => 'Pendiente', // 'Pendiente' de pago
                     'enrollment_date' => now(),
                 ]);
-                // FIN: CAMBIO DE LÓGICA DE INSCRIPCIÓN
 
-                // 5. Crear el Pago (Payment) pendiente
+                // 5. Crear el Pago (Payment) - MODIFICACIÓN PARA PRECIO DE INSCRIPCIÓN
                 
-                // INICIO: CAMBIO DE LÓGICA DE PAGO
-                // Obtenemos el módulo (y el precio) desde la sección, no desde el curso.
-                $schedule = CourseSchedule::with('module')->find($laravel_schedule_id);
-                $module = $schedule->module;
-                
-                if (!$module) {
-                    // Esto no debería pasar si la data está bien
-                    throw new \Exception("La sección {$laravel_schedule_id} no está enlazada a un módulo.");
-                }
+                // Buscar o crear el concepto de Inscripción
+                $inscriptionConcept = PaymentConcept::firstOrCreate(
+                    ['name' => 'Inscripción'],
+                    ['description' => 'Pago único de inscripción al curso', 'amount' => 0]
+                );
 
-                $amount = $module->price ?? 0;
-                $payment_concept_id = $module->payment_concept_id ?? null; // Asumiendo que tienes esta columna en el módulo
-                // FIN: CAMBIO DE LÓGICA DE PAGO
+                // Usar el registration_fee del Curso Padre
+                $amount = $laravelCourse->registration_fee ?? 0;
 
                 Payment::create([
                     'student_id' => $student->id,
                     'enrollment_id' => $enrollment->id,
-                    'payment_concept_id' => $payment_concept_id,
+                    'payment_concept_id' => $inscriptionConcept->id,
                     'amount' => $amount,
                     'currency' => 'DOP',
                     'status' => 'Pendiente',
                     'gateway' => 'Por Pagar',
+                    'due_date' => now()->addDays(3), // Fecha límite para pagar inscripción
                 ]);
                 
-                Log::info("API WP->Laravel (V1): Nueva inscripción pendiente creada (ID: {$enrollment->id})");
+                Log::info("API WP->Laravel (V1): Nueva inscripción creada con cargo de Inscripción (Monto: $amount, ID Inscripción: {$enrollment->id})");
 
                 return [
                     'status' => 'success',
-                    'message' => 'Inscripción procesada. Estudiante creado/actualizado.',
+                    'message' => 'Inscripción procesada. Cargo de inscripción generado.',
                     'student_id' => $student->id,
                     'enrollment_id' => $enrollment->id,
                 ];

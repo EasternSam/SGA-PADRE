@@ -7,6 +7,8 @@ use Livewire\WithPagination;
 use App\Models\StudentRequest;
 use App\Models\Enrollment;
 use App\Models\Course;
+use App\Models\Payment;        // <-- Importar Payment
+use App\Models\PaymentConcept; // <-- Importar Concepto
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
@@ -49,10 +51,11 @@ class RequestsManagement extends Component
         if (!$this->selectedRequest) return;
 
         // Normalizar estados: backend usa 'approved'/'rejected' o 'aprobado'/'rechazado'?
-        // Basado en tu vista anterior, usabas 'aprobado'/'rechazado'.
         
         try {
             DB::beginTransaction();
+
+            $oldStatus = $this->selectedRequest->status;
 
             $this->selectedRequest->update([
                 'status' => $newStatus,
@@ -60,7 +63,8 @@ class RequestsManagement extends Component
             ]);
 
             // LOGICA ADICIONAL AL APROBAR
-            if ($newStatus === 'aprobado') {
+            // Solo si cambia de estado a aprobado
+            if ($newStatus === 'aprobado' && $oldStatus !== 'aprobado') {
                 $this->handleApproval($this->selectedRequest);
             }
             // LOGICA ADICIONAL AL RECHAZAR
@@ -75,18 +79,62 @@ class RequestsManagement extends Component
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error actualizando solicitud: ' . $e->getMessage());
-            session()->flash('error', 'Error al procesar la solicitud.');
+            session()->flash('error', 'Error al procesar la solicitud: ' . $e->getMessage());
         }
     }
 
     protected function handleApproval($request)
     {
-        // Ejemplo: Si es inscripción, crear el enrollment.
-        // Nota: user_id lo sacamos del estudiante
-        if ($request->course_id && $request->student && $request->student->user_id) {
-            // Lógica para inscribir o cambiar sección
-            // Enrollment::updateOrCreate(...)
+        // Validamos que exista curso y estudiante
+        if (!$request->course_id || !$request->student_id) {
+            // Si falta info crítica, lanzamos excepción para que el catch la capture y avise
+            throw new \Exception("La solicitud no tiene curso o estudiante asociado.");
         }
+
+        $student = $request->student;
+        $course = $request->course;
+
+        // 1. Verificar si ya está inscrito
+        $exists = Enrollment::where('student_id', $student->id)
+            ->where('course_id', $course->id)
+            ->exists();
+
+        if ($exists) {
+            // Si ya existe, no hacemos nada más que loguear/avisar
+            session()->flash('warning', 'El estudiante ya estaba inscrito en este curso.');
+            return;
+        }
+
+        // 2. Crear Inscripción (Enrollment)
+        // Nota: Si la solicitud no especifica sección (schedule), creamos una inscripción general 
+        // o asignada a una sección por defecto si existiera lógica para ello.
+        // Aquí asumimos inscripción general pendiente de asignación de horario si no hay schedule_id.
+        
+        $enrollment = Enrollment::create([
+            'student_id' => $student->id,
+            'course_id' => $course->id,
+            'status' => 'Pendiente', // Pendiente de pago
+            'enrollment_date' => now(),
+        ]);
+
+        // 3. Generar deuda de INSCRIPCIÓN
+        $inscriptionConcept = PaymentConcept::firstOrCreate(
+            ['name' => 'Inscripción'], 
+            ['description' => 'Pago único de inscripción al curso', 'amount' => 0]
+        );
+
+        Payment::create([
+            'student_id' => $student->id,
+            'enrollment_id' => $enrollment->id,
+            'payment_concept_id' => $inscriptionConcept->id,
+            'amount' => $course->registration_fee, // <-- Usamos el precio del CURSO
+            'currency' => 'DOP',
+            'status' => 'Pendiente',
+            'gateway' => 'Sistema', // Indica que fue generado por el sistema administrativo
+            'due_date' => now()->addDays(3),
+        ]);
+
+        Log::info("Solicitud ID {$request->id} aprobada por Admin. Inscripción y cobro generados.");
     }
 
     public function render()
