@@ -7,8 +7,8 @@ use Livewire\WithPagination;
 use App\Models\StudentRequest;
 use App\Models\Enrollment;
 use App\Models\Course;
-use App\Models\Payment;        // <-- Importar Payment
-use App\Models\PaymentConcept; // <-- Importar Concepto
+use App\Models\Payment;        
+use App\Models\PaymentConcept; 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
@@ -19,7 +19,7 @@ class RequestsManagement extends Component
     use WithPagination;
 
     public $search = '';
-    public $filterStatus = ''; // Dejar vacío para ver TODO por defecto
+    public $filterStatus = ''; 
     public $selectedRequest = null;
     public $adminNotes = '';
     public $showingModal = false;
@@ -50,8 +50,6 @@ class RequestsManagement extends Component
     {
         if (!$this->selectedRequest) return;
 
-        // Normalizar estados: backend usa 'approved'/'rejected' o 'aprobado'/'rechazado'?
-        
         try {
             DB::beginTransaction();
 
@@ -62,14 +60,8 @@ class RequestsManagement extends Component
                 'admin_notes' => $this->adminNotes,
             ]);
 
-            // LOGICA ADICIONAL AL APROBAR
-            // Solo si cambia de estado a aprobado
             if ($newStatus === 'aprobado' && $oldStatus !== 'aprobado') {
                 $this->handleApproval($this->selectedRequest);
-            }
-            // LOGICA ADICIONAL AL RECHAZAR
-            elseif ($newStatus === 'rechazado') {
-                 // Lógica de rechazo si aplica (ej: notificar)
             }
 
             DB::commit();
@@ -85,52 +77,43 @@ class RequestsManagement extends Component
 
     protected function handleApproval($request)
     {
-        // Validamos que exista curso y estudiante
         if (!$request->course_id || !$request->student_id) {
-            // Si falta info crítica, lanzamos excepción para que el catch la capture y avise
             throw new \Exception("La solicitud no tiene curso o estudiante asociado.");
         }
 
         $student = $request->student;
         $course = $request->course;
 
-        // 1. Verificar si ya está inscrito
         $exists = Enrollment::where('student_id', $student->id)
             ->where('course_id', $course->id)
             ->exists();
 
         if ($exists) {
-            // Si ya existe, no hacemos nada más que loguear/avisar
             session()->flash('warning', 'El estudiante ya estaba inscrito en este curso.');
             return;
         }
 
-        // 2. Crear Inscripción (Enrollment)
-        // Nota: Si la solicitud no especifica sección (schedule), creamos una inscripción general 
-        // o asignada a una sección por defecto si existiera lógica para ello.
-        // Aquí asumimos inscripción general pendiente de asignación de horario si no hay schedule_id.
-        
         $enrollment = Enrollment::create([
             'student_id' => $student->id,
             'course_id' => $course->id,
-            'status' => 'Pendiente', // Pendiente de pago
+            'status' => 'Pendiente', 
             'enrollment_date' => now(),
         ]);
 
-        // 3. Generar deuda de INSCRIPCIÓN
+        // 3. Generar deuda de INSCRIPCIÓN (CORREGIDO: Sin amount en concepto)
         $inscriptionConcept = PaymentConcept::firstOrCreate(
             ['name' => 'Inscripción'], 
-            ['description' => 'Pago único de inscripción al curso', 'amount' => 0]
+            ['description' => 'Pago único de inscripción al curso'] // Sin amount
         );
 
         Payment::create([
             'student_id' => $student->id,
             'enrollment_id' => $enrollment->id,
             'payment_concept_id' => $inscriptionConcept->id,
-            'amount' => $course->registration_fee, // <-- Usamos el precio del CURSO
+            'amount' => $course->registration_fee, 
             'currency' => 'DOP',
             'status' => 'Pendiente',
-            'gateway' => 'Sistema', // Indica que fue generado por el sistema administrativo
+            'gateway' => 'Sistema', 
             'due_date' => now()->addDays(3),
         ]);
 
@@ -149,7 +132,7 @@ class RequestsManagement extends Component
             ->when($this->filterStatus, function ($query) {
                 $query->where('status', $this->filterStatus);
             })
-            ->latest() // Ordenar por más reciente
+            ->latest()
             ->paginate(10);
 
         return view('livewire.admin.requests-management', [

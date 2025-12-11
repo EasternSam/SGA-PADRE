@@ -16,7 +16,7 @@ use App\Models\Enrollment;
 use App\Models\Payment; 
 use App\Models\ScheduleMapping;
 use App\Models\CourseSchedule;
-use App\Models\PaymentConcept; // Modelo necesario para buscar 'Inscripción'
+use App\Models\PaymentConcept; 
 
 class WordpressIntegrationController extends Controller
 {
@@ -36,9 +36,7 @@ class WordpressIntegrationController extends Controller
             'last_name'    => 'required|string|max:255',
             'email'        => 'required|email|max:255',
             'phone'        => 'nullable|string|max:20',
-            'wp_course_id' => 'required|integer', // <-- El ID del CPT 'curso' de WP
-            
-            // El ID del horario de WP (ej: sabado_0900_1200)
+            'wp_course_id' => 'required|integer', 
             'wp_schedule_string' => 'required|string|max:255', 
 
             // Campos opcionales que enviaremos desde WP
@@ -75,7 +73,7 @@ class WordpressIntegrationController extends Controller
                 return response()->json(['success' => false, 'message' => 'Curso de WordPress no enlazado en Laravel.'], 404);
             }
 
-            $laravelCourse = $mapping->course; // El objeto Course de Laravel
+            $laravelCourse = $mapping->course; 
             
             // Buscar la sección (schedule) usando el mapeo
             $scheduleMapping = ScheduleMapping::where('wp_course_id', $data['wp_course_id'])
@@ -92,7 +90,6 @@ class WordpressIntegrationController extends Controller
             
             $laravel_schedule_id = $scheduleMapping->course_schedule_id;
             
-            // Pasamos las variables necesarias a la transacción
             $result = DB::transaction(function () use ($data, $isMinor, $laravelCourse, $laravel_schedule_id) {
 
                 // 3. Encontrar o Crear al Estudiante y Usuario
@@ -100,7 +97,6 @@ class WordpressIntegrationController extends Controller
                 $user = User::where('email', $data['email'])->first();
 
                 if ($student || $user) {
-                    // Estudiante Existente
                     if ($student && $user && $student->user_id != $user->id) {
                          throw new \Exception('Conflicto de datos. La cédula y el email pertenecen a cuentas diferentes.');
                     }
@@ -108,24 +104,19 @@ class WordpressIntegrationController extends Controller
                     if (!$student) {
                         throw new \Exception('Conflicto de usuario. Email existe pero no está enlazado a un estudiante.');
                     }
-                    
                     Log::info("API WP->Laravel (V1): Estudiante encontrado (Cédula: {$data['cedula']})");
 
                 } else {
-                    // Estudiante Nuevo
                     Log::info("API WP->Laravel (V1): Creando nuevo estudiante (Cédula: {$data['cedula']})");
                     
-                    // Crear Usuario (con acceso temporal)
                     $user = User::create([
                         'name' => $data['first_name'] . ' ' . $data['last_name'],
                         'email' => $data['email'],
-                        'password' => Hash::make($data['cedula']), // Cédula como contraseña inicial
-                        'access_expires_at' => Carbon::now()->addMonths(3), // ACCESO TEMPORAL
+                        'password' => Hash::make($data['cedula']), 
+                        'access_expires_at' => Carbon::now()->addMonths(3), 
                     ]);
-                    // Asumimos que tienes 'spatie/laravel-permission' instalado
                     $user->assignRole('Estudiante');
 
-                    // Crear Estudiante
                     $student = Student::create([
                         'user_id' => $user->id,
                         'first_name' => $data['first_name'],
@@ -133,7 +124,7 @@ class WordpressIntegrationController extends Controller
                         'cedula' => $data['cedula'],
                         'email' => $data['email'],
                         'home_phone' => $data['phone'],
-                        'mobile_phone' => $data['phone'], // Usamos 'phone' como fallback
+                        'mobile_phone' => $data['phone'], 
                         'address' => $data['address'] ?? null,
                         'status' => 'Activo',
                         'city' => $data['city'] ?? null,
@@ -150,16 +141,13 @@ class WordpressIntegrationController extends Controller
                     ]);
                 }
 
-                // 4. Crear la Inscripción (Enrollment) pendiente de pago
-                
-                // Verificamos si ya tiene una inscripción PENDIENTE para esta SECCIÓN
+                // 4. Verificar inscripción pendiente
                 $existingEnrollment = Enrollment::where('student_id', $student->id)
                                                 ->where('course_schedule_id', $laravel_schedule_id)
                                                 ->where('status', 'Pendiente')
                                                 ->exists();
 
                 if ($existingEnrollment) {
-                    Log::warning("API WP->Laravel (V1): El estudiante ya tiene una inscripción pendiente para esta sección.", $data);
                     return [
                         'status' => 'success',
                         'message' => 'Inscripción pendiente ya registrada.',
@@ -167,24 +155,22 @@ class WordpressIntegrationController extends Controller
                     ];
                 }
 
-                // Creamos la nueva inscripción como "pendiente"
+                // Crear Inscripción
                 $enrollment = Enrollment::create([
                     'student_id' => $student->id,
-                    'course_id' => $laravelCourse->id, // <-- Guardamos el curso padre
-                    'course_schedule_id' => $laravel_schedule_id, // <-- GUARDAMOS LA SECCIÓN CORRECTA
-                    'status' => 'Pendiente', // 'Pendiente' de pago
+                    'course_id' => $laravelCourse->id,
+                    'course_schedule_id' => $laravel_schedule_id,
+                    'status' => 'Pendiente',
                     'enrollment_date' => now(),
                 ]);
 
-                // 5. Crear el Pago (Payment) - MODIFICACIÓN PARA PRECIO DE INSCRIPCIÓN
+                // 5. Crear el Pago (Payment) - CORREGIDO: Eliminar 'amount' de PaymentConcept
                 
-                // Buscar o crear el concepto de Inscripción
                 $inscriptionConcept = PaymentConcept::firstOrCreate(
                     ['name' => 'Inscripción'],
-                    ['description' => 'Pago único de inscripción al curso', 'amount' => 0]
+                    ['description' => 'Pago único de inscripción al curso'] // <-- CORREGIDO: Sin 'amount'
                 );
 
-                // Usar el registration_fee del Curso Padre
                 $amount = $laravelCourse->registration_fee ?? 0;
 
                 Payment::create([
@@ -195,10 +181,10 @@ class WordpressIntegrationController extends Controller
                     'currency' => 'DOP',
                     'status' => 'Pendiente',
                     'gateway' => 'Por Pagar',
-                    'due_date' => now()->addDays(3), // Fecha límite para pagar inscripción
+                    'due_date' => now()->addDays(3), 
                 ]);
                 
-                Log::info("API WP->Laravel (V1): Nueva inscripción creada con cargo de Inscripción (Monto: $amount, ID Inscripción: {$enrollment->id})");
+                Log::info("API WP->Laravel (V1): Nueva inscripción creada con cargo de Inscripción (Monto: $amount)");
 
                 return [
                     'status' => 'success',

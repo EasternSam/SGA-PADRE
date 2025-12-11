@@ -9,7 +9,7 @@ use App\Models\CourseSchedule;
 use App\Models\Payment;
 use App\Models\User;
 use App\Models\Student;
-use App\Models\PaymentConcept; // <-- IMPORTAR
+use App\Models\PaymentConcept; 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
@@ -33,39 +33,39 @@ class Index extends Component
     public Student $student;
     public ?User $user; 
     
-    // --- Propiedades de Filtro y Búsqueda (Originales) ---
+    // --- Propiedades de Filtro y Búsqueda ---
     public $search = '';
     public $selectedCourse;
     public $selectedModule;
     public $enrollmentStatusFilter = 'all'; 
     public $paymentsPage = 1; 
 
-    // --- Propiedades del Modal de Cursos (Originales) ---
+    // --- Propiedades del Modal de Cursos ---
     public $course_id, $course_name, $course_credits, $course_code;
     public $courseModalTitle = '';
 
-    // --- Propiedades del Modal de Módulos (Originales) ---
+    // --- Propiedades del Modal de Módulos ---
     public $module_id, $module_name, $module_price; 
     public $moduleModalTitle = '';
     
-    // --- Propiedades del Modal de Horarios (Originales) ---
+    // --- Propiedades del Modal de Horarios ---
     public $schedule_id, $teacher_id, $days = [], $start_time, $end_time, $section_name, $start_date, $end_date;
     public $scheduleModalTitle = '';
     public $teachers = [];
 
-    // --- Propiedades del Modal de Inscripción (CORREGIDO) ---
+    // --- Propiedades del Modal de Inscripción ---
     public $isEnrollModalOpen = false;
     public Collection $availableSchedules; 
     public $searchAvailableCourse = '';
     public $selectedScheduleId;
     public $selectedScheduleInfo;
 
-    // --- Propiedades del Modal de Anulación (Originales) ---
+    // --- Propiedades del Modal de Anulación ---
     public $isUnenrollModalOpen = false;
     public $enrollmentToCancel; 
     public $enrollmentToCancelId = null;
 
-    // --- Propiedades del Modal de Estudiante (Originales) ---
+    // --- Propiedades del Modal de Estudiante ---
     public $student_id;
     public $first_name = '';
     public $last_name = '';
@@ -94,9 +94,6 @@ class Index extends Component
         'enrollmentStatusFilter' => ['except' => 'all'],
     ];
 
-    /**
-     * Carga inicial del componente.
-     */
     public function mount(Student $student)
     {
         $this->teachers = User::role('Profesor')->orderBy('name')->get();
@@ -104,9 +101,6 @@ class Index extends Component
         $this->loadStudentData($student->id); 
     }
 
-    /**
-     * Carga/Recarga solo los datos del estudiante.
-     */
     public function loadStudentData($studentId)
     {
         try {
@@ -120,9 +114,6 @@ class Index extends Component
         }
     }
     
-    /**
-     * Se dispara cuando se añade un pago o se actualiza el estudiante.
-     */
     #[On('paymentAdded')]
     #[On('studentUpdated')]
     public function refreshData()
@@ -150,7 +141,6 @@ class Index extends Component
 
     public function render()
     {
-        // --- Lógica de Gestión Académica ---
         $coursesQuery = Course::query();
 
         if ($this->search) {
@@ -171,7 +161,6 @@ class Index extends Component
         
         $selectedModuleName = $this->selectedModule ? Module::find($this->selectedModule)?->name : null;
 
-        // --- Lógica de Carga de Inscripciones y Pagos ---
         $pendingEnrollments = collect();
         $activeEnrollments = collect();
         $completedEnrollments = collect();
@@ -180,7 +169,6 @@ class Index extends Component
         $pendingPayments = collect(); 
 
         if ($this->student) {
-            // 1. Cargar inscripciones para la VISTA GENERAL
             $allEnrollments = $this->student->enrollments()
                 ->with('courseSchedule.module.course', 'courseSchedule.teacher', 'payment')
                 ->orderBy('created_at', 'desc')
@@ -190,7 +178,6 @@ class Index extends Component
             $activeEnrollments = $allEnrollments->whereIn('status', ['Cursando', 'cursando', 'Activo', 'activo']);
             $completedEnrollments = $allEnrollments->whereIn('status', ['Completado', 'completado']);
 
-            // 2. Cargar inscripciones para la PESTAÑA DE INSCRIPCIONES (Paginada)
             $filteredEnrollmentsQuery = $this->student->enrollments()
                                                      ->with('courseSchedule.module.course', 'courseSchedule.teacher')
                                                      ->orderBy('created_at', 'desc');
@@ -201,7 +188,6 @@ class Index extends Component
 
             $filteredEnrollments = $filteredEnrollmentsQuery->paginate(5, ['*'], 'enrollmentsPage');
 
-            // 3. Cargar PAGOS (Paginado)
             $allPayments = $this->student->payments()
                 ->with('paymentConcept', 'enrollment.courseSchedule.module.course', 'user') 
                 ->orderBy('created_at', 'desc')
@@ -215,7 +201,6 @@ class Index extends Component
                 ['pageName' => 'paymentsPage']
             );
             
-            // 4. Cargar Pagos Pendientes (para la alerta)
             $pendingPayments = $allPayments->where('status', 'Pendiente');
         }
 
@@ -239,8 +224,6 @@ class Index extends Component
         $url = route('reports.student-report', $this->student->id);
         $this->dispatch('open-pdf-modal', url: $url);
     }
-
-    // --- Métodos de Inscripción (Enrollment) ---
 
     public function openEnrollmentModal()
     {
@@ -295,9 +278,6 @@ class Index extends Component
         }
     }
 
-    /**
-     * Inscribir estudiante
-     */
     public function enrollStudent()
     {
         $this->validate([
@@ -305,11 +285,7 @@ class Index extends Component
         ]);
 
         try {
-            // Buscamos la sección con su módulo y el curso padre
             $schedule = CourseSchedule::with('module.course')->findOrFail($this->selectedScheduleId);
-
-            // Validaciones (Se omitió balance por ahora)
-            // if ($this->student->balance > 0) { ... }
 
             $enrolledCount = Enrollment::where('course_schedule_id', $schedule->id)
                                        ->whereIn('status', ['Activo', 'Cursando', 'Pendiente'])
@@ -330,31 +306,28 @@ class Index extends Component
                 throw new \Exception('El estudiante ya está inscrito en esta sección.');
             }
 
-            // Crear inscripción y pago pendiente
             DB::transaction(function () use ($schedule) {
                 $enrollment = Enrollment::create([
                     'student_id' => $this->student->id,
-                    'course_id' => $schedule->module->course_id, // Guardar Course ID
+                    'course_id' => $schedule->module->course_id, 
                     'course_schedule_id' => $this->selectedScheduleId,
                     'status' => 'Pendiente',
                 ]);
 
-                // --- LÓGICA DE COBRO CORREGIDA ---
+                // --- CORREGIDO: Eliminar amount de PaymentConcept ---
                 
-                // 1. Obtener concepto de Inscripción
                 $inscriptionConcept = PaymentConcept::firstOrCreate(
                     ['name' => 'Inscripción'], 
-                    ['description' => 'Pago único de inscripción al curso', 'amount' => 0]
+                    ['description' => 'Pago único de inscripción al curso'] // Sin amount
                 );
 
-                // 2. Usar el precio de inscripción del CURSO
                 $amount = $schedule->module->course->registration_fee ?? 0;
 
                 Payment::create([
                     'student_id' => $this->student->id,
                     'enrollment_id' => $enrollment->id,
                     'payment_concept_id' => $inscriptionConcept->id,
-                    'amount' => $amount, // Precio correcto
+                    'amount' => $amount, 
                     'currency' => 'DOP',
                     'status' => 'Pendiente',
                     'gateway' => 'Sistema',
@@ -373,7 +346,6 @@ class Index extends Component
         }
     }
 
-    // --- Métodos para Desinscribir (Unenroll) ---
     public function confirmUnenroll($enrollmentId)
     {
         $this->enrollmentToCancelId = $enrollmentId;
@@ -405,7 +377,7 @@ class Index extends Component
         $this->enrollmentToCancelId = null;
     }
 
-    // --- Métodos CRUD Cursos, Módulos, Horarios (Se mantienen igual) ---
+    // --- Métodos CRUD ---
     protected function courseRules()
     {
         return [
@@ -608,7 +580,6 @@ class Index extends Component
         $this->end_date = '';
     }
 
-    // --- Métodos para Modal de Estudiante (Edición Perfil) ---
     protected function studentRules()
     {
         if (!$this->user) {
