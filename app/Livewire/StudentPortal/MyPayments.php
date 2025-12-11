@@ -184,4 +184,12 @@ class MyPayments extends Component
             'paymentHistory' => $paymentHistory
         ]);
     }
+    
+    public function downloadFinancialReport()
+    {
+        // Asegúrate de tener la ruta 'reports.financial-report' definida
+        $url = route('reports.financial-report', $this->student->id); 
+        $this->dispatch('open-pdf-modal', url: $url);
+    }
 }
+

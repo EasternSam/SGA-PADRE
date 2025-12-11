@@ -132,8 +132,22 @@
     <section>
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-semibold text-gray-900">Historial de Transacciones</h3>
-            <button class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                Descargar Reporte
+            
+            {{-- BOTÓN DESCARGAR REPORTE ACTIVO --}}
+            <button wire:click="downloadFinancialReport" wire:loading.attr="disabled" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-2 disabled:opacity-50 transition-colors">
+                <span wire:loading.remove wire:target="downloadFinancialReport">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Descargar Reporte
+                </span>
+                <span wire:loading wire:target="downloadFinancialReport" class="flex items-center gap-1">
+                    <svg class="animate-spin h-4 w-4 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Generando PDF...
+                </span>
             </button>
         </div>
 
@@ -215,7 +229,7 @@
     {{-- MODAL DE PAGO (Diseño Checkout SaaS) --}}
     @if($showPaymentModal)
         <div class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            {{-- Backdrop FIX: Uso explícito de bg-opacity y sin animación inicial que dependa de JS --}}
+            {{-- Backdrop FIX: Uso explícito de bg-opacity --}}
             <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity backdrop-blur-sm"></div>
 
             <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
@@ -342,7 +356,7 @@
                                         
                                         <div>
                                             <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1.5">Número de Referencia / Comprobante</label>
-                                            <input type="text" wire:model="transferReference" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm py-2.5" placeholder="Ej. 2384920">
+                                            <input type="text" wire:model="transferReference" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5" placeholder="Ej. 2384920">
                                             @error('transferReference') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                                         </div>
 
@@ -396,4 +410,55 @@
             </div>
         </div>
     @endif
+    
+    {{-- MODAL VISOR PDF (Agregado para reportes) --}}
+    <div
+        x-data="{ show: false, pdfUrl: '' }"
+        @open-pdf-modal.window="
+            pdfUrl = $event.detail.url;
+            show = true;
+        "
+        x-show="show"
+        x-on:keydown.escape.window="show = false; pdfUrl = ''"
+        class="fixed inset-0 z-50 overflow-y-auto"
+        aria-labelledby="modal-title"
+        role="dialog"
+        aria-modal="true"
+        style="display: none;"
+    >
+        <div class="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" @click="show = false; pdfUrl = ''" aria-hidden="true"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div
+                x-show="show"
+                x-transition:enter="ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                class="inline-block w-full max-w-6xl p-4 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg"
+            >
+                <div class="flex justify-between items-center pb-3 border-b">
+                    <h3 class="text-lg font-medium leading-6 text-gray-900" id="modal-title">
+                        Reporte Financiero
+                    </h3>
+                    <button @click="show = false; pdfUrl = ''" class="text-gray-400 hover:text-gray-600">
+                        <span class="sr-only">Cerrar</span>
+                        <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="mt-4" style="width: 100%; height: 75vh;">
+                    <iframe :src="pdfUrl" frameborder="0" width="100%" height="100%">
+                        Tu navegador no soporta iframes.
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
