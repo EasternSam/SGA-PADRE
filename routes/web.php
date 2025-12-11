@@ -141,17 +141,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
     });
     
-    // --- RUTAS DE REPORTES PDF (Accesibles por roles autorizados) ---
-    // NOTA: Estas rutas deben estar fuera del grupo 'admin' si el estudiante las va a usar, 
-    // o deben tener permisos específicos. Aquí las dejo accesibles para 'auth' general, 
-    // pero idealmente deberías protegerlas con policies en el controlador.
+    // --- RUTAS DE REPORTES PDF ---
     
     Route::get('/reports/student/{student}', [ReportController::class, 'generateStudentReport'])->name('reports.student-report');
     Route::get('/reports/student-list/{courseSchedule}', [StudentListPdfController::class, 'generate'])->name('reports.student-list-pdf');
     Route::get('/reports/grades/{courseSchedule}', [GradesPdfController::class, 'generate'])->name('reports.grades-pdf');
     
-    // --> ESTA ES LA RUTA QUE FALTABA <--
-    Route::get('/reports/financial/{student}', [FinancialPdfController::class, 'generate'])->name('reports.financial-report');
+    // --> CORRECCIÓN AQUÍ: Apuntar al método 'download' en lugar de 'generate'
+    Route::get('/reports/financial/{student}', [FinancialPdfController::class, 'download'])->name('reports.financial-report');
     
     Route::get('/reports/attendance/{courseSchedule}', [AttendancePdfController::class, 'generate'])->name('reports.attendance-pdf');
 
@@ -175,7 +172,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     });
 
-    // Rutas de Perfil Genéricas (usadas por el dashboard.blade.php original si existe)
+    // Rutas de Perfil Genéricas
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
