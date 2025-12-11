@@ -79,7 +79,6 @@
                                 <div>
                                     <p class="text-xs text-gray-500 uppercase font-bold tracking-wide">Total a Pagar</p>
                                     <p class="text-2xl font-black text-gray-900">
-                                        {{-- MODIFICADO: Usar amount del pago o registration_fee del curso --}}
                                         RD$ {{ number_format($debt->payment->amount ?? $debt->courseSchedule->module->course->registration_fee ?? 0, 2) }}
                                     </p>
                                 </div>
@@ -186,7 +185,8 @@
     {{-- MODAL DE PAGO INTEGRADO (Student Version) --}}
     @if($showPaymentModal)
         <div class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="fixed inset-0 bg-gray-900/80 transition-opacity backdrop-blur-sm"></div>
+            {{-- CORRECCIÓN AQUI: Cambio de bg-gray-900/80 a bg-gray-500 bg-opacity-75 para mayor compatibilidad --}}
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity backdrop-blur-sm"></div>
 
             <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
                 <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
