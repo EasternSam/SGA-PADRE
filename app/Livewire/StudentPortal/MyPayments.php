@@ -12,9 +12,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\WithPagination;
-use Livewire\Attributes\Layout; // Importar atributo Layout
+use Livewire\Attributes\Layout;
 
-// Especificar el layout que usa tu aplicación (layouts.app o layouts.dashboard)
 #[Layout('layouts.dashboard')] 
 class MyPayments extends Component
 {
@@ -27,9 +26,9 @@ class MyPayments extends Component
     public $selectedEnrollmentId;
     public $selectedEnrollment;
     public $amountToPay = 0;
-    public $paymentMethod = 'card'; // 'card' o 'transfer'
+    public $paymentMethod = 'card'; 
     
-    // Campos Tarjeta (Simulados)
+    // Campos Tarjeta
     public $cardName;
     public $cardNumber;
     public $cardExpiry;
@@ -55,7 +54,6 @@ class MyPayments extends Component
 
     public function mount()
     {
-        // Buscar el estudiante vinculado al usuario logueado
         $this->student = Student::where('user_id', Auth::id())->first();
     }
 
@@ -66,13 +64,17 @@ class MyPayments extends Component
         $this->paymentMethod = 'card';
 
         $this->selectedEnrollmentId = $enrollmentId;
-        $this->selectedEnrollment = Enrollment::with('courseSchedule.module')->findOrFail($enrollmentId);
         
-        // Determinar el monto a pagar
+        // Cargar con curso padre para acceder a registration_fee
+        $this->selectedEnrollment = Enrollment::with('courseSchedule.module.course', 'payment')->findOrFail($enrollmentId);
+        
+        // --- LOGICA DE MONTO CORREGIDA ---
         if ($this->selectedEnrollment->payment && $this->selectedEnrollment->payment->status == 'Pendiente') {
+            // Si ya hay un pago generado, usamos ese monto (es lo más seguro)
             $this->amountToPay = $this->selectedEnrollment->payment->amount;
         } else {
-            $this->amountToPay = $this->selectedEnrollment->courseSchedule->module->price ?? 0;
+            // Si no hay pago (raro), asumimos que es el primer pago (Inscripción)
+            $this->amountToPay = $this->selectedEnrollment->courseSchedule->module->course->registration_fee ?? 0;
         }
 
         $this->showPaymentModal = true;
@@ -99,22 +101,38 @@ class MyPayments extends Component
                     ? 'TX-' . strtoupper(uniqid()) 
                     : $this->transferReference;
 
-                $payment = Payment::updateOrCreate(
-                    [
+                // Buscar el pago existente primero
+                $existingPayment = Payment::where('enrollment_id', $this->selectedEnrollmentId)
+                    ->where('status', 'Pendiente')
+                    ->first();
+
+                if ($existingPayment) {
+                    // Actualizar pago existente
+                    $existingPayment->update([
+                        'status' => $status,
+                        'gateway' => $gateway,
+                        'transaction_id' => $reference,
+                        'user_id' => Auth::id(), // Quién pagó
+                        // No tocamos el monto ni el concepto, respetamos lo que estaba generado
+                    ]);
+                    $payment = $existingPayment;
+                } else {
+                    // Crear nuevo pago (Fallback)
+                    // Si no existía, asumimos que es inscripción
+                    $concept = PaymentConcept::firstOrCreate(['name' => 'Inscripción']);
+                    
+                    $payment = Payment::create([
                         'enrollment_id' => $this->selectedEnrollmentId,
-                        'status' => 'Pendiente'
-                    ],
-                    [
                         'student_id' => $this->student->id,
-                        'payment_concept_id' => $this->selectedEnrollment->courseSchedule->module->payment_concept_id ?? 1, 
+                        'payment_concept_id' => $concept->id,
                         'amount' => $this->amountToPay,
                         'currency' => 'DOP',
                         'status' => $status,
                         'gateway' => $gateway,
                         'transaction_id' => $reference,
                         'user_id' => Auth::id(),
-                    ]
-                );
+                    ]);
+                }
 
                 if ($status === 'Completado') {
                     if (!$this->student->student_code) {

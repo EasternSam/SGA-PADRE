@@ -180,7 +180,8 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $enrollment->courseSchedule->teacher->name ?? 'No asignado' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                                        ${{ number_format($enrollment->payment->amount ?? $enrollment->courseSchedule->module->price ?? 0, 2) }}
+                                        {{-- MODIFICADO: Usar el monto del pago generado o el precio de inscripción del curso --}}
+                                        ${{ number_format($enrollment->payment->amount ?? $enrollment->courseSchedule->module->course->registration_fee ?? 0, 2) }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">

@@ -9,6 +9,7 @@ use App\Models\CourseSchedule;
 use App\Models\Payment;
 use App\Models\User;
 use App\Models\Student;
+use App\Models\PaymentConcept; // <-- IMPORTAR
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
@@ -54,7 +55,7 @@ class Index extends Component
 
     // --- Propiedades del Modal de Inscripción (CORREGIDO) ---
     public $isEnrollModalOpen = false;
-    public Collection $availableSchedules; // <-- CAMBIO: Tipado fuerte como Collection
+    public Collection $availableSchedules; 
     public $searchAvailableCourse = '';
     public $selectedScheduleId;
     public $selectedScheduleInfo;
@@ -99,12 +100,12 @@ class Index extends Component
     public function mount(Student $student)
     {
         $this->teachers = User::role('Profesor')->orderBy('name')->get();
-        $this->availableSchedules = collect(); // <-- Inicializar como colección vacía
+        $this->availableSchedules = collect(); 
         $this->loadStudentData($student->id); 
     }
 
     /**
-     * (ACTUALIZADO) Carga/Recarga solo los datos del estudiante.
+     * Carga/Recarga solo los datos del estudiante.
      */
     public function loadStudentData($studentId)
     {
@@ -120,7 +121,7 @@ class Index extends Component
     }
     
     /**
-     * (ACTUALIZADO) Se dispara cuando se añade un pago o se actualiza el estudiante.
+     * Se dispara cuando se añade un pago o se actualiza el estudiante.
      */
     #[On('paymentAdded')]
     #[On('studentUpdated')]
@@ -191,8 +192,8 @@ class Index extends Component
 
             // 2. Cargar inscripciones para la PESTAÑA DE INSCRIPCIONES (Paginada)
             $filteredEnrollmentsQuery = $this->student->enrollments()
-                                             ->with('courseSchedule.module.course', 'courseSchedule.teacher')
-                                             ->orderBy('created_at', 'desc');
+                                                     ->with('courseSchedule.module.course', 'courseSchedule.teacher')
+                                                     ->orderBy('created_at', 'desc');
 
             if ($this->enrollmentStatusFilter !== 'all') {
                 $filteredEnrollmentsQuery->where('status', $this->enrollmentStatusFilter);
@@ -245,14 +246,12 @@ class Index extends Component
     {
         $this->resetEnrollmentSelection();
         $this->searchAvailableCourse = '';
-        $this->availableSchedules = collect(); // Reiniciar colección
+        $this->availableSchedules = collect(); 
         $this->dispatch('open-modal', 'enroll-student-modal');
     }
 
-    // --- ¡¡¡MÉTODO DE BÚSQUEDA CORREGIDO!!! ---
     public function updatedSearchAvailableCourse()
     {
-        // Validar si está vacío para limpiar resultados
         if (empty($this->searchAvailableCourse)) {
             $this->availableSchedules = collect();
             return;
@@ -260,26 +259,21 @@ class Index extends Component
 
         $term = $this->searchAvailableCourse;
 
-        // Búsqueda más robusta
         $this->availableSchedules = CourseSchedule::with(['module.course', 'teacher'])
             ->where(function ($query) use ($term) {
-                // 1. Buscar por nombre de la sección
                 $query->where('section_name', 'like', '%' . $term . '%')
-                    // 2. O buscar por nombre del módulo
                     ->orWhereHas('module', function ($q) use ($term) {
                         $q->where('name', 'like', '%' . $term . '%')
-                            // 3. O buscar por nombre o código del curso padre
                             ->orWhereHas('course', function ($sq) use ($term) {
                                 $sq->where('name', 'like', '%' . $term . '%')
                                     ->orWhere('code', 'like', '%' . $term . '%');
                             });
                     });
             })
-            // Excluir secciones donde el estudiante ya está inscrito
             ->whereDoesntHave('enrollments', function ($q) {
                 $q->where('student_id', $this->student->id);
             })
-            ->limit(20) // Limitar resultados para no saturar
+            ->limit(20) 
             ->get();
     }
     
@@ -311,12 +305,11 @@ class Index extends Component
         ]);
 
         try {
-            $schedule = CourseSchedule::with('module')->findOrFail($this->selectedScheduleId);
+            // Buscamos la sección con su módulo y el curso padre
+            $schedule = CourseSchedule::with('module.course')->findOrFail($this->selectedScheduleId);
 
-            // Validaciones
-            if ($this->student->balance > 0) {
-                throw new \Exception('El estudiante tiene un balance pendiente.');
-            }
+            // Validaciones (Se omitió balance por ahora)
+            // if ($this->student->balance > 0) { ... }
 
             $enrolledCount = Enrollment::where('course_schedule_id', $schedule->id)
                                        ->whereIn('status', ['Activo', 'Cursando', 'Pendiente'])
@@ -341,23 +334,36 @@ class Index extends Component
             DB::transaction(function () use ($schedule) {
                 $enrollment = Enrollment::create([
                     'student_id' => $this->student->id,
+                    'course_id' => $schedule->module->course_id, // Guardar Course ID
                     'course_schedule_id' => $this->selectedScheduleId,
                     'status' => 'Pendiente',
                 ]);
 
+                // --- LÓGICA DE COBRO CORREGIDA ---
+                
+                // 1. Obtener concepto de Inscripción
+                $inscriptionConcept = PaymentConcept::firstOrCreate(
+                    ['name' => 'Inscripción'], 
+                    ['description' => 'Pago único de inscripción al curso', 'amount' => 0]
+                );
+
+                // 2. Usar el precio de inscripción del CURSO
+                $amount = $schedule->module->course->registration_fee ?? 0;
+
                 Payment::create([
                     'student_id' => $this->student->id,
                     'enrollment_id' => $enrollment->id,
-                    'payment_concept_id' => $schedule->module->payment_concept_id ?? null,
-                    'amount' => $schedule->module->price ?? 0,
+                    'payment_concept_id' => $inscriptionConcept->id,
+                    'amount' => $amount, // Precio correcto
                     'currency' => 'DOP',
                     'status' => 'Pendiente',
-                    'gateway' => 'Por Pagar',
+                    'gateway' => 'Sistema',
                     'user_id' => Auth::id(),
+                    'due_date' => now()->addDays(3),
                 ]);
             });
 
-            session()->flash('message', 'Inscripción creada exitosamente.');
+            session()->flash('message', 'Inscripción creada exitosamente. Se generó el cargo de inscripción.');
             $this->dispatch('close-modal', 'enroll-student-modal');
             $this->refreshData(); 
 

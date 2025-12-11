@@ -79,7 +79,8 @@
                                 <div>
                                     <p class="text-xs text-gray-500 uppercase font-bold tracking-wide">Total a Pagar</p>
                                     <p class="text-2xl font-black text-gray-900">
-                                        RD$ {{ number_format($debt->payment->amount ?? $debt->courseSchedule->module->price ?? 0, 2) }}
+                                        {{-- MODIFICADO: Usar amount del pago o registration_fee del curso --}}
+                                        RD$ {{ number_format($debt->payment->amount ?? $debt->courseSchedule->module->course->registration_fee ?? 0, 2) }}
                                     </p>
                                 </div>
                                 <button 
