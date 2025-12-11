@@ -129,6 +129,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/students/profile/{student}', StudentProfileIndex::class)->name('admin.students.profile');
         
         Route::get('/courses', CoursesIndex::class)->name('admin.courses.index');
+        Route::get('/finance/payment-concepts', \App\Livewire\Finance\PaymentConcepts::class)->name('admin.finance.concepts');
         
         Route::get('/teachers', TeachersIndex::class)->name('admin.teachers.index');
         Route::get('/teachers/profile/{user}', TeacherProfileIndex::class)->name('admin.teachers.profile');
@@ -136,21 +137,35 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/reports', ReportsIndex::class)->name('reports.index');
         Route::get('/database-import', DatabaseImport::class)->name('admin.database-import');
         Route::get('/requests', RequestsManagement::class)->name('admin.requests');
+        Route::get('/import', DatabaseImport::class)->name('admin.import'); // Mantener la ruta original 'import' si se usa
         
         // Perfil Admin
         Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
     });
     
     // --- RUTAS DE REPORTES PDF ---
+    // NOTA: Estas rutas deben estar fuera del grupo 'admin' si el estudiante las va a usar, 
+    // o deben tener permisos específicos. Aquí las dejo accesibles para 'auth' general, 
+    // pero idealmente deberías protegerlas con policies en el controlador.
     
     Route::get('/reports/student/{student}', [ReportController::class, 'generateStudentReport'])->name('reports.student-report');
-    Route::get('/reports/student-list/{courseSchedule}', [StudentListPdfController::class, 'generate'])->name('reports.student-list-pdf');
-    Route::get('/reports/grades/{courseSchedule}', [GradesPdfController::class, 'generate'])->name('reports.grades-pdf');
+    Route::get('/reports/attendance-report/{section}', [ReportController::class, 'generateAttendanceReport'])->name('reports.attendance-report');
     
-    // --> CORRECCIÓN AQUÍ: Apuntar al método 'download' en lugar de 'generate'
+    Route::get('/reports/student-list/{courseSchedule}', [StudentListPdfController::class, 'generate'])->name('reports.student-list-pdf');
+    
+    // --- RUTAS PDF (CORREGIDAS Y AÑADIDAS) ---
+    Route::get('/reports/attendance/{courseSchedule}/pdf', [AttendancePdfController::class, 'download'])->name('reports.attendance.pdf');
+    Route::get('/reports/grades/{courseSchedule}/pdf', [GradesPdfController::class, 'download'])->name('reports.grades.pdf');
+    
+    // Ruta antigua de PDF Financiero (general)
+    Route::get('/reports/financial/pdf', [FinancialPdfController::class, 'download'])->name('reports.financial.pdf');
+    
+    // --> NUEVA RUTA PARA ESTUDIANTES (ESTADO DE CUENTA INDIVIDUAL) <--
+    // Apunta al mismo método 'download', el controlador detectará el parámetro {student}
     Route::get('/reports/financial/{student}', [FinancialPdfController::class, 'download'])->name('reports.financial-report');
     
-    Route::get('/reports/attendance/{courseSchedule}', [AttendancePdfController::class, 'generate'])->name('reports.attendance-pdf');
+    // PDF Lista Estudiantes
+    Route::get('/reports/students-list/{section}/pdf', [StudentListPdfController::class, 'download'])->name('reports.students.pdf');
 
 
     // --- Rutas del Portal Estudiante ---
