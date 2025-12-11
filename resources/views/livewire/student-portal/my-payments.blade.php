@@ -215,11 +215,8 @@
     {{-- MODAL DE PAGO (Diseño Checkout SaaS) --}}
     @if($showPaymentModal)
         <div class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            {{-- Backdrop con efecto de oscurecimiento correcto --}}
-            <div 
-                class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity opacity-0 ease-out duration-300"
-                x-data x-init="setTimeout(() => $el.classList.remove('opacity-0'), 50)"
-            ></div>
+            {{-- Backdrop FIX: Uso explícito de bg-opacity y sin animación inicial que dependa de JS --}}
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity backdrop-blur-sm"></div>
 
             <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
                 <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
