@@ -59,18 +59,19 @@
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 @foreach($pendingDebts as $debt)
                     {{-- Card Estilo Shopify --}}
+                    {{-- NOTA: $debt ahora es un objeto PAYMENT, no Enrollment --}}
                     <div class="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col h-full">
                         {{-- Header de la Card --}}
                         <div class="p-5 border-b border-gray-100 bg-gray-50/50 rounded-t-xl flex justify-between items-start">
                             <div>
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200 mb-2">
-                                    Pendiente
+                                    {{ $debt->paymentConcept->name ?? 'Pendiente' }}
                                 </span>
                                 <h4 class="text-base font-semibold text-gray-900 leading-snug">
-                                    {{ $debt->courseSchedule->module->name ?? 'Módulo General' }}
+                                    {{ $debt->enrollment->courseSchedule->module->name ?? 'Módulo General' }}
                                 </h4>
                                 <p class="text-sm text-gray-500 mt-1">
-                                    {{ $debt->courseSchedule->module->course->name ?? 'Curso Académico' }}
+                                    {{ $debt->enrollment->courseSchedule->module->course->name ?? 'Curso Académico' }}
                                 </p>
                             </div>
                             <div class="text-xs font-mono text-gray-400 bg-white border border-gray-200 px-2 py-1 rounded">
@@ -83,12 +84,12 @@
                             <div class="grid grid-cols-2 gap-4 text-sm">
                                 <div>
                                     <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Sección</p>
-                                    <p class="font-medium text-gray-900 mt-0.5">{{ $debt->courseSchedule->section_name ?? 'N/A' }}</p>
+                                    <p class="font-medium text-gray-900 mt-0.5">{{ $debt->enrollment->courseSchedule->section_name ?? 'N/A' }}</p>
                                 </div>
                                 <div>
-                                    <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Docente</p>
-                                    <p class="font-medium text-gray-900 mt-0.5 truncate" title="{{ $debt->courseSchedule->teacher->name ?? '' }}">
-                                        {{ Str::limit($debt->courseSchedule->teacher->name ?? 'No asignado', 18) }}
+                                    <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Vencimiento</p>
+                                    <p class="font-medium {{ $debt->due_date && $debt->due_date->isPast() ? 'text-red-600' : 'text-gray-900' }} mt-0.5">
+                                        {{ $debt->due_date ? $debt->due_date->format('d/m/Y') : 'N/A' }}
                                     </p>
                                 </div>
                             </div>
@@ -100,10 +101,11 @@
                                 <div>
                                     <p class="text-xs text-gray-500 mb-0.5">Total a Pagar</p>
                                     <p class="text-xl font-bold text-gray-900 tracking-tight">
-                                        RD$ {{ number_format($debt->payment->amount ?? $debt->courseSchedule->module->course->registration_fee ?? 0, 2) }}
+                                        RD$ {{ number_format($debt->amount, 2) }}
                                     </p>
                                 </div>
                                 <button 
+                                    {{-- CAMBIO: Pasamos el ID del PAGO, no del Enrollment --}}
                                     wire:click="openPaymentModal({{ $debt->id }})"
                                     class="inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-colors"
                                 >
@@ -146,7 +148,7 @@
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Generando PDF...
+                    Generando...
                 </span>
             </button>
         </div>
@@ -186,7 +188,7 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                     <div class="flex items-center gap-2">
                                         @if(Str::contains(strtolower($payment->gateway), 'tarjeta'))
-                                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 00-3-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                                         @else
                                             <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>
                                         @endif
@@ -229,7 +231,7 @@
     {{-- MODAL DE PAGO (Diseño Checkout SaaS) --}}
     @if($showPaymentModal)
         <div class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            {{-- Backdrop FIX: Uso explícito de bg-opacity --}}
+            {{-- Backdrop FIX: Uso explícito de bg-opacity y sin animación inicial que dependa de JS --}}
             <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity backdrop-blur-sm"></div>
 
             <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
@@ -270,7 +272,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-3">Método de pago</label>
                                 <div class="grid grid-cols-2 gap-3">
                                     {{-- Opción Tarjeta --}}
-                                    <label class="cursor-pointer relative">
+                                    <label class="cursor-pointer relative" wire:click="$set('paymentMethod', 'card')">
                                         <input type="radio" wire:model.live="paymentMethod" value="card" class="peer sr-only">
                                         <div class="p-4 rounded-lg border border-gray-200 hover:border-gray-300 peer-checked:border-gray-900 peer-checked:ring-1 peer-checked:ring-gray-900 transition-all bg-white flex flex-col items-center gap-2 h-full">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-600 peer-checked:text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -282,7 +284,7 @@
                                     </label>
 
                                     {{-- Opción Transferencia --}}
-                                    <label class="cursor-pointer relative">
+                                    <label class="cursor-pointer relative" wire:click="$set('paymentMethod', 'transfer')">
                                         <input type="radio" wire:model.live="paymentMethod" value="transfer" class="peer sr-only">
                                         <div class="p-4 rounded-lg border border-gray-200 hover:border-gray-300 peer-checked:border-gray-900 peer-checked:ring-1 peer-checked:ring-gray-900 transition-all bg-white flex flex-col items-center gap-2 h-full">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-600 peer-checked:text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -298,7 +300,7 @@
                             {{-- Formularios --}}
                             <div class="mt-6">
                                 @if($paymentMethod === 'card')
-                                    <div class="space-y-4 animate-fade-in-up">
+                                    <div class="space-y-4 animate-fade-in-up" wire:key="card-form">
                                         <div>
                                             <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1.5">Nombre en la tarjeta</label>
                                             <input type="text" wire:model="cardName" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm py-2.5 transition-shadow" placeholder="Como aparece en el plástico">
@@ -335,7 +337,7 @@
                                         </div>
                                     </div>
                                 @else
-                                    <div class="space-y-5 animate-fade-in-up">
+                                    <div class="space-y-5 animate-fade-in-up" wire:key="transfer-form">
                                         <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
                                             <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Cuentas para depósito</h4>
                                             <ul class="space-y-3 text-sm">
@@ -427,9 +429,12 @@
         style="display: none;"
     >
         <div class="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            {{-- Backdrop --}}
             <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" @click="show = false; pdfUrl = ''" aria-hidden="true"></div>
 
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            
+            {{-- Contenido Modal --}}
             <div
                 x-show="show"
                 x-transition:enter="ease-out duration-300"
@@ -456,6 +461,12 @@
                     <iframe :src="pdfUrl" frameborder="0" width="100%" height="100%">
                         Tu navegador no soporta iframes.
                     </iframe>
+                </div>
+
+                <div class="flex justify-end pt-4 mt-4 border-t">
+                    <button @click="show = false; pdfUrl = ''" type="button" class="ml-3 inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Cerrar
+                    </button>
                 </div>
             </div>
         </div>

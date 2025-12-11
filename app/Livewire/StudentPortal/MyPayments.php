@@ -23,8 +23,8 @@ class MyPayments extends Component
     
     // --- Modal de Pago ---
     public $showPaymentModal = false;
-    public $selectedEnrollmentId;
-    public $selectedEnrollment;
+    public $selectedPaymentId; // <-- Nuevo: ID específico del pago a procesar
+    public $selectedEnrollment; // Información de contexto
     public $amountToPay = 0;
     public $paymentMethod = 'card'; 
     
@@ -57,25 +57,27 @@ class MyPayments extends Component
         $this->student = Student::where('user_id', Auth::id())->first();
     }
 
-    public function openPaymentModal($enrollmentId)
+    /**
+     * Abre el modal para pagar un PAGO específico (no solo una inscripción).
+     */
+    public function openPaymentModal($paymentId)
     {
         $this->resetValidation();
         $this->reset(['cardName', 'cardNumber', 'cardExpiry', 'cardCvc', 'transferReference', 'paymentMethod']);
         $this->paymentMethod = 'card';
 
-        $this->selectedEnrollmentId = $enrollmentId;
+        $this->selectedPaymentId = $paymentId;
         
-        // Cargar con curso padre para acceder a registration_fee
-        $this->selectedEnrollment = Enrollment::with('courseSchedule.module.course', 'payment')->findOrFail($enrollmentId);
+        // Buscar el pago específico
+        $payment = Payment::with('enrollment.courseSchedule.module')->find($paymentId);
         
-        // --- LOGICA DE MONTO CORREGIDA ---
-        if ($this->selectedEnrollment->payment && $this->selectedEnrollment->payment->status == 'Pendiente') {
-            // Si ya hay un pago generado, usamos ese monto (es lo más seguro)
-            $this->amountToPay = $this->selectedEnrollment->payment->amount;
-        } else {
-            // Si no hay pago (raro), asumimos que es el primer pago (Inscripción)
-            $this->amountToPay = $this->selectedEnrollment->courseSchedule->module->course->registration_fee ?? 0;
+        if (!$payment) {
+            $this->addError('general', 'El pago seleccionado no existe.');
+            return;
         }
+
+        $this->selectedEnrollment = $payment->enrollment;
+        $this->amountToPay = $payment->amount;
 
         $this->showPaymentModal = true;
     }
@@ -89,7 +91,7 @@ class MyPayments extends Component
     {
         $this->validate();
 
-        if (!$this->student) return;
+        if (!$this->student || !$this->selectedPaymentId) return;
 
         try {
             DB::transaction(function () use ($matriculaService) {
@@ -101,63 +103,52 @@ class MyPayments extends Component
                     ? 'TX-' . strtoupper(uniqid()) 
                     : $this->transferReference;
 
-                // Buscar el pago existente primero
-                $existingPayment = Payment::where('enrollment_id', $this->selectedEnrollmentId)
-                    ->where('status', 'Pendiente')
-                    ->first();
+                // Buscar el pago real por ID
+                $payment = Payment::find($this->selectedPaymentId);
 
-                if ($existingPayment) {
-                    // Actualizar pago existente
-                    $existingPayment->update([
-                        'status' => $status,
-                        'gateway' => $gateway,
-                        'transaction_id' => $reference,
-                        'user_id' => Auth::id(), // Quién pagó
-                        // No tocamos el monto ni el concepto, respetamos lo que estaba generado
-                    ]);
-                    $payment = $existingPayment;
-                } else {
-                    // Crear nuevo pago (Fallback)
-                    // Si no existía, asumimos que es inscripción
-                    $concept = PaymentConcept::firstOrCreate(['name' => 'Inscripción']);
-                    
-                    $payment = Payment::create([
-                        'enrollment_id' => $this->selectedEnrollmentId,
-                        'student_id' => $this->student->id,
-                        'payment_concept_id' => $concept->id,
-                        'amount' => $this->amountToPay,
-                        'currency' => 'DOP',
+                if ($payment) {
+                    // Actualizar el pago existente
+                    $payment->update([
                         'status' => $status,
                         'gateway' => $gateway,
                         'transaction_id' => $reference,
                         'user_id' => Auth::id(),
                     ]);
-                }
 
-                if ($status === 'Completado') {
-                    if (!$this->student->student_code) {
-                        $matriculaService->generarMatricula($payment);
-                        $this->student->refresh();
+                    if ($status === 'Completado') {
+                        // Si es inscripción inicial, generar matrícula
+                        if (!$this->student->student_code && $payment->paymentConcept && $payment->paymentConcept->name === 'Inscripción') {
+                            $matriculaService->generarMatricula($payment);
+                            $this->student->refresh();
+                        }
+
+                        // Activar inscripción si estaba pendiente
+                        $enrollment = $payment->enrollment;
+                        if ($enrollment && $enrollment->status === 'Pendiente') {
+                            $enrollment->status = 'Cursando';
+                            $enrollment->save();
+                        }
+
+                        session()->flash('message', '¡Pago realizado con éxito!');
+                    } else {
+                        session()->flash('message', 'Pago reportado. Pendiente de validación.');
                     }
-
-                    $enrollment = Enrollment::find($this->selectedEnrollmentId);
-                    if ($enrollment) {
-                        $enrollment->status = 'Cursando';
-                        $enrollment->save();
-                    }
-
-                    session()->flash('message', '¡Pago realizado con éxito! Tu inscripción está activa.');
-                } else {
-                    session()->flash('message', 'Pago reportado. Tu inscripción se activará al validar la transferencia.');
                 }
             });
 
             $this->closeModal();
+            $this->reset('selectedPaymentId');
 
         } catch (\Exception $e) {
             Log::error('Error pago estudiante: ' . $e->getMessage());
             $this->addError('general', 'Error procesando el pago. Intente más tarde.');
         }
+    }
+
+    public function downloadFinancialReport()
+    {
+        $url = route('reports.financial-report', $this->student->id); 
+        $this->dispatch('open-pdf-modal', url: $url);
     }
 
     public function render()
@@ -169,11 +160,16 @@ class MyPayments extends Component
             ]);
         }
 
-        $pendingDebts = Enrollment::where('student_id', $this->student->id)
+        // --- CORRECCIÓN CLAVE: Buscar PAGOS pendientes, no Inscripciones ---
+        // Esto traerá tanto la inscripción inicial pendiente como las mensualidades vencidas
+        $pendingDebts = Payment::where('student_id', $this->student->id)
             ->whereIn('status', ['Pendiente', 'pendiente'])
-            ->with(['courseSchedule.module.course', 'courseSchedule.teacher', 'payment'])
+            ->with(['enrollment.courseSchedule.module.course', 'enrollment.courseSchedule.teacher'])
+            ->orderBy('due_date', 'asc') // Ordenar por fecha de vencimiento (más urgente primero)
             ->get();
 
+        // Historial (excluyendo los pendientes que mostramos arriba para no duplicar visualmente si se desea, 
+        // pero generalmente el historial muestra todo o solo lo pasado. Aquí mostramos todo ordenado por fecha)
         $paymentHistory = Payment::where('student_id', $this->student->id)
             ->with(['paymentConcept', 'enrollment.courseSchedule.module'])
             ->orderBy('created_at', 'desc')
@@ -184,12 +180,4 @@ class MyPayments extends Component
             'paymentHistory' => $paymentHistory
         ]);
     }
-    
-    public function downloadFinancialReport()
-    {
-        // Asegúrate de tener la ruta 'reports.financial-report' definida
-        $url = route('reports.financial-report', $this->student->id); 
-        $this->dispatch('open-pdf-modal', url: $url);
-    }
 }
-
