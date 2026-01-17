@@ -62,7 +62,155 @@
                              <span class="ml-3 text-lg font-bold text-sga-blue tracking-tight">SGA PADRE</span>
                         </div>
                         <nav class="flex flex-1 flex-col">
-                            @include('layouts.navigation-links')
+                            <!-- MENÚ MÓVIL (Duplicado del Desktop para evitar error de vista no encontrada) -->
+                            <ul role="list" class="flex flex-1 flex-col gap-y-7">
+                                <!-- Principal Group -->
+                                <li>
+                                    <div class="text-xs font-semibold leading-6 text-sga-text-light uppercase tracking-wider mb-2 pl-2">Principal</div>
+                                    <ul role="list" class="-mx-2 space-y-1">
+                                        <li>
+                                            <a href="{{ route('dashboard') }}" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs('dashboard') ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
+                                                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs('dashboard') ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                                                    <i class="fas fa-home text-xs"></i>
+                                                </div>
+                                                Dashboard
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+        
+                                <!-- Academic Group -->
+                                @can('view_academic')
+                                <li>
+                                    <div class="text-xs font-semibold leading-6 text-sga-text-light uppercase tracking-wider mb-2 pl-2">Académico</div>
+                                    <ul role="list" class="-mx-2 space-y-1" x-data="{ 
+                                        expanded: {{ request()->routeIs('students.*') || request()->routeIs('teachers.*') || request()->routeIs('courses.*') ? 'true' : 'false' }},
+                                        activeSub: null
+                                    }">
+                                        
+                                        <!-- Estudiantes Dropdown -->
+                                        <li x-data="{ open: {{ request()->routeIs('students.*') ? 'true' : 'false' }} }">
+                                            <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
+                                                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                                                    <i class="fas fa-user-graduate text-xs"></i>
+                                                </div>
+                                                <span class="flex-1">Estudiantes</span>
+                                                <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
+                                            </button>
+                                            <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
+                                                <li>
+                                                    <a href="{{ route('students.index') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('students.index') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
+                                                        Listado General
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a href="#" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('students.requests') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
+                                                        Solicitudes
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </li>
+        
+                                        <!-- Profesores Dropdown -->
+                                        <li x-data="{ open: {{ request()->routeIs('teachers.*') ? 'true' : 'false' }} }">
+                                            <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
+                                                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                                                    <i class="fas fa-chalkboard-teacher text-xs"></i>
+                                                </div>
+                                                <span class="flex-1">Profesores</span>
+                                                <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
+                                            </button>
+                                            <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
+                                                <li>
+                                                    <a href="{{ route('teachers.index') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('teachers.index') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
+                                                        Directorio
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </li>
+        
+                                        <!-- Cursos (Single Link) -->
+                                        <li>
+                                            <a href="{{ route('courses.index') }}" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs('courses.*') ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
+                                                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs('courses.*') ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                                                    <i class="fas fa-book-open text-xs"></i>
+                                                </div>
+                                                Cursos
+                                            </a>
+                                        </li>
+        
+                                    </ul>
+                                </li>
+                                @endcan
+        
+                                <!-- Administrative Group -->
+                                @can('view_admin')
+                                <li>
+                                    <div class="text-xs font-semibold leading-6 text-sga-text-light uppercase tracking-wider mb-2 pl-2">Administración</div>
+                                    <ul role="list" class="-mx-2 space-y-1">
+                                        
+                                        <!-- Finanzas Dropdown -->
+                                        <li x-data="{ open: {{ request()->routeIs('finance.*') ? 'true' : 'false' }} }">
+                                            <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
+                                                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                                                    <i class="fas fa-file-invoice-dollar text-xs"></i>
+                                                </div>
+                                                <span class="flex-1">Finanzas</span>
+                                                <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
+                                            </button>
+                                            <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
+                                                <li>
+                                                    <a href="{{ route('finance.concepts') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('finance.concepts') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
+                                                        Conceptos de Pago
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </li>
+        
+                                        <!-- Reportes Dropdown -->
+                                        <li x-data="{ open: {{ request()->routeIs('reports.*') ? 'true' : 'false' }} }">
+                                            <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
+                                                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                                                    <i class="fas fa-chart-line text-xs"></i>
+                                                </div>
+                                                <span class="flex-1">Reportes</span>
+                                                <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
+                                            </button>
+                                            <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
+                                                <li>
+                                                    <a href="{{ route('reports.index') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('reports.index') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
+                                                        Reportes Generales
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </li>
+        
+                                        <!-- Herramientas Dropdown -->
+                                        <li x-data="{ open: {{ request()->routeIs('admin.*') ? 'true' : 'false' }} }">
+                                            <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
+                                                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                                                    <i class="fas fa-cogs text-xs"></i>
+                                                </div>
+                                                <span class="flex-1">Herramientas</span>
+                                                <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
+                                            </button>
+                                            <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
+                                                <li>
+                                                    <a href="{{ route('admin.requests') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('admin.requests') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
+                                                        Gestionar Solicitudes
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a href="{{ route('admin.database-import') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('admin.database-import') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
+                                                        Importar Base de Datos
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+                                @endcan
+                             </ul>
                         </nav>
                     </div>
                 </div>
@@ -84,7 +232,7 @@
 
                 <!-- Navigation -->
                 <nav class="flex flex-1 flex-col mt-4">
-                     <!-- Include Navigation Links Logic Here (Inline) -->
+                     <!-- MENÚ ESCRITORIO -->
                      <ul role="list" class="flex flex-1 flex-col gap-y-7">
                         
                         <!-- Principal Group -->
