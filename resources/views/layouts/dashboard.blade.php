@@ -35,7 +35,7 @@
         <div class="h-full bg-sga-primary animate-progress-indeterminate"></div>
     </div>
 
-    <!-- 2. Sistema de Notificaciones Toast (Flash Messages) -->
+    <!-- 2. Sistema de Notificaciones Toast -->
     <div aria-live="assertive" class="pointer-events-none fixed inset-0 z-50 flex items-end px-4 py-6 sm:items-start sm:p-6" style="pointer-events: none;">
         <div class="flex w-full flex-col items-center space-y-4 sm:items-end">
             @if (session()->has('success'))
@@ -97,30 +97,8 @@
     </div>
 
     <!-- Layout Wrapper -->
-    {{-- Lógica Global: Búsqueda y Navegación --}}
-    <div x-data="{ 
-            open: false, 
-            globalSearch: new URLSearchParams(window.location.search).get('search') || '',
-            
-            triggerSearch() {
-                // 1. Despachar evento a Livewire
-                if (typeof Livewire !== 'undefined') {
-                    Livewire.dispatch('search', { search: this.globalSearch });
-                }
-                
-                // 2. Actualizar URL sin recargar
-                const url = new URL(window.location);
-                if (this.globalSearch) {
-                    url.searchParams.set('search', this.globalSearch);
-                } else {
-                    url.searchParams.delete('search');
-                }
-                window.history.replaceState({}, '', url);
-            }
-         }" 
+    <div x-data="{ open: false }" 
          @keydown.window.escape="open = false" 
-         @keydown.window.meta.k.prevent="$refs.searchInput.focus()"
-         @keydown.window.ctrl.k.prevent="$refs.searchInput.focus()"
          class="h-full flex overflow-hidden bg-sga-background">
 
         <!-- Navigation Sidebar -->
@@ -153,37 +131,9 @@
                         </div>
                     </div>
 
-                    <!-- Center: 4. Search Bar (Functional) -->
-                    <div class="hidden md:flex flex-1 max-w-md px-8">
-                        <div class="relative w-full text-gray-500 focus-within:text-sga-primary">
-                            
-                            <!-- Ícono de Lupa -->
-                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 cursor-pointer" @click="$refs.searchInput.focus(); triggerSearch()">
-                                <i class="fas fa-search text-gray-400 hover:text-sga-primary transition-colors"></i>
-                            </div>
-
-                            <input type="text" 
-                                   x-model="globalSearch" 
-                                   x-ref="searchInput"
-                                   @input.debounce.500ms="triggerSearch()"
-                                   @keydown.enter="triggerSearch()"
-                                   class="block w-full rounded-full border-0 bg-gray-100/50 py-1.5 pl-10 pr-10 text-gray-900 ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sga-primary sm:text-sm sm:leading-6 transition-all shadow-sm focus:bg-white"
-                                   placeholder="Buscar... (Ctrl+K)">
-                            
-                            <!-- Botón limpiar -->
-                            <button type="button" 
-                                    x-show="globalSearch.length > 0"
-                                    x-transition:enter="transition ease-out duration-200"
-                                    x-transition:enter-start="opacity-0 scale-90"
-                                    x-transition:enter-end="opacity-100 scale-100"
-                                    x-transition:leave="transition ease-in duration-100"
-                                    x-transition:leave-start="opacity-100 scale-100"
-                                    x-transition:leave-end="opacity-0 scale-90"
-                                    @click="globalSearch = ''; triggerSearch(); $refs.searchInput.focus()"
-                                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 cursor-pointer">
-                                <i class="fas fa-times-circle"></i>
-                            </button>
-                        </div>
+                    <!-- Center: 4. COMPONENTE DE BÚSQUEDA GLOBAL -->
+                    <div class="hidden md:flex flex-1 max-w-md px-8 justify-center">
+                        <livewire:global-search />
                     </div>
 
                     <!-- Right: Actions -->
