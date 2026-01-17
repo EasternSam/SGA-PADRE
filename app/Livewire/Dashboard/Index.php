@@ -67,7 +67,7 @@ class Index extends Component
                  $this->totalTeachers = 0; 
             }
 
-            // Cargar actividades recientes optimizado
+            // Cargar actividades recientes optimizado - LIMITANDO CAMPOS PARA EVITAR MEMORY LEAK
             if (class_exists(ActivityLog::class)) {
                 $this->recentActivities = ActivityLog::with('causer:id,name') // Solo traer ID y nombre del usuario
                     ->latest()
@@ -92,7 +92,9 @@ class Index extends Component
         // Limitamos el tamaño de la data logueada para ahorrar memoria
         $dataPreview = $data;
         if (is_array($data) && count($data) > 20) {
-            $dataPreview = array_slice($data, 0, 20) + ['...' => 'truncated'];
+            $dataPreview = array_slice($data, 0, 20) + ['...' => 'truncated (ahorro de memoria)'];
+        } elseif (is_string($data) && strlen($data) > 500) {
+            $dataPreview = substr($data, 0, 500) . '... (truncated)';
         }
 
         $entry = Carbon::now()->toTimeString() . ' - ' . $message;
@@ -154,17 +156,49 @@ class Index extends Component
                 ->whereMonth('created_at', $date->month);
 
             if (class_exists(ActivityLog::class)) {
-                // Solo obtenemos IDs, no objetos completos
-                $enrollmentIds = $enrollmentQuery->pluck('id');
+                // OPTIMIZACIÓN CRÍTICA DE MEMORIA:
+                // En lugar de traer todos los IDs a memoria con pluck(), contamos directamente.
+                // Si necesitamos distinguir entre sistema/web, hacemos una query más eficiente
+                // sin cargar miles de IDs en un array de PHP.
                 
-                if ($enrollmentIds->isNotEmpty()) {
-                    // Optimizamos la consulta de logs para contar solo IDs distintos
-                    $systemCount = ActivityLog::where('subject_type', Enrollment::class)
-                        ->whereIn('subject_id', $enrollmentIds)
-                        ->where('event', 'created')
-                        ->whereNotNull('causer_id')
-                        ->distinct('subject_id')
-                        ->count('subject_id');
+                // Opción A: Contar logs directamente usando una subconsulta o join si es posible.
+                // Como ActivityLog es polimórfico, un join es complejo.
+                // Usaremos chunking o una lógica simplificada si hay muchos registros.
+                
+                // Para evitar el error de memoria "tried to allocate...", no podemos hacer pluck si son miles.
+                // Vamos a asumir que si el conteo total es bajo (< 1000), usamos pluck.
+                // Si es alto, usamos una aproximación o solo contamos inscripciones totales para evitar crash.
+                
+                $countLocal = $enrollmentQuery->count();
+                
+                if ($countLocal > 0) {
+                    if ($countLocal < 2000) {
+                        // Método preciso para volúmenes bajos/medios
+                        $enrollmentIds = $enrollmentQuery->pluck('id');
+                        $systemCount = ActivityLog::where('subject_type', Enrollment::class)
+                            ->whereIn('subject_id', $enrollmentIds)
+                            ->where('event', 'created')
+                            ->whereNotNull('causer_id')
+                            ->distinct('subject_id')
+                            ->count('subject_id');
+                    } else {
+                        // Fallback para volúmenes altos: Asumimos un % basado en estadística o contamos todo
+                        // para no romper la memoria. O intentamos una query raw optimizada.
+                        $this->addTrace("Volumen alto de inscripciones ($countLocal) en $monthLabel. Usando estimación para proteger memoria.");
+                        // Por seguridad, si hay muchos, es probable que sean importaciones masivas (Web/Sistema).
+                        // Si asumimos que las importaciones masivas (sin causer) son Web, entonces
+                        // Sistema = Total - Web (aproximado).
+                        // Pero aquí Web viene de WP API.
+                        // Vamos a intentar contar SOLO los logs de ese mes para Enrollment, sin whereIn gigante.
+                        
+                        // Contar logs de creación de Enrollments en ese mes que tengan causer
+                        $systemCount = ActivityLog::where('subject_type', Enrollment::class)
+                            ->whereYear('created_at', $date->year)
+                            ->whereMonth('created_at', $date->month)
+                            ->where('event', 'created')
+                            ->whereNotNull('causer_id')
+                            ->count();
+                    }
                 }
             } else {
                 $systemCount = $enrollmentQuery->count();
@@ -192,14 +226,15 @@ class Index extends Component
 
     public function render()
     {
-        // Consulta base optimizada con Eager Loading selectivo
+        // Consulta base optimizada con Eager Loading selectivo para la TABLA
+        // Solo traemos los campos necesarios para pintar la tabla
         $query = Enrollment::with([
-            'student:id,name,last_name,email,user_id', // Solo campos necesarios de student
-            'student.user:id,name,email', // Solo campos necesarios de user
-            'courseSchedule:id,module_id,teacher_id', // Solo campos necesarios de schedule
-            'courseSchedule.module:id,course_id,name', // Solo campos necesarios de module
-            'courseSchedule.module.course:id,name', // Solo campos necesarios de course
-            'courseSchedule.teacher:id,name' // Solo campos necesarios de teacher
+            'student:id,name,last_name,email,user_id', 
+            'student.user:id,name,email',
+            'courseSchedule:id,module_id,teacher_id', 
+            'courseSchedule.module:id,course_id,name', 
+            'courseSchedule.module.course:id,name', 
+            'courseSchedule.teacher:id,name' 
         ])->latest();
 
         if ($this->enrollmentFilter !== 'all') {
@@ -207,6 +242,7 @@ class Index extends Component
         }
 
         // Limitamos los campos de la tabla principal también
+        // take(5) ya limita mucho, pero el select ayuda.
         $recentEnrollments = $query->take(5)->get();
 
         return view('livewire.dashboard.index', [
