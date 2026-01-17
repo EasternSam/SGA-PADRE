@@ -391,8 +391,7 @@
             
             if (!chartElement) return;
 
-            // Datos inyectados desde el backend con seguridad de tipo array
-            // CORRECCIÓN: Usamos @json para evitar errores de sintaxis "unexpected token ','" con json_encode en Blade
+
             const chartDataWeb = @json($chartDataWeb ?? []);
             const chartDataSystem = @json($chartDataSystem ?? []);
             const chartLabels = @json($chartLabels ?? []);
