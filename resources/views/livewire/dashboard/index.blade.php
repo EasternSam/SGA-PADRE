@@ -392,10 +392,10 @@
             if (!chartElement) return;
 
             // Datos inyectados desde el backend con seguridad de tipo array
-            // Usamos json_encode directo para evitar errores de sintaxis en Blade con @json
-            const chartDataWeb = {!! json_encode($chartDataWeb ?? []) !!};
-            const chartDataSystem = {!! json_encode($chartDataSystem ?? []) !!};
-            const chartLabels = {!! json_encode($chartLabels ?? []) !!};
+            // Usamos @json para una inyección limpia y segura en Blade
+            const chartDataWeb = @json($chartDataWeb ?? []);
+            const chartDataSystem = @json($chartDataSystem ?? []);
+            const chartLabels = @json($chartLabels ?? []);
 
             // Limpiar si ya existe algo para evitar duplicados en SPA
             chartElement.innerHTML = '';
