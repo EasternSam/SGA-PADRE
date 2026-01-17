@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Spatie\Permission\Models\Role;
+use Illuminate\Database\QueryException; // Importante para capturar errores de SQL
 
 #[Layout('layouts.dashboard')]
 class Index extends Component
@@ -59,10 +60,15 @@ class Index extends Component
             // Verificación de roles segura
             if (class_exists(\Spatie\Permission\Models\Role::class)) {
                 $this->totalTeachers = Cache::remember('dashboard_total_teachers', 600, function() {
-                    if (Role::where('name', 'teacher')->exists()) {
-                        return User::role('teacher')->count();
-                    } elseif (Role::where('name', 'Profesor')->exists()) {
-                        return User::role('Profesor')->count();
+                    try {
+                        if (Role::where('name', 'teacher')->exists()) {
+                            return User::role('teacher')->count();
+                        } elseif (Role::where('name', 'Profesor')->exists()) {
+                            return User::role('Profesor')->count();
+                        }
+                    } catch (\Exception $e) {
+                        // Si falla la tabla roles, retornamos 0
+                        return 0;
                     }
                     return 0;
                 });
@@ -70,12 +76,18 @@ class Index extends Component
                  $this->totalTeachers = 0; 
             }
 
-            // Cargar actividades recientes optimizado
+            // Cargar actividades recientes optimizado - LIMITANDO CAMPOS PARA EVITAR MEMORY LEAK
             if (class_exists(ActivityLog::class)) {
-                $this->recentActivities = ActivityLog::with('causer:id,name') // Solo traer ID y nombre del usuario
-                    ->latest()
-                    ->take(5)
-                    ->get(['id', 'description', 'causer_id', 'created_at']); // Solo campos necesarios
+                try {
+                    $this->recentActivities = ActivityLog::with('causer:id,name') // Solo traer ID y nombre del usuario
+                        ->latest()
+                        ->take(5)
+                        ->get(['id', 'description', 'causer_id', 'created_at']); // Solo campos necesarios
+                } catch (QueryException $e) {
+                    // Capturamos error si la tabla activity_log no existe
+                    $this->addTrace('Advertencia: No se pudo cargar ActivityLog (posible falta de tabla): ' . $e->getMessage());
+                    $this->recentActivities = new Collection(); // Fallback a vacío
+                }
             }
 
             // Preparar gráfico
@@ -179,16 +191,17 @@ class Index extends Component
                 ->whereMonth('created_at', $month)
                 ->count();
 
-            $systemCount = 0;
+            // Por defecto, asumimos que todos son del sistema si no podemos comprobar logs
+            $systemCount = $totalEnrollmentsMonth;
 
-            if ($totalEnrollmentsMonth > 0) {
-                if (class_exists(ActivityLog::class)) {
+            if ($totalEnrollmentsMonth > 0 && class_exists(ActivityLog::class)) {
+                try {
                     // ESTRATEGIA ULTRARÁPIDA: 
                     // Contamos logs de creación de Enrollments en ese mes que tengan un usuario responsable (causer_id).
                     // Asumimos que si hay un log de creación con usuario en ese mes, corresponde a una inscripción "Sistema".
                     // Esto evita el JOIN costoso o el WHERE IN con miles de IDs.
                     
-                    $systemCount = DB::table('activity_log')
+                    $logSystemCount = DB::table('activity_log')
                         ->where('subject_type', Enrollment::class) // Asegúrate que el string coincida con lo guardado en BD
                         ->where('event', 'created')
                         ->whereNotNull('causer_id')
@@ -197,9 +210,11 @@ class Index extends Component
                         ->count();
                     
                     // Ajuste de seguridad: El conteo de logs no puede ser mayor al de inscripciones reales
-                    $systemCount = min($systemCount, $totalEnrollmentsMonth);
-                } else {
-                    $systemCount = $totalEnrollmentsMonth;
+                    $systemCount = min($logSystemCount, $totalEnrollmentsMonth);
+                } catch (QueryException $e) {
+                    // Si la tabla activity_log no existe, capturamos el error silenciosamente 
+                    // y mantenemos $systemCount = $totalEnrollmentsMonth (fallback seguro)
+                    $this->addTrace("Fallo consulta activity_log mes {$month}: " . $e->getMessage());
                 }
             }
             
