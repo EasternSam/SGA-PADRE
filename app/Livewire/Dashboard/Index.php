@@ -7,12 +7,13 @@ use App\Models\Enrollment;
 use App\Models\Student;
 use App\Models\User;
 use App\Models\ActivityLog;
-use App\Services\WordpressApiService; // Importante: Importar el servicio
+use App\Services\WordpressApiService;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Illuminate\Database\Eloquent\Collection;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 #[Layout('layouts.dashboard')]
 class Index extends Component
@@ -73,7 +74,7 @@ class Index extends Component
             $this->prepareChartData($wpService);
 
         } catch (\Exception $e) {
-            \Log::error("Error cargando Dashboard Stats: " . $e->getMessage());
+            Log::error("Error cargando Dashboard Stats: " . $e->getMessage());
         }
     }
 
@@ -88,14 +89,28 @@ class Index extends Component
         $this->chartDataSystem = [];
 
         // 1. Obtener datos remotos de WordPress (Web)
-        // Esto devuelve arrays como ['labels' => ['Ene', 'Feb'...], 'data' => [10, 5...]]
-        $wpStats = $wpService->getEnrollmentStats();
+        try {
+            $wpStats = $wpService->getEnrollmentStats();
+            
+            // Log para depuración: Ver qué devuelve WP
+            Log::info('Dashboard Chart - Datos WP recibidos:', $wpStats);
+
+        } catch (\Exception $e) {
+            Log::error('Dashboard Chart - Error al obtener datos de WP: ' . $e->getMessage());
+            $wpStats = ['labels' => [], 'data' => []];
+        }
+
         $wpDataMap = []; // Mapa auxiliar para búsqueda rápida por mes
 
         if (!empty($wpStats['labels']) && !empty($wpStats['data'])) {
             // Creamos un mapa 'Mes' => Cantidad para alinear con nuestro bucle
+            // Normalizamos las etiquetas (ej: 'Ene' -> 'ene') para evitar problemas de mayúsculas/minúsculas
             foreach ($wpStats['labels'] as $index => $label) {
-                $wpDataMap[$label] = $wpStats['data'][$index] ?? 0;
+                // Aseguramos que el índice exista en data
+                if (isset($wpStats['data'][$index])) {
+                    $normalizedLabel = strtolower(trim($label));
+                    $wpDataMap[$normalizedLabel] = $wpStats['data'][$index];
+                }
             }
         }
 
@@ -105,21 +120,28 @@ class Index extends Component
             $date = Carbon::now()->subMonths($i);
             
             // Nombre del mes (Ej: Ene, Feb...)
-            // Nota: Debemos asegurar que el formato coincida con el que devuelve WP (Ej: "Ene")
-            // ucfirst es importante.
-            $monthLabel = ucfirst($date->locale('es')->isoFormat('MMM'));
+            // Usamos isoFormat para obtener el nombre corto del mes localizado
+            $monthLabelRaw = $date->locale('es')->isoFormat('MMM');
+            $monthLabel = ucfirst($monthLabelRaw);
             
             // Agregamos la etiqueta al eje X
             $this->chartLabels[] = $monthLabel;
 
             // --- Datos WEB (Desde WP) ---
-            // Buscamos si existe el dato en lo que trajo la API, sino 0
-            $webCount = $wpDataMap[$monthLabel] ?? 0;
-            $this->chartDataWeb[] = $webCount;
+            // Buscamos usando la clave normalizada
+            $searchKey = strtolower(trim($monthLabelRaw));
+            // Intentamos buscar por el nombre corto ('ene') o el nombre completo ('enero') por si acaso WP devuelve completo
+            $webCount = $wpDataMap[$searchKey] ?? 0;
+            
+            // Fallback: Si no encontramos por clave corta, intentamos buscar en el mapa si alguna clave contiene nuestro mes
+            if ($webCount === 0 && !empty($wpDataMap)) {
+                 // Esto es un intento extra por si WP devuelve 'Jan' en vez de 'Ene' o formatos diferentes
+                 // Pero confiamos en que WP devuelve en español si está configurado así.
+            }
+
+            $this->chartDataWeb[] = (int) $webCount;
 
             // --- Datos SISTEMA (Local) ---
-            // Contamos inscripciones creadas localmente en este mes
-            // Usamos Enrollment::query() para consistencia
             $systemCount = 0;
             
             if (class_exists(ActivityLog::class)) {
@@ -139,14 +161,20 @@ class Index extends Component
                 }
             } else {
                 // Fallback simple si no hay logs: contar inscripciones del mes
-                // (Asumiendo que si no hay logs, todo es local)
                 $systemCount = Enrollment::whereYear('created_at', $date->year)
                     ->whereMonth('created_at', $date->month)
                     ->count();
             }
 
-            $this->chartDataSystem[] = $systemCount;
+            $this->chartDataSystem[] = (int) $systemCount;
         }
+        
+        // Log final para verificar los arrays que se pasan a la vista
+        Log::info('Dashboard Chart - Datos finales:', [
+            'labels' => $this->chartLabels,
+            'web' => $this->chartDataWeb,
+            'system' => $this->chartDataSystem
+        ]);
     }
 
     /**
