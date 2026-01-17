@@ -56,15 +56,18 @@ class Index extends Component
             if (class_exists(\Spatie\Permission\Models\Role::class)) {
                 $this->totalTeachers = 0;
                 
-                // Intentamos buscar 'teacher'
+                // Verificar existencia antes de contar para evitar excepción
+                // El guard 'web' es el default, así que Spatie buscará ahí
                 if (Role::where('name', 'teacher')->exists()) {
                     $this->totalTeachers = User::role('teacher')->count();
                 } 
-                // Si es 0 o no existe, intentamos buscar 'Profesor'
+                // Si 'teacher' no existe, probar con 'Profesor'
                 elseif (Role::where('name', 'Profesor')->exists()) {
                     $this->totalTeachers = User::role('Profesor')->count();
                 }
-                // Si tampoco existe, se queda en 0 y no explota
+                else {
+                    $this->addTrace('ADVERTENCIA: No se encontraron roles "teacher" ni "Profesor". Contador en 0.');
+                }
             } else {
                  $this->totalTeachers = 0; 
             }
