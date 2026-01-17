@@ -207,8 +207,8 @@
             <!-- Page Content -->
             <main class="flex-1 overflow-y-auto focus:outline-none scroll-smooth">
                 <!-- Content Container -->
-                <div class="py-6 min-h-[calc(100vh-4rem-6rem)]"> <!-- Ajuste de altura para empujar el footer -->
-                    <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+                <div class="py-2 min-h-[calc(100vh-4rem-6rem)]"> <!-- Ajuste de altura para empujar el footer -->
+                    <div class="max-w-7xl mx-auto px-2 sm:px-2 md:px-2"> <!-- Reducido el padding -->
                         {{ $slot }}
                     </div>
                 </div>
