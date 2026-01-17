@@ -1,39 +1,35 @@
-<!-- --- MEJORA: Convertido a un Sidebar completo con Alpine.js --- -->
-
-<!-- Fondo oscuro semi-transparente para móvil, controlado por 'open' -->
-<div x-show="open" @click="open = false" x-transition:enter="transition-opacity ease-linear duration-300"
-    x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-    x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100"
-    x-transition:leave-end="opacity-0" class="fixed inset-0 z-30 bg-gray-900/50 lg:hidden"
+<!-- Sidebar para Móvil (Fondo oscuro) -->
+<div x-show="open" @click="open = false" 
+    x-transition:enter="transition-opacity ease-linear duration-300"
+    x-transition:enter-start="opacity-0" 
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition-opacity ease-linear duration-300" 
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0" 
+    class="fixed inset-0 z-30 bg-gray-900/50 lg:hidden"
     x-cloak>
 </div>
 
-<!-- Sidebar -->
+<!-- Sidebar Principal -->
 <aside
-    {{-- MEJORA: Fondo del sidebar actualizado a 'sga-primary' (del nuevo config) --}}
-    class="fixed inset-y-0 left-0 z-40 flex h-screen w-64 transform flex-col overflow-y-auto border-r border-sga-primary bg-sga-primary pt-4 transition-transform duration-300 lg:translate-x-0 lg:shadow-sm"
-    :class="open ? 'translate-x-0 ease-out' : '-translate-x-full ease-in'" x-cloak>
+    class="fixed inset-y-0 left-0 z-40 flex h-screen w-64 transform flex-col overflow-y-auto border-r border-sga-primary bg-sga-primary pt-4 transition-transform duration-300 lg:translate-x-0 lg:shadow-xl [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/40"
+    :class="open ? 'translate-x-0 ease-out' : '-translate-x-full ease-in'" 
+    x-cloak>
 
     <!-- Logo -->
-    <div class="mb-4 flex items-center justify-center px-6">
-        {{-- MEJORA: Texto del logo en blanco para que contraste --}}
-        <a href="{{ route('dashboard') }}" class="flex items-center gap-2 text-white">
-            <x-application-logo class="block h-9 w-auto fill-current" />
-            {{-- --- ¡¡¡CORRECCIÓN!!! --- --}}
-            {{-- Se eliminó el <span> con el texto --}}
-            {{-- <span class="text-lg font-semibold text-white">{{ config('app.name', 'Laravel') }}</span> --}}
+    <div class="mb-6 flex items-center justify-center px-6">
+        <a href="{{ route('dashboard') }}" class="flex items-center gap-2 transition-transform hover:scale-105">
+            <x-application-logo class="block h-10 w-auto fill-current text-white" />
         </a>
     </div>
 
     <!-- Enlaces de Navegación -->
-    <nav class="flex-1 space-y-2 px-4 py-2">
+    <nav class="flex-1 space-y-2 px-3 py-2">
 
-        <!-- Enlace General -->
-        {{-- MEJORA: Estilos de 'x-responsive-nav-link' actualizados para el sidebar --}}
+        <!-- Dashboard General -->
         <x-responsive-nav-link :href="route('dashboard')"
             :active="request()->routeIs(['dashboard', 'admin.dashboard', 'student.dashboard', 'teacher.dashboard'])"
             wire:navigate>
-            <!-- Icono: Home -->
             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                 stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -42,17 +38,16 @@
             <span>{{ __('Dashboard') }}</span>
         </x-responsive-nav-link>
 
-        <!-- Enlaces de Administrador -->
+        <!-- Sección Administrador -->
         @role('Admin')
-            <div class="space-y-1">
-                {{-- MEJORA: Título de sección más claro --}}
-                <span
-                    class="px-3 text-xs font-semibold uppercase text-blue-200">{{ __('Admin') }}</span>
+            <div class="pt-4 space-y-1">
+                <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-blue-200/80">
+                    {{ __('Administración') }}
+                </p>
                 
                 <x-responsive-nav-link :href="route('admin.students.index')"
                     :active="request()->routeIs(['admin.students.index', 'admin.students.profile'])"
                     wire:navigate>
-                    <!-- Icono: Users -->
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -63,11 +58,9 @@
                     <span>{{ __('Estudiantes') }}</span>
                 </x-responsive-nav-link>
 
-                <!-- --- INICIO: ENLACE DE DOCENTES AÑADIDO --- -->
                 <x-responsive-nav-link :href="route('admin.teachers.index')"
                     :active="request()->routeIs(['admin.teachers.index', 'admin.teachers.profile'])"
                     wire:navigate>
-                    <!-- Icono: Briefcase -->
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -75,10 +68,8 @@
                     </svg>
                     <span>{{ __('Docentes') }}</span>
                 </x-responsive-nav-link>
-                <!-- --- FIN: ENLACE DE DOCENTES AÑADIDO --- -->
 
                 <x-responsive-nav-link :href="route('admin.courses.index')" :active="request()->routeIs('admin.courses.index')" wire:navigate>
-                    <!-- Icono: Academic Cap -->
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -89,7 +80,6 @@
 
                 <x-responsive-nav-link :href="route('admin.finance.concepts')" :active="request()->routeIs('admin.finance.concepts')"
                     wire:navigate>
-                    <!-- Icono: Banknotes -->
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -98,51 +88,40 @@
                     <span>{{ __('Conceptos de Pago') }}</span>
                 </x-responsive-nav-link>
 
-                <!-- --- INICIO: ENLACE AÑADIDO PARA SOLICITUDES (ADMIN) --- -->
                 <x-responsive-nav-link :href="route('admin.requests')" :active="request()->routeIs('admin.requests')" wire:navigate>
-                    <!-- Icono: Clipboard Document List -->
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375c.621 0 1.125.504 1.125 1.125v.375M10.125 2.25v3.375c0 .621.504 1.125 1.125 1.125h3.375M9 15l2.25 2.25L15 15m-6 6h6" />
                     </svg>
                     <span>{{ __('Solicitudes') }}</span>
                 </x-responsive-nav-link>
-                <!-- --- FIN: ENLACE AÑADIDO PARA SOLICITUDES (ADMIN) --- -->
 
-                <!-- --- NUEVO ENLACE: IMPORTAR DATOS --- -->
                 <x-responsive-nav-link :href="route('admin.import')" :active="request()->routeIs('admin.import')" wire:navigate>
-                    <!-- Icono: Arrow Up On Square (Subir/Importar) -->
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
                     </svg>
                     <span>{{ __('Importar Datos') }}</span>
                 </x-responsive-nav-link>
-                <!-- --- FIN DE ENLACE DE IMPORTACIÓN --- -->
 
-                <!-- --- NUEVO ENLACE: REPORTES --- -->
                 <x-responsive-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.index')" wire:navigate>
-                    <!-- Icono: Chart Bar / Presentation Chart -->
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
                     </svg>
                     <span>{{ __('Reportes') }}</span>
                 </x-responsive-nav-link>
-                <!-- --- FIN ENLACE REPORTES --- -->
 
             </div>
         @endrole
 
-        <!-- Enlaces de Profesor -->
-        {{-- --- ¡¡¡CORRECCIÓN!!! --- --}}
-        {{-- Cambiado de 'Teacher' a 'Profesor' --}}
+        <!-- Sección Profesor -->
         @role('Profesor')
-            <div class="space-y-1">
-                <span
-                    class="px-3 text-xs font-semibold uppercase text-blue-200">{{ __('Portal Docente') }}</span>
+            <div class="pt-4 space-y-1">
+                <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-blue-200/80">
+                    {{ __('Portal Docente') }}
+                </p>
                 
                 <x-responsive-nav-link :href="route('teacher.dashboard')"
                     :active="request()->routeIs(['teacher.dashboard', 'teacher.attendance', 'teacher.grades'])"
                     wire:navigate>
-                    <!-- Icono: Presentation Chart -->
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -153,17 +132,15 @@
             </div>
         @endrole
 
-        <!-- Enlaces de Estudiante -->
-        {{-- --- ¡¡¡CORRECCIÓN!!! --- --}}
-        {{-- Cambiado de 'Student' a 'Estudiante' --}}
+        <!-- Sección Estudiante -->
         @role('Estudiante')
-            <div class="space-y-1">
-                <span
-                    class="px-3 text-xs font-semibold uppercase text-blue-200">{{ __('Portal Estudiante') }}</span>
+            <div class="pt-4 space-y-1">
+                <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-blue-200/80">
+                    {{ __('Portal Estudiante') }}
+                </p>
                 
                 <x-responsive-nav-link :href="route('student.dashboard')" :active="request()->routeIs('student.dashboard')"
                     wire:navigate>
-                    <!-- Icono: User Circle -->
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -172,31 +149,21 @@
                     <span>{{ __('Mi Expediente') }}</span>
                 </x-responsive-nav-link>
 
-                <!-- --- INICIO: ENLACE AÑADIDO PARA SOLICITUDES (ESTUDIANTE) --- -->
                 <x-responsive-nav-link :href="route('student.requests')" :active="request()->routeIs('student.requests')" wire:navigate>
-                    <!-- Icono: Clipboard Document List -->
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375c.621 0 1.125.504 1.125 1.125v.375M10.125 2.25v3.375c0 .621.504 1.125 1.125 1.125h3.375M9 15l2.25 2.25L15 15m-6 6h6" />
                     </svg>
                     <span>{{ __('Solicitudes') }}</span>
                 </x-responsive-nav-link>
-                <!-- --- FIN: ENLACE AÑADIDO PARA SOLICITUDES (ESTUDIANTE) --- -->
 
-                <!-- --- INICIO: NUEVO ENLACE MIS FINANZAS (ESTUDIANTE) --- -->
                 <x-responsive-nav-link :href="route('student.payments')" :active="request()->routeIs('student.payments')" wire:navigate>
-                    <!-- Icono: Banknotes / Credit Card -->
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
                     </svg>
                     <span>{{ __('Mis Finanzas') }}</span>
                 </x-responsive-nav-link>
-                <!-- --- FIN: NUEVO ENLACE MIS FINANZAS --- -->
 
             </div>
         @endrole
     </nav>
-
-    <!-- --- ¡¡¡ELIMINADO!!! --- -->
-    <!-- El Menú de Usuario (Inferior) se ha movido a app.blade.php -->
-    
 </aside>
