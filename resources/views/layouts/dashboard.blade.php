@@ -1,215 +1,346 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-sga-background">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'SGA PADRE') }}</title>
+    <title>{{ config('app.name', 'Laravel') }}</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
+
+    {{-- Link para que funcionen los íconos (fas fa-eye, etc.) --}}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" xintegrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <!-- Scripts -->
+    {{-- Esta directiva de Vite carga tu app.css y app.js --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    
-    <!-- Styles -->
+
+    <!-- Carga los estilos de Livewire (para modales, etc.) -->
     @livewireStyles
-</head>
-<body class="font-sans antialiased bg-gray-50 dark:bg-gray-900" x-data="{ sidebarOpen: false }">
     
-    <div class="min-h-screen flex flex-col md:flex-row">
-        
-        <!-- Mobile Header -->
-        <div class="md:hidden flex items-center justify-between bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 p-4">
-            <div class="flex items-center">
-                <a href="{{ route('dashboard') }}">
-                    <x-application-logo class="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
-                </a>
+    <style>
+        /* Custom Scrollbar for Sidebar */
+        .sidebar-scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .sidebar-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .sidebar-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+
+<body class="h-full font-sans antialiased text-sga-text">
+    <!-- Main Layout State -->
+    <div x-data="{ open: false }" @keydown.window.escape="open = false" class="h-full flex overflow-hidden bg-sga-background">
+
+        <!-- Mobile Sidebar Overlay -->
+        <div x-show="open" class="relative z-50 lg:hidden" x-description="Off-canvas menu for mobile, show/hide based on off-canvas menu state." x-cloak>
+            <div x-show="open" x-transition:enter="transition-opacity ease-linear duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-900/80"></div>
+
+            <div class="fixed inset-0 flex">
+                <div x-show="open" x-transition:enter="transition ease-in-out duration-300 transform" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in-out duration-300 transform" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full" class="relative mr-16 flex w-full max-w-xs flex-1">
+                    <div x-show="open" x-transition:enter="ease-in-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in-out duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="absolute left-full top-0 flex w-16 justify-center pt-5">
+                        <button type="button" class="-m-2.5 p-2.5" @click="open = false">
+                            <span class="sr-only">Close sidebar</span>
+                            <i class="fas fa-times text-white text-xl"></i>
+                        </button>
+                    </div>
+
+                    <!-- Mobile Sidebar Content -->
+                    <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4">
+                        <div class="flex h-16 shrink-0 items-center">
+                             <x-application-logo class="h-8 w-auto text-sga-blue" />
+                             <span class="ml-3 text-lg font-bold text-sga-blue tracking-tight">SGA PADRE</span>
+                        </div>
+                        <nav class="flex flex-1 flex-col">
+                            @include('layouts.navigation-links')
+                        </nav>
+                    </div>
+                </div>
             </div>
-            <button @click="sidebarOpen = !sidebarOpen" class="text-gray-500 hover:text-gray-700 focus:outline-none">
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-            </button>
         </div>
 
-        <!-- Sidebar -->
-        <aside 
-            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-            class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform md:translate-x-0 md:static md:inset-auto transition-transform duration-300 ease-in-out flex flex-col"
-        >
-            <!-- Logo Area -->
-            <div class="flex items-center justify-center h-16 border-b border-gray-200 dark:border-gray-700 bg-indigo-600 dark:bg-indigo-900">
-                <a href="{{ route('dashboard') }}" class="flex items-center space-x-2 text-white font-bold text-xl tracking-wider">
-                    <x-application-logo class="block h-8 w-auto fill-current text-white" />
-                    <span>SGA PADRE</span>
-                </a>
-            </div>
-
-            <!-- User Info (Optional Mini Profile) -->
-            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center space-x-3 bg-gray-50 dark:bg-gray-900/50">
-                <div class="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-200 font-bold text-lg">
-                    {{ substr(Auth::user()->name, 0, 1) }}
-                </div>
-                <div>
-                    <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ Auth::user()->name }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate w-32">{{ Auth::user()->email }}</p>
-                </div>
-            </div>
-
-            <!-- Navigation Links -->
-            <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1 custom-scrollbar">
-                
-                <!-- Section: Principal -->
-                <div class="pb-2">
-                    <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Principal</p>
-                    
-                    <a href="{{ route('dashboard') }}" class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors {{ request()->routeIs('dashboard') ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-300' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white' }}">
-                        <svg class="mr-3 flex-shrink-0 h-5 w-5 {{ request()->routeIs('dashboard') ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                        Dashboard
-                    </a>
-                </div>
-
-                <!-- Section: Académico -->
-                @can('view_academic')
-                <div class="py-2">
-                    <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Académico</p>
-                    
-                    <!-- Estudiantes Dropdown -->
-                    <div x-data="{ open: {{ request()->routeIs('students.*') ? 'true' : 'false' }} }">
-                        <button @click="open = !open" class="w-full group flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md transition-colors text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white">
-                            <div class="flex items-center">
-                                <svg class="mr-3 flex-shrink-0 h-5 w-5 text-gray-400 group-hover:text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                                Estudiantes
-                            </div>
-                            <svg :class="open ? 'rotate-90' : ''" class="ml-2 h-4 w-4 text-gray-400 transform transition-transform duration-200" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                        <div x-show="open" x-collapse class="space-y-1 mt-1 pl-10">
-                            <a href="{{ route('students.index') }}" class="group flex items-center px-3 py-2 text-sm font-medium rounded-md {{ request()->routeIs('students.index') ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white' }}">
-                                Listado
-                            </a>
-                            <a href="#" class="group flex items-center px-3 py-2 text-sm font-medium rounded-md {{ request()->routeIs('students.requests') ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white' }}">
-                                Solicitudes
-                            </a>
+        <!-- Desktop Sidebar -->
+        <div class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
+            <div class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-sga-gray bg-white px-6 pb-4 sidebar-scrollbar shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+                <!-- Logo -->
+                <div class="flex h-16 shrink-0 items-center border-b border-gray-100">
+                    <a href="{{ route('dashboard') }}" class="flex items-center gap-2 group">
+                        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-sga-blue text-white shadow-md group-hover:bg-sga-blue-light transition-colors">
+                            <i class="fas fa-graduation-cap text-lg"></i>
                         </div>
-                    </div>
-
-                    <!-- Profesores -->
-                    <a href="{{ route('teachers.index') }}" class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors {{ request()->routeIs('teachers.*') ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-300' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white' }}">
-                        <svg class="mr-3 flex-shrink-0 h-5 w-5 {{ request()->routeIs('teachers.*') ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                        Profesores
-                    </a>
-
-                    <!-- Cursos -->
-                    <a href="{{ route('courses.index') }}" class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors {{ request()->routeIs('courses.*') ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-300' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white' }}">
-                        <svg class="mr-3 flex-shrink-0 h-5 w-5 {{ request()->routeIs('courses.*') ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
-                        Cursos
+                        <span class="text-lg font-bold text-sga-blue tracking-tight">SGA PADRE</span>
                     </a>
                 </div>
-                @endcan
 
-                <!-- Section: Administrativo -->
-                @can('view_admin')
-                <div class="py-2">
-                    <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Administrativo</p>
-                    
-                    <!-- Finanzas -->
-                    <a href="{{ route('finance.concepts') }}" class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors {{ request()->routeIs('finance.*') ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-300' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white' }}">
-                        <svg class="mr-3 flex-shrink-0 h-5 w-5 {{ request()->routeIs('finance.*') ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Finanzas
-                    </a>
+                <!-- Navigation -->
+                <nav class="flex flex-1 flex-col mt-4">
+                     <!-- Include Navigation Links Logic Here (Inline) -->
+                     <ul role="list" class="flex flex-1 flex-col gap-y-7">
+                        
+                        <!-- Principal Group -->
+                        <li>
+                            <div class="text-xs font-semibold leading-6 text-sga-text-light uppercase tracking-wider mb-2 pl-2">Principal</div>
+                            <ul role="list" class="-mx-2 space-y-1">
+                                <li>
+                                    <a href="{{ route('dashboard') }}" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs('dashboard') ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
+                                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs('dashboard') ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                                            <i class="fas fa-home text-xs"></i>
+                                        </div>
+                                        Dashboard
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
 
-                    <!-- Reportes -->
-                    <a href="{{ route('reports.index') }}" class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors {{ request()->routeIs('reports.*') ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-300' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white' }}">
-                        <svg class="mr-3 flex-shrink-0 h-5 w-5 {{ request()->routeIs('reports.*') ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Reportes
-                    </a>
+                        <!-- Academic Group -->
+                        @can('view_academic')
+                        <li>
+                            <div class="text-xs font-semibold leading-6 text-sga-text-light uppercase tracking-wider mb-2 pl-2">Académico</div>
+                            <ul role="list" class="-mx-2 space-y-1" x-data="{ 
+                                expanded: {{ request()->routeIs('students.*') || request()->routeIs('teachers.*') || request()->routeIs('courses.*') ? 'true' : 'false' }},
+                                activeSub: null
+                            }">
+                                
+                                <!-- Estudiantes Dropdown -->
+                                <li x-data="{ open: {{ request()->routeIs('students.*') ? 'true' : 'false' }} }">
+                                    <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
+                                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                                            <i class="fas fa-user-graduate text-xs"></i>
+                                        </div>
+                                        <span class="flex-1">Estudiantes</span>
+                                        <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
+                                    </button>
+                                    <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
+                                        <li>
+                                            <a href="{{ route('students.index') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('students.index') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
+                                                Listado General
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="#" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('students.requests') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
+                                                Solicitudes
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
 
-                    <!-- Admin Herramientas Dropdown -->
-                     <div x-data="{ open: {{ request()->routeIs('admin.*') ? 'true' : 'false' }} }">
-                        <button @click="open = !open" class="w-full group flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md transition-colors text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white">
-                            <div class="flex items-center">
-                                <svg class="mr-3 flex-shrink-0 h-5 w-5 text-gray-400 group-hover:text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                Administración
+                                <!-- Profesores Dropdown -->
+                                <li x-data="{ open: {{ request()->routeIs('teachers.*') ? 'true' : 'false' }} }">
+                                    <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
+                                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                                            <i class="fas fa-chalkboard-teacher text-xs"></i>
+                                        </div>
+                                        <span class="flex-1">Profesores</span>
+                                        <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
+                                    </button>
+                                    <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
+                                        <li>
+                                            <a href="{{ route('teachers.index') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('teachers.index') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
+                                                Directorio
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+
+                                <!-- Cursos (Single Link) -->
+                                <li>
+                                    <a href="{{ route('courses.index') }}" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs('courses.*') ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
+                                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs('courses.*') ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                                            <i class="fas fa-book-open text-xs"></i>
+                                        </div>
+                                        Cursos
+                                    </a>
+                                </li>
+
+                            </ul>
+                        </li>
+                        @endcan
+
+                        <!-- Administrative Group -->
+                        @can('view_admin')
+                        <li>
+                            <div class="text-xs font-semibold leading-6 text-sga-text-light uppercase tracking-wider mb-2 pl-2">Administración</div>
+                            <ul role="list" class="-mx-2 space-y-1">
+                                
+                                <!-- Finanzas Dropdown -->
+                                <li x-data="{ open: {{ request()->routeIs('finance.*') ? 'true' : 'false' }} }">
+                                    <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
+                                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                                            <i class="fas fa-file-invoice-dollar text-xs"></i>
+                                        </div>
+                                        <span class="flex-1">Finanzas</span>
+                                        <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
+                                    </button>
+                                    <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
+                                        <li>
+                                            <a href="{{ route('finance.concepts') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('finance.concepts') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
+                                                Conceptos de Pago
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+
+                                <!-- Reportes Dropdown -->
+                                <li x-data="{ open: {{ request()->routeIs('reports.*') ? 'true' : 'false' }} }">
+                                    <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
+                                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                                            <i class="fas fa-chart-line text-xs"></i>
+                                        </div>
+                                        <span class="flex-1">Reportes</span>
+                                        <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
+                                    </button>
+                                    <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
+                                        <li>
+                                            <a href="{{ route('reports.index') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('reports.index') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
+                                                Reportes Generales
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+
+                                <!-- Herramientas Dropdown -->
+                                <li x-data="{ open: {{ request()->routeIs('admin.*') ? 'true' : 'false' }} }">
+                                    <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
+                                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                                            <i class="fas fa-cogs text-xs"></i>
+                                        </div>
+                                        <span class="flex-1">Herramientas</span>
+                                        <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
+                                    </button>
+                                    <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
+                                        <li>
+                                            <a href="{{ route('admin.requests') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('admin.requests') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
+                                                Gestionar Solicitudes
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="{{ route('admin.database-import') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('admin.database-import') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
+                                                Importar Base de Datos
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        @endcan
+                     </ul>
+
+                     <!-- Sidebar Footer (User Mini Profile) -->
+                     <div class="mt-auto -mx-6 px-6 pt-6 pb-4 border-t border-gray-100">
+                        <a href="{{ route('profile.edit') }}" class="flex items-center gap-x-4 px-2 py-3 text-sm font-semibold leading-6 text-sga-text hover:bg-gray-50 rounded-md transition-colors group">
+                            <div class="h-8 w-8 rounded-full bg-sga-blue flex items-center justify-center text-white font-bold text-xs ring-2 ring-white shadow-sm">
+                                {{ substr(Auth::user()->name, 0, 1) }}
                             </div>
-                             <svg :class="open ? 'rotate-90' : ''" class="ml-2 h-4 w-4 text-gray-400 transform transition-transform duration-200" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                        <div x-show="open" x-collapse class="space-y-1 mt-1 pl-10">
-                            <a href="{{ route('admin.requests') }}" class="group flex items-center px-3 py-2 text-sm font-medium rounded-md {{ request()->routeIs('admin.requests') ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white' }}">
-                                Solicitudes
-                            </a>
-                             <a href="{{ route('admin.database-import') }}" class="group flex items-center px-3 py-2 text-sm font-medium rounded-md {{ request()->routeIs('admin.database-import') ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white' }}">
-                                Importar Datos
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                @endcan
+                            <span class="sr-only">Your profile</span>
+                            <div class="flex flex-col truncate">
+                                <span aria-hidden="true" class="truncate">{{ Auth::user()->name }}</span>
+                                <span class="text-xs font-normal text-gray-500 truncate">{{ Auth::user()->email }}</span>
+                            </div>
+                        </a>
+                     </div>
+                </nav>
+            </div>
+        </div>
 
-            </nav>
-
-            <!-- Bottom Actions (Profile & Logout) -->
-            <div class="border-t border-gray-200 dark:border-gray-700 p-4">
-                <a href="{{ route('profile.edit') }}" class="flex items-center group px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 mb-1">
-                    <svg class="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Mi Perfil
-                </a>
-
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="w-full flex items-center group px-3 py-2 text-sm font-medium text-red-600 rounded-md hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20">
-                        <svg class="mr-3 h-5 w-5 text-red-400 group-hover:text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        Cerrar Sesión
+        <!-- Main Content Area -->
+        <div class="flex flex-1 flex-col lg:pl-72 transition-all duration-300">
+            <!-- Top bar -->
+            <header class="sticky top-0 z-10 flex h-16 flex-shrink-0 border-b border-sga-gray bg-white shadow-sm">
+                <div class="flex flex-1 items-center justify-between px-4 sm:px-6 lg:px-8">
+                    <!-- Hamburger button -->
+                    <button @click.stop="open = !open" type="button" class="-m-2.5 p-2.5 text-sga-text-light lg:hidden hover:text-sga-blue transition-colors">
+                        <span class="sr-only">Open sidebar</span>
+                        <i class="fas fa-bars text-xl"></i>
                     </button>
-                </form>
-            </div>
-        </aside>
 
-        <!-- Main Content -->
-        <main class="flex-1 overflow-y-auto min-h-screen bg-gray-50 dark:bg-gray-900">
-            <!-- Top Bar for Desktop (Title/Breadcrumbs - Optional) -->
-            @if (isset($header))
-                <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                        {{ $header }}
+                    <!-- Separador (solo se muestra en móvil) -->
+                    <div class="h-6 w-px bg-sga-gray lg:hidden mx-4" aria-hidden="true"></div>
+
+                    <div class="flex flex-1 items-center justify-between gap-x-4 self-stretch lg:gap-x-6">
+                        <!-- Título de la página (slot 'header') -->
+                        <div class="flex-1">
+                            @if (isset($header))
+                                <div class="flex h-full items-center text-base font-semibold leading-6 text-sga-text sm:text-xl">
+                                    {{ $header }}
+                                </div>
+                            @endif
+                        </div>
+
+                        <!-- Menú de usuario (Desktop) -->
+                        <div class="hidden lg:block">
+                            <div class="hidden sm:flex sm:items-center">
+                                <x-dropdown align="right" width="48">
+                                    <x-slot name="trigger">
+                                        <button class="inline-flex items-center gap-2 px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-sga-text-light bg-white hover:text-sga-blue focus:outline-none transition ease-in-out duration-150">
+                                            <div>{{ Auth::user()->name }}</div>
+                                            <div class="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-sga-blue font-bold border border-gray-200">
+                                                {{ substr(Auth::user()->name, 0, 1) }}
+                                            </div>
+                                            <i class="fas fa-chevron-down text-xs ml-1"></i>
+                                        </button>
+                                    </x-slot>
+
+                                    <x-slot name="content">
+                                        <x-dropdown-link :href="route('profile.edit')" wire:navigate class="flex items-center gap-2">
+                                            <i class="fas fa-user-circle text-gray-400"></i>
+                                            {{ __('Mi Perfil') }}
+                                        </x-dropdown-link>
+
+                                        <div class="border-t border-gray-100"></div>
+
+                                        <!-- Authentication -->
+                                        <form method="POST" action="{{ route('logout') }}">
+                                            @csrf
+                                            <x-dropdown-link :href="route('logout')"
+                                                onclick="event.preventDefault(); this.closest('form').submit();"
+                                                class="text-sga-danger hover:bg-red-50 hover:text-red-700 flex items-center gap-2">
+                                                <i class="fas fa-sign-out-alt"></i>
+                                                {{ __('Cerrar Sesión') }}
+                                            </x-dropdown-link>
+                                        </form>
+                                    </x-slot>
+                                </x-dropdown>
+                            </div>
+                        </div>
+
+                        {{-- Botón de Cerrar Sesión para MÓVIL (lg:hidden) --}}
+                        <div class="flex items-center lg:hidden gap-3">
+                             <a href="{{ route('profile.edit') }}" class="text-sga-text-light hover:text-sga-blue">
+                                <i class="fas fa-user-circle text-xl"></i>
+                            </a>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" onclick="event.preventDefault(); this.closest('form').submit();"
+                                    class="-m-2.5 p-2.5 text-gray-400 hover:text-sga-danger transition-colors"
+                                    title="Cerrar Sesión">
+                                    <span class="sr-only">Cerrar Sesión</span>
+                                    <i class="fas fa-sign-out-alt text-xl"></i>
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                </header>
-            @endif
+                </div>
+            </header>
 
-            <div class="py-6 px-4 sm:px-6 lg:px-8">
-                {{ $slot }}
-            </div>
-        </main>
-
-        <!-- Overlay for Mobile -->
-        <div x-show="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 z-40 bg-black opacity-50 md:hidden" style="display: none;"></div>
+            <!-- Page Content -->
+            <main class="flex-1 overflow-y-auto bg-sga-background p-4 sm:p-6 lg:p-8">
+                 {{ $slot }}
+            </main>
+        </div>
     </div>
 
+    <!-- Carga los scripts de Livewire (para wire:click, etc.) -->
     @livewireScripts
 </body>
+
 </html>
