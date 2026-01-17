@@ -97,10 +97,26 @@
     </div>
 
     <!-- Layout Wrapper -->
-    {{-- Iniciliza globalSearch desde la URL si existe --}}
+    {{-- Lógica Global: Búsqueda y Navegación --}}
     <div x-data="{ 
             open: false, 
-            globalSearch: new URLSearchParams(window.location.search).get('search') || '' 
+            globalSearch: new URLSearchParams(window.location.search).get('search') || '',
+            
+            triggerSearch() {
+                // 1. Despachar evento a Livewire
+                if (typeof Livewire !== 'undefined') {
+                    Livewire.dispatch('search', { search: this.globalSearch });
+                }
+                
+                // 2. Actualizar URL sin recargar
+                const url = new URL(window.location);
+                if (this.globalSearch) {
+                    url.searchParams.set('search', this.globalSearch);
+                } else {
+                    url.searchParams.delete('search');
+                }
+                window.history.replaceState({}, '', url);
+            }
          }" 
          @keydown.window.escape="open = false" 
          @keydown.window.meta.k.prevent="$refs.searchInput.focus()"
@@ -141,21 +157,16 @@
                     <div class="hidden md:flex flex-1 max-w-md px-8">
                         <div class="relative w-full text-gray-500 focus-within:text-sga-primary">
                             
-                            <!-- Ícono de Lupa (Estático) -->
-                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                <i class="fas fa-search text-gray-400"></i>
+                            <!-- Ícono de Lupa -->
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 cursor-pointer" @click="$refs.searchInput.focus(); triggerSearch()">
+                                <i class="fas fa-search text-gray-400 hover:text-sga-primary transition-colors"></i>
                             </div>
 
                             <input type="text" 
                                    x-model="globalSearch" 
                                    x-ref="searchInput"
-                                   @input.debounce.500ms="
-                                        Livewire.dispatch('search', { search: globalSearch });
-                                        // Actualiza la URL para que se sienta 'real' y persistente
-                                        const url = new URL(window.location);
-                                        url.searchParams.set('search', globalSearch);
-                                        window.history.replaceState({}, '', url);
-                                   "
+                                   @input.debounce.500ms="triggerSearch()"
+                                   @keydown.enter="triggerSearch()"
                                    class="block w-full rounded-full border-0 bg-gray-100/50 py-1.5 pl-10 pr-10 text-gray-900 ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sga-primary sm:text-sm sm:leading-6 transition-all shadow-sm focus:bg-white"
                                    placeholder="Buscar... (Ctrl+K)">
                             
@@ -168,14 +179,7 @@
                                     x-transition:leave="transition ease-in duration-100"
                                     x-transition:leave-start="opacity-100 scale-100"
                                     x-transition:leave-end="opacity-0 scale-90"
-                                    @click="
-                                        globalSearch = ''; 
-                                        Livewire.dispatch('search', { search: '' }); 
-                                        const url = new URL(window.location);
-                                        url.searchParams.delete('search');
-                                        window.history.replaceState({}, '', url);
-                                        $refs.searchInput.focus();
-                                    "
+                                    @click="globalSearch = ''; triggerSearch(); $refs.searchInput.focus()"
                                     class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 cursor-pointer">
                                 <i class="fas fa-times-circle"></i>
                             </button>
