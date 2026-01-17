@@ -397,15 +397,20 @@
             
             if (!chartElement) return;
 
+            // Datos inyectados desde el backend con seguridad de tipo array
+            const chartDataWeb = @json($chartDataWeb ?? []);
+            const chartDataSystem = @json($chartDataSystem ?? []);
+            const chartLabels = @json($chartLabels ?? []);
+
             chartElement.innerHTML = '';
 
             const options = {
                 series: [{
                     name: 'Web (API)',
-                    data: @json($chartDataWeb)
+                    data: chartDataWeb
                 }, {
                     name: 'Físico (Sistema)',
-                    data: @json($chartDataSystem)
+                    data: chartDataSystem
                 }],
                 chart: {
                     type: 'area',
@@ -435,7 +440,7 @@
                     }
                 },
                 xaxis: {
-                    categories: @json($chartLabels),
+                    categories: chartLabels,
                     axisBorder: { show: false },
                     axisTicks: { show: false },
                     labels: {
