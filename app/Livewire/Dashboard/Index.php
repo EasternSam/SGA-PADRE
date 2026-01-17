@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Spatie\Permission\Models\Role; // Importamos el modelo Role
 
 #[Layout('layouts.dashboard')]
 class Index extends Component
@@ -51,11 +52,19 @@ class Index extends Component
             $this->totalCourses = Course::count();
             $this->totalEnrollments = Enrollment::count();
             
+            // Verificación segura de roles
             if (class_exists(\Spatie\Permission\Models\Role::class)) {
-                 $this->totalTeachers = User::role('teacher')->count(); 
-                 if ($this->totalTeachers === 0) {
-                     $this->totalTeachers = User::role('Profesor')->count();
-                 }
+                $this->totalTeachers = 0;
+                
+                // Intentamos buscar 'teacher'
+                if (Role::where('name', 'teacher')->exists()) {
+                    $this->totalTeachers = User::role('teacher')->count();
+                } 
+                // Si es 0 o no existe, intentamos buscar 'Profesor'
+                elseif (Role::where('name', 'Profesor')->exists()) {
+                    $this->totalTeachers = User::role('Profesor')->count();
+                }
+                // Si tampoco existe, se queda en 0 y no explota
             } else {
                  $this->totalTeachers = 0; 
             }
