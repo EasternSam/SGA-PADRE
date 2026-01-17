@@ -29,31 +29,52 @@
         </div>
     </x-slot>
 
-    {{-- 
-        CAMBIO PRINCIPAL AQUÍ:
-        - Se cambió 'max-w-7xl' por 'w-full max-w-[1600px]' o simplemente 'w-full'
-        - Esto permite que el diseño respire y ocupe más pantalla en monitores grandes
-    --}}
+    {{-- CONTENEDOR PRINCIPAL --}}
     <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 mt-6 sm:mt-8 space-y-6 sm:space-y-8">
+
+        {{-- 
+            =================================================================
+            0. SECCIÓN NUEVA: GRÁFICO DE TENDENCIAS
+            ================================================================= 
+        --}}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden">
+            <!-- Decoración de fondo sutil -->
+            <div class="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 rounded-full bg-indigo-50 blur-3xl opacity-50 pointer-events-none"></div>
+            
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 relative z-10">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800 tracking-tight">Tendencia de Inscripciones</h2>
+                    <p class="text-sm text-gray-500 mt-1">Comparativa de inscripciones Web (API) vs Físicas (Sistema) de los últimos 7 meses.</p>
+                </div>
+                <div class="mt-4 sm:mt-0 flex gap-2">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                        <span class="w-2 h-2 rounded-full bg-indigo-500"></span> Web
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Físico
+                    </span>
+                </div>
+            </div>
+
+            <!-- Contenedor del Gráfico -->
+            <div id="enrollmentChart" class="w-full h-[350px]"></div>
+        </div>
 
         {{-- 
             =================================================================
             1. TARJETAS DE ESTADÍSTICAS (KPIs)
             ================================================================= 
         --}}
-        {{-- Se añade xl:grid-cols-4 para asegurar 4 columnas en pantallas muy grandes --}}
         <div class="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4">
             
             <!-- Card: Estudiantes -->
             <div class="relative overflow-hidden rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-900/5 transition-all hover:shadow-md border-t-4 border-blue-500">
                 <div class="flex items-center gap-4">
-                    <!-- Icono (Flex item fijo) -->
                     <div class="shrink-0 rounded-md bg-blue-50 p-3">
                         <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
                         </svg>
                     </div>
-                    <!-- Texto (Flex item flexible) -->
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-gray-500 truncate">Estudiantes</p>
                         <div class="flex items-baseline">
@@ -124,13 +145,12 @@
 
         {{-- 
             =================================================================
-            2. SECCIÓN PRINCIPAL
-            Responsive: Columna única en móvil/tablet -> 2 columnas en Laptop/Desktop (lg)
+            2. SECCIÓN PRINCIPAL (TABLA + SIDEBAR)
             ================================================================= 
         --}}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             
-            {{-- COLUMNA IZQUIERDA: Tabla Detallada (Ocupa 2/3 en pantallas grandes) --}}
+            {{-- COLUMNA IZQUIERDA: Tabla Detallada --}}
             <div class="lg:col-span-2 space-y-6">
                 
                 <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-900/5">
@@ -142,19 +162,14 @@
                             </div>
                             <div class="ml-4 mt-2 flex-shrink-0">
                                 <nav class="flex flex-wrap gap-2" aria-label="Tabs">
-                                    {{-- Tab: Todas --}}
                                     <button wire:click="setFilter('all')" 
                                             class="rounded-md px-3 py-2 text-sm font-medium transition-colors {{ $enrollmentFilter === 'all' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50' }}">
                                         Todas
                                     </button>
-                                    
-                                    {{-- Tab: Pendientes --}}
                                     <button wire:click="setFilter('Pendiente')" 
                                             class="rounded-md px-3 py-2 text-sm font-medium transition-colors {{ $enrollmentFilter === 'Pendiente' ? 'bg-yellow-50 text-yellow-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50' }}">
                                         Pendientes
                                     </button>
-                                    
-                                    {{-- Tab: Activas --}}
                                     <button wire:click="setFilter('Activo')" 
                                             class="rounded-md px-3 py-2 text-sm font-medium transition-colors {{ $enrollmentFilter === 'Activo' ? 'bg-green-50 text-green-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50' }}">
                                         Activas
@@ -213,7 +228,6 @@
                                             {{ $enrollment->created_at ? $enrollment->created_at->format('d M, Y') : '-' }}
                                         </td>
                                         <td class="px-6 py-4 text-right">
-                                            {{-- Botón Ver funcional (Redirige al perfil del estudiante) --}}
                                             @if($enrollment->student)
                                                 <a href="{{ route('admin.students.profile', $enrollment->student->id) }}" wire:navigate class="text-gray-400 hover:text-indigo-600 transition-colors">
                                                     <span class="sr-only">Ver</span>
@@ -257,7 +271,6 @@
                         <a href="{{ route('admin.students.index') }}" wire:navigate class="group flex items-center justify-between rounded-md border border-gray-200 p-3 hover:border-indigo-500 hover:bg-indigo-50 hover:ring-1 hover:ring-indigo-500 transition-all">
                             <div class="flex items-center gap-3">
                                 <div class="flex h-8 w-8 items-center justify-center rounded bg-indigo-100 text-indigo-600 group-hover:bg-white">
-                                    {{-- Icono: User Plus --}}
                                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
                                     </svg>
@@ -270,7 +283,6 @@
                         <a href="{{ route('admin.finance.concepts') }}" wire:navigate class="group flex items-center justify-between rounded-md border border-gray-200 p-3 hover:border-green-500 hover:bg-green-50 hover:ring-1 hover:ring-green-500 transition-all">
                             <div class="flex items-center gap-3">
                                 <div class="flex h-8 w-8 items-center justify-center rounded bg-green-100 text-green-600 group-hover:bg-white">
-                                    {{-- Icono: Banknotes --}}
                                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
                                     </svg>
@@ -283,7 +295,6 @@
                         <a href="{{ route('admin.courses.index') }}" wire:navigate class="group flex items-center justify-between rounded-md border border-gray-200 p-3 hover:border-purple-500 hover:bg-purple-50 hover:ring-1 hover:ring-purple-500 transition-all">
                             <div class="flex items-center gap-3">
                                 <div class="flex h-8 w-8 items-center justify-center rounded bg-purple-100 text-purple-600 group-hover:bg-white">
-                                     {{-- Icono: Book Open --}}
                                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                                     </svg>
@@ -368,4 +379,95 @@
             </div>
         </div>
     </div>
+
+    <!-- Script de Gráficos (ApexCharts) -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <script>
+        document.addEventListener('livewire:navigated', () => {
+            initDashboardChart();
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initDashboardChart();
+        });
+
+        function initDashboardChart() {
+            const chartElement = document.querySelector("#enrollmentChart");
+            
+            if (!chartElement) return;
+
+            chartElement.innerHTML = '';
+
+            const options = {
+                series: [{
+                    name: 'Web (API)',
+                    data: @json($chartDataWeb)
+                }, {
+                    name: 'Físico (Sistema)',
+                    data: @json($chartDataSystem)
+                }],
+                chart: {
+                    type: 'area',
+                    height: 350,
+                    fontFamily: 'Inter, sans-serif',
+                    toolbar: { show: false },
+                    zoom: { enabled: false },
+                    animations: {
+                        enabled: true,
+                        easing: 'easeinout',
+                        speed: 800
+                    }
+                },
+                colors: ['#6366f1', '#10b981'],
+                dataLabels: { enabled: false },
+                stroke: {
+                    curve: 'smooth',
+                    width: 3
+                },
+                fill: {
+                    type: 'gradient',
+                    gradient: {
+                        shadeIntensity: 1,
+                        opacityFrom: 0.45,
+                        opacityTo: 0.05,
+                        stops: [0, 100]
+                    }
+                },
+                xaxis: {
+                    categories: @json($chartLabels),
+                    axisBorder: { show: false },
+                    axisTicks: { show: false },
+                    labels: {
+                        style: { colors: '#9ca3af', fontSize: '12px' }
+                    }
+                },
+                yaxis: {
+                    labels: {
+                        style: { colors: '#9ca3af', fontSize: '12px' },
+                        formatter: (val) => { return val.toFixed(0) }
+                    }
+                },
+                grid: {
+                    borderColor: '#f3f4f6',
+                    strokeDashArray: 4,
+                    yaxis: { lines: { show: true } },
+                    xaxis: { lines: { show: false } },
+                    padding: { top: 0, right: 0, bottom: 0, left: 10 }
+                },
+                tooltip: {
+                    theme: 'light',
+                    y: {
+                        formatter: function (val) {
+                            return val + " alumnos";
+                        }
+                    }
+                },
+                legend: { show: false }
+            };
+
+            const chart = new ApexCharts(chartElement, options);
+            chart.render();
+        }
+    </script>
 </div>
