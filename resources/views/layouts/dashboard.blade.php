@@ -196,36 +196,36 @@
                 </div>
             </header>
 
-            <!-- Page Content -->
+            <!-- Page Content (Scrollable) -->
             <main class="flex-1 overflow-y-auto focus:outline-none scroll-smooth">
                 <!-- Content Container -->
-                <div class="min-h-[calc(100vh-4rem-6rem)]"> <!-- Ajuste de altura para empujar el footer -->
-                    <div class="max-w-full mx-auto px-0"> <!-- Padding ajustado -->
+                <div class="min-h-full pb-6">
+                    <div class="max-w-full mx-auto px-0">
                         {{ $slot }}
                     </div>
                 </div>
-
-                <!-- 6. Integrated Footer -->
-                <footer class="bg-white border-t border-gray-200 mt-auto">
-                    <div class="mx-auto max-w-7xl px-6 py-4 md:flex md:items-center md:justify-between lg:px-8">
-                        <div class="flex justify-center space-x-6 md:order-2">
-                            <a href="#" class="text-gray-400 hover:text-gray-500">
-                                <span class="sr-only">Soporte</span>
-                                <i class="fas fa-life-ring"></i>
-                            </a>
-                            <a href="#" class="text-gray-400 hover:text-gray-500">
-                                <span class="sr-only">Manual</span>
-                                <i class="fas fa-book"></i>
-                            </a>
-                        </div>
-                        <div class="mt-4 md:order-1 md:mt-0">
-                            <p class="text-center text-xs leading-5 text-gray-500">
-                                &copy; {{ date('Y') }} {{ config('app.name', 'Laravel') }}. Todos los derechos reservados. v1.0.0
-                            </p>
-                        </div>
-                    </div>
-                </footer>
             </main>
+
+            <!-- 6. Integrated Footer (Fixed Bottom) -->
+            <footer class="bg-white border-t border-gray-200 flex-shrink-0 z-10">
+                <div class="mx-auto max-w-7xl px-6 py-4 md:flex md:items-center md:justify-between lg:px-8">
+                    <div class="flex justify-center space-x-6 md:order-2">
+                        <a href="#" class="text-gray-400 hover:text-gray-500">
+                            <span class="sr-only">Soporte</span>
+                            <i class="fas fa-life-ring"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-gray-500">
+                            <span class="sr-only">Manual</span>
+                            <i class="fas fa-book"></i>
+                        </a>
+                    </div>
+                    <div class="mt-4 md:order-1 md:mt-0">
+                        <p class="text-center text-xs leading-5 text-gray-500">
+                            &copy; {{ date('Y') }} {{ config('app.name', 'Laravel') }}. Todos los derechos reservados. v1.0.0
+                        </p>
+                    </div>
+                </div>
+            </footer>
         </div>
     </div>
 
