@@ -33,6 +33,9 @@ class GlobalSearch extends Component
         $term = trim($this->search);
 
         if (strlen($term) >= 2) {
+            // Término flexible para encontrar "Samuel Diaz" aunque haya "Samuel Antonio Diaz"
+            $flexibleTerm = '%' . str_replace(' ', '%', $term) . '%';
+
             // 1. Buscar en Secciones del Sistema
             $systemPages = [
                 ['title' => 'Dashboard', 'route' => 'dashboard', 'type' => 'Sistema', 'icon' => 'fas fa-home'],
@@ -58,34 +61,39 @@ class GlobalSearch extends Component
                 }
             }
 
-            // 2. Buscar Estudiantes (Con Búsqueda Flexible)
+            // 2. Buscar Estudiantes (CORREGIDO: Busca a través de la relación 'user')
             if (class_exists(Student::class)) {
+                // Buscamos en la tabla 'users' asociada, ya que 'students' no tiene columna 'name'
                 $students = Student::query()
-                    ->where(function($q) use ($term) {
-                        // CORRECCIÓN: Reemplazar espacios por % para permitir búsqueda flexible
-                        // Esto permite encontrar "Juan Perez" aunque en la DB sea "Juan Alberto Perez"
-                        $flexibleTerm = '%' . str_replace(' ', '%', $term) . '%';
-                        
+                    ->with('user') // Cargamos la relación user
+                    ->whereHas('user', function($q) use ($flexibleTerm) {
                         $q->where('name', 'like', $flexibleTerm)
-                          ->orWhere('last_name', 'like', $flexibleTerm)
-                          ->orWhere('email', 'like', $flexibleTerm)
-                          // Concatenación para Nombre Completo + Búsqueda Flexible
-                          ->orWhereRaw("CONCAT(name, ' ', COALESCE(last_name, '')) LIKE ?", [$flexibleTerm]);
+                          ->orWhere('email', 'like', $flexibleTerm);
                     })
                     ->take(5)
                     ->get();
 
                 foreach ($students as $student) {
+                    // Obtenemos los datos del usuario asociado
+                    $user = $student->user;
+                    if (!$user) continue; // Si no hay usuario (data corrupta), saltar
+
                     $url = '#';
                     if (Route::has('admin.students.profile')) {
                         $url = route('admin.students.profile', $student->id);
                     } elseif (Route::has('admin.students.index')) {
-                        $url = route('admin.students.index', ['search' => $student->name]);
+                        $url = route('admin.students.index', ['search' => $user->name]);
+                    }
+
+                    // Intentamos mostrar matrícula si existe la columna, sino solo email
+                    $subtitle = $user->email;
+                    if (isset($student->student_id)) {
+                        $subtitle .= ' | Mat: ' . $student->student_id;
                     }
 
                     $results->push([
-                        'title' => $student->name . ' ' . ($student->last_name ?? ''),
-                        'subtitle' => $student->email ?? 'Matrícula: ' . ($student->student_id ?? 'N/A'),
+                        'title' => $user->name,
+                        'subtitle' => $subtitle,
                         'type' => 'Estudiante',
                         'url' => $url,
                         'icon' => 'fas fa-user-graduate'
@@ -93,11 +101,9 @@ class GlobalSearch extends Component
                 }
             }
 
-            // 3. Buscar Usuarios
+            // 3. Buscar Usuarios Generales (Admins, Profesores)
             $users = User::with('roles')
-                ->where(function($q) use ($term) {
-                    // Aplicamos la misma lógica flexible a usuarios
-                    $flexibleTerm = '%' . str_replace(' ', '%', $term) . '%';
+                ->where(function($q) use ($flexibleTerm) {
                     $q->where('name', 'like', $flexibleTerm)
                       ->orWhere('email', 'like', $flexibleTerm);
                 })
@@ -114,40 +120,34 @@ class GlobalSearch extends Component
                     default => ucfirst($roleName)
                 };
 
+                // Evitamos duplicar visualmente si ya salió como estudiante arriba
+                if ($displayRole === 'Estudiante') continue;
+
                 $url = '#';
-                
-                if ($displayRole === 'Estudiante' && class_exists(Student::class)) {
-                    $st = Student::where('user_id', $user->id)->first();
-                    if ($st && Route::has('admin.students.profile')) {
-                        $url = route('admin.students.profile', $st->id);
-                    }
-                } elseif ($displayRole === 'Profesor' && Route::has('admin.teachers.index')) {
+                if ($displayRole === 'Profesor' && Route::has('admin.teachers.index')) {
                     $url = Route::has('admin.teachers.profile') 
-                        ? route('admin.teachers.profile', $user->id)
+                        ? route('admin.teachers.profile', $user->id) // OJO: Chequear si profile usa ID user o ID teacher
                         : route('admin.teachers.index', ['search' => $user->name]);
                 } elseif ($displayRole === 'Administrador') {
                     $url = route('profile.edit');
                 }
 
-                // Evitamos duplicar si ya salió como estudiante arriba
-                if ($displayRole !== 'Estudiante') { 
-                    $results->push([
-                        'title' => $user->name,
-                        'subtitle' => $user->email,
-                        'type' => $displayRole,
-                        'url' => $url,
-                        'icon' => match($displayRole) {
-                            'Administrador' => 'fas fa-user-shield',
-                            'Profesor' => 'fas fa-chalkboard-teacher',
-                            default => 'fas fa-user'
-                        }
-                    ]);
-                }
+                $results->push([
+                    'title' => $user->name,
+                    'subtitle' => $user->email,
+                    'type' => $displayRole,
+                    'url' => $url,
+                    'icon' => match($displayRole) {
+                        'Administrador' => 'fas fa-user-shield',
+                        'Profesor' => 'fas fa-chalkboard-teacher',
+                        default => 'fas fa-user'
+                    }
+                ]);
             }
             
             // 4. Buscar Cursos
             if (class_exists(Course::class)) {
-                $courses = Course::where('name', 'like', '%' . str_replace(' ', '%', $term) . '%')
+                $courses = Course::where('name', 'like', $flexibleTerm)
                     ->take(3)
                     ->get();
 
