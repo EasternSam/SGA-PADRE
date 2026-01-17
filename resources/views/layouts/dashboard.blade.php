@@ -25,6 +25,13 @@
 
     <style>
         [x-cloak] { display: none !important; }
+        
+        @media (min-width: 640px) {
+            .sm\:px-6 {
+                padding-left: 0;
+                padding-right: 0;
+            }
+        }
     </style>
 </head>
 
@@ -127,7 +134,6 @@
                                     {{ $header }}
                                 </h1>
                             @endif
-                            <span class="hidden sm:block text-xs text-gray-400 font-medium">SGA Portal &bull; {{ date('d M, Y') }}</span>
                         </div>
                     </div>
 
