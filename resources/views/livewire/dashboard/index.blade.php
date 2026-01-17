@@ -381,27 +381,23 @@
     </div>
 
     <!-- Script de Gráficos (ApexCharts) -->
+    <!-- Usamos CDN para evitar problemas de compilación local y errores de sintaxis module/export -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
     <script>
-        document.addEventListener('livewire:navigated', () => {
-            initDashboardChart();
-        });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            initDashboardChart();
-        });
-
-        function initDashboardChart() {
+        // Función segura de inicialización
+        window.initDashboardChart = function() {
             const chartElement = document.querySelector("#enrollmentChart");
             
             if (!chartElement) return;
 
             // Datos inyectados desde el backend con seguridad de tipo array
+            // Usamos Js::from de Laravel si es posible, o @json con fallback
             const chartDataWeb = @json($chartDataWeb ?? []);
             const chartDataSystem = @json($chartDataSystem ?? []);
             const chartLabels = @json($chartLabels ?? []);
 
+            // Limpiar si ya existe algo para evitar duplicados en SPA
             chartElement.innerHTML = '';
 
             const options = {
@@ -473,6 +469,20 @@
 
             const chart = new ApexCharts(chartElement, options);
             chart.render();
-        }
+        };
+
+        // Ejecutar en navegación Livewire
+        document.addEventListener('livewire:navigated', () => {
+            if (typeof window.initDashboardChart === 'function') {
+                window.initDashboardChart();
+            }
+        });
+
+        // Ejecutar en carga inicial (si no es SPA/Livewire 3 completo)
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof window.initDashboardChart === 'function') {
+                window.initDashboardChart();
+            }
+        });
     </script>
 </div>
