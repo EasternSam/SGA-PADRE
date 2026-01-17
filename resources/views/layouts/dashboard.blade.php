@@ -31,14 +31,17 @@
 <body class="h-full font-sans antialiased text-slate-600">
 
     <!-- 1. Barra de Carga Global (Livewire) -->
-    <div wire:loading.delay class="fixed top-0 left-0 w-full h-1 z-[60] bg-sga-primary/20">
+    {{-- CORRECCIÓN: Añadido pointer-events: none para evitar bloqueo de clics --}}
+    <div wire:loading.delay class="fixed top-0 left-0 w-full h-1 z-[60] bg-sga-primary/20" style="pointer-events: none;">
         <div class="h-full bg-sga-primary animate-progress-indeterminate"></div>
     </div>
 
     <!-- 2. Sistema de Notificaciones Toast (Flash Messages) -->
-    <div aria-live="assertive" class="pointer-events-none fixed inset-0 z-50 flex items-end px-4 py-6 sm:items-start sm:p-6">
+    {{-- CORRECCIÓN: Añadido style="pointer-events: none;" explícito para garantizar que los clics pasen a través del contenedor --}}
+    <div aria-live="assertive" class="pointer-events-none fixed inset-0 z-50 flex items-end px-4 py-6 sm:items-start sm:p-6" style="pointer-events: none;">
         <div class="flex w-full flex-col items-center space-y-4 sm:items-end">
             @if (session()->has('success'))
+                {{-- CORRECCIÓN: Añadido style="pointer-events: auto;" para poder cerrar la notificación --}}
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
                      x-transition:enter="transform ease-out duration-300 transition"
                      x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
@@ -46,7 +49,8 @@
                      x-transition:leave="transition ease-in duration-100"
                      x-transition:leave-start="opacity-100"
                      x-transition:leave-end="opacity-0"
-                     class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+                     class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5"
+                     style="pointer-events: auto;">
                     <div class="p-4">
                         <div class="flex items-start">
                             <div class="flex-shrink-0">
@@ -68,11 +72,13 @@
             @endif
 
             @if (session()->has('error'))
+                {{-- CORRECCIÓN: Añadido style="pointer-events: auto;" --}}
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
                      x-transition:enter="transform ease-out duration-300 transition"
                      x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
                      x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
-                     class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-red-500 ring-opacity-50 border-l-4 border-red-500">
+                     class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-red-500 ring-opacity-50 border-l-4 border-red-500"
+                     style="pointer-events: auto;">
                     <div class="p-4">
                         <div class="flex items-start">
                             <div class="flex-shrink-0">
