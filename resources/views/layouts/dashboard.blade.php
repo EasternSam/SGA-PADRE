@@ -136,15 +136,10 @@
                     <!-- Center: 4. Search Bar (Functional) -->
                     <div class="hidden md:flex flex-1 max-w-md px-8">
                         <div class="relative w-full text-gray-500 focus-within:text-sga-primary">
+                            
+                            <!-- Ícono de Lupa (Estático) -->
                             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                <!-- Lupa que se desvanece al escribir -->
-                                <i class="fas fa-search text-gray-400 transition-opacity duration-200" 
-                                   :class="{'opacity-0': globalSearch.length > 0}"></i>
-                            </div>
-                            <!-- Spinner que aparece al escribir -->
-                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none transition-opacity duration-200 opacity-0" 
-                                 :class="{'opacity-100': globalSearch.length > 0}">
-                                <i class="fas fa-circle-notch fa-spin text-sga-primary"></i>
+                                <i class="fas fa-search text-gray-400"></i>
                             </div>
 
                             <input type="text" 
