@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Student;
 use App\Models\Course;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB; // Importante para la concatenación SQL
 
 class GlobalSearch extends Component
 {
@@ -27,9 +28,12 @@ class GlobalSearch extends Component
     public function render()
     {
         $results = collect();
+        
+        // Limpiamos espacios extra al inicio/final
+        $term = trim($this->search);
 
-        if (strlen($this->search) >= 2) {
-            // 1. Buscar en Secciones del Sistema (Navegación Rápida)
+        if (strlen($term) >= 2) {
+            // 1. Buscar en Secciones del Sistema
             $systemPages = [
                 ['title' => 'Dashboard', 'route' => 'dashboard', 'type' => 'Sistema', 'icon' => 'fas fa-home'],
                 ['title' => 'Lista de Estudiantes', 'route' => 'admin.students.index', 'type' => 'Módulo', 'icon' => 'fas fa-user-graduate'],
@@ -42,7 +46,7 @@ class GlobalSearch extends Component
 
             foreach ($systemPages as $page) {
                 if (Route::has($page['route'])) {
-                    if (stripos($page['title'], $this->search) !== false) {
+                    if (stripos($page['title'], $term) !== false) {
                         $results->push([
                             'title' => $page['title'],
                             'subtitle' => 'Ir a sección',
@@ -54,19 +58,22 @@ class GlobalSearch extends Component
                 }
             }
 
-            // 2. Buscar Estudiantes (Prioridad Alta)
+            // 2. Buscar Estudiantes (Con CONCATENACIÓN)
             if (class_exists(Student::class)) {
                 $students = Student::query()
-                    ->where(function($q) {
-                        $q->where('name', 'like', '%' . $this->search . '%')
-                          ->orWhere('last_name', 'like', '%' . $this->search . '%')
-                          ->orWhere('email', 'like', '%' . $this->search . '%');
+                    ->where(function($q) use ($term) {
+                        $likeTerm = '%' . $term . '%';
+                        $q->where('name', 'like', $likeTerm)
+                          ->orWhere('last_name', 'like', $likeTerm)
+                          ->orWhere('email', 'like', $likeTerm)
+                          // --- LA MEJORA CLAVE ---
+                          // Busca en "Nombre Apellido" combinado
+                          ->orWhereRaw("CONCAT(name, ' ', COALESCE(last_name, '')) LIKE ?", [$likeTerm]);
                     })
                     ->take(5)
                     ->get();
 
                 foreach ($students as $student) {
-                    // Intentar generar ruta al perfil, si no existe, ir al índice filtrado o fallback
                     $url = '#';
                     if (Route::has('admin.students.profile')) {
                         $url = route('admin.students.profile', $student->id);
@@ -77,58 +84,54 @@ class GlobalSearch extends Component
                     $results->push([
                         'title' => $student->name . ' ' . ($student->last_name ?? ''),
                         'subtitle' => $student->email ?? 'Matrícula: ' . ($student->student_id ?? 'N/A'),
-                        'type' => 'Estudiante', // Rol explícito
+                        'type' => 'Estudiante',
                         'url' => $url,
                         'icon' => 'fas fa-user-graduate'
                     ]);
                 }
             }
 
-            // 3. Buscar Usuarios (Admins, Profesores, Staff)
-            // Filtramos para no duplicar estudiantes si ya los buscamos arriba, o simplemente mostramos roles clave
+            // 3. Buscar Usuarios
             $users = User::with('roles')
-                ->where('name', 'like', '%' . $this->search . '%')
-                ->orWhere('email', 'like', '%' . $this->search . '%')
+                ->where(function($q) use ($term) {
+                    $likeTerm = '%' . $term . '%';
+                    $q->where('name', 'like', $likeTerm)
+                      ->orWhere('email', 'like', $likeTerm);
+                })
                 ->take(5)
                 ->get();
 
             foreach ($users as $user) {
-                // Obtener el rol real en español
                 $roleName = $user->roles->first()?->name ?? 'Usuario';
                 
-                // Traducción de roles
                 $displayRole = match(strtolower($roleName)) {
                     'admin', 'super-admin' => 'Administrador',
                     'teacher', 'profesor', 'docente' => 'Profesor',
-                    'student', 'estudiante' => 'Estudiante', // Por si sale aquí también
+                    'student', 'estudiante' => 'Estudiante',
                     default => ucfirst($roleName)
                 };
 
-                // Si es estudiante y ya lo mostramos arriba, podríamos saltarlo, 
-                // pero por seguridad definimos URL basada en rol
                 $url = '#';
                 
                 if ($displayRole === 'Estudiante' && class_exists(Student::class)) {
-                    // Intentar buscar su registro de estudiante asociado
                     $st = Student::where('user_id', $user->id)->first();
                     if ($st && Route::has('admin.students.profile')) {
                         $url = route('admin.students.profile', $st->id);
                     }
                 } elseif ($displayRole === 'Profesor' && Route::has('admin.teachers.index')) {
-                    // Si hay perfil de profesor, úsalo, sino al index
                     $url = Route::has('admin.teachers.profile') 
-                        ? route('admin.teachers.profile', $user->id) // Asumiendo ID de usuario o buscar ID profe
+                        ? route('admin.teachers.profile', $user->id)
                         : route('admin.teachers.index', ['search' => $user->name]);
                 } elseif ($displayRole === 'Administrador') {
-                    $url = route('profile.edit'); // O admin.users.index si existe
+                    $url = route('profile.edit');
                 }
 
-                // Evitar duplicados visuales si es estudiante y ya salió en la query de Student
+                // Evitamos duplicar si ya salió como estudiante arriba
                 if ($displayRole !== 'Estudiante') { 
                     $results->push([
                         'title' => $user->name,
                         'subtitle' => $user->email,
-                        'type' => $displayRole, // Aquí dice "Profesor", "Admin", etc.
+                        'type' => $displayRole,
                         'url' => $url,
                         'icon' => match($displayRole) {
                             'Administrador' => 'fas fa-user-shield',
@@ -141,12 +144,11 @@ class GlobalSearch extends Component
             
             // 4. Buscar Cursos
             if (class_exists(Course::class)) {
-                $courses = Course::where('name', 'like', '%' . $this->search . '%')
+                $courses = Course::where('name', 'like', '%' . $term . '%')
                     ->take(3)
                     ->get();
 
                 foreach ($courses as $course) {
-                    // Ruta a editar curso o índice
                     $url = '#';
                     if (Route::has('admin.courses.edit')) {
                         $url = route('admin.courses.edit', $course->id);
