@@ -195,19 +195,43 @@
                                 @forelse ($recentEnrollments as $enrollment)
                                     <tr class="hover:bg-gray-50 transition-colors">
                                         <td class="px-6 py-4">
+                                            @php
+                                                $student = $enrollment->student ?? null;
+                                                $firstInitial = strtoupper(substr($student->name ?? $student->first_name ?? 'U', 0, 1));
+                                                $lastInitial = strtoupper(substr($student->last_name ?? '', 0, 1));
+                                                if ($lastInitial === '') {
+                                                    // try to get initial from middle/second given name if available
+                                                    $lastInitial = strtoupper(substr($student->middle_name ?? $student->second_name ?? '', 0, 1));
+                                                }
+
+                                                if ($student) {
+                                                    if (!empty($student->full_name)) {
+                                                        $studentName = $student->full_name;
+                                                    } elseif (!empty($student->name) && !empty($student->last_name)) {
+                                                        $studentName = trim($student->name . ' ' . $student->last_name);
+                                                    } elseif (!empty($student->first_name) || !empty($student->last_name)) {
+                                                        $studentName = trim(($student->first_name ?? '') . ' ' . ($student->last_name ?? ''));
+                                                    } else {
+                                                        $studentName = $student->name ?? $student->last_name ?? $student->email ?? 'N/A';
+                                                    }
+                                                } else {
+                                                    $studentName = 'N/A';
+                                                }
+                                            @endphp
+
                                             <div class="flex items-center">
                                                 <div class="h-10 w-10 flex-shrink-0 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold border border-gray-200">
-                                                    {{ substr($enrollment->student->name ?? 'U', 0, 1) }}{{ substr($enrollment->student->last_name ?? '', 0, 1) }}
+                                                    {{ $firstInitial }}{{ $lastInitial }}
                                                 </div>
                                                 <div class="ml-4">
                                                     <div class="font-medium text-gray-900">
-                                                        {{-- CORRECCIÓN AQUI: Concatenamos nombre y apellido explícitamente --}}
-                                                        {{ $enrollment->student->name ?? '' }} {{ $enrollment->student->last_name ?? '' }}
+                                                        {{ $studentName }}
                                                     </div>
-                                                    <div class="text-gray-500 text-xs">{{ $enrollment->student->email ?? '' }}</div>
+                                                    <div class="text-gray-500 text-xs">{{ $student->email ?? '' }}</div>
                                                 </div>
                                             </div>
                                         </td>
+
                                         <td class="px-6 py-4">
                                             <div class="flex flex-col">
                                                 <span class="text-gray-900 font-medium">{{ $enrollment->courseSchedule->module->course->name ?? 'N/A' }}</span>
