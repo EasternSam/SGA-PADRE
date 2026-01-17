@@ -197,10 +197,13 @@
                                         <td class="px-6 py-4">
                                             <div class="flex items-center">
                                                 <div class="h-10 w-10 flex-shrink-0 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold border border-gray-200">
-                                                    {{ substr($enrollment->student->fullName ?? 'U', 0, 2) }}
+                                                    {{ substr($enrollment->student->name ?? 'U', 0, 1) }}{{ substr($enrollment->student->last_name ?? '', 0, 1) }}
                                                 </div>
                                                 <div class="ml-4">
-                                                    <div class="font-medium text-gray-900">{{ $enrollment->student->fullName ?? 'Desconocido' }}</div>
+                                                    <div class="font-medium text-gray-900">
+                                                        {{-- CORRECCIÓN AQUI: Concatenamos nombre y apellido explícitamente --}}
+                                                        {{ $enrollment->student->name ?? '' }} {{ $enrollment->student->last_name ?? '' }}
+                                                    </div>
                                                     <div class="text-gray-500 text-xs">{{ $enrollment->student->email ?? '' }}</div>
                                                 </div>
                                             </div>
@@ -391,7 +394,8 @@
             
             if (!chartElement) return;
 
-
+            // Datos inyectados desde el backend con seguridad de tipo array
+            // Usamos @json para una inyección limpia y segura en Blade
             const chartDataWeb = @json($chartDataWeb ?? []);
             const chartDataSystem = @json($chartDataSystem ?? []);
             const chartLabels = @json($chartLabels ?? []);
