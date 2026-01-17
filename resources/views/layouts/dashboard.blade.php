@@ -31,17 +31,14 @@
 <body class="h-full font-sans antialiased text-slate-600">
 
     <!-- 1. Barra de Carga Global (Livewire) -->
-    {{-- CORRECCIÓN: Añadido pointer-events: none para evitar bloqueo de clics --}}
     <div wire:loading.delay class="fixed top-0 left-0 w-full h-1 z-[60] bg-sga-primary/20" style="pointer-events: none;">
         <div class="h-full bg-sga-primary animate-progress-indeterminate"></div>
     </div>
 
     <!-- 2. Sistema de Notificaciones Toast (Flash Messages) -->
-    {{-- CORRECCIÓN: Añadido style="pointer-events: none;" explícito para garantizar que los clics pasen a través del contenedor --}}
     <div aria-live="assertive" class="pointer-events-none fixed inset-0 z-50 flex items-end px-4 py-6 sm:items-start sm:p-6" style="pointer-events: none;">
         <div class="flex w-full flex-col items-center space-y-4 sm:items-end">
             @if (session()->has('success'))
-                {{-- CORRECCIÓN: Añadido style="pointer-events: auto;" para poder cerrar la notificación --}}
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
                      x-transition:enter="transform ease-out duration-300 transition"
                      x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
@@ -72,7 +69,6 @@
             @endif
 
             @if (session()->has('error'))
-                {{-- CORRECCIÓN: Añadido style="pointer-events: auto;" --}}
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
                      x-transition:enter="transform ease-out duration-300 transition"
                      x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
@@ -101,7 +97,11 @@
     </div>
 
     <!-- Layout Wrapper -->
-    <div x-data="{ open: false, globalSearch: '' }" @keydown.window.escape="open = false" class="h-full flex overflow-hidden bg-sga-background">
+    <div x-data="{ open: false, globalSearch: '' }" 
+         @keydown.window.escape="open = false" 
+         @keydown.window.meta.k.prevent="$refs.searchInput.focus()"
+         @keydown.window.ctrl.k.prevent="$refs.searchInput.focus()"
+         class="h-full flex overflow-hidden bg-sga-background">
 
         <!-- Navigation Sidebar -->
         @include('layouts.navigation')
@@ -133,15 +133,40 @@
                         </div>
                     </div>
 
-                    <!-- Center: 4. Search Bar (Hidden on mobile, visible on desktop) -->
+                    <!-- Center: 4. Search Bar (Functional) -->
                     <div class="hidden md:flex flex-1 max-w-md px-8">
                         <div class="relative w-full text-gray-500 focus-within:text-sga-primary">
                             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                <i class="fas fa-search text-gray-400"></i>
+                                <!-- Lupa que se desvanece al escribir -->
+                                <i class="fas fa-search text-gray-400 transition-opacity duration-200" 
+                                   :class="{'opacity-0': globalSearch.length > 0}"></i>
                             </div>
-                            <input type="text" x-model="globalSearch" 
-                                   class="block w-full rounded-full border-0 bg-gray-100/50 py-1.5 pl-10 pr-3 text-gray-900 ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sga-primary sm:text-sm sm:leading-6 transition-all"
-                                   placeholder="Buscar estudiantes, cursos, reportes...">
+                            <!-- Spinner que aparece al escribir -->
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none transition-opacity duration-200 opacity-0" 
+                                 :class="{'opacity-100': globalSearch.length > 0}">
+                                <i class="fas fa-circle-notch fa-spin text-sga-primary"></i>
+                            </div>
+
+                            <input type="text" 
+                                   x-model="globalSearch" 
+                                   x-ref="searchInput"
+                                   @input.debounce.500ms="Livewire.dispatch('search', { search: globalSearch })"
+                                   class="block w-full rounded-full border-0 bg-gray-100/50 py-1.5 pl-10 pr-10 text-gray-900 ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sga-primary sm:text-sm sm:leading-6 transition-all shadow-sm focus:bg-white"
+                                   placeholder="Buscar... (Ctrl+K)">
+                            
+                            <!-- Botón limpiar -->
+                            <button type="button" 
+                                    x-show="globalSearch.length > 0"
+                                    x-transition:enter="transition ease-out duration-200"
+                                    x-transition:enter-start="opacity-0 scale-90"
+                                    x-transition:enter-end="opacity-100 scale-100"
+                                    x-transition:leave="transition ease-in duration-100"
+                                    x-transition:leave-start="opacity-100 scale-100"
+                                    x-transition:leave-end="opacity-0 scale-90"
+                                    @click="globalSearch = ''; Livewire.dispatch('search', { search: '' }); $refs.searchInput.focus()"
+                                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 cursor-pointer">
+                                <i class="fas fa-times-circle"></i>
+                            </button>
                         </div>
                     </div>
 
