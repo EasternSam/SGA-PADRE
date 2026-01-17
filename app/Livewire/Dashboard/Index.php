@@ -94,45 +94,41 @@ class Index extends Component
             $this->chartLabels[] = $monthLabel;
 
             // --- 1. Obtener IDs de las inscripciones del mes ---
-            // Usamos 'enrollment_date' como principal, fallback a 'created_at' si es null
-            // Capturamos tanto fecha de matrícula como fecha de creación para no perder datos
-            $enrollmentsInMonth = Enrollment::where(function($q) use ($date) {
-                $q->whereYear('enrollment_date', $date->year)
-                  ->whereMonth('enrollment_date', $date->month);
-            })->orWhere(function($q) use ($date) {
-                $q->whereNull('enrollment_date') // Solo si no tiene fecha de matrícula
-                  ->whereYear('created_at', $date->year)
-                  ->whereMonth('created_at', $date->month);
-            })->get(['id']); // Solo necesitamos el ID para consultar los logs
+            // Optimizamos la consulta usando pluck directo
+            $enrollmentsInMonthIds = Enrollment::query()
+                ->where(function($q) use ($date) {
+                    $q->whereYear('enrollment_date', $date->year)
+                      ->whereMonth('enrollment_date', $date->month);
+                })
+                ->orWhere(function($q) use ($date) {
+                    $q->whereNull('enrollment_date')
+                      ->whereYear('created_at', $date->year)
+                      ->whereMonth('created_at', $date->month);
+                })
+                ->pluck('id'); // Obtenemos colección de IDs directamente
 
-            $totalCount = $enrollmentsInMonth->count();
-            $enrollmentIds = $enrollmentsInMonth->pluck('id')->toArray();
+            $totalCount = $enrollmentsInMonthIds->count();
 
             // --- 2. Clasificación API vs Sistema (Datos Reales) ---
             $systemCount = 0;
             $webCount = 0;
 
             if ($totalCount > 0) {
-                // Lógica basada en ActivityLog:
-                // Si la creación fue logueada con un 'causer_id' (Usuario), es del Sistema.
-                // Si la creación no tiene 'causer_id' (o no hay log específico pero el registro existe), asumimos Web/API/Automático.
-                
-                if (class_exists(ActivityLog::class) && !empty($enrollmentIds)) {
-                    // Contamos cuántas de estas inscripciones tienen un log de creación con autor
-                    $logsWithCauser = ActivityLog::where('subject_type', Enrollment::class)
-                        ->whereIn('subject_id', $enrollmentIds)
-                        ->where('event', 'created')
-                        ->whereNotNull('causer_id')
-                        ->count();
+                // Si existe la clase de logs y hay inscripciones
+                if (class_exists(ActivityLog::class)) {
+                    // Contamos IDs ÚNICOS de inscripciones que tienen log de creación por un usuario
+                    $systemCount = ActivityLog::where('subject_type', Enrollment::class)
+                        ->whereIn('subject_id', $enrollmentsInMonthIds)
+                        ->where('event', 'created') // Evento de creación
+                        ->whereNotNull('causer_id') // Hecho por un usuario logueado
+                        ->distinct('subject_id')    // Aseguramos no contar doble si hay logs duplicados
+                        ->count('subject_id');
                     
-                    $systemCount = $logsWithCauser;
-                    
-                    // La diferencia se asume como origen externo/web (sin usuario logueado en el momento de creación)
+                    // El resto se asume Web/API (sin usuario logueado al momento de crear)
                     $webCount = max(0, $totalCount - $systemCount);
                 } else {
-                    // Fallback: Si no hay sistema de logs activo, asignamos todo a Sistema para no mostrar datos erróneos
+                    // Si no hay sistema de logs, todo se cuenta como Sistema por defecto para no confundir
                     $systemCount = $totalCount;
-                    $webCount = 0;
                 }
             }
 
