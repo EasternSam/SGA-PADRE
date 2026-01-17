@@ -393,9 +393,10 @@
 
             // Datos inyectados desde el backend con seguridad de tipo array
             // Usamos Js::from de Laravel si es posible, o @json con fallback
-            const chartDataWeb = @json($chartDataWeb ?? []);
-            const chartDataSystem = @json($chartDataSystem ?? []);
-            const chartLabels = @json($chartLabels ?? []);
+            // Corregido: Eliminar "?? []" dentro de @json para evitar Syntax Error en Blade/PHP parser
+            const chartDataWeb = @json($chartDataWeb);
+            const chartDataSystem = @json($chartDataSystem);
+            const chartLabels = @json($chartLabels);
 
             // Limpiar si ya existe algo para evitar duplicados en SPA
             chartElement.innerHTML = '';
@@ -403,10 +404,10 @@
             const options = {
                 series: [{
                     name: 'Web (API)',
-                    data: chartDataWeb
+                    data: chartDataWeb || []
                 }, {
                     name: 'Físico (Sistema)',
-                    data: chartDataSystem
+                    data: chartDataSystem || []
                 }],
                 chart: {
                     type: 'area',
@@ -436,7 +437,7 @@
                     }
                 },
                 xaxis: {
-                    categories: chartLabels,
+                    categories: chartLabels || [],
                     axisBorder: { show: false },
                     axisTicks: { show: false },
                     labels: {
@@ -446,7 +447,7 @@
                 yaxis: {
                     labels: {
                         style: { colors: '#9ca3af', fontSize: '12px' },
-                        formatter: (val) => { return val.toFixed(0) }
+                        formatter: (val) => { return val ? val.toFixed(0) : 0 }
                     }
                 },
                 grid: {
