@@ -76,7 +76,8 @@ class Index extends Component
     }
 
     /**
-     * Prepara los datos para el gráfico de inscripciones.
+     * Prepara los datos para el gráfico de inscripciones con datos reales.
+     * Intenta distinguir entre Web (API) y Sistema basándose en ActivityLog.
      */
     private function prepareChartData()
     {
@@ -92,33 +93,47 @@ class Index extends Component
             $monthLabel = ucfirst($date->locale('es')->isoFormat('MMM'));
             $this->chartLabels[] = $monthLabel;
 
-            // --- CONSULTA DE DATOS ---
-            // Usamos 'enrollment_date' como en tu backend original.
-            // Si enrollment_date es null en la BD, podrías probar cambiarlo a 'created_at'.
-            $totalCount = Enrollment::whereYear('enrollment_date', $date->year)
-                ->whereMonth('enrollment_date', $date->month)
-                ->count();
+            // --- 1. Obtener IDs de las inscripciones del mes ---
+            // Usamos 'enrollment_date' como principal, fallback a 'created_at' si es null
+            // Capturamos tanto fecha de matrícula como fecha de creación para no perder datos
+            $enrollmentsInMonth = Enrollment::where(function($q) use ($date) {
+                $q->whereYear('enrollment_date', $date->year)
+                  ->whereMonth('enrollment_date', $date->month);
+            })->orWhere(function($q) use ($date) {
+                $q->whereNull('enrollment_date') // Solo si no tiene fecha de matrícula
+                  ->whereYear('created_at', $date->year)
+                  ->whereMonth('created_at', $date->month);
+            })->get(['id']); // Solo necesitamos el ID para consultar los logs
 
-            // Si el conteo con enrollment_date da 0, intentamos fallback a created_at 
-            // (útil si migraste datos y enrollment_date quedó vacío)
-            if ($totalCount === 0) {
-                $totalCount = Enrollment::whereYear('created_at', $date->year)
-                    ->whereMonth('created_at', $date->month)
-                    ->count();
-            }
+            $totalCount = $enrollmentsInMonth->count();
+            $enrollmentIds = $enrollmentsInMonth->pluck('id')->toArray();
 
-            // --- SIMULACIÓN DE ORIGEN (API vs SISTEMA) ---
-            // Como no hay columna 'source', distribuimos aleatoriamente para visualización
-            // Usamos semilla basada en mes/año para que no cambie al recargar
-            srand($date->year + $date->month); 
-            
+            // --- 2. Clasificación API vs Sistema (Datos Reales) ---
+            $systemCount = 0;
+            $webCount = 0;
+
             if ($totalCount > 0) {
-                $webPercentage = rand(20, 60) / 100; 
-                $webCount = (int) round($totalCount * $webPercentage);
-                $systemCount = $totalCount - $webCount;
-            } else {
-                $webCount = 0;
-                $systemCount = 0;
+                // Lógica basada en ActivityLog:
+                // Si la creación fue logueada con un 'causer_id' (Usuario), es del Sistema.
+                // Si la creación no tiene 'causer_id' (o no hay log específico pero el registro existe), asumimos Web/API/Automático.
+                
+                if (class_exists(ActivityLog::class) && !empty($enrollmentIds)) {
+                    // Contamos cuántas de estas inscripciones tienen un log de creación con autor
+                    $logsWithCauser = ActivityLog::where('subject_type', Enrollment::class)
+                        ->whereIn('subject_id', $enrollmentIds)
+                        ->where('event', 'created')
+                        ->whereNotNull('causer_id')
+                        ->count();
+                    
+                    $systemCount = $logsWithCauser;
+                    
+                    // La diferencia se asume como origen externo/web (sin usuario logueado en el momento de creación)
+                    $webCount = max(0, $totalCount - $systemCount);
+                } else {
+                    // Fallback: Si no hay sistema de logs activo, asignamos todo a Sistema para no mostrar datos erróneos
+                    $systemCount = $totalCount;
+                    $webCount = 0;
+                }
             }
 
             $this->chartDataWeb[] = $webCount;
@@ -156,7 +171,7 @@ class Index extends Component
 
         return view('livewire.dashboard.index', [
             'recentEnrollments' => $recentEnrollments,
-            // Pasamos las propiedades públicas explícitamente, aunque Livewire las expone automáticamente
+            // Pasamos las propiedades públicas explícitamente
             'chartLabels' => $this->chartLabels,
             'chartDataWeb' => $this->chartDataWeb,
             'chartDataSystem' => $this->chartDataSystem,
