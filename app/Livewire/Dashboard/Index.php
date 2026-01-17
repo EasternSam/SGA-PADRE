@@ -15,9 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Schema; // Importante para verificar tablas
 use Spatie\Permission\Models\Role;
-use Illuminate\Database\QueryException;
 
 #[Layout('layouts.dashboard')]
 class Index extends Component
@@ -61,17 +59,10 @@ class Index extends Component
             // Verificación de roles segura
             if (class_exists(\Spatie\Permission\Models\Role::class)) {
                 $this->totalTeachers = Cache::remember('dashboard_total_teachers', 600, function() {
-                    try {
-                        // Verificar si la tabla roles existe antes de consultar
-                        if (Schema::hasTable('roles')) {
-                            if (Role::where('name', 'teacher')->exists()) {
-                                return User::role('teacher')->count();
-                            } elseif (Role::where('name', 'Profesor')->exists()) {
-                                return User::role('Profesor')->count();
-                            }
-                        }
-                    } catch (\Exception $e) {
-                        return 0;
+                    if (Role::where('name', 'teacher')->exists()) {
+                        return User::role('teacher')->count();
+                    } elseif (Role::where('name', 'Profesor')->exists()) {
+                        return User::role('Profesor')->count();
                     }
                     return 0;
                 });
@@ -80,19 +71,11 @@ class Index extends Component
             }
 
             // Cargar actividades recientes optimizado
-            // VERIFICACIÓN CRÍTICA: Asegurar que la tabla existe antes de consultar
-            if (class_exists(ActivityLog::class) && Schema::hasTable('activity_log')) {
-                try {
-                    $this->recentActivities = ActivityLog::with('causer:id,name') // Solo traer ID y nombre del usuario
-                        ->latest()
-                        ->take(5)
-                        ->get(['id', 'description', 'causer_id', 'created_at']); // Solo campos necesarios
-                } catch (QueryException $e) {
-                    $this->addTrace('Advertencia: Error al cargar ActivityLog: ' . $e->getMessage());
-                    $this->recentActivities = new Collection(); // Fallback a vacío
-                }
-            } else {
-                $this->addTrace('Advertencia: Tabla activity_log no encontrada o clase no existe.');
+            if (class_exists(ActivityLog::class)) {
+                $this->recentActivities = ActivityLog::with('causer:id,name') // Solo traer ID y nombre del usuario
+                    ->latest()
+                    ->take(5)
+                    ->get(['id', 'description', 'causer_id', 'created_at']); // Solo campos necesarios
             }
 
             // Preparar gráfico
@@ -130,6 +113,7 @@ class Index extends Component
     private function prepareChartData(WordpressApiService $wpService)
     {
         // Intentamos recuperar del caché primero (TTL 1 hora) para velocidad extrema
+        // Clave única basada en la fecha actual (día) para refrescar diariamente o invalidar manualmente
         $cacheKey = 'dashboard_chart_stats_' . Carbon::now()->format('Y-m-d_H'); 
         
         $cachedStats = Cache::remember($cacheKey, 3600, function () use ($wpService) {
@@ -171,10 +155,6 @@ class Index extends Component
             }
         }
 
-        // Verificar existencia de tablas una sola vez para el bucle
-        $hasActivityLogTable = Schema::hasTable('activity_log');
-        $hasEnrollmentsTable = Schema::hasTable('enrollments');
-
         // 2. Calcular datos locales
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
@@ -191,35 +171,35 @@ class Index extends Component
             // Datos Sistema (Local) - CONSULTA OPTIMIZADA
             $year = $date->year;
             $month = $date->month;
+
+            // En lugar de cargar modelos o plucks gigantes, usamos una consulta directa agregada
+            // Contamos inscripciones creadas en el mes
+            $totalEnrollmentsMonth = DB::table('enrollments')
+                ->whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->count();
+
             $systemCount = 0;
 
-            if ($hasEnrollmentsTable) {
-                // Contamos inscripciones creadas en el mes
-                $totalEnrollmentsMonth = DB::table('enrollments')
-                    ->whereYear('created_at', $year)
-                    ->whereMonth('created_at', $month)
-                    ->count();
-
-                // Por defecto, asumimos que todos son del sistema si no podemos comprobar logs
-                $systemCount = $totalEnrollmentsMonth;
-
-                if ($totalEnrollmentsMonth > 0 && class_exists(ActivityLog::class) && $hasActivityLogTable) {
-                    try {
-                        // ESTRATEGIA ULTRARÁPIDA: 
-                        $logSystemCount = DB::table('activity_log')
-                            ->where('subject_type', Enrollment::class) // Asegúrate que el string coincida con lo guardado en BD
-                            ->where('event', 'created')
-                            ->whereNotNull('causer_id')
-                            ->whereYear('created_at', $year)
-                            ->whereMonth('created_at', $month)
-                            ->count();
-                        
-                        // Ajuste de seguridad: El conteo de logs no puede ser mayor al de inscripciones reales
-                        $systemCount = min($logSystemCount, $totalEnrollmentsMonth);
-                    } catch (QueryException $e) {
-                        // Si falla la consulta, mantenemos el total como fallback
-                        $this->addTrace("Fallo consulta activity_log mes {$month}: " . $e->getMessage());
-                    }
+            if ($totalEnrollmentsMonth > 0) {
+                if (class_exists(ActivityLog::class)) {
+                    // ESTRATEGIA ULTRARÁPIDA: 
+                    // Contamos logs de creación de Enrollments en ese mes que tengan un usuario responsable (causer_id).
+                    // Asumimos que si hay un log de creación con usuario en ese mes, corresponde a una inscripción "Sistema".
+                    // Esto evita el JOIN costoso o el WHERE IN con miles de IDs.
+                    
+                    $systemCount = DB::table('activity_log')
+                        ->where('subject_type', Enrollment::class) // Asegúrate que el string coincida con lo guardado en BD
+                        ->where('event', 'created')
+                        ->whereNotNull('causer_id')
+                        ->whereYear('created_at', $year)
+                        ->whereMonth('created_at', $month)
+                        ->count();
+                    
+                    // Ajuste de seguridad: El conteo de logs no puede ser mayor al de inscripciones reales
+                    $systemCount = min($systemCount, $totalEnrollmentsMonth);
+                } else {
+                    $systemCount = $totalEnrollmentsMonth;
                 }
             }
             
@@ -245,17 +225,8 @@ class Index extends Component
 
     public function render()
     {
-        // Verificar tabla antes de consultar para evitar crash en render
-        if (!Schema::hasTable('enrollments')) {
-             return view('livewire.dashboard.index', [
-                'recentEnrollments' => [],
-                'chartLabels' => $this->chartLabels,
-                'chartDataWeb' => $this->chartDataWeb,
-                'chartDataSystem' => $this->chartDataSystem,
-            ]);
-        }
-
         // Consulta base optimizada con Eager Loading selectivo para la TABLA
+        // Solo traemos los campos necesarios para pintar la tabla
         $query = Enrollment::with([
             'student:id,name,last_name,email,user_id', 
             'student.user:id,name,email',
@@ -270,6 +241,7 @@ class Index extends Component
         }
 
         // Limitamos los campos de la tabla principal también
+        // take(5) ya limita mucho, pero el select ayuda.
         $recentEnrollments = $query->take(5)->get();
 
         return view('livewire.dashboard.index', [
