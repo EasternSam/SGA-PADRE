@@ -105,11 +105,11 @@
 
             <!-- Importar Datos -->
             <li>
-                <x-responsive-nav-link :href="route('admin.database-import')" 
-                    :active="request()->routeIs('admin.database-import')" 
+                <x-responsive-nav-link :href="route('admin.import')" 
+                    :active="request()->routeIs('admin.import')" 
                     wire:navigate
-                    class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs('admin.database-import') ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
-                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs('admin.database-import') ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                    class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs('admin.import') ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
+                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs('admin.import') ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
                         <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
                         </svg>
