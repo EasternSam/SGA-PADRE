@@ -7,6 +7,7 @@ use App\Models\Enrollment;
 use App\Models\Student;
 use App\Models\User;
 use App\Models\ActivityLog;
+use App\Services\WordpressApiService; // Importante: Importar el servicio
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Illuminate\Database\Eloquent\Collection;
@@ -35,8 +36,9 @@ class Index extends Component
 
     /**
      * Carga inicial de datos estáticos.
+     * Inyectamos el servicio WordpressApiService
      */
-    public function mount()
+    public function mount(WordpressApiService $wpService)
     {
         // Inicializar colecciones para evitar errores de tipo si falla la carga
         $this->recentActivities = new Collection();
@@ -67,8 +69,8 @@ class Index extends Component
                     ->get();
             }
 
-            // 3. Preparar datos para el Gráfico
-            $this->prepareChartData();
+            // 3. Preparar datos para el Gráfico (Pasamos el servicio)
+            $this->prepareChartData($wpService);
 
         } catch (\Exception $e) {
             \Log::error("Error cargando Dashboard Stats: " . $e->getMessage());
@@ -76,63 +78,73 @@ class Index extends Component
     }
 
     /**
-     * Prepara los datos para el gráfico de inscripciones con datos reales.
-     * Intenta distinguir entre Web (API) y Sistema basándose en ActivityLog.
+     * Prepara los datos para el gráfico de inscripciones.
+     * Combina datos locales (Sistema) con datos remotos de WordPress (Web).
      */
-    private function prepareChartData()
+    private function prepareChartData(WordpressApiService $wpService)
     {
         $this->chartLabels = [];
         $this->chartDataWeb = [];
         $this->chartDataSystem = [];
 
+        // 1. Obtener datos remotos de WordPress (Web)
+        // Esto devuelve arrays como ['labels' => ['Ene', 'Feb'...], 'data' => [10, 5...]]
+        $wpStats = $wpService->getEnrollmentStats();
+        $wpDataMap = []; // Mapa auxiliar para búsqueda rápida por mes
+
+        if (!empty($wpStats['labels']) && !empty($wpStats['data'])) {
+            // Creamos un mapa 'Mes' => Cantidad para alinear con nuestro bucle
+            foreach ($wpStats['labels'] as $index => $label) {
+                $wpDataMap[$label] = $wpStats['data'][$index] ?? 0;
+            }
+        }
+
+        // 2. Calcular datos locales (Sistema) y construir arrays finales
         // Iteramos hacia atrás 6 meses hasta hoy (Total 7 meses)
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
             
             // Nombre del mes (Ej: Ene, Feb...)
+            // Nota: Debemos asegurar que el formato coincida con el que devuelve WP (Ej: "Ene")
+            // ucfirst es importante.
             $monthLabel = ucfirst($date->locale('es')->isoFormat('MMM'));
+            
+            // Agregamos la etiqueta al eje X
             $this->chartLabels[] = $monthLabel;
 
-            // --- 1. Obtener IDs de las inscripciones del mes ---
-            // Optimizamos la consulta usando pluck directo
-            $enrollmentsInMonthIds = Enrollment::query()
-                ->where(function($q) use ($date) {
-                    $q->whereYear('enrollment_date', $date->year)
-                      ->whereMonth('enrollment_date', $date->month);
-                })
-                ->orWhere(function($q) use ($date) {
-                    $q->whereNull('enrollment_date')
-                      ->whereYear('created_at', $date->year)
-                      ->whereMonth('created_at', $date->month);
-                })
-                ->pluck('id'); // Obtenemos colección de IDs directamente
+            // --- Datos WEB (Desde WP) ---
+            // Buscamos si existe el dato en lo que trajo la API, sino 0
+            $webCount = $wpDataMap[$monthLabel] ?? 0;
+            $this->chartDataWeb[] = $webCount;
 
-            $totalCount = $enrollmentsInMonthIds->count();
-
-            // --- 2. Clasificación API vs Sistema (Datos Reales) ---
+            // --- Datos SISTEMA (Local) ---
+            // Contamos inscripciones creadas localmente en este mes
+            // Usamos Enrollment::query() para consistencia
             $systemCount = 0;
-            $webCount = 0;
+            
+            if (class_exists(ActivityLog::class)) {
+                // Buscamos inscripciones creadas en este mes que tengan un causante (usuario logueado)
+                // Primero obtenemos los IDs de inscripciones del mes
+                $enrollmentIds = Enrollment::whereYear('created_at', $date->year)
+                    ->whereMonth('created_at', $date->month)
+                    ->pluck('id');
 
-            if ($totalCount > 0) {
-                // Si existe la clase de logs y hay inscripciones
-                if (class_exists(ActivityLog::class)) {
-                    // Contamos IDs ÚNICOS de inscripciones que tienen log de creación por un usuario
+                if ($enrollmentIds->isNotEmpty()) {
                     $systemCount = ActivityLog::where('subject_type', Enrollment::class)
-                        ->whereIn('subject_id', $enrollmentsInMonthIds)
-                        ->where('event', 'created') // Evento de creación
-                        ->whereNotNull('causer_id') // Hecho por un usuario logueado
-                        ->distinct('subject_id')    // Aseguramos no contar doble si hay logs duplicados
+                        ->whereIn('subject_id', $enrollmentIds)
+                        ->where('event', 'created')
+                        ->whereNotNull('causer_id') // Creado por un usuario del sistema
+                        ->distinct('subject_id')
                         ->count('subject_id');
-                    
-                    // El resto se asume Web/API (sin usuario logueado al momento de crear)
-                    $webCount = max(0, $totalCount - $systemCount);
-                } else {
-                    // Si no hay sistema de logs, todo se cuenta como Sistema por defecto para no confundir
-                    $systemCount = $totalCount;
                 }
+            } else {
+                // Fallback simple si no hay logs: contar inscripciones del mes
+                // (Asumiendo que si no hay logs, todo es local)
+                $systemCount = Enrollment::whereYear('created_at', $date->year)
+                    ->whereMonth('created_at', $date->month)
+                    ->count();
             }
 
-            $this->chartDataWeb[] = $webCount;
             $this->chartDataSystem[] = $systemCount;
         }
     }
