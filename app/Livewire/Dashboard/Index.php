@@ -25,36 +25,34 @@ class Index extends Component
     public $totalEnrollments = 0;
     
     // Estado del Filtro de Inscripciones
-    public $enrollmentFilter = 'all'; // Valores: 'all', 'Pendiente', 'Activo'
+    public $enrollmentFilter = 'all'; 
 
     // Colección para actividades
     public Collection $recentActivities;
 
-    // Datos para el gráfico (Arrays públicos para Livewire)
+    // Datos para el gráfico
     public $chartLabels = [];
     public $chartDataWeb = [];
     public $chartDataSystem = [];
 
+    // VARIABLE DE DEBUG (Para ver en herramientas de desarrollo o dump)
+    public $debugTrace = [];
+
     /**
      * Carga inicial de datos estáticos.
-     * Inyectamos el servicio WordpressApiService
      */
     public function mount(WordpressApiService $wpService)
     {
-        // Inicializar colecciones para evitar errores de tipo si falla la carga
         $this->recentActivities = new Collection();
+        $this->addTrace('Inicio del componente Dashboard');
 
         try {
-            // 1. Cargar Contadores
             $this->totalStudents = Student::count();
             $this->totalCourses = Course::count();
             $this->totalEnrollments = Enrollment::count();
             
-            // Verificar si Spatie Permission está instalado para contar profesores
             if (class_exists(\Spatie\Permission\Models\Role::class)) {
-                 // Ajusta 'teacher' o 'Profesor' según el nombre exacto en tu tabla roles
                  $this->totalTeachers = User::role('teacher')->count(); 
-                 // Si devuelve 0, intenta con 'Profesor' por si acaso
                  if ($this->totalTeachers === 0) {
                      $this->totalTeachers = User::role('Profesor')->count();
                  }
@@ -62,7 +60,6 @@ class Index extends Component
                  $this->totalTeachers = 0; 
             }
 
-            // 2. Cargar Actividad Reciente
             if (class_exists(ActivityLog::class)) {
                 $this->recentActivities = ActivityLog::with('causer')
                     ->latest()
@@ -70,17 +67,31 @@ class Index extends Component
                     ->get();
             }
 
-            // 3. Preparar datos para el Gráfico (Pasamos el servicio)
+            // Preparar gráfico
             $this->prepareChartData($wpService);
 
         } catch (\Exception $e) {
-            Log::error("Error cargando Dashboard Stats: " . $e->getMessage());
+            $this->addTrace('ERROR CRÍTICO EN MOUNT: ' . $e->getMessage());
+            Log::error("Dashboard Error: " . $e->getMessage());
         }
     }
 
     /**
+     * Helper para añadir trazas de debug
+     */
+    private function addTrace($message, $data = null)
+    {
+        $entry = Carbon::now()->toTimeString() . ' - ' . $message;
+        if ($data !== null) {
+            $entry .= ' | Data: ' . json_encode($data);
+        }
+        $this->debugTrace[] = $entry;
+        // También logueamos a archivo para persistencia
+        Log::info('[DASHBOARD_DEBUG] ' . $message, is_array($data) ? $data : []);
+    }
+
+    /**
      * Prepara los datos para el gráfico de inscripciones.
-     * Combina datos locales (Sistema) con datos remotos de WordPress (Web).
      */
     private function prepareChartData(WordpressApiService $wpService)
     {
@@ -88,126 +99,117 @@ class Index extends Component
         $this->chartDataWeb = [];
         $this->chartDataSystem = [];
 
-        // 1. Obtener datos remotos de WordPress (Web)
+        // 1. Obtener datos de WordPress
+        $this->addTrace('Solicitando datos a WordPress API...');
+        
         try {
             $wpStats = $wpService->getEnrollmentStats();
-            
-            // Log para depuración: Ver qué devuelve WP
-            Log::info('Dashboard Chart - Datos WP recibidos:', $wpStats);
-
+            $this->addTrace('Respuesta cruda de WP', $wpStats);
         } catch (\Exception $e) {
-            Log::error('Dashboard Chart - Error al obtener datos de WP: ' . $e->getMessage());
+            $this->addTrace('Excepción al conectar con WP: ' . $e->getMessage());
             $wpStats = ['labels' => [], 'data' => []];
         }
 
-        $wpDataMap = []; // Mapa auxiliar para búsqueda rápida por mes
-
+        // Mapa de datos normalizado
+        $wpDataMap = [];
+        
         if (!empty($wpStats['labels']) && !empty($wpStats['data'])) {
-            // Creamos un mapa 'Mes' => Cantidad para alinear con nuestro bucle
-            // Normalizamos las etiquetas (ej: 'Ene' -> 'ene') para evitar problemas de mayúsculas/minúsculas
             foreach ($wpStats['labels'] as $index => $label) {
-                // Aseguramos que el índice exista en data
                 if (isset($wpStats['data'][$index])) {
-                    $normalizedLabel = strtolower(trim($label));
-                    $wpDataMap[$normalizedLabel] = $wpStats['data'][$index];
+                    // Normalización agresiva: minúsculas, sin puntos, sin espacios
+                    $cleanLabel = $this->normalizeLabel($label);
+                    $wpDataMap[$cleanLabel] = $wpStats['data'][$index];
+                    $this->addTrace("Mapeando WP: Original='{$label}' -> Clean='{$cleanLabel}' -> Val={$wpStats['data'][$index]}");
                 }
             }
+        } else {
+            $this->addTrace('ADVERTENCIA: WP devolvió datos vacíos o estructura incorrecta.');
         }
 
-        // 2. Calcular datos locales (Sistema) y construir arrays finales
-        // Iteramos hacia atrás 6 meses hasta hoy (Total 7 meses)
+        // 2. Construir datos de los últimos 7 meses
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
             
-            // Nombre del mes (Ej: Ene, Feb...)
-            // Usamos isoFormat para obtener el nombre corto del mes localizado
-            $monthLabelRaw = $date->locale('es')->isoFormat('MMM');
-            $monthLabel = ucfirst($monthLabelRaw);
+            // Generar etiqueta local (Laravel)
+            // Forzamos locale español explícitamente para asegurar coincidencia
+            $monthNameShort = $date->locale('es')->isoFormat('MMM'); 
+            $monthLabel = ucfirst(str_replace('.', '', $monthNameShort)); // "Ene", "Feb" (sin puntos)
             
-            // Agregamos la etiqueta al eje X
             $this->chartLabels[] = $monthLabel;
 
-            // --- Datos WEB (Desde WP) ---
-            // Buscamos usando la clave normalizada
-            $searchKey = strtolower(trim($monthLabelRaw));
-            // Intentamos buscar por el nombre corto ('ene') o el nombre completo ('enero') por si acaso WP devuelve completo
+            // --- Matching WEB ---
+            $searchKey = $this->normalizeLabel($monthNameShort);
             $webCount = $wpDataMap[$searchKey] ?? 0;
-            
-            // Fallback: Si no encontramos por clave corta, intentamos buscar en el mapa si alguna clave contiene nuestro mes
-            if ($webCount === 0 && !empty($wpDataMap)) {
-                 // Esto es un intento extra por si WP devuelve 'Jan' en vez de 'Ene' o formatos diferentes
-                 // Pero confiamos en que WP devuelve en español si está configurado así.
+
+            // Debug del matching específico
+            if (!isset($wpDataMap[$searchKey]) && !empty($wpDataMap)) {
+                $this->addTrace("Fallo de coincidencia para: '{$monthLabel}' (Key buscada: '{$searchKey}'). Claves disponibles en WP: " . implode(', ', array_keys($wpDataMap)));
             }
 
             $this->chartDataWeb[] = (int) $webCount;
 
-            // --- Datos SISTEMA (Local) ---
+            // --- Datos SISTEMA ---
             $systemCount = 0;
             
-            if (class_exists(ActivityLog::class)) {
-                // Buscamos inscripciones creadas en este mes que tengan un causante (usuario logueado)
-                // Primero obtenemos los IDs de inscripciones del mes
-                $enrollmentIds = Enrollment::whereYear('created_at', $date->year)
-                    ->whereMonth('created_at', $date->month)
-                    ->pluck('id');
+            // Consulta de fechas locales
+            $enrollmentQuery = Enrollment::whereYear('created_at', $date->year)
+                ->whereMonth('created_at', $date->month);
 
+            if (class_exists(ActivityLog::class)) {
+                $enrollmentIds = $enrollmentQuery->pluck('id');
+                
                 if ($enrollmentIds->isNotEmpty()) {
                     $systemCount = ActivityLog::where('subject_type', Enrollment::class)
                         ->whereIn('subject_id', $enrollmentIds)
                         ->where('event', 'created')
-                        ->whereNotNull('causer_id') // Creado por un usuario del sistema
+                        ->whereNotNull('causer_id')
                         ->distinct('subject_id')
                         ->count('subject_id');
                 }
             } else {
-                // Fallback simple si no hay logs: contar inscripciones del mes
-                $systemCount = Enrollment::whereYear('created_at', $date->year)
-                    ->whereMonth('created_at', $date->month)
-                    ->count();
+                $systemCount = $enrollmentQuery->count();
             }
 
             $this->chartDataSystem[] = (int) $systemCount;
         }
         
-        // Log final para verificar los arrays que se pasan a la vista
-        Log::info('Dashboard Chart - Datos finales:', [
-            'labels' => $this->chartLabels,
-            'web' => $this->chartDataWeb,
-            'system' => $this->chartDataSystem
+        $this->addTrace('Datos Finales Calculados', [
+            'Labels' => $this->chartLabels,
+            'Web' => $this->chartDataWeb,
+            'System' => $this->chartDataSystem
         ]);
     }
 
     /**
-     * Método para cambiar el filtro desde la vista.
+     * Normaliza una etiqueta de mes para comparación (quita puntos, espacios, minúsculas)
      */
+    private function normalizeLabel($label)
+    {
+        // Convertir a minúsculas, quitar puntos (ej: "ene." -> "ene"), quitar espacios
+        return strtolower(trim(str_replace('.', '', $label)));
+    }
+
     public function setFilter($status)
     {
         $this->enrollmentFilter = $status;
     }
 
-    /**
-     * Renderiza la vista y carga datos dinámicos.
-     */
     public function render()
     {
-        // Consulta base
         $query = Enrollment::with([
             'student.user', 
             'courseSchedule.module.course', 
             'courseSchedule.teacher'
         ])->latest();
 
-        // Aplicar filtro
         if ($this->enrollmentFilter !== 'all') {
             $query->where('status', $this->enrollmentFilter);
         }
 
-        // Obtener resultados
         $recentEnrollments = $query->take(5)->get();
 
         return view('livewire.dashboard.index', [
             'recentEnrollments' => $recentEnrollments,
-            // Pasamos las propiedades públicas explícitamente
             'chartLabels' => $this->chartLabels,
             'chartDataWeb' => $this->chartDataWeb,
             'chartDataSystem' => $this->chartDataSystem,
