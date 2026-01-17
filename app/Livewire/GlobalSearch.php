@@ -7,7 +7,7 @@ use App\Models\User;
 use App\Models\Student;
 use App\Models\Course;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\DB; // Importante para la concatenación SQL
+use Illuminate\Support\Facades\DB; 
 
 class GlobalSearch extends Component
 {
@@ -58,17 +58,19 @@ class GlobalSearch extends Component
                 }
             }
 
-            // 2. Buscar Estudiantes (Con CONCATENACIÓN)
+            // 2. Buscar Estudiantes (Con Búsqueda Flexible)
             if (class_exists(Student::class)) {
                 $students = Student::query()
                     ->where(function($q) use ($term) {
-                        $likeTerm = '%' . $term . '%';
-                        $q->where('name', 'like', $likeTerm)
-                          ->orWhere('last_name', 'like', $likeTerm)
-                          ->orWhere('email', 'like', $likeTerm)
-                          // --- LA MEJORA CLAVE ---
-                          // Busca en "Nombre Apellido" combinado
-                          ->orWhereRaw("CONCAT(name, ' ', COALESCE(last_name, '')) LIKE ?", [$likeTerm]);
+                        // CORRECCIÓN: Reemplazar espacios por % para permitir búsqueda flexible
+                        // Esto permite encontrar "Juan Perez" aunque en la DB sea "Juan Alberto Perez"
+                        $flexibleTerm = '%' . str_replace(' ', '%', $term) . '%';
+                        
+                        $q->where('name', 'like', $flexibleTerm)
+                          ->orWhere('last_name', 'like', $flexibleTerm)
+                          ->orWhere('email', 'like', $flexibleTerm)
+                          // Concatenación para Nombre Completo + Búsqueda Flexible
+                          ->orWhereRaw("CONCAT(name, ' ', COALESCE(last_name, '')) LIKE ?", [$flexibleTerm]);
                     })
                     ->take(5)
                     ->get();
@@ -94,9 +96,10 @@ class GlobalSearch extends Component
             // 3. Buscar Usuarios
             $users = User::with('roles')
                 ->where(function($q) use ($term) {
-                    $likeTerm = '%' . $term . '%';
-                    $q->where('name', 'like', $likeTerm)
-                      ->orWhere('email', 'like', $likeTerm);
+                    // Aplicamos la misma lógica flexible a usuarios
+                    $flexibleTerm = '%' . str_replace(' ', '%', $term) . '%';
+                    $q->where('name', 'like', $flexibleTerm)
+                      ->orWhere('email', 'like', $flexibleTerm);
                 })
                 ->take(5)
                 ->get();
@@ -144,7 +147,7 @@ class GlobalSearch extends Component
             
             // 4. Buscar Cursos
             if (class_exists(Course::class)) {
-                $courses = Course::where('name', 'like', '%' . $term . '%')
+                $courses = Course::where('name', 'like', '%' . str_replace(' ', '%', $term) . '%')
                     ->take(3)
                     ->get();
 
