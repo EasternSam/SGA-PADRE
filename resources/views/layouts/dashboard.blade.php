@@ -38,190 +38,42 @@
     </style>
 </head>
 
-<body class="h-full font-sans antialiased text-sga-text">
-    <!-- Main Layout State -->
-    <div x-data="{ open: false }" @keydown.window.escape="open = false" class="h-full flex overflow-hidden bg-sga-background">
+<body class="h-full font-sans antialiased text-sga-text bg-sga-background">
+    
+    <div x-data="{ open: false }" @keydown.window.escape="open = false" class="min-h-screen flex flex-col lg:flex-row">
 
         <!-- Mobile Sidebar Overlay -->
-        <div x-show="open" class="relative z-50 lg:hidden" x-description="Off-canvas menu for mobile, show/hide based on off-canvas menu state." x-cloak>
-            <div x-show="open" x-transition:enter="transition-opacity ease-linear duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-900/80"></div>
+        <div x-show="open" class="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" x-cloak>
+            <div x-show="open" x-transition:enter="transition-opacity ease-linear duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-900/80" @click="open = false"></div>
 
-            <div class="fixed inset-0 flex">
-                <div x-show="open" x-transition:enter="transition ease-in-out duration-300 transform" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in-out duration-300 transform" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full" class="relative mr-16 flex w-full max-w-xs flex-1">
-                    <div x-show="open" x-transition:enter="ease-in-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in-out duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="absolute left-full top-0 flex w-16 justify-center pt-5">
-                        <button type="button" class="-m-2.5 p-2.5" @click="open = false">
-                            <span class="sr-only">Close sidebar</span>
-                            <i class="fas fa-times text-white text-xl"></i>
-                        </button>
-                    </div>
+            <div x-show="open" x-transition:enter="transition ease-in-out duration-300 transform" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in-out duration-300 transform" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full" class="relative flex w-full max-w-xs flex-1 flex-col bg-white pt-5 pb-4">
+                
+                <div x-show="open" x-transition:enter="ease-in-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in-out duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="absolute top-0 right-0 -mr-12 pt-2">
+                    <button type="button" class="ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white" @click="open = false">
+                        <span class="sr-only">Close sidebar</span>
+                        <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
 
-                    <!-- Mobile Sidebar Content -->
-                    <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4">
-                        <div class="flex h-16 shrink-0 items-center">
-                             <x-application-logo class="h-8 w-auto text-sga-blue" />
-                             <span class="ml-3 text-lg font-bold text-sga-blue tracking-tight">SGA PADRE</span>
-                        </div>
-                        <nav class="flex flex-1 flex-col">
-                            <!-- MENÚ MÓVIL (Duplicado del Desktop para evitar error de vista no encontrada) -->
-                            <ul role="list" class="flex flex-1 flex-col gap-y-7">
-                                <!-- Principal Group -->
-                                <li>
-                                    <div class="text-xs font-semibold leading-6 text-sga-text-light uppercase tracking-wider mb-2 pl-2">Principal</div>
-                                    <ul role="list" class="-mx-2 space-y-1">
-                                        <li>
-                                            <a href="{{ route('dashboard') }}" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs('dashboard') ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
-                                                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs('dashboard') ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
-                                                    <i class="fas fa-home text-xs"></i>
-                                                </div>
-                                                Dashboard
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
-        
-                                <!-- Academic Group -->
-                                @can('view_academic')
-                                <li>
-                                    <div class="text-xs font-semibold leading-6 text-sga-text-light uppercase tracking-wider mb-2 pl-2">Académico</div>
-                                    <ul role="list" class="-mx-2 space-y-1" x-data="{ 
-                                        expanded: {{ request()->routeIs('students.*') || request()->routeIs('teachers.*') || request()->routeIs('courses.*') ? 'true' : 'false' }},
-                                        activeSub: null
-                                    }">
-                                        
-                                        <!-- Estudiantes Dropdown -->
-                                        <li x-data="{ open: {{ request()->routeIs('students.*') ? 'true' : 'false' }} }">
-                                            <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
-                                                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
-                                                    <i class="fas fa-user-graduate text-xs"></i>
-                                                </div>
-                                                <span class="flex-1">Estudiantes</span>
-                                                <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
-                                            </button>
-                                            <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
-                                                <li>
-                                                    <a href="{{ route('students.index') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('students.index') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
-                                                        Listado General
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a href="#" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('students.requests') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
-                                                        Solicitudes
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                        </li>
-        
-                                        <!-- Profesores Dropdown -->
-                                        <li x-data="{ open: {{ request()->routeIs('teachers.*') ? 'true' : 'false' }} }">
-                                            <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
-                                                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
-                                                    <i class="fas fa-chalkboard-teacher text-xs"></i>
-                                                </div>
-                                                <span class="flex-1">Profesores</span>
-                                                <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
-                                            </button>
-                                            <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
-                                                <li>
-                                                    <a href="{{ route('teachers.index') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('teachers.index') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
-                                                        Directorio
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                        </li>
-        
-                                        <!-- Cursos (Single Link) -->
-                                        <li>
-                                            <a href="{{ route('courses.index') }}" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs('courses.*') ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
-                                                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs('courses.*') ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
-                                                    <i class="fas fa-book-open text-xs"></i>
-                                                </div>
-                                                Cursos
-                                            </a>
-                                        </li>
-        
-                                    </ul>
-                                </li>
-                                @endcan
-        
-                                <!-- Administrative Group -->
-                                @can('view_admin')
-                                <li>
-                                    <div class="text-xs font-semibold leading-6 text-sga-text-light uppercase tracking-wider mb-2 pl-2">Administración</div>
-                                    <ul role="list" class="-mx-2 space-y-1">
-                                        
-                                        <!-- Finanzas Dropdown -->
-                                        <li x-data="{ open: {{ request()->routeIs('finance.*') ? 'true' : 'false' }} }">
-                                            <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
-                                                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
-                                                    <i class="fas fa-file-invoice-dollar text-xs"></i>
-                                                </div>
-                                                <span class="flex-1">Finanzas</span>
-                                                <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
-                                            </button>
-                                            <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
-                                                <li>
-                                                    <a href="{{ route('finance.concepts') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('finance.concepts') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
-                                                        Conceptos de Pago
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                        </li>
-        
-                                        <!-- Reportes Dropdown -->
-                                        <li x-data="{ open: {{ request()->routeIs('reports.*') ? 'true' : 'false' }} }">
-                                            <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
-                                                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
-                                                    <i class="fas fa-chart-line text-xs"></i>
-                                                </div>
-                                                <span class="flex-1">Reportes</span>
-                                                <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
-                                            </button>
-                                            <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
-                                                <li>
-                                                    <a href="{{ route('reports.index') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('reports.index') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
-                                                        Reportes Generales
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                        </li>
-        
-                                        <!-- Herramientas Dropdown -->
-                                        <li x-data="{ open: {{ request()->routeIs('admin.*') ? 'true' : 'false' }} }">
-                                            <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
-                                                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
-                                                    <i class="fas fa-cogs text-xs"></i>
-                                                </div>
-                                                <span class="flex-1">Herramientas</span>
-                                                <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
-                                            </button>
-                                            <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
-                                                <li>
-                                                    <a href="{{ route('admin.requests') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('admin.requests') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
-                                                        Gestionar Solicitudes
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a href="{{ route('admin.database-import') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('admin.database-import') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
-                                                        Importar Base de Datos
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                        </li>
-                                    </ul>
-                                </li>
-                                @endcan
-                             </ul>
-                        </nav>
-                    </div>
+                <div class="flex flex-shrink-0 items-center px-4">
+                    <x-application-logo class="h-8 w-auto text-sga-blue" />
+                    <span class="ml-3 text-lg font-bold text-sga-blue tracking-tight">SGA PADRE</span>
+                </div>
+                
+                <div class="mt-5 h-0 flex-1 overflow-y-auto">
+                    <nav class="space-y-1 px-2">
+                        @include('layouts.partials.sidebar-links')
+                    </nav>
                 </div>
             </div>
         </div>
 
         <!-- Desktop Sidebar -->
-        <div class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-            <div class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-sga-gray bg-white px-6 pb-4 sidebar-scrollbar shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-                <!-- Logo -->
-                <div class="flex h-16 shrink-0 items-center border-b border-gray-100">
+        <div class="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col border-r border-gray-200 bg-white shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-30">
+            <div class="flex min-h-0 flex-1 flex-col overflow-y-auto sidebar-scrollbar">
+                <div class="flex h-16 flex-shrink-0 items-center px-6 border-b border-gray-100">
                     <a href="{{ route('dashboard') }}" class="flex items-center gap-2 group">
                         <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-sga-blue text-white shadow-md group-hover:bg-sga-blue-light transition-colors">
                             <i class="fas fa-graduation-cap text-lg"></i>
@@ -229,162 +81,11 @@
                         <span class="text-lg font-bold text-sga-blue tracking-tight">SGA PADRE</span>
                     </a>
                 </div>
-
-                <!-- Navigation -->
-                <nav class="flex flex-1 flex-col mt-4">
-                     <!-- MENÚ ESCRITORIO -->
-                     <ul role="list" class="flex flex-1 flex-col gap-y-7">
-                        
-                        <!-- Principal Group -->
-                        <li>
-                            <div class="text-xs font-semibold leading-6 text-sga-text-light uppercase tracking-wider mb-2 pl-2">Principal</div>
-                            <ul role="list" class="-mx-2 space-y-1">
-                                <li>
-                                    <a href="{{ route('dashboard') }}" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs('dashboard') ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
-                                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs('dashboard') ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
-                                            <i class="fas fa-home text-xs"></i>
-                                        </div>
-                                        Dashboard
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-
-                        <!-- Academic Group -->
-                        @can('view_academic')
-                        <li>
-                            <div class="text-xs font-semibold leading-6 text-sga-text-light uppercase tracking-wider mb-2 pl-2">Académico</div>
-                            <ul role="list" class="-mx-2 space-y-1" x-data="{ 
-                                expanded: {{ request()->routeIs('students.*') || request()->routeIs('teachers.*') || request()->routeIs('courses.*') ? 'true' : 'false' }},
-                                activeSub: null
-                            }">
-                                
-                                <!-- Estudiantes Dropdown -->
-                                <li x-data="{ open: {{ request()->routeIs('students.*') ? 'true' : 'false' }} }">
-                                    <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
-                                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
-                                            <i class="fas fa-user-graduate text-xs"></i>
-                                        </div>
-                                        <span class="flex-1">Estudiantes</span>
-                                        <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
-                                    </button>
-                                    <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
-                                        <li>
-                                            <a href="{{ route('students.index') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('students.index') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
-                                                Listado General
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="#" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('students.requests') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
-                                                Solicitudes
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
-
-                                <!-- Profesores Dropdown -->
-                                <li x-data="{ open: {{ request()->routeIs('teachers.*') ? 'true' : 'false' }} }">
-                                    <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
-                                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
-                                            <i class="fas fa-chalkboard-teacher text-xs"></i>
-                                        </div>
-                                        <span class="flex-1">Profesores</span>
-                                        <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
-                                    </button>
-                                    <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
-                                        <li>
-                                            <a href="{{ route('teachers.index') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('teachers.index') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
-                                                Directorio
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
-
-                                <!-- Cursos (Single Link) -->
-                                <li>
-                                    <a href="{{ route('courses.index') }}" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs('courses.*') ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
-                                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs('courses.*') ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
-                                            <i class="fas fa-book-open text-xs"></i>
-                                        </div>
-                                        Cursos
-                                    </a>
-                                </li>
-
-                            </ul>
-                        </li>
-                        @endcan
-
-                        <!-- Administrative Group -->
-                        @can('view_admin')
-                        <li>
-                            <div class="text-xs font-semibold leading-6 text-sga-text-light uppercase tracking-wider mb-2 pl-2">Administración</div>
-                            <ul role="list" class="-mx-2 space-y-1">
-                                
-                                <!-- Finanzas Dropdown -->
-                                <li x-data="{ open: {{ request()->routeIs('finance.*') ? 'true' : 'false' }} }">
-                                    <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
-                                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
-                                            <i class="fas fa-file-invoice-dollar text-xs"></i>
-                                        </div>
-                                        <span class="flex-1">Finanzas</span>
-                                        <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
-                                    </button>
-                                    <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
-                                        <li>
-                                            <a href="{{ route('finance.concepts') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('finance.concepts') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
-                                                Conceptos de Pago
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
-
-                                <!-- Reportes Dropdown -->
-                                <li x-data="{ open: {{ request()->routeIs('reports.*') ? 'true' : 'false' }} }">
-                                    <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
-                                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
-                                            <i class="fas fa-chart-line text-xs"></i>
-                                        </div>
-                                        <span class="flex-1">Reportes</span>
-                                        <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
-                                    </button>
-                                    <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
-                                        <li>
-                                            <a href="{{ route('reports.index') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('reports.index') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
-                                                Reportes Generales
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
-
-                                <!-- Herramientas Dropdown -->
-                                <li x-data="{ open: {{ request()->routeIs('admin.*') ? 'true' : 'false' }} }">
-                                    <button @click="open = !open" type="button" class="flex items-center w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-medium text-sga-text hover:bg-gray-50 hover:text-sga-blue transition-all duration-200 group text-left">
-                                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-gray-400 group-hover:text-sga-blue bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
-                                            <i class="fas fa-cogs text-xs"></i>
-                                        </div>
-                                        <span class="flex-1">Herramientas</span>
-                                        <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
-                                    </button>
-                                    <ul x-show="open" x-collapse class="mt-1 px-2 space-y-1 border-l-2 border-gray-100 ml-5" x-cloak>
-                                        <li>
-                                            <a href="{{ route('admin.requests') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('admin.requests') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
-                                                Gestionar Solicitudes
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="{{ route('admin.database-import') }}" class="block rounded-md py-2 pr-2 pl-4 text-xs font-medium leading-6 {{ request()->routeIs('admin.database-import') ? 'text-sga-blue bg-blue-50/50' : 'text-sga-text-light hover:text-sga-blue hover:bg-gray-50' }}">
-                                                Importar Base de Datos
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
-                            </ul>
-                        </li>
-                        @endcan
-                     </ul>
-
-                     <!-- Sidebar Footer (User Mini Profile) -->
-                     <div class="mt-auto -mx-6 px-6 pt-6 pb-4 border-t border-gray-100">
+                <nav class="flex-1 flex flex-col px-4 py-4 space-y-1">
+                    @include('layouts.partials.sidebar-links')
+                    
+                    <!-- Sidebar Footer (User Mini Profile) -->
+                    <div class="mt-auto pt-6 pb-4 border-t border-gray-100">
                         <a href="{{ route('profile.edit') }}" class="flex items-center gap-x-4 px-2 py-3 text-sm font-semibold leading-6 text-sga-text hover:bg-gray-50 rounded-md transition-colors group">
                             <div class="h-8 w-8 rounded-full bg-sga-blue flex items-center justify-center text-white font-bold text-xs ring-2 ring-white shadow-sm">
                                 {{ substr(Auth::user()->name, 0, 1) }}
@@ -395,13 +96,13 @@
                                 <span class="text-xs font-normal text-gray-500 truncate">{{ Auth::user()->email }}</span>
                             </div>
                         </a>
-                     </div>
+                    </div>
                 </nav>
             </div>
         </div>
 
         <!-- Main Content Area -->
-        <div class="flex flex-1 flex-col lg:pl-72 transition-all duration-300">
+        <div class="flex-1 flex flex-col lg:pl-72 transition-all duration-300">
             <!-- Top bar -->
             <header class="sticky top-0 z-10 flex h-16 flex-shrink-0 border-b border-sga-gray bg-white shadow-sm">
                 <div class="flex flex-1 items-center justify-between px-4 sm:px-6 lg:px-8">

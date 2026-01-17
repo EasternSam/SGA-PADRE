@@ -1,0 +1,215 @@
+<ul role="list" class="flex flex-1 flex-col gap-y-7">
+    
+    <!-- Principal Group -->
+    <li>
+        <div class="text-xs font-semibold leading-6 text-sga-text-light uppercase tracking-wider mb-2 pl-2">Principal</div>
+        <ul role="list" class="-mx-2 space-y-1">
+            <!-- Dashboard -->
+            <li>
+                <x-responsive-nav-link :href="route('dashboard')"
+                    :active="request()->routeIs(['dashboard', 'admin.dashboard', 'student.dashboard', 'teacher.dashboard'])"
+                    wire:navigate 
+                    class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs(['dashboard', 'admin.dashboard', 'student.dashboard', 'teacher.dashboard']) ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
+                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs(['dashboard', 'admin.dashboard', 'student.dashboard', 'teacher.dashboard']) ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                        </svg>
+                    </div>
+                    {{ __('Dashboard') }}
+                </x-responsive-nav-link>
+            </li>
+        </ul>
+    </li>
+
+    <!-- Admin Group -->
+    @role('Admin')
+    <li>
+        <div class="text-xs font-semibold leading-6 text-sga-text-light uppercase tracking-wider mb-2 pl-2">{{ __('Admin') }}</div>
+        <ul role="list" class="-mx-2 space-y-1">
+            
+            <!-- Estudiantes -->
+            <li>
+                <x-responsive-nav-link :href="route('admin.students.index')"
+                    :active="request()->routeIs(['admin.students.index', 'admin.students.profile'])"
+                    wire:navigate
+                    class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs(['admin.students.index', 'admin.students.profile']) ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
+                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs(['admin.students.index', 'admin.students.profile']) ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372m-10.75 0a9.38 9.38 0 0 0 2.625.372M12 6.875c-1.036 0-1.875.84-1.875 1.875s.84 1.875 1.875 1.875 1.875-.84 1.875-1.875S13.036 6.875 12 6.875Zm0 0v.002v-.002Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15c-1.036 0-1.875.84-1.875 1.875s.84 1.875 1.875 1.875 1.875-.84 1.875-1.875S13.036 15 12 15Zm0 0v.002v-.002Z" />
+                        </svg>
+                    </div>
+                    {{ __('Estudiantes') }}
+                </x-responsive-nav-link>
+            </li>
+
+            <!-- Docentes -->
+            <li>
+                <x-responsive-nav-link :href="route('admin.teachers.index')"
+                    :active="request()->routeIs(['admin.teachers.index', 'admin.teachers.profile'])"
+                    wire:navigate
+                    class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs(['admin.teachers.index', 'admin.teachers.profile']) ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
+                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs(['admin.teachers.index', 'admin.teachers.profile']) ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.075c0 1.313-.964 2.411-2.206 2.597l-5.464.794a2.625 2.625 0 0 1-2.16 0l-5.464-.794A2.57 2.57 0 0 1 2.25 18.225V14.15M3.375 13.5v-3.375A2.25 2.25 0 0 1 5.625 7.875h12.75c1.24 0 2.25 1.01 2.25 2.25V13.5m0-3.375l-5.91-.86a2.625 2.625 0 0 0-2.18 0l-5.91.86" />
+                        </svg>
+                    </div>
+                    {{ __('Docentes') }}
+                </x-responsive-nav-link>
+            </li>
+
+            <!-- Académico -->
+            <li>
+                <x-responsive-nav-link :href="route('admin.courses.index')" 
+                    :active="request()->routeIs('admin.courses.index')" 
+                    wire:navigate
+                    class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs('admin.courses.index') ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
+                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs('admin.courses.index') ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.25c2.291 0 4.545-.16 6.731-.462a60.504 60.504 0 0 0-.49-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.75c2.395 0 4.708.16 6.949.462a59.903 59.903 0 0 1-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.5c2.389 0 4.692-.157 6.928-.461" />
+                        </svg>
+                    </div>
+                    {{ __('Académico') }}
+                </x-responsive-nav-link>
+            </li>
+
+            <!-- Finanzas -->
+            <li>
+                <x-responsive-nav-link :href="route('admin.finance.concepts')" 
+                    :active="request()->routeIs('admin.finance.concepts')" 
+                    wire:navigate
+                    class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs('admin.finance.concepts') ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
+                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs('admin.finance.concepts') ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.75A.75.75 0 0 1 3 4.5h.75m0 0H21m-18 0h18M3 6h18M3 6v10.5A2.25 2.25 0 0 0 5.25 18.75h13.5A2.25 2.25 0 0 0 21 16.5V6M3 6l.902.902A2.25 2.25 0 0 0 5.625 9h12.75c1.03 0 1.94-.5 2.48-1.272L21 6" />
+                        </svg>
+                    </div>
+                    {{ __('Conceptos de Pago') }}
+                </x-responsive-nav-link>
+            </li>
+
+            <!-- Solicitudes -->
+            <li>
+                <x-responsive-nav-link :href="route('admin.requests')" 
+                    :active="request()->routeIs('admin.requests')" 
+                    wire:navigate
+                    class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs('admin.requests') ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
+                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs('admin.requests') ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375c.621 0 1.125.504 1.125 1.125v.375M10.125 2.25v3.375c0 .621.504 1.125 1.125 1.125h3.375M9 15l2.25 2.25L15 15m-6 6h6" />
+                        </svg>
+                    </div>
+                    {{ __('Solicitudes') }}
+                </x-responsive-nav-link>
+            </li>
+
+            <!-- Importar Datos -->
+            <li>
+                <x-responsive-nav-link :href="route('admin.database-import')" 
+                    :active="request()->routeIs('admin.database-import')" 
+                    wire:navigate
+                    class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs('admin.database-import') ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
+                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs('admin.database-import') ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                        </svg>
+                    </div>
+                    {{ __('Importar Datos') }}
+                </x-responsive-nav-link>
+            </li>
+
+            <!-- Reportes -->
+            <li>
+                <x-responsive-nav-link :href="route('reports.index')" 
+                    :active="request()->routeIs('reports.index')" 
+                    wire:navigate
+                    class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs('reports.index') ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
+                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs('reports.index') ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
+                        </svg>
+                    </div>
+                    {{ __('Reportes') }}
+                </x-responsive-nav-link>
+            </li>
+        </ul>
+    </li>
+    @endrole
+
+    <!-- Profesor Group -->
+    @role('Profesor')
+    <li>
+        <div class="text-xs font-semibold leading-6 text-sga-text-light uppercase tracking-wider mb-2 pl-2">{{ __('Portal Docente') }}</div>
+        <ul role="list" class="-mx-2 space-y-1">
+            <!-- Mis Secciones -->
+            <li>
+                <x-responsive-nav-link :href="route('teacher.dashboard')"
+                    :active="request()->routeIs(['teacher.dashboard', 'teacher.attendance', 'teacher.grades'])"
+                    wire:navigate
+                    class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs(['teacher.dashboard', 'teacher.attendance', 'teacher.grades']) ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
+                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs(['teacher.dashboard', 'teacher.attendance', 'teacher.grades']) ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125M3.375 19.5h1.5v-4.875c0-.621.504-1.125 1.125-1.125h1.5c.621 0 1.125.504 1.125 1.125v4.875m0 0a1.125 1.125 0 0 0 1.125-1.125m1.125 1.125h1.5v-4.875c0-.621.504-1.125 1.125-1.125h1.5c.621 0 1.125.504 1.125 1.125v4.875M4.5 19.5v-4.875c0-.621.504-1.125 1.125-1.125h1.5c.621 0 1.125.504 1.125 1.125v4.875M19.5 19.5v-4.875c0-.621-.504-1.125-1.125-1.125h-1.5c-.621 0-1.125.504-1.125 1.125v4.875m-7.5 0v-4.875c0-.621.504-1.125 1.125-1.125h1.5c.621 0 1.125.504 1.125 1.125v4.875" />
+                        </svg>
+                    </div>
+                    {{ __('Mis Secciones') }}
+                </x-responsive-nav-link>
+            </li>
+        </ul>
+    </li>
+    @endrole
+
+    <!-- Estudiante Group -->
+    @role('Estudiante')
+    <li>
+        <div class="text-xs font-semibold leading-6 text-sga-text-light uppercase tracking-wider mb-2 pl-2">{{ __('Portal Estudiante') }}</div>
+        <ul role="list" class="-mx-2 space-y-1">
+            <!-- Mi Expediente -->
+            <li>
+                <x-responsive-nav-link :href="route('student.dashboard')" 
+                    :active="request()->routeIs('student.dashboard')"
+                    wire:navigate
+                    class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs('student.dashboard') ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
+                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs('student.dashboard') ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                        </svg>
+                    </div>
+                    {{ __('Mi Expediente') }}
+                </x-responsive-nav-link>
+            </li>
+
+            <!-- Solicitudes -->
+            <li>
+                <x-responsive-nav-link :href="route('student.requests')" 
+                    :active="request()->routeIs('student.requests')" 
+                    wire:navigate
+                    class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs('student.requests') ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
+                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs('student.requests') ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375c.621 0 1.125.504 1.125 1.125v.375M10.125 2.25v3.375c0 .621.504 1.125 1.125 1.125h3.375M9 15l2.25 2.25L15 15m-6 6h6" />
+                        </svg>
+                    </div>
+                    {{ __('Solicitudes') }}
+                </x-responsive-nav-link>
+            </li>
+
+            <!-- Mis Finanzas -->
+            <li>
+                <x-responsive-nav-link :href="route('student.payments')" 
+                    :active="request()->routeIs('student.payments')" 
+                    wire:navigate
+                    class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium {{ request()->routeIs('student.payments') ? 'bg-sga-blue/10 text-sga-blue' : 'text-sga-text hover:bg-gray-50 hover:text-sga-blue' }} transition-all duration-200">
+                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ request()->routeIs('student.payments') ? 'text-sga-blue' : 'text-gray-400 group-hover:text-sga-blue' }} bg-white border border-gray-100 shadow-sm group-hover:border-sga-blue/20">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+                        </svg>
+                    </div>
+                    {{ __('Mis Finanzas') }}
+                </x-responsive-nav-link>
+            </li>
+        </ul>
+    </li>
+    @endrole
+
+</ul>
