@@ -208,12 +208,12 @@
                                                             // Cálculo del nombre completo para mostrar
                                                             $studentName = 'N/A';
                                                             if ($student) {
-                                                                if (!empty($student->first_name) && !empty($student->last_name)) {
-                                                                    $studentName = trim($student->first_name . ' ' . $student->last_name);
-                                                                } elseif (!empty($student->first_name) || !empty($student->last_name)) {
+                                                                // Priorizamos first_name + last_name si existen
+                                                                if (!empty($student->first_name) || !empty($student->last_name)) {
                                                                     $studentName = trim(($student->first_name ?? '') . ' ' . ($student->last_name ?? ''));
                                                                 } else {
-                                                                    $studentName = $student->name ?? $student->last_name ?? $student->email ?? 'N/A';
+                                                                    // Fallback a otros campos si first/last name estuvieran vacíos
+                                                                    $studentName = $student->name ?? $student->email ?? 'N/A';
                                                                 }
                                                             }
                                                         @endphp
