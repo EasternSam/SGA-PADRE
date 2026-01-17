@@ -25,9 +25,6 @@
 
     <style>
         [x-cloak] { display: none !important; }
-        
-        /* Se eliminó la regla que forzaba padding 0 en sm:px-6 globalmente 
-           para permitir que el navbar tenga espaciado lateral */
     </style>
 </head>
 
@@ -203,7 +200,7 @@
             <main class="flex-1 overflow-y-auto focus:outline-none scroll-smooth">
                 <!-- Content Container -->
                 <div class="min-h-[calc(100vh-4rem-6rem)]"> <!-- Ajuste de altura para empujar el footer -->
-                    <div class="max-w-full mx-auto px-0"> <!-- Eliminado padding y max-width para ocupar todo -->
+                    <div class="max-w-full mx-auto px-0"> <!-- Padding ajustado -->
                         {{ $slot }}
                     </div>
                 </div>
