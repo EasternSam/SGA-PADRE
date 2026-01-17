@@ -208,9 +208,7 @@
                                                             // Cálculo del nombre completo para mostrar
                                                             $studentName = 'N/A';
                                                             if ($student) {
-                                                                if (!empty($student->full_name)) {
-                                                                    $studentName = $student->full_name;
-                                                                } elseif (!empty($student->name) && !empty($student->last_name)) {
+                                                                if (!empty($student->first_name) && !empty($student->last_name)) {
                                                                     $studentName = trim($student->name . ' ' . $student->last_name);
                                                                 } elseif (!empty($student->first_name) || !empty($student->last_name)) {
                                                                     $studentName = trim(($student->first_name ?? '') . ' ' . ($student->last_name ?? ''));
