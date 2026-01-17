@@ -97,7 +97,11 @@
     </div>
 
     <!-- Layout Wrapper -->
-    <div x-data="{ open: false, globalSearch: '' }" 
+    {{-- Iniciliza globalSearch desde la URL si existe --}}
+    <div x-data="{ 
+            open: false, 
+            globalSearch: new URLSearchParams(window.location.search).get('search') || '' 
+         }" 
          @keydown.window.escape="open = false" 
          @keydown.window.meta.k.prevent="$refs.searchInput.focus()"
          @keydown.window.ctrl.k.prevent="$refs.searchInput.focus()"
@@ -145,7 +149,13 @@
                             <input type="text" 
                                    x-model="globalSearch" 
                                    x-ref="searchInput"
-                                   @input.debounce.500ms="Livewire.dispatch('search', { search: globalSearch })"
+                                   @input.debounce.500ms="
+                                        Livewire.dispatch('search', { search: globalSearch });
+                                        // Actualiza la URL para que se sienta 'real' y persistente
+                                        const url = new URL(window.location);
+                                        url.searchParams.set('search', globalSearch);
+                                        window.history.replaceState({}, '', url);
+                                   "
                                    class="block w-full rounded-full border-0 bg-gray-100/50 py-1.5 pl-10 pr-10 text-gray-900 ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sga-primary sm:text-sm sm:leading-6 transition-all shadow-sm focus:bg-white"
                                    placeholder="Buscar... (Ctrl+K)">
                             
@@ -158,7 +168,14 @@
                                     x-transition:leave="transition ease-in duration-100"
                                     x-transition:leave-start="opacity-100 scale-100"
                                     x-transition:leave-end="opacity-0 scale-90"
-                                    @click="globalSearch = ''; Livewire.dispatch('search', { search: '' }); $refs.searchInput.focus()"
+                                    @click="
+                                        globalSearch = ''; 
+                                        Livewire.dispatch('search', { search: '' }); 
+                                        const url = new URL(window.location);
+                                        url.searchParams.delete('search');
+                                        window.history.replaceState({}, '', url);
+                                        $refs.searchInput.focus();
+                                    "
                                     class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 cursor-pointer">
                                 <i class="fas fa-times-circle"></i>
                             </button>
