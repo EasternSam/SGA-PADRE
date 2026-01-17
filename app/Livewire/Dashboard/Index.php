@@ -52,7 +52,7 @@ class Index extends Component
             $this->totalEnrollments = Enrollment::count();
             
             if (class_exists(\Spatie\Permission\Models\Role::class)) {
-                 $this->totalTeachers = User::role('teacher')->count(); 
+                 $this->totalTeachers = User::role('Profesor')->count(); 
                  if ($this->totalTeachers === 0) {
                      $this->totalTeachers = User::role('Profesor')->count();
                  }
