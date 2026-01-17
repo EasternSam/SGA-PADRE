@@ -12,106 +12,188 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
 
-    {{-- Font Awesome (Íconos adicionales) --}}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" xintegrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    {{-- Font Awesome --}}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" 
+          xintegrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" 
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <!-- Livewire Styles -->
     @livewireStyles
+
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
 
-<body class="h-full font-sans antialiased">
-    <div x-data="{ open: false }" @keydown.window.escape="open = false" class="h-full">
+<body class="h-full font-sans antialiased text-slate-600">
+
+    <!-- 1. Barra de Carga Global (Livewire) -->
+    <div wire:loading.delay class="fixed top-0 left-0 w-full h-1 z-[60] bg-sga-primary/20">
+        <div class="h-full bg-sga-primary animate-progress-indeterminate"></div>
+    </div>
+
+    <!-- 2. Sistema de Notificaciones Toast (Flash Messages) -->
+    <div aria-live="assertive" class="pointer-events-none fixed inset-0 z-50 flex items-end px-4 py-6 sm:items-start sm:p-6">
+        <div class="flex w-full flex-col items-center space-y-4 sm:items-end">
+            @if (session()->has('success'))
+                <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
+                     x-transition:enter="transform ease-out duration-300 transition"
+                     x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+                     x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
+                     x-transition:leave="transition ease-in duration-100"
+                     x-transition:leave-start="opacity-100"
+                     x-transition:leave-end="opacity-0"
+                     class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+                    <div class="p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-check-circle text-green-400 text-xl"></i>
+                            </div>
+                            <div class="ml-3 w-0 flex-1 pt-0.5">
+                                <p class="text-sm font-medium text-gray-900">¡Éxito!</p>
+                                <p class="mt-1 text-sm text-gray-500">{{ session('success') }}</p>
+                            </div>
+                            <div class="ml-4 flex flex-shrink-0">
+                                <button @click="show = false" class="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none">
+                                    <span class="sr-only">Cerrar</span>
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            @if (session()->has('error'))
+                <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
+                     x-transition:enter="transform ease-out duration-300 transition"
+                     x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+                     x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
+                     class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-red-500 ring-opacity-50 border-l-4 border-red-500">
+                    <div class="p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-exclamation-circle text-red-500 text-xl"></i>
+                            </div>
+                            <div class="ml-3 w-0 flex-1 pt-0.5">
+                                <p class="text-sm font-medium text-gray-900">Atención</p>
+                                <p class="mt-1 text-sm text-gray-500">{{ session('error') }}</p>
+                            </div>
+                            <div class="ml-4 flex flex-shrink-0">
+                                <button @click="show = false" class="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-500">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+        </div>
+    </div>
+
+    <!-- Layout Wrapper -->
+    <div x-data="{ open: false, globalSearch: '' }" @keydown.window.escape="open = false" class="h-full flex overflow-hidden bg-sga-background">
 
         <!-- Navigation Sidebar -->
         @include('layouts.navigation')
 
         <!-- Main Content Area -->
-        <div class="flex h-full flex-col lg:pl-64 transition-all duration-300">
+        <div class="flex-1 flex flex-col min-w-0 lg:pl-64 transition-all duration-300 ease-in-out">
 
-            <!-- Top bar -->
-            <header class="sticky top-0 z-10 flex h-16 flex-shrink-0 border-b border-sga-gray bg-white shadow-sm">
-                <div class="flex flex-1 items-center justify-between px-4 sm:px-6 lg:px-8">
+            <!-- 3. Top bar "Glassmorphism" -->
+            <header class="sticky top-0 z-20 flex flex-col bg-white/90 backdrop-blur-md border-b border-gray-200/60 shadow-sm supports-[backdrop-filter]:bg-white/60">
+                <div class="flex flex-1 items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
                     
-                    <!-- Hamburger button (Mobile) -->
-                    <button @click.stop="open = !open" type="button"
-                        class="-m-2.5 p-2.5 text-sga-text-light lg:hidden hover:text-sga-primary transition-colors">
-                        <span class="sr-only">Abrir menú</span>
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                            stroke="currentColor" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                        </svg>
-                    </button>
+                    <!-- Left: Hamburger & Page Title / Breadcrumb -->
+                    <div class="flex items-center gap-4">
+                        <button @click.stop="open = !open" type="button"
+                            class="-m-2.5 p-2.5 text-gray-500 lg:hidden hover:text-sga-primary transition-colors rounded-md hover:bg-gray-100">
+                            <span class="sr-only">Abrir menú</span>
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                            </svg>
+                        </button>
 
-                    <!-- Separador móvil -->
-                    <div class="h-6 w-px bg-sga-gray lg:hidden ml-4" aria-hidden="true"></div>
-
-                    <div class="flex flex-1 items-center justify-between gap-x-4 self-stretch lg:gap-x-6">
-                        <!-- Header Title (Slot) -->
-                        <div class="flex-1 overflow-hidden">
+                        <div class="flex flex-col">
                             @if (isset($header))
-                                <div class="flex h-full items-center text-base font-semibold leading-6 text-sga-text sm:text-xl truncate">
+                                <h1 class="text-lg font-bold leading-6 text-gray-900 sm:text-xl truncate tracking-tight">
                                     {{ $header }}
-                                </div>
+                                </h1>
                             @endif
+                            <span class="hidden sm:block text-xs text-gray-400 font-medium">SGA Portal &bull; {{ date('d M, Y') }}</span>
                         </div>
+                    </div>
 
-                        <!-- User Menu (Desktop) -->
-                        <div class="hidden lg:block">
-                            <div class="flex items-center">
-                                <x-dropdown align="right" width="48">
-                                    <x-slot name="trigger">
-                                        <button class="inline-flex items-center gap-3 px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-full text-sga-text bg-white hover:bg-gray-50 focus:outline-none transition ease-in-out duration-150">
-                                            <div class="text-right hidden md:block">
-                                                <div class="text-sm font-semibold text-gray-700">{{ Auth::user()->name }}</div>
-                                                <div class="text-xs text-gray-500">{{ Auth::user()->email }}</div>
-                                            </div>
-                                            <img class="h-9 w-9 rounded-full object-cover border border-gray-200" 
-                                                 src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&color=7F9CF5&background=EBF4FF" 
-                                                 alt="{{ Auth::user()->name }}">
-                                            <svg class="h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                            </svg>
-                                        </button>
-                                    </x-slot>
-
-                                    <x-slot name="content">
-                                        <div class="px-4 py-2 border-b border-gray-100 text-xs text-gray-500">
-                                            {{ __('Administrar Cuenta') }}
-                                        </div>
-
-                                        <x-dropdown-link :href="route('profile.edit')" wire:navigate> 
-                                            {{ __('Mi Perfil') }}
-                                        </x-dropdown-link>
-
-                                        <!-- Authentication -->
-                                        <form method="POST" action="{{ route('logout') }}">
-                                            @csrf
-                                            <x-dropdown-link :href="route('logout')"
-                                                onclick="event.preventDefault(); this.closest('form').submit();"
-                                                class="text-red-600 hover:bg-red-50 hover:text-red-700">
-                                                {{ __('Cerrar Sesión') }}
-                                            </x-dropdown-link>
-                                        </form>
-                                    </x-slot>
-                                </x-dropdown>
+                    <!-- Center: 4. Search Bar (Hidden on mobile, visible on desktop) -->
+                    <div class="hidden md:flex flex-1 max-w-md px-8">
+                        <div class="relative w-full text-gray-500 focus-within:text-sga-primary">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <i class="fas fa-search text-gray-400"></i>
                             </div>
+                            <input type="text" x-model="globalSearch" 
+                                   class="block w-full rounded-full border-0 bg-gray-100/50 py-1.5 pl-10 pr-3 text-gray-900 ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sga-primary sm:text-sm sm:leading-6 transition-all"
+                                   placeholder="Buscar estudiantes, cursos, reportes...">
                         </div>
+                    </div>
 
-                        <!-- Logout Button (Mobile) -->
-                        <div class="flex items-center lg:hidden">
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button type="submit" onclick="event.preventDefault(); this.closest('form').submit();"
-                                    class="-m-2.5 p-2.5 text-gray-400 hover:text-red-500 transition-colors"
-                                    title="Cerrar Sesión">
-                                    <span class="sr-only">Cerrar Sesión</span>
-                                    <i class="fas fa-sign-out-alt h-6 w-6 text-xl"></i>
-                                </button>
-                            </form>
+                    <!-- Right: Actions -->
+                    <div class="flex items-center gap-x-4 lg:gap-x-6">
+                        
+                        <!-- 5. Notifications Bell -->
+                        <button type="button" class="relative -m-2.5 p-2.5 text-gray-400 hover:text-gray-500 transition-colors">
+                            <span class="sr-only">Ver notificaciones</span>
+                            <i class="far fa-bell text-xl"></i>
+                            <!-- Badge -->
+                            <span class="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white"></span>
+                        </button>
+
+                        <!-- Separator -->
+                        <div class="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200" aria-hidden="true"></div>
+
+                        <!-- User Menu -->
+                        <div class="relative">
+                            <x-dropdown align="right" width="48">
+                                <x-slot name="trigger">
+                                    <button class="flex items-center gap-3 p-1.5 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-sga-primary/20">
+                                        <div class="hidden lg:block text-right">
+                                            <p class="text-sm font-semibold text-gray-700 leading-none">{{ Auth::user()->name }}</p>
+                                            <p class="text-xs text-gray-400 mt-0.5">{{ Auth::user()->email }}</p>
+                                        </div>
+                                        <div class="relative">
+                                            <img class="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-gray-100" 
+                                                 src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&color=7F9CF5&background=EBF4FF&bold=true" 
+                                                 alt="{{ Auth::user()->name }}">
+                                            <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-400 ring-2 ring-white"></span>
+                                        </div>
+                                        <i class="fas fa-chevron-down text-gray-400 text-xs hidden lg:block ml-1"></i>
+                                    </button>
+                                </x-slot>
+
+                                <x-slot name="content">
+                                    <div class="px-4 py-3 border-b border-gray-100">
+                                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Mi Cuenta</p>
+                                    </div>
+
+                                    <x-dropdown-link :href="route('profile.edit')" wire:navigate class="flex items-center gap-2"> 
+                                        <i class="fas fa-user-circle text-gray-400"></i> {{ __('Mi Perfil') }}
+                                    </x-dropdown-link>
+
+                                    <div class="border-t border-gray-100 my-1"></div>
+
+                                    <!-- Authentication -->
+                                    <form method="POST" action="{{ route('logout') }}">
+                                        @csrf
+                                        <x-dropdown-link :href="route('logout')"
+                                            onclick="event.preventDefault(); this.closest('form').submit();"
+                                            class="text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center gap-2">
+                                            <i class="fas fa-sign-out-alt"></i> {{ __('Cerrar Sesión') }}
+                                        </x-dropdown-link>
+                                    </form>
+                                </x-slot>
+                            </x-dropdown>
                         </div>
 
                     </div>
@@ -119,10 +201,34 @@
             </header>
 
             <!-- Page Content -->
-            <main class="flex-1 overflow-y-auto bg-sga-background">
-                <div class="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
-                    {{ $slot }}
+            <main class="flex-1 overflow-y-auto focus:outline-none scroll-smooth">
+                <!-- Content Container -->
+                <div class="py-6 min-h-[calc(100vh-4rem-6rem)]"> <!-- Ajuste de altura para empujar el footer -->
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+                        {{ $slot }}
+                    </div>
                 </div>
+
+                <!-- 6. Integrated Footer -->
+                <footer class="bg-white border-t border-gray-200 mt-auto">
+                    <div class="mx-auto max-w-7xl px-6 py-4 md:flex md:items-center md:justify-between lg:px-8">
+                        <div class="flex justify-center space-x-6 md:order-2">
+                            <a href="#" class="text-gray-400 hover:text-gray-500">
+                                <span class="sr-only">Soporte</span>
+                                <i class="fas fa-life-ring"></i>
+                            </a>
+                            <a href="#" class="text-gray-400 hover:text-gray-500">
+                                <span class="sr-only">Manual</span>
+                                <i class="fas fa-book"></i>
+                            </a>
+                        </div>
+                        <div class="mt-4 md:order-1 md:mt-0">
+                            <p class="text-center text-xs leading-5 text-gray-500">
+                                &copy; {{ date('Y') }} {{ config('app.name', 'Laravel') }}. Todos los derechos reservados. v1.0.0
+                            </p>
+                        </div>
+                    </div>
+                </footer>
             </main>
         </div>
     </div>
