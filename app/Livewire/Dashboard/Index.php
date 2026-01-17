@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Spatie\Permission\Models\Role; // Importamos el modelo Role
 
 #[Layout('layouts.dashboard')]
 class Index extends Component
@@ -51,11 +52,22 @@ class Index extends Component
             $this->totalCourses = Course::count();
             $this->totalEnrollments = Enrollment::count();
             
+            // Verificación segura de roles
             if (class_exists(\Spatie\Permission\Models\Role::class)) {
-                 $this->totalTeachers = User::role('Profesor')->count(); 
-                 if ($this->totalTeachers === 0) {
-                     $this->totalTeachers = User::role('Profesor')->count();
-                 }
+                $this->totalTeachers = 0;
+                
+                // Verificar existencia antes de contar para evitar excepción
+                // El guard 'web' es el default, así que Spatie buscará ahí
+                if (Role::where('name', 'teacher')->exists()) {
+                    $this->totalTeachers = User::role('teacher')->count();
+                } 
+                // Si 'teacher' no existe, probar con 'Profesor'
+                elseif (Role::where('name', 'Profesor')->exists()) {
+                    $this->totalTeachers = User::role('Profesor')->count();
+                }
+                else {
+                    $this->addTrace('ADVERTENCIA: No se encontraron roles "teacher" ni "Profesor". Contador en 0.');
+                }
             } else {
                  $this->totalTeachers = 0; 
             }
