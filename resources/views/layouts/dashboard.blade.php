@@ -26,12 +26,8 @@
     <style>
         [x-cloak] { display: none !important; }
         
-        @media (min-width: 640px) {
-            .sm\:px-6 {
-                padding-left: 0;
-                padding-right: 0;
-            }
-        }
+        /* Se eliminó la regla que forzaba padding 0 en sm:px-6 globalmente 
+           para permitir que el navbar tenga espaciado lateral */
     </style>
 </head>
 
