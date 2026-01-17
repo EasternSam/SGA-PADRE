@@ -123,4 +123,21 @@ class WordpressApiService
         Log::warning("WP_API: No se pudieron obtener horarios para WP Course ID: {$wpCourseId}");
         return [];
     }
+
+    /**
+     * Obtiene estadísticas de inscripciones desde WordPress (para el gráfico).
+     * Endpoint: /sga/v1/reports/enrollment-stats
+     * * @return array Estructura: ['labels' => [], 'data' => []]
+     */
+    public function getEnrollmentStats(): array
+    {
+        $response = $this->makeGetRequest('sga/v1/reports/enrollment-stats');
+
+        if (isset($response['success']) && $response['success'] === true && isset($response['data'])) {
+            return $response['data'];
+        }
+
+        Log::warning("WP_API: No se pudieron obtener estadísticas de inscripciones.");
+        return ['labels' => [], 'data' => []];
+    }
 }
