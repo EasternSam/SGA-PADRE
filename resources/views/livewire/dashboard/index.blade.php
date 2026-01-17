@@ -209,7 +209,7 @@
                                                             $studentName = 'N/A';
                                                             if ($student) {
                                                                 if (!empty($student->first_name) && !empty($student->last_name)) {
-                                                                    $studentName = trim($student->name . ' ' . $student->last_name);
+                                                                    $studentName = trim($student->first_name . ' ' . $student->last_name);
                                                                 } elseif (!empty($student->first_name) || !empty($student->last_name)) {
                                                                     $studentName = trim(($student->first_name ?? '') . ' ' . ($student->last_name ?? ''));
                                                                 } else {
