@@ -392,11 +392,10 @@
             if (!chartElement) return;
 
             // Datos inyectados desde el backend con seguridad de tipo array
-            // Usamos Js::from de Laravel si es posible, o @json con fallback
-            // Corregido: Eliminar "?? []" dentro de @json para evitar Syntax Error en Blade/PHP parser
-            const chartDataWeb = @json($chartDataWeb);
-            const chartDataSystem = @json($chartDataSystem);
-            const chartLabels = @json($chartLabels);
+            // Usamos json_encode directo para evitar errores de sintaxis en Blade con @json
+            const chartDataWeb = {!! json_encode($chartDataWeb ?? []) !!};
+            const chartDataSystem = {!! json_encode($chartDataSystem ?? []) !!};
+            const chartLabels = {!! json_encode($chartLabels ?? []) !!};
 
             // Limpiar si ya existe algo para evitar duplicados en SPA
             chartElement.innerHTML = '';
