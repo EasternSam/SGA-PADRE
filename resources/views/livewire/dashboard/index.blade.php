@@ -394,8 +394,7 @@
             
             if (!chartElement) return;
 
-            // Datos inyectados desde el backend con seguridad de tipo array
-            // Usamos @json para una inyección limpia y segura en Blade
+
             const chartDataWeb = @json($chartDataWeb ?? []);
             const chartDataSystem = @json($chartDataSystem ?? []);
             const chartLabels = @json($chartLabels ?? []);
