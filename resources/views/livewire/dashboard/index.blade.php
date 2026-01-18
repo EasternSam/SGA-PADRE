@@ -200,30 +200,25 @@
                                                 $student = $enrollment->student ?? null;
                                                 $user = $student->user ?? null;
                                                 $studentName = 'N/A';
-                                                $source = 'N/A';
                                                 
                                                 if ($student) {
                                                     // CASO 1: El estudiante tiene 'first_name' explícito.
                                                     // Usamos la concatenación estándar.
                                                     if (!empty($student->first_name)) {
                                                         $studentName = trim($student->first_name . ' ' . ($student->last_name ?? ''));
-                                                        $source = 'Student DB';
                                                     }
                                                     // CASO 2: El estudiante NO tiene 'first_name', pero el Usuario asociado sí tiene nombre.
                                                     // Asumimos que User->name es el NOMBRE COMPLETO.
                                                     elseif ($user && !empty($user->name)) {
                                                         $studentName = $user->name;
-                                                        $source = 'User Rel';
                                                     }
                                                     // CASO 3: Solo tenemos apellido o datos parciales
                                                     elseif (!empty($student->last_name)) {
                                                         $studentName = $student->last_name;
-                                                        $source = 'Last Name Only';
                                                     }
                                                     // CASO 4: Fallback a email
                                                     else {
                                                         $studentName = $student->email ?? $user->email ?? 'Sin Nombre';
-                                                        $source = 'Email';
                                                     }
                                                 }
 
@@ -244,13 +239,6 @@
                                                 <div class="ml-4">
                                                     <div class="font-medium text-gray-900">
                                                         {{ $studentName }}
-                                                        
-                                                        {{-- DEBUG SOLICITADO --}}
-                                                        @if($student)
-                                                        <div class="text-[10px] {{ $source == 'User Rel' || $source == 'Student DB' ? 'text-green-600 bg-green-50 border-green-100' : 'text-red-500 bg-red-50 border-red-100' }} font-mono mt-1 border p-1 rounded max-w-xs whitespace-normal">
-                                                            DEBUG: Fuente usada: <strong>{{ $source }}</strong>
-                                                        </div>
-                                                        @endif
                                                     </div>
                                                     <div class="text-gray-500 text-xs">{{ $enrollment->student->email ?? '' }}</div>
                                                 </div>
