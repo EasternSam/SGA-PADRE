@@ -197,7 +197,7 @@
                                         <td class="px-6 py-4">
                                             <div class="flex items-center">
                                                 <div class="h-10 w-10 flex-shrink-0 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold border border-gray-200">
-                                                    {{ substr($enrollment->student->first_name ?? 'U', 0, 1) }}{{ substr($enrollment->student->last_name ?? '', 0, 1) }}
+                                                    {{ substr($enrollment->student->first_name ?? $enrollment->student->name ?? 'U', 0, 1) }}{{ substr($enrollment->student->last_name ?? '', 0, 1) }}
                                                 </div>
                                                 <div class="ml-4">
                                                     <div class="font-medium text-gray-900">
@@ -207,17 +207,30 @@
                                                             $studentName = 'N/A';
                                                             
                                                             if ($student) {
-                                                                $first = $student->first_name ?? '';
+                                                                // Intentamos todas las combinaciones posibles
+                                                                $first = $student->first_name ?? $student->name ?? '';
                                                                 $last = $student->last_name ?? '';
+                                                                
+                                                                // Concatenación forzada con espacio si ambos existen
                                                                 $studentName = trim($first . ' ' . $last);
                                                                 
+                                                                // Si sigue vacío, probamos email
                                                                 if (empty($studentName)) {
-                                                                     // Fallback a otros campos si first/last name estuvieran vacíos
-                                                                     $studentName = $student->name ?? $student->email ?? 'N/A';
+                                                                     $studentName = $student->email ?? 'Sin Nombre';
                                                                 }
                                                             }
                                                         @endphp
                                                         {{ $studentName }}
+                                                        
+                                                        {{-- DEBUG SOLICITADO POR EL USUARIO --}}
+                                                        @if($student)
+                                                        <div class="text-[10px] text-red-500 font-mono mt-1 border border-red-100 bg-red-50 p-1 rounded">
+                                                            DEBUG: 
+                                                            first_name: "{{ $student->first_name ?? 'NULL' }}" | 
+                                                            last_name: "{{ $student->last_name ?? 'NULL' }}" |
+                                                            name: "{{ $student->name ?? 'NULL' }}"
+                                                        </div>
+                                                        @endif
                                                     </div>
                                                     <div class="text-gray-500 text-xs">{{ $enrollment->student->email ?? '' }}</div>
                                                 </div>
