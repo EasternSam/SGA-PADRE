@@ -19,6 +19,8 @@ class PaymentConcepts extends Component
     public $confirmingDeletion = false;
     public $conceptToDeleteId = null;
 
+    public $confirmingMassDeletion = false; // Nueva propiedad para borrado masivo
+
     protected $rules = [
         'name' => 'required|string|max:255',
         'description' => 'nullable|string',
@@ -111,5 +113,34 @@ class PaymentConcepts extends Component
             session()->flash('error', 'No se pudo eliminar el concepto, es posible que esté en uso.');
         }
         $this->confirmingDeletion = false;
+    }
+
+    public function confirmMassDeletion()
+    {
+        $this->confirmingMassDeletion = true;
+    }
+
+    public function massDelete()
+    {
+        try {
+            // Eliminar todos los conceptos (precaución: esto elimina todo)
+            // Se asume que no hay restricciones de clave foránea fuertes o que se desea forzar.
+            // Si hay restricciones, fallará en los que estén en uso y se capturará la excepción si es masiva en una transacción,
+            // o se puede usar truncate() si se quiere limpiar y reiniciar IDs (pero truncate suele fallar con FKs).
+            // Usaremos delete() en loop o delete() de query builder. Query builder es más rápido pero no dispara eventos de modelo.
+            
+            // Opción segura:
+            $count = PaymentConcept::count();
+            if ($count > 0) {
+                 PaymentConcept::query()->delete();
+                 session()->flash('message', "Se han eliminado todos los conceptos ($count).");
+            } else {
+                 session()->flash('message', 'No hay conceptos para eliminar.');
+            }
+
+        } catch (\Exception $e) {
+            session()->flash('error', 'Error al intentar eliminar masivamente: ' . $e->getMessage());
+        }
+        $this->confirmingMassDeletion = false;
     }
 }

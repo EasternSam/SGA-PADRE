@@ -3,11 +3,19 @@
     <header class="bg-white shadow-sm mb-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
             <h1 class="text-xl font-semibold text-gray-900">Conceptos de Pago</h1>
-            <button 
-               wire:click="create"
-               class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
-                <i class="fas fa-plus mr-2"></i>Añadir Concepto
-            </button>
+            <div class="flex space-x-2">
+                <button 
+                    wire:click="confirmMassDeletion"
+                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150"
+                    title="Eliminar todos los conceptos">
+                    <i class="fas fa-trash-alt mr-2"></i>Borrado Masivo
+                </button>
+                <button 
+                   wire:click="create"
+                   class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
+                    <i class="fas fa-plus mr-2"></i>Añadir Concepto
+                </button>
+            </div>
         </div>
     </header>
 
@@ -109,7 +117,7 @@
         </div>
     </x-modal>
 
-    <!-- Modal de Confirmación de Eliminación -->
+    {{-- Modal de Confirmación de Eliminación Individual --}}
     <x-modal :show="$confirmingDeletion">
         <div class="p-6">
             <h2 class="text-lg font-medium text-gray-900 mb-4">
@@ -124,6 +132,26 @@
                 </button>
                 <button type="button" wire:click="delete" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
                     Sí, Eliminar
+                </button>
+            </div>
+        </div>
+    </x-modal>
+
+    {{-- Modal de Confirmación de Eliminación Masiva --}}
+    <x-modal :show="$confirmingMassDeletion">
+        <div class="p-6">
+            <h2 class="text-lg font-medium text-red-600 mb-4">
+                ⚠️ ¿Borrado Masivo de Conceptos?
+            </h2>
+            <p class="text-gray-700 mb-6">
+                Estás a punto de eliminar <strong>TODOS</strong> los conceptos de pago. Esta acción es irreversible y podría afectar el historial de pagos si existen referencias. ¿Estás absolutamente seguro?
+            </p>
+            <div class="flex justify-end">
+                <button type="button" wire:click="$set('confirmingMassDeletion', false)" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2 transition ease-in-out duration-150">
+                    Cancelar
+                </button>
+                <button type="button" wire:click="massDelete" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
+                    ¡Sí, Eliminar TODO!
                 </button>
             </div>
         </div>
