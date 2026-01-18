@@ -10,6 +10,7 @@ use App\Models\User;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache; // Importante para la velocidad
 use Illuminate\Validation\Rule; 
 use Carbon\Carbon; 
 
@@ -27,7 +28,7 @@ class Index extends Component
 
     public $search = '';
     
-    // IDs de selección (Solo guardamos el ID, nada más, para no inflar el estado)
+    // IDs de selección
     public $selectedCourse;
     public $selectedModule;
     
@@ -47,11 +48,9 @@ class Index extends Component
     public $modality = 'Presencial'; 
     public $scheduleModalTitle = '';
     
-    // NOTA: Se eliminó 'public $teachers = []' para evitar enviar la lista completa de usuarios en cada request.
-
     // --- Propiedades para Enlace WP ---
     public $currentLinkingCourse;
-    public $wpCourses = [];
+    public $wpCourses = []; // ESTA PROPIEDAD AHORA ACTÚA COMO CACHÉ EN VIVO
     public $selectedWpCourseId = '';
     public $linkFeedbackMessage = '';
     public $linkErrorMessage = '';
@@ -74,12 +73,12 @@ class Index extends Component
 
     public function mount()
     {
-        // Ya no cargamos datos pesados aquí. El componente inicia ligero.
+        // Inicio ligero.
     }
 
     public function render()
     {
-        // 1. CARGA DE CURSOS (Optimizado)
+        // 1. CARGA DE CURSOS
         $coursesQuery = Course::query();
 
         if ($this->search) {
@@ -91,11 +90,11 @@ class Index extends Component
 
         $courses = $coursesQuery->select('id', 'name', 'code', 'is_sequential', 'registration_fee', 'monthly_fee')
                                 ->with('mapping')
-                                ->paginate(10); // Paginación ligera
+                                ->paginate(10); 
 
-        // 2. CARGA DE MÓDULOS (Optimizado & Paginado)
+        // 2. CARGA DE MÓDULOS
         $selectedCourseObject = null;
-        $modules = collect(); // Colección vacía por defecto o paginator
+        $modules = collect(); 
 
         if ($this->selectedCourse) {
             $selectedCourseObject = Course::select('id', 'name', 'code')
@@ -103,8 +102,6 @@ class Index extends Component
                 ->find($this->selectedCourse);
             
             if ($selectedCourseObject) {
-                // Ahora paginamos los módulos también (por si un curso tiene 500 módulos)
-                // Usamos un nombre de página personalizado 'modules-page' para no chocar con cursos
                 $modules = Module::where('course_id', $this->selectedCourse)
                     ->select('id', 'course_id', 'name')
                     ->withCount('schedules')
@@ -114,13 +111,11 @@ class Index extends Component
             }
         }
 
-        // 3. CARGA DE SECCIONES (Optimizado & Paginado)
+        // 3. CARGA DE SECCIONES
         $schedules = collect(); 
         $selectedModuleName = null;
 
         if ($this->selectedModule) {
-            // Verificamos si el módulo existe (consulta directa ligera)
-            // No usamos la colección $modules anterior porque ahora es un Paginator y es más complejo buscar.
             $currentModule = Module::select('id', 'name')->find($this->selectedModule);
             
             if ($currentModule) {
@@ -136,27 +131,28 @@ class Index extends Component
             }
         }
 
-        // 4. CARGA DE PROFESORES (Efímera)
-        // Se cargan en cada render para la vista, pero NO se guardan en public $properties.
-        // Esto evita que viajen por la red.
-        $teachersList = User::role('Profesor')
-            ->select('id', 'name')
-            ->orderBy('name')
-            ->get();
+        // 4. CARGA DE PROFESORES (OPTIMIZADA CON CACHÉ)
+        // Guardamos la lista en caché por 60 minutos para que el botón "Editar" no tenga que consultar la DB siempre.
+        $teachersList = Cache::remember('teachers_list_select', 3600, function () {
+            return User::role('Profesor')
+                ->select('id', 'name')
+                ->orderBy('name')
+                ->get();
+        });
             
-        // Si no hay roles configurados, fallback
         if($teachersList->isEmpty()) {
+             // Fallback rápido sin caché si no hay roles
              $teachersList = User::select('id', 'name')->orderBy('name')->limit(100)->get();
         }
 
         return view('livewire.courses.index', [
             'courses' => $courses,
-            'modules' => $modules, // Ahora puede ser un Paginator
+            'modules' => $modules,
             'schedules' => $schedules,
             'selectedCourseName' => $selectedCourseObject?->name,
             'selectedModuleName' => $selectedModuleName,
             'selectedCourseObject' => $selectedCourseObject,
-            'teachers' => $teachersList // Pasamos la lista directamente a la vista
+            'teachers' => $teachersList 
         ]);
     }
 
@@ -166,8 +162,6 @@ class Index extends Component
     {
         $this->selectedCourse = $courseId;
         $this->selectedModule = null; 
-        
-        // Resetear paginaciones internas
         $this->resetPage('modules-page');
         $this->resetPage('schedules-page');
     }
@@ -450,12 +444,15 @@ class Index extends Component
 
     public function closeLinkModal()
     {
-        $this->reset(['currentLinkingCourse', 'wpCourses', 'selectedWpCourseId', 'linkFeedbackMessage', 'linkErrorMessage']);
+        // OPTIMIZACIÓN IMPORTANTE: NO borramos 'wpCourses' del reset.
+        // Esto mantiene la lista en memoria si ya se cargó una vez.
+        $this->reset(['currentLinkingCourse', 'selectedWpCourseId', 'linkFeedbackMessage', 'linkErrorMessage']);
     }
 
     public function openLinkModal($courseId, WordpressApiService $wpService)
     {
-        $this->closeLinkModal(); 
+        // Limpiamos mensajes pero mantenemos la lista de cursos si ya existe
+        $this->reset(['currentLinkingCourse', 'selectedWpCourseId', 'linkFeedbackMessage', 'linkErrorMessage']); 
         
         try {
             $this->currentLinkingCourse = Course::with('mapping')->findOrFail($courseId);
@@ -466,17 +463,20 @@ class Index extends Component
 
         $this->selectedWpCourseId = $this->currentLinkingCourse->mapping->wp_course_id ?? '';
 
-        try {
-            $this->wpCourses = $wpService->getSgaCourses();
-            
-            if (empty($this->wpCourses)) {
-                $this->linkErrorMessage = 'No se pudieron cargar los cursos de WordPress. Revisa la configuración de la API o la conexión.';
-                Log::warning('No se recibieron cursos del endpoint de WP.', ['curso_id' => $courseId]);
-            }
+        // OPTIMIZACIÓN: Si ya tenemos los cursos en memoria, NO llamamos a la API.
+        // Esto hace que el 2do, 3er... clic sea instantáneo.
+        if (empty($this->wpCourses)) {
+            try {
+                $this->wpCourses = $wpService->getSgaCourses();
+                
+                if (empty($this->wpCourses)) {
+                    $this->linkErrorMessage = 'No se pudieron cargar los cursos de WordPress.';
+                }
 
-        } catch (\Exception $e) {
-            Log::error('Error al llamar a WordpressApiService', ['exception' => $e->getMessage()]);
-            $this->linkErrorMessage = 'Error fatal al conectar con WordPress. Revisa los logs.';
+            } catch (\Exception $e) {
+                Log::error('Error al llamar a WordpressApiService', ['exception' => $e->getMessage()]);
+                $this->linkErrorMessage = 'Error al conectar con WordPress.';
+            }
         }
 
         $this->dispatch('open-modal', 'link-wp-modal');
@@ -494,7 +494,7 @@ class Index extends Component
                 ScheduleMapping::whereIn('course_schedule_id', $scheduleIds)->delete();
                 
                 $this->currentLinkingCourse->mapping->delete();
-                session()->flash('message', 'Enlace de curso y secciones asociadas eliminado.');
+                session()->flash('message', 'Enlace de curso eliminado.');
                 $this->currentLinkingCourse->refresh(); 
             }
             $this->dispatch('close-modal', 'link-wp-modal');
@@ -512,9 +512,7 @@ class Index extends Component
 
         try {
             CourseMapping::updateOrCreate(
-                [
-                    'course_id' => $this->currentLinkingCourse->id, 
-                ],
+                [ 'course_id' => $this->currentLinkingCourse->id ],
                 [
                     'wp_course_id' => $this->selectedWpCourseId, 
                     'wp_course_name' => $selectedWpCourseName,
@@ -528,7 +526,7 @@ class Index extends Component
 
         } catch (\Exception $e) {
             Log::error('Error al guardar el CourseMapping', ['exception' => $e->getMessage()]);
-            $this->linkErrorMessage = 'Error al guardar el enlace en la base de datos.';
+            $this->linkErrorMessage = 'Error al guardar el enlace.';
         }
     }
 
@@ -551,22 +549,24 @@ class Index extends Component
         }
 
         if (!$this->currentLinkingSection->module?->course?->mapping) {
-            session()->flash('error', 'El curso principal de esta sección no está mapeado. Por favor, enlace el curso primero.');
+            session()->flash('error', 'Enlace el curso principal primero.');
             return;
         }
 
         $wpCourseId = $this->currentLinkingSection->module->course->mapping->wp_course_id;
 
+        // Aquí siempre consultamos porque los horarios dependen del curso específico, 
+        // pero es una consulta ligera al metabox de WP.
         try {
             $this->wpSchedules = $wpService->getSchedulesForWpCourse($wpCourseId);
             
             if (empty($this->wpSchedules)) {
-                $this->sectionLinkErrorMessage = 'No se encontraron horarios definidos en WordPress para este curso. (Asegúrate de haberlos guardado en el metabox del curso en WP).';
+                $this->sectionLinkErrorMessage = 'No se encontraron horarios definidos en WP.';
             }
 
         } catch (\Exception $e) {
-            Log::error('Error al llamar a getSchedulesForWpCourse', ['exception' => $e->getMessage()]);
-            $this->sectionLinkErrorMessage = 'Error fatal al conectar con WordPress para obtener horarios. Revisa los logs.';
+            Log::error('Error WP API Schedules', ['exception' => $e->getMessage()]);
+            $this->sectionLinkErrorMessage = 'Error al obtener horarios de WP.';
         }
 
         $existingMapping = ScheduleMapping::where('course_schedule_id', $scheduleId)->first();
@@ -580,13 +580,13 @@ class Index extends Component
         $this->reset(['sectionLinkErrorMessage']);
 
         if (!$this->currentLinkingSection || !$this->currentLinkingSection->module?->course?->mapping) {
-            $this->sectionLinkErrorMessage = 'Error: No se pudo encontrar la sección o el mapeo del curso padre.';
+            $this->sectionLinkErrorMessage = 'Error de validación.';
             return;
         }
 
         if (empty($this->selectedWpScheduleId)) {
             ScheduleMapping::where('course_schedule_id', $this->currentLinkingSection->id)->delete();
-            session()->flash('message', 'Enlace de sección eliminado.');
+            session()->flash('message', 'Enlace eliminado.');
             $this->dispatch('close-modal', 'link-section-modal');
             $this->closeSectionLinkModal();
             return;
@@ -596,9 +596,7 @@ class Index extends Component
             $wpCourseId = $this->currentLinkingSection->module->course->mapping->wp_course_id;
 
             ScheduleMapping::updateOrCreate(
-                [
-                    'course_schedule_id' => $this->currentLinkingSection->id, 
-                ],
+                [ 'course_schedule_id' => $this->currentLinkingSection->id ],
                 [
                     'wp_course_id' => $wpCourseId,
                     'wp_schedule_string' => $this->selectedWpScheduleId, 
@@ -610,8 +608,8 @@ class Index extends Component
             $this->closeSectionLinkModal();
 
         } catch (\Exception $e) {
-            Log::error('Error al guardar el ScheduleMapping', ['exception' => $e->getMessage()]);
-            $this->sectionLinkErrorMessage = 'Error al guardar el enlace en la base de datos.';
+            Log::error('Error ScheduleMapping', ['exception' => $e->getMessage()]);
+            $this->sectionLinkErrorMessage = 'Error al guardar.';
         }
     }
 }
