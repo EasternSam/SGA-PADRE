@@ -133,8 +133,8 @@ class Index extends Component
             }
         }
 
-        // 2. Construir datos de los últimos 7 meses
-        for ($i = 6; $i >= 0; $i--) {
+        // 2. Construir datos de los últimos 12 meses
+        for ($i = 11; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
             
             // Generar etiqueta local
