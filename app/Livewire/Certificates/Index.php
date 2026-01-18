@@ -16,9 +16,9 @@ class Index extends Component
 
     public function render()
     {
-        // Buscamos inscripciones de cursos completados o con nota
+        // CORRECCIÓN: Usamos 'courseSchedule.course' en lugar de 'course'
         $enrollments = Enrollment::query()
-            ->with(['student', 'course'])
+            ->with(['student', 'courseSchedule.course'])
             ->whereHas('student', function (Builder $query) {
                 $query->where('name', 'like', '%' . $this->search . '%')
                       ->orWhere('last_name', 'like', '%' . $this->search . '%')

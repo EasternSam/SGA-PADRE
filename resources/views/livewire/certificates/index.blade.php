@@ -32,14 +32,20 @@
                         </thead>
                         <tbody>
                             @forelse ($enrollments as $enrollment)
+                                {{-- CORRECCIÓN: Verificamos que exista courseSchedule y course antes de mostrar --}}
+                                @if($enrollment->courseSchedule && $enrollment->courseSchedule->course)
                                 <tr class="bg-white border-b hover:bg-gray-50 transition">
                                     <td class="py-4 px-6 font-medium text-gray-900">
                                         {{ $enrollment->student->name }} {{ $enrollment->student->last_name }}
                                         <div class="text-xs text-gray-500">{{ $enrollment->student->email }}</div>
                                     </td>
                                     <td class="py-4 px-6">
-                                        {{ $enrollment->course->name }}
-                                        <div class="text-xs text-gray-400">Código: {{ $enrollment->course->code ?? 'N/A' }}</div>
+                                        {{-- Acceso corregido a través de courseSchedule --}}
+                                        {{ $enrollment->courseSchedule->course->name }}
+                                        <div class="text-xs text-gray-400">
+                                            Código: {{ $enrollment->courseSchedule->course->code ?? 'N/A' }} <br>
+                                            Sección: {{ $enrollment->courseSchedule->section_name ?? 'N/A' }}
+                                        </div>
                                     </td>
                                     <td class="py-4 px-6 text-center">
                                         <span class="text-lg font-bold {{ $enrollment->final_grade >= $minGrade ? 'text-green-600' : 'text-red-600' }}">
@@ -55,7 +61,8 @@
                                     </td>
                                     <td class="py-4 px-6 text-center">
                                         @if($enrollment->final_grade >= $minGrade)
-                                            <a href="{{ route('certificates.download', ['student' => $enrollment->student_id, 'course' => $enrollment->course_id]) }}" 
+                                            {{-- Acceso corregido al ID del curso --}}
+                                            <a href="{{ route('certificates.download', ['student' => $enrollment->student_id, 'course' => $enrollment->courseSchedule->course_id]) }}" 
                                                target="_blank"
                                                class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 focus:outline-none inline-flex items-center">
                                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -69,6 +76,7 @@
                                         @endif
                                     </td>
                                 </tr>
+                                @endif
                             @empty
                                 <tr>
                                     <td colspan="5" class="py-8 px-6 text-center text-gray-500">
