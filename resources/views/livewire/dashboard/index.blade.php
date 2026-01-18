@@ -23,7 +23,7 @@
                 </div>
                 {{-- AHORA TAMBIÉN OCULTO EN MÓVILES (hidden sm:block) --}}
                 <span class="hidden sm:block text-sm font-medium text-gray-500 bg-white px-3 py-1.5 rounded-md border border-gray-200 shadow-sm">
-                    {{ now()->format('d M, Y') }}
+                    {{ now()->locale('es')->isoFormat('D [de] MMM, Y') }}
                 </span>
             </div>
         </div>
@@ -52,7 +52,7 @@
                         <p class="text-sm font-medium text-gray-500 truncate">Estudiantes</p>
                         <div class="flex items-baseline gap-2">
                             <p class="text-2xl font-bold text-gray-900 tracking-tight">{{ $totalStudents }}</p>
-                            <span class="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Active</span>
+                            <span class="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Activos</span>
                         </div>
                     </div>
                 </div>
@@ -132,7 +132,7 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 relative z-10">
                 <div>
                     <h2 class="text-2xl font-bold text-gray-900 tracking-tight">Tendencia de Inscripciones</h2>
-                    <p class="text-sm text-gray-500 mt-1">Comparativa de flujo Web vs Sistema (Últimos 7 meses)</p>
+                    <p class="text-sm text-gray-500 mt-1">Comparativa de flujo Web vs Sistema (Últimos 12 meses)</p>
                 </div>
                 
                 <!-- Leyenda Personalizada -->
@@ -310,49 +310,66 @@
             {{-- COLUMNA DERECHA: Sidebar --}}
             <div class="space-y-6">
                 
-                <!-- Panel: Accesos Directos -->
+                <!-- Panel: Accesos Directos (OPTIMIZADO VISUALMENTE) -->
                 <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-900/5 p-6">
                     <h3 class="text-base font-bold text-gray-900 mb-5 flex items-center gap-2">
-                        <svg class="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
+                        <div class="p-1.5 rounded-lg bg-indigo-50 text-indigo-600">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
                         Accesos Rápidos
                     </h3>
                     <div class="space-y-3">
-                        <a href="{{ route('admin.students.index') }}" wire:navigate class="group flex items-center justify-between rounded-lg border border-gray-200 p-3.5 hover:border-indigo-500 hover:bg-indigo-50/50 hover:shadow-sm transition-all duration-200">
-                            <div class="flex items-center gap-3">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 group-hover:bg-white group-hover:text-indigo-700 transition-colors">
-                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+                        <a href="{{ route('admin.students.index') }}" wire:navigate class="group flex items-center justify-between rounded-xl border border-gray-100 bg-white p-3 hover:border-indigo-200 hover:bg-indigo-50/30 hover:shadow-md transition-all duration-300">
+                            <div class="flex items-center gap-4">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2.25-5.033a5.971 5.971 0 00-2.139-.549c-3.218 0-5.8 2.686-5.8 6.002 0 2.213 1.139 4.168 2.875 5.253a5.971 5.971 0 011.666-.341 5.971 5.971 0 014.2 0" />
                                     </svg>
                                 </div>
-                                <span class="font-medium text-sm text-gray-700 group-hover:text-indigo-900">Nuevo Estudiante</span>
+                                <div class="flex flex-col">
+                                    <span class="font-semibold text-sm text-gray-900 group-hover:text-indigo-700 transition-colors">Nuevo Estudiante</span>
+                                    <span class="text-xs text-gray-500">Registrar alumno</span>
+                                </div>
                             </div>
-                            <svg class="h-4 w-4 text-gray-400 group-hover:text-indigo-500 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                            <div class="h-8 w-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 group-hover:bg-white group-hover:text-indigo-500 transition-colors">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                            </div>
                         </a>
 
-                        <a href="{{ route('admin.finance.concepts') }}" wire:navigate class="group flex items-center justify-between rounded-lg border border-gray-200 p-3.5 hover:border-emerald-500 hover:bg-emerald-50/50 hover:shadow-sm transition-all duration-200">
-                            <div class="flex items-center gap-3">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 group-hover:bg-white group-hover:text-emerald-700 transition-colors">
-                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+                        <a href="{{ route('admin.finance.concepts') }}" wire:navigate class="group flex items-center justify-between rounded-xl border border-gray-100 bg-white p-3 hover:border-emerald-200 hover:bg-emerald-50/30 hover:shadow-md transition-all duration-300">
+                            <div class="flex items-center gap-4">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
-                                <span class="font-medium text-sm text-gray-700 group-hover:text-emerald-900">Registrar Pago</span>
+                                <div class="flex flex-col">
+                                    <span class="font-semibold text-sm text-gray-900 group-hover:text-emerald-700 transition-colors">Registrar Pago</span>
+                                    <span class="text-xs text-gray-500">Gestión financiera</span>
+                                </div>
                             </div>
-                            <svg class="h-4 w-4 text-gray-400 group-hover:text-emerald-500 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                            <div class="h-8 w-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 group-hover:bg-white group-hover:text-emerald-500 transition-colors">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                            </div>
                         </a>
 
-                        <a href="{{ route('admin.courses.index') }}" wire:navigate class="group flex items-center justify-between rounded-lg border border-gray-200 p-3.5 hover:border-purple-500 hover:bg-purple-50/50 hover:shadow-sm transition-all duration-200">
-                            <div class="flex items-center gap-3">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-50 text-purple-600 group-hover:bg-white group-hover:text-purple-700 transition-colors">
-                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                        <a href="{{ route('admin.courses.index') }}" wire:navigate class="group flex items-center justify-between rounded-xl border border-gray-100 bg-white p-3 hover:border-purple-200 hover:bg-purple-50/30 hover:shadow-md transition-all duration-300">
+                            <div class="flex items-center gap-4">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 text-purple-600 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                                     </svg>
                                 </div>
-                                <span class="font-medium text-sm text-gray-700 group-hover:text-purple-900">Gestionar Cursos</span>
+                                <div class="flex flex-col">
+                                    <span class="font-semibold text-sm text-gray-900 group-hover:text-purple-700 transition-colors">Gestionar Cursos</span>
+                                    <span class="text-xs text-gray-500">Administrar catálogo</span>
+                                </div>
                             </div>
-                            <svg class="h-4 w-4 text-gray-400 group-hover:text-purple-500 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                            <div class="h-8 w-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 group-hover:bg-white group-hover:text-purple-500 transition-colors">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                            </div>
                         </a>
                     </div>
                 </div>
@@ -360,9 +377,11 @@
                 <!-- Panel: Timeline de Actividad -->
                 <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-900/5 p-6">
                     <h3 class="text-base font-bold text-gray-900 mb-5 flex items-center gap-2">
-                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                        <div class="p-1.5 rounded-lg bg-gray-100 text-gray-600">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
                         Actividad Reciente
                     </h3>
                     <div class="flow-root">
@@ -384,7 +403,7 @@
                                                         default => 'bg-gray-100 text-gray-600 ring-gray-100'
                                                     };
                                                 @endphp
-                                                <span class="h-8 w-8 rounded-full {{ $iconClass }} ring-4 ring-white flex items-center justify-center">
+                                                <span class="h-8 w-8 rounded-full {{ $iconClass }} ring-4 ring-white flex items-center justify-center shadow-sm">
                                                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                                                     </svg>
@@ -392,14 +411,14 @@
                                             </div>
                                             <div class="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
                                                 <div>
-                                                    <p class="text-xs text-gray-600">
+                                                    <p class="text-xs text-gray-600 font-medium">
                                                         {{ $activity->description }} 
-                                                        @if(isset($activity->causer))
-                                                            <span class="block text-gray-400 mt-0.5">por <span class="font-medium text-gray-700">{{ $activity->causer->name ?? 'Sistema' }}</span></span>
-                                                        @endif
                                                     </p>
+                                                    @if(isset($activity->causer))
+                                                        <span class="block text-[10px] text-gray-400 mt-0.5">por <span class="font-semibold text-gray-500">{{ $activity->causer->name ?? 'Sistema' }}</span></span>
+                                                    @endif
                                                 </div>
-                                                <div class="whitespace-nowrap text-right text-[10px] text-gray-400">
+                                                <div class="whitespace-nowrap text-right text-[10px] text-gray-400 font-medium">
                                                     {{ $activity->created_at->diffForHumans(null, true, true) }}
                                                 </div>
                                             </div>
@@ -417,7 +436,7 @@
                                             </div>
                                             <div class="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
                                                 <div>
-                                                    <p class="text-sm text-gray-500">No hay actividad reciente registrada.</p>
+                                                    <p class="text-sm text-gray-500 font-medium">No hay actividad reciente.</p>
                                                 </div>
                                             </div>
                                         </div>
