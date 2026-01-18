@@ -132,7 +132,8 @@
 
                     <!-- Center: 4. COMPONENTE DE BÚSQUEDA GLOBAL -->
                     <div class="hidden md:flex flex-1 max-w-md px-8 justify-center">
-                        <livewire:global-search />
+                        {{-- OPTIMIZACIÓN: 'lazy' evita que este componente bloquee la carga inicial de la página --}}
+                        <livewire:global-search lazy />
                     </div>
 
                     <!-- Right: Actions -->
