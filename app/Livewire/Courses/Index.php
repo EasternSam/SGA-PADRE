@@ -10,7 +10,6 @@ use App\Models\User; // Para buscar profesores
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB; // Importar DB para escuchar queries
 use Illuminate\Validation\Rule; // Para validación 'unique'
 use Carbon\Carbon; // Para manejar fechas/horas
 
@@ -64,9 +63,6 @@ class Index extends Component
     public $confirmingClearUnused = false;
     public $unusedCoursesCount = 0;
 
-    // === DEBUG ===
-    public $debugInfo = []; // Variable pública para mostrar debug en la vista si es necesario
-
     protected $queryString = [
         'search' => ['except' => ''],
         'selectedCourse' => ['except' => null],
@@ -76,22 +72,17 @@ class Index extends Component
     public function mount()
     {
         try {
-            // Optimización: Seleccionar solo columnas necesarias si la tabla users es muy grande
+            // Optimización: Seleccionar solo columnas necesarias
             $this->teachers = User::role('Profesor')->select('id', 'name')->orderBy('name')->get();
         } catch (\Exception $e) {
             Log::error("No se pudo cargar el rol 'Profesor': " . $e->getMessage());
-            // Fallback limitado a 100 para evitar colapso si hay miles de usuarios
+            // Fallback limitado para evitar colapso
             $this->teachers = User::orderBy('name')->limit(100)->get(); 
         }
     }
 
     public function render()
     {
-        // INICIO DEBUG
-        $startTime = microtime(true);
-        DB::enableQueryLog();
-        $this->debugInfo = []; // Reiniciar info de debug
-
         $query = Course::query();
 
         if ($this->search) {
@@ -101,10 +92,7 @@ class Index extends Component
             });
         }
 
-        // =================================================================================
-        // OPTIMIZACIÓN CRÍTICA DE RENDIMIENTO (BACKEND)
-        // =================================================================================
-        // 1. CARGA INICIAL LIGERA:
+        // 1. CARGA DE CURSOS (Optimizada)
         $courses = $query->select('id', 'name', 'code', 'is_sequential', 'registration_fee', 'monthly_fee')
                          ->with('mapping')
                          ->paginate(10);
@@ -112,9 +100,8 @@ class Index extends Component
         $selectedCourseObject = null;
         $modules = collect();
 
-        // 2. CARGA BAJO DEMANDA (Curso Seleccionado):
+        // 2. CARGA DE MÓDULOS (Bajo demanda)
         if ($this->selectedCourse) {
-            $courseStart = microtime(true);
             $selectedCourseObject = Course::with(['modules', 'mapping'])->find($this->selectedCourse);
             
             if ($selectedCourseObject) {
@@ -122,15 +109,14 @@ class Index extends Component
             } else {
                 $this->reset(['selectedCourse', 'selectedModule']);
             }
-            $this->debugInfo['course_load_time'] = round((microtime(true) - $courseStart) * 1000, 2) . 'ms';
         }
 
+        // 3. CARGA DE SECCIONES (OPTIMIZADA CON PAGINACIÓN)
+        // Antes cargaba miles de registros, ahora solo carga 50 por página.
         $schedules = collect();
         $selectedModuleName = null;
 
-        // 3. CARGA BAJO DEMANDA (Módulo Seleccionado):
         if ($this->selectedModule) {
-            $moduleStart = microtime(true);
             $currentModule = $modules->firstWhere('id', $this->selectedModule);
             
             if ($currentModule) {
@@ -139,23 +125,12 @@ class Index extends Component
                 $schedules = CourseSchedule::where('module_id', $this->selectedModule)
                     ->with(['teacher:id,name', 'mapping']) 
                     ->orderBy('start_time')
-                    ->get();
+                    // USAMOS PAGINACIÓN PARA EVITAR EL COLAPSO POR VOLUMEN DE DATOS
+                    ->paginate(50, ['*'], 'schedules-page');
             } else {
                 $this->selectedModule = null;
             }
-            $this->debugInfo['module_load_time'] = round((microtime(true) - $moduleStart) * 1000, 2) . 'ms';
         }
-
-        // FIN DEBUG
-        $this->debugInfo['total_time'] = round((microtime(true) - $startTime) * 1000, 2) . 'ms';
-        $this->debugInfo['query_log'] = DB::getQueryLog();
-        $this->debugInfo['query_count'] = count($this->debugInfo['query_log']);
-        
-        // Imprimir debug en logs para revisión (Revisa storage/logs/laravel.log)
-        Log::info('LIVEWIRE RENDER DEBUG:', $this->debugInfo);
-
-        // Opcional: Dump directo si estás en local para ver en pantalla
-        // dump($this->debugInfo); 
 
         return view('livewire.courses.index', [
             'courses' => $courses,
@@ -171,19 +146,17 @@ class Index extends Component
 
     public function selectCourse($courseId)
     {
-        // DEBUG
-        Log::info("Selecting Course ID: {$courseId}");
-        
         $this->selectedCourse = $courseId;
         $this->selectedModule = null; 
+        // Resetear la página de horarios al cambiar de curso
+        $this->resetPage('schedules-page');
     }
 
     public function selectModule($moduleId)
     {
-        // DEBUG
-        Log::info("Selecting Module ID: {$moduleId}");
-
         $this->selectedModule = $moduleId;
+        // Resetear la página de horarios al cambiar de módulo para ver los primeros resultados
+        $this->resetPage('schedules-page');
     }
 
     public function clearFilters()
@@ -209,22 +182,19 @@ class Index extends Component
 
     public function clearUnusedCourses()
     {
-        // Optimización: Usar chunking para grandes volúmenes de datos
-        // Si tienes miles de cursos vacíos, esto evita timeout.
-        $coursesToDelete = Course::whereDoesntHave('modules.enrollments')->get();
-        $count = 0;
-
-        foreach ($coursesToDelete as $course) {
-            foreach ($course->modules as $module) {
-                $module->schedules()->delete();
-                $module->delete();
+        // Optimización: Usar chunking para evitar timeout si son muchos
+        Course::whereDoesntHave('modules.enrollments')->chunk(100, function ($courses) {
+            foreach ($courses as $course) {
+                foreach ($course->modules as $module) {
+                    $module->schedules()->delete();
+                    $module->delete();
+                }
+                if ($course->mapping) {
+                    $course->mapping->delete();
+                }
+                $course->delete();
             }
-            if ($course->mapping) {
-                $course->mapping->delete();
-            }
-            $course->delete();
-            $count++;
-        }
+        });
 
         $this->confirmingClearUnused = false;
         $this->unusedCoursesCount = 0;
@@ -234,7 +204,7 @@ class Index extends Component
             $this->selectedModule = null;
         }
 
-        session()->flash('message', "Se eliminaron {$count} cursos que no tenían estudiantes asignados.");
+        session()->flash('message', "Limpieza completada.");
         $this->dispatch('close-modal', 'confirm-clear-unused-modal');
     }
 
@@ -317,7 +287,6 @@ class Index extends Component
     {
         return [
             'module_name' => 'required|string|max:255',
-            // 'module_price' => 'required|numeric|min:0', // Eliminado según vista anterior
         ];
     }
 
@@ -340,7 +309,6 @@ class Index extends Component
             $module = Module::findOrFail($moduleId);
             $this->module_id = $module->id;
             $this->module_name = $module->name;
-            // $this->module_price = $module->price; 
 
             $this->moduleModalTitle = 'Editar Módulo: ' . $module->name;
             $this->dispatch('open-modal', 'module-modal'); 
@@ -358,7 +326,6 @@ class Index extends Component
             [
                 'course_id' => $this->selectedCourse,
                 'name' => $this->module_name,
-                // 'price' => $this->module_price, 
             ]
         );
 
@@ -370,7 +337,6 @@ class Index extends Component
     {
         $this->module_id = null;
         $this->module_name = '';
-        // $this->module_price = 0.00; 
     }
     
     // --- MÉTODOS PARA MODAL DE HORARIO (SECCIÓN) ---
