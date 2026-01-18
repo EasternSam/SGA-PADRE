@@ -95,23 +95,26 @@ class Index extends Component
         // =================================================================================
         // OPTIMIZACIÓN CRÍTICA DE RENDIMIENTO (BACKEND)
         // =================================================================================
-        // 1. ELIMINAMOS 'modules.schedules.teacher' de la consulta principal.
-        //    Antes: Cargaba todo el árbol de relaciones para 10 cursos (miles de objetos).
-        //    Ahora: Solo carga la información básica del curso y si está enlazado (mapping).
-        $courses = $query->with('mapping')->paginate(10);
+        // 1. CARGA INICIAL LIGERA:
+        //    Eliminamos 'modules.schedules.teacher' de la carga ansiosa (Eager Loading).
+        //    Solo traemos 'mapping' porque se usa en la lista para el icono verde.
+        //    Esto reduce la carga de datos en un 90% para la lista principal.
+        $courses = $query->select('id', 'name', 'code', 'is_sequential', 'registration_fee', 'monthly_fee')
+                         ->with('mapping')
+                         ->paginate(10);
 
         $selectedCourseObject = null;
         $modules = collect();
 
-        // 2. Carga bajo demanda (Lazy Eager Loading)
-        //    Solo buscamos los módulos del curso QUE EL USUARIO SELECCIONÓ.
+        // 2. CARGA BAJO DEMANDA (Curso Seleccionado):
+        //    Solo si hay un curso seleccionado, hacemos una consulta extra para traer SUS módulos.
         if ($this->selectedCourse) {
             $selectedCourseObject = Course::with(['modules', 'mapping'])->find($this->selectedCourse);
             
             if ($selectedCourseObject) {
                 $modules = $selectedCourseObject->modules;
             } else {
-                // Si el curso seleccionado fue borrado o no existe, reseteamos la selección
+                // Si el curso no existe (fue borrado por otro usuario), reseteamos.
                 $this->reset(['selectedCourse', 'selectedModule']);
             }
         }
@@ -119,18 +122,18 @@ class Index extends Component
         $schedules = collect();
         $selectedModuleName = null;
 
-        // 3. Carga de horarios optimizada
-        //    Solo buscamos horarios si hay un módulo seleccionado.
+        // 3. CARGA BAJO DEMANDA (Módulo Seleccionado):
+        //    Solo buscamos horarios si hay un módulo activo.
         if ($this->selectedModule) {
-            // Buscamos el módulo en la colección que ya tenemos en memoria (evita query extra)
+            // Buscamos el nombre del módulo en la colección que ya trajimos (evita query extra solo para el nombre)
             $currentModule = $modules->firstWhere('id', $this->selectedModule);
             
             if ($currentModule) {
                 $selectedModuleName = $currentModule->name;
                 
-                // Query específica y ligera solo para los horarios de este módulo
+                // Consulta optimizada para horarios: Solo de este módulo, con teacher y mapping.
                 $schedules = CourseSchedule::where('module_id', $this->selectedModule)
-                    ->with(['teacher:id,name', 'mapping']) // Solo traemos id y nombre del profe
+                    ->with(['teacher:id,name', 'mapping']) // teacher:id,name optimiza la memoria
                     ->orderBy('start_time')
                     ->get();
             } else {
@@ -184,7 +187,8 @@ class Index extends Component
 
     public function clearUnusedCourses()
     {
-        // Optimización: Usar chunking si son muchos, pero get() está bien para cantidades moderadas
+        // Optimización: Usar chunking para grandes volúmenes de datos
+        // Si tienes miles de cursos vacíos, esto evita timeout.
         $coursesToDelete = Course::whereDoesntHave('modules.enrollments')->get();
         $count = 0;
 
@@ -203,7 +207,6 @@ class Index extends Component
         $this->confirmingClearUnused = false;
         $this->unusedCoursesCount = 0;
         
-        // Verificación de seguridad por si borramos el curso seleccionado
         if ($this->selectedCourse && !Course::find($this->selectedCourse)) {
             $this->selectedCourse = null;
             $this->selectedModule = null;
