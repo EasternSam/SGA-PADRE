@@ -12,10 +12,9 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
 
-    {{-- Font Awesome --}}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" 
-          xintegrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" 
-          crossorigin="anonymous" referrerpolicy="no-referrer" />
+    {{-- Font Awesome (Carga diferida para no bloquear renderizado) --}}
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -30,9 +29,9 @@
 
 <body class="h-full font-sans antialiased text-slate-600">
 
-    <!-- 1. Barra de Carga Global (Livewire) -->
-    <div wire:loading.delay class="fixed top-0 left-0 w-full h-1 z-[60] bg-sga-primary/20" style="pointer-events: none;">
-        <div class="h-full bg-sga-primary animate-progress-indeterminate"></div>
+    <!-- 1. Barra de Carga Global (Livewire) - Optimizada -->
+    <div wire:loading.delay class="fixed top-0 left-0 w-full h-1 z-[60] bg-indigo-100" style="pointer-events: none;">
+        <div class="h-full bg-indigo-600 animate-progress-indeterminate"></div>
     </div>
 
     <!-- 2. Sistema de Notificaciones Toast -->
@@ -99,7 +98,7 @@
     <!-- Layout Wrapper -->
     <div x-data="{ open: false }" 
          @keydown.window.escape="open = false" 
-         class="h-full flex overflow-hidden bg-sga-background">
+         class="h-full flex overflow-hidden bg-gray-50"> <!-- Fondo optimizado -->
 
         <!-- Navigation Sidebar -->
         @include('layouts.navigation')
@@ -114,7 +113,7 @@
                     <!-- Left: Hamburger & Page Title / Breadcrumb -->
                     <div class="flex items-center gap-4">
                         <button @click.stop="open = !open" type="button"
-                            class="-m-2.5 p-2.5 text-gray-500 lg:hidden hover:text-sga-primary transition-colors rounded-md hover:bg-gray-100">
+                            class="-m-2.5 p-2.5 text-gray-500 lg:hidden hover:text-indigo-600 transition-colors rounded-md hover:bg-gray-100">
                             <span class="sr-only">Abrir menú</span>
                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -132,19 +131,23 @@
 
                     <!-- Center: 4. COMPONENTE DE BÚSQUEDA GLOBAL -->
                     <div class="hidden md:flex flex-1 max-w-md px-8 justify-center">
-                        {{-- OPTIMIZACIÓN: 'lazy' evita que este componente bloquee la carga inicial de la página --}}
+                        {{-- 
+                             OPTIMIZACIÓN CRÍTICA: 'lazy'
+                             Esto hace que la barra de búsqueda se cargue DESPUÉS de que la página principal
+                             ya se haya mostrado. Evita que consultas pesadas en el buscador bloqueen la navegación.
+                        --}}
                         <livewire:global-search lazy />
                     </div>
 
                     <!-- Right: Actions -->
                     <div class="flex items-center gap-x-4 lg:gap-x-6">
                         
-                        <!-- 5. Notifications Bell -->
+                        <!-- 5. Notifications Bell (Estático por ahora para velocidad) -->
                         <button type="button" class="relative -m-2.5 p-2.5 text-gray-400 hover:text-gray-500 transition-colors">
                             <span class="sr-only">Ver notificaciones</span>
                             <i class="far fa-bell text-xl"></i>
-                            <!-- Badge -->
-                            <span class="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white"></span>
+                            <!-- Badge (Opcional: cargar vía JS o Livewire lazy si se necesita dinámico) -->
+                            {{-- <span class="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white"></span> --}}
                         </button>
 
                         <!-- Separator -->
@@ -154,15 +157,16 @@
                         <div class="relative">
                             <x-dropdown align="right" width="48">
                                 <x-slot name="trigger">
-                                    <button class="flex items-center gap-3 p-1.5 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-sga-primary/20">
+                                    <button class="flex items-center gap-3 p-1.5 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
                                         <div class="hidden lg:block text-right">
                                             <p class="text-sm font-semibold text-gray-700 leading-none">{{ Auth::user()->name }}</p>
-                                            <p class="text-xs text-gray-400 mt-0.5">{{ Auth::user()->email }}</p>
+                                            <p class="text-xs text-gray-400 mt-0.5 truncate max-w-[150px]">{{ Auth::user()->email }}</p>
                                         </div>
                                         <div class="relative">
                                             <img class="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-gray-100" 
                                                  src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&color=7F9CF5&background=EBF4FF&bold=true" 
-                                                 alt="{{ Auth::user()->name }}">
+                                                 alt="{{ Auth::user()->name }}"
+                                                 loading="lazy"> <!-- Lazy load para imagen -->
                                             <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-400 ring-2 ring-white"></span>
                                         </div>
                                         <i class="fas fa-chevron-down text-gray-400 text-xs hidden lg:block ml-1"></i>
@@ -211,11 +215,11 @@
             <footer class="bg-white border-t border-gray-200 flex-shrink-0 z-10">
                 <div class="mx-auto max-w-7xl px-6 py-4 md:flex md:items-center md:justify-between lg:px-8">
                     <div class="flex justify-center space-x-6 md:order-2">
-                        <a href="#" class="text-gray-400 hover:text-gray-500">
+                        <a href="#" class="text-gray-400 hover:text-gray-500 transition-colors">
                             <span class="sr-only">Soporte</span>
                             <i class="fas fa-life-ring"></i>
                         </a>
-                        <a href="#" class="text-gray-400 hover:text-gray-500">
+                        <a href="#" class="text-gray-400 hover:text-gray-500 transition-colors">
                             <span class="sr-only">Manual</span>
                             <i class="fas fa-book"></i>
                         </a>
