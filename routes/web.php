@@ -6,7 +6,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AttendancePdfController; 
 use App\Http\Controllers\GradesPdfController; 
 use App\Http\Controllers\FinancialPdfController;
-use App\Http\Controllers\StudentListPdfController; // <--- NUEVO CONTROLADOR
+use App\Http\Controllers\StudentListPdfController; 
+use App\Http\Controllers\CertificatePdfController; // <--- NUEVO CONTROLADOR CERTIFICADOS
 use Illuminate\Support\Facades\Auth;
 use App\Livewire\Admin\DatabaseImport; 
 use Illuminate\Support\Facades\Http;
@@ -16,7 +17,7 @@ use Illuminate\Support\Str;
 use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
 use App\Livewire\StudentPortal\CourseDetail as StudentPortalCourseDetail;
 use App\Livewire\StudentPortal\Requests as StudentPortalRequests;
-use App\Livewire\StudentPortal\MyPayments as StudentPortalPayments; // <-- AÑADIDO
+use App\Livewire\StudentPortal\MyPayments as StudentPortalPayments; 
 
 use App\Livewire\TeacherPortal\Dashboard as TeacherPortalDashboard;
 use App\Livewire\TeacherPortal\Grades as TeacherPortalGrades;
@@ -134,8 +135,9 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
     Route::get('/requests', \App\Livewire\Admin\RequestsManagement::class)->name('admin.requests');
     Route::get('/import', DatabaseImport::class)->name('admin.import');
     
-    // --- GESTIÓN DE REPORTES (Solo Admin) ---
+    // --- GESTIÓN DE REPORTES Y CERTIFICADOS (Admin) ---
     Route::get('/reports', \App\Livewire\Reports\Index::class)->name('reports.index');
+    Route::get('/certificates', \App\Livewire\Certificates\Index::class)->name('admin.certificates.index'); // <--- NUEVA RUTA ADMIN
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
 });
@@ -145,7 +147,6 @@ Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student
     Route::get('/dashboard', \App\Livewire\StudentPortal\Dashboard::class)->name('dashboard');
     Route::get('/course/{enrollmentId}', \App\Livewire\StudentPortal\CourseDetail::class)->name('course.detail');
     Route::get('/requests', \App\Livewire\StudentPortal\Requests::class)->name('requests');
-    // --- NUEVA RUTA DE PAGOS ---
     Route::get('/payments', StudentPortalPayments::class)->name('payments');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
 });
@@ -168,9 +169,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/reports/attendance/{section}/pdf', [AttendancePdfController::class, 'download'])->name('reports.attendance.pdf');
     Route::get('/reports/grades/{section}/pdf', [GradesPdfController::class, 'download'])->name('reports.grades.pdf');
     Route::get('/reports/financial/pdf', [FinancialPdfController::class, 'download'])->name('reports.financial.pdf');
-    // PDF Lista Estudiantes
     Route::get('/reports/students-list/{section}/pdf', [StudentListPdfController::class, 'download'])->name('reports.students.pdf');
     Route::get('/reports/financial/{student}', [FinancialPdfController::class, 'download'])->name('reports.financial-report');
+
+    // --- RUTA DESCARGA CERTIFICADO ---
+    Route::get('/reports/certificate/{student}/{course}/pdf', [CertificatePdfController::class, 'download'])->name('certificates.download'); // <--- NUEVA RUTA PDF
 });
 
 // --- RUTAS PARA CAMBIO DE CONTRASEÑA OBLIGATORIO ---
