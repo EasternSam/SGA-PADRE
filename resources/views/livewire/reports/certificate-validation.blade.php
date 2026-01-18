@@ -9,6 +9,30 @@
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
 
+    @php
+        // Lógica unificada para Nombre e Iniciales
+        // Nota: Asumimos que $student se pasa desde el controlador. 
+        // Si se pasara $enrollment en su lugar, se usaría $enrollment->student.
+        // Aquí usamos $student directamente ya que es lo que el controlador CertificatePdfController envía.
+        
+        $user = $student->user ?? null;
+        $studentName = 'N/A';
+        
+        if ($student) {
+            $first = $student->first_name ?? $student->name ?? $student->nombres ?? $student->firstname ?? $user->first_name ?? $user->name ?? '';
+            $last = $student->last_name ?? $student->apellidos ?? $student->lastname ?? $user->last_name ?? $user->lastname ?? '';
+            $studentName = trim($first . ' ' . $last);
+            
+            if (empty($studentName)) {
+                $studentName = $student->full_name ?? $student->fullname ?? $user->full_name ?? $user->fullname ?? '';
+            }
+            
+            if (empty($studentName) && $student) {
+                 $studentName = $student->email ?? $user->email ?? 'Sin Nombre';
+            }
+        }
+    @endphp
+
     <div class="bg-white rounded-lg shadow-xl overflow-hidden max-w-md w-full">
         <!-- Encabezado de Éxito -->
         <div class="bg-green-600 p-6 text-center">
@@ -26,7 +50,7 @@
             <div class="space-y-4">
                 <div class="border-b border-gray-100 pb-3">
                     <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Estudiante</p>
-                    <p class="text-lg font-bold text-gray-800">{{ $student->name }} {{ $student->last_name }}</p>
+                    <p class="text-lg font-bold text-gray-800">{{ $studentName }}</p>
                     <p class="text-sm text-gray-500">{{ $student->email }}</p>
                 </div>
 
