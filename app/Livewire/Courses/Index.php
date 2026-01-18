@@ -134,14 +134,18 @@ class Index extends Component
         // 4. CARGA DE PROFESORES (OPTIMIZADA CON CACHÉ)
         // Guardamos la lista en caché por 60 minutos para que el botón "Editar" no tenga que consultar la DB siempre.
         $teachersList = Cache::remember('teachers_list_select', 3600, function () {
-            return User::role('Profesor')
-                ->select('id', 'name')
-                ->orderBy('name')
-                ->get();
+            try {
+                return User::role('Profesor')
+                    ->select('id', 'name')
+                    ->orderBy('name')
+                    ->get();
+            } catch (\Exception $e) {
+                 return collect();
+            }
         });
             
         if($teachersList->isEmpty()) {
-             // Fallback rápido sin caché si no hay roles
+             // Fallback rápido sin caché si no hay roles o falla
              $teachersList = User::select('id', 'name')->orderBy('name')->limit(100)->get();
         }
 
