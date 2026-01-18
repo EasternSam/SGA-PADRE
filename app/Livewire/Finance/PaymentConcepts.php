@@ -128,6 +128,8 @@ class PaymentConcepts extends Component
             // Eliminar todos los conceptos
             $count = PaymentConcept::count();
             if ($count > 0) {
+                 // Usamos truncate() si es posible para reiniciar IDs, o delete() masivo
+                 // PaymentConcept::truncate(); // Truncate puede fallar por FKs
                  PaymentConcept::query()->delete();
                  session()->flash('message', "Se han eliminado todos los conceptos ($count).");
             } else {
@@ -137,8 +139,10 @@ class PaymentConcepts extends Component
         } catch (\Exception $e) {
             session()->flash('error', 'Error al intentar eliminar masivamente: ' . $e->getMessage());
         }
+        
         $this->confirmingMassDeletion = false;
-        // Cerrar modal vía evento
+        
+        // Cerrar modal vía evento - Aseguramos que el nombre coincida con el de la vista
         $this->dispatch('close-modal', 'confirm-mass-deletion');
     }
 }
