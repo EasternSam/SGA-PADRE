@@ -1,6 +1,5 @@
-<div> {{-- <--- ESTE ES EL DIV RAÍZ OBLIGATORIO QUE ABRE --}}
-
-
+<div class="min-h-screen bg-gray-50 pb-8">
+    
     {{-- Mensajes de Sesión (Flash) --}}
     <div class="fixed top-24 right-6 z-50">
         @if (session()->has('message'))
@@ -20,195 +19,235 @@
     </div>
 
     {{-- Encabezado y Búsqueda --}}
-    <header class="bg-white shadow-sm mb-6">
+    <header class="bg-white shadow-sm mb-6 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
             <h1 class="text-xl font-semibold text-gray-900">Gestión Académica</h1>
-            <div class="w-1/3">
-                <input wire:model.live.debounce.300ms="search" type="text" placeholder="Buscar cursos por nombre o código..." class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+            <div class="w-1/3 relative">
+                <input wire:model.live.debounce.300ms="search" 
+                       type="text" 
+                       placeholder="Buscar cursos por nombre o código..." 
+                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+                
+                {{-- Spinner de búsqueda (Absolute right) --}}
+                <div wire:loading wire:target="search" class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg class="animate-spin h-5 w-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                </div>
             </div>
+        </div>
+        
+        {{-- Loader Global Superior (Linea de carga) --}}
+        <div wire:loading class="absolute bottom-0 left-0 w-full h-1 bg-indigo-100 overflow-hidden">
+            <div class="h-full bg-indigo-500 animate-progress origin-left"></div>
         </div>
     </header>
 
     {{-- Contenido Principal - Columnas --}}
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-140px)] items-start">
 
             <!-- Columna 1: Cursos -->
-            <div class="bg-white rounded-lg shadow overflow-hidden">
-                <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+            <div class="bg-white rounded-lg shadow border border-gray-200 flex flex-col h-full overflow-hidden">
+                <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
                     <h2 class="text-lg font-semibold text-gray-800">Cursos</h2>
                     <div class="flex space-x-2">
                         <!-- Botón de Limpieza -->
-                        <button wire:click="confirmClearUnusedCourses" class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded-lg text-xs font-medium shadow-sm" title="Eliminar cursos sin estudiantes">
+                        <button wire:click="confirmClearUnusedCourses" wire:loading.attr="disabled" class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded-lg text-xs font-medium shadow-sm transition ease-in-out duration-150 disabled:opacity-50" title="Eliminar cursos sin estudiantes">
                             <i class="fas fa-trash-alt mr-1"></i> Limpiar
                         </button>
                         <!-- Botón Añadir -->
-                        <button wire:click="createCourse" class="bg-indigo-600 text-white px-3 py-1 rounded-lg text-sm font-medium shadow-sm hover:bg-indigo-700">
-                            <i class="fas fa-plus mr-1"></i> Añadir
+                        <button wire:click="createCourse" wire:loading.attr="disabled" class="bg-indigo-600 text-white px-3 py-1 rounded-lg text-sm font-medium shadow-sm hover:bg-indigo-700 transition ease-in-out duration-150 flex items-center disabled:opacity-50">
+                            <svg wire:loading wire:target="createCourse" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <span wire:loading.remove wire:target="createCourse"><i class="fas fa-plus mr-1"></i> Añadir</span>
+                            <span wire:loading wire:target="createCourse">Cargando...</span>
                         </button>
                     </div>
                 </div>
-                <div class="p-4">
-                    <ul class="divide-y divide-gray-200">
+                <div class="p-2 overflow-y-auto flex-1 custom-scrollbar">
+                    <ul class="space-y-1">
                         @forelse ($courses as $course)
-                            <li wire:click="selectCourse({{ $course->id }})" 
-                                class="p-3 cursor-pointer hover:bg-gray-100 rounded-lg {{ $selectedCourse == $course->id ? 'bg-indigo-100 border-l-4 border-indigo-500' : '' }}">
+                            <li wire:key="course-{{ $course->id }}"
+                                wire:click="selectCourse({{ $course->id }})" 
+                                class="p-3 cursor-pointer rounded-lg border border-transparent transition-all duration-150 relative
+                                       {{ $selectedCourse == $course->id ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'hover:bg-gray-50 hover:border-gray-200' }}">
+                                
+                                {{-- Feedback Visual de Carga al hacer clic --}}
+                                <div wire:loading.flex wire:target="selectCourse({{ $course->id }})" class="absolute inset-0 bg-white/60 z-10 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
+                                    <svg class="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                </div>
+
                                 <div class="flex justify-between items-center">
-                                    <div>
-                                        <span class="block font-medium text-gray-900">{{ $course->name }}</span>
-                                        <span class="block text-sm text-gray-500">{{ $course->code }}</span>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <span class="block font-medium text-gray-900 truncate {{ $selectedCourse == $course->id ? 'text-indigo-700' : '' }}">{{ $course->name }}</span>
+                                            @if($course->is_sequential)
+                                                <span class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-100 text-yellow-800">
+                                                    Seq
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <span class="block text-sm text-gray-500 font-mono">{{ $course->code }}</span>
                                         
                                         <!-- Mostrar precios en lista -->
-                                        <span class="block text-xs text-gray-500 mt-1">
+                                        <span class="block text-xs text-gray-400 mt-1">
                                             Insc: ${{ number_format($course->registration_fee, 2) }} | Mes: ${{ number_format($course->monthly_fee, 2) }}
                                         </span>
 
-                                        <!-- Indicador Secuencial -->
-                                        @if($course->is_sequential)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 mt-1">
-                                                <i class="fas fa-list-ol mr-1"></i> Secuencial
-                                            </span>
-                                        @endif
-
                                         @if($course->mapping)
-                                            <span class="block text-xs text-green-600 mt-1" title="ID de WP: {{ $course->mapping->wp_course_id }}">
-                                                <i class="fas fa-check-circle mr-1"></i>Enlazado: {{ $course->mapping->wp_course_name }}
-                                            </span>
-                                        @else
-                                            <span class="block text-xs text-gray-400 italic mt-1">
-                                                <i class="fas fa-times-circle mr-1"></i>No enlazado
+                                            <span class="block text-xs text-green-600 mt-1 truncate" title="ID de WP: {{ $course->mapping->wp_course_id }}">
+                                                <i class="fas fa-check-circle mr-1"></i>Enlazado
                                             </span>
                                         @endif
-
                                     </div>
-                                    <div class="flex items-center">
-                                        <button wire:click.stop="openLinkModal({{ $course->id }})" class="text-gray-400 hover:text-blue-600 text-xs mr-2" title="Enlazar con WordPress">
-                                            <i class="fas fa-link"></i>
+                                    <div class="flex items-center pl-2 space-x-1">
+                                        <button wire:click.stop="openLinkModal({{ $course->id }})" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Enlazar con WordPress">
+                                            <i class="fas fa-link text-xs"></i>
                                         </button>
-                                        <button wire:click.stop="editCourse({{ $course->id }})" class="text-gray-400 hover:text-indigo-600 text-xs">
-                                            <i class="fas fa-pencil-alt"></i>
+                                        <button wire:click.stop="editCourse({{ $course->id }})" class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors">
+                                            <i class="fas fa-pencil-alt text-xs"></i>
                                         </button>
                                     </div>
                                 </div>
                             </li>
                         @empty
-                            <li class="p-3 text-center text-gray-500">No se encontraron cursos.</li>
+                            <li class="p-4 text-center text-gray-500 italic">No se encontraron cursos.</li>
                         @endforelse
                     </ul>
-                    <div class="mt-4">
-                        {{ $courses->links() }}
+                    <div class="mt-4 px-2 pb-2">
+                        {{ $courses->links(data: ['scrollTo' => false]) }}
                     </div>
                 </div>
             </div>
 
             <!-- Columna 2: Módulos -->
-            <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="bg-white rounded-lg shadow border border-gray-200 flex flex-col h-full overflow-hidden relative">
+                
+                {{-- Loader de Bloque Completo para Módulos --}}
+                <div wire:loading.flex wire:target="selectCourse" class="absolute inset-0 bg-white/80 z-20 flex-col items-center justify-center backdrop-blur-sm transition-opacity">
+                    <svg class="animate-spin h-8 w-8 text-indigo-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    <span class="text-sm font-medium text-gray-600">Cargando módulos...</span>
+                </div>
+
                 @if ($selectedCourse)
-                    <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-                        <h2 class="text-lg font-semibold text-gray-800">Módulos de: <span class="font-bold">{{ $selectedCourseName }}</span></h2>
-                        <button wire:click="createModule" class="bg-indigo-600 text-white px-3 py-1 rounded-lg text-sm font-medium shadow-sm hover:bg-indigo-700">
+                    <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                        <h2 class="text-lg font-semibold text-gray-800 truncate pr-2">Módulos: <span class="font-bold text-indigo-700">{{ $selectedCourseName }}</span></h2>
+                        <button wire:click="createModule" wire:loading.attr="disabled" class="bg-indigo-600 text-white px-3 py-1 rounded-lg text-sm font-medium shadow-sm hover:bg-indigo-700 transition ease-in-out duration-150 flex-shrink-0 disabled:opacity-50">
                             <i class="fas fa-plus mr-1"></i> Añadir
                         </button>
                     </div>
-                    <div class="p-4">
-                        <ul class="divide-y divide-gray-200">
+                    <div class="p-2 overflow-y-auto flex-1 custom-scrollbar">
+                        <ul class="space-y-1">
                             @forelse ($modules as $module)
-                                <li wire:click="selectModule({{ $module->id }})"
-                                    class="p-3 cursor-pointer hover:bg-gray-100 rounded-lg {{ $selectedModule == $module->id ? 'bg-indigo-100 border-l-4 border-indigo-500' : '' }}">
+                                <li wire:key="module-{{ $module->id }}"
+                                    wire:click="selectModule({{ $module->id }})"
+                                    class="p-3 cursor-pointer rounded-lg border border-transparent transition-all duration-150 relative
+                                           {{ $selectedModule == $module->id ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'hover:bg-gray-50 hover:border-gray-200' }}">
+                                    
+                                    {{-- Feedback Visual --}}
+                                    <div wire:loading.flex wire:target="selectModule({{ $module->id }})" class="absolute inset-0 bg-white/60 z-10 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
+                                        <svg class="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    </div>
+
                                     <div class="flex justify-between items-center">
                                         <div>
-                                            <span class="block font-medium text-gray-900">{{ $module->name }}</span>
-                                            {{-- Eliminado: Mostrar precio del módulo aquí --}}
+                                            <span class="block font-medium text-gray-900 {{ $selectedModule == $module->id ? 'text-indigo-700' : '' }}">{{ $module->name }}</span>
                                         </div>
-                                        <button wire:click.stop="editModule({{ $module->id }})" class="text-gray-400 hover:text-indigo-600 text-xs">
-                                            <i class="fas fa-pencil-alt"></i>
+                                        <button wire:click.stop="editModule({{ $module->id }})" class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors">
+                                            <i class="fas fa-pencil-alt text-xs"></i>
                                         </button>
                                     </div>
                                 </li>
                             @empty
-                                <li class="p-3 text-center text-gray-500">Este curso no tiene módulos.</li>
+                                <li class="p-4 text-center text-gray-500 italic">Este curso no tiene módulos.</li>
                             @endforelse
                         </ul>
                     </div>
                 @else
-                    <div class="p-4 border-b border-gray-200">
+                    <div class="p-4 border-b border-gray-200 bg-gray-50">
                         <h2 class="text-lg font-semibold text-gray-800">Módulos</h2>
                     </div>
-                    <div class="p-4 text-center text-gray-500">
-                        Selecciona un curso para ver sus módulos.
+                    <div class="p-4 text-center text-gray-500 flex-1 flex flex-col items-center justify-center opacity-50">
+                        <i class="fas fa-arrow-left text-4xl mb-3 text-gray-300"></i>
+                        <p>Selecciona un curso</p>
                     </div>
                 @endif
             </div>
 
             <!-- Columna 3: Secciones (Horarios) -->
-            <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="bg-white rounded-lg shadow border border-gray-200 flex flex-col h-full overflow-hidden relative">
+                
+                {{-- Loader de Bloque Completo para Secciones --}}
+                <div wire:loading.flex wire:target="selectModule" class="absolute inset-0 bg-white/80 z-20 flex-col items-center justify-center backdrop-blur-sm transition-opacity">
+                    <svg class="animate-spin h-8 w-8 text-indigo-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    <span class="text-sm font-medium text-gray-600">Cargando secciones...</span>
+                </div>
+
                 @if ($selectedModule)
-                    <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-                        <h2 class="text-lg font-semibold text-gray-800">Secciones de: <span class="font-bold">{{ $selectedModuleName }}</span></h2>
-                        <button wire:click="createSchedule" class="bg-indigo-600 text-white px-3 py-1 rounded-lg text-sm font-medium shadow-sm hover:bg-indigo-700">
+                    <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                        <h2 class="text-lg font-semibold text-gray-800 truncate pr-2">Secciones: <span class="font-bold text-indigo-700">{{ $selectedModuleName }}</span></h2>
+                        <button wire:click="createSchedule" wire:loading.attr="disabled" class="bg-indigo-600 text-white px-3 py-1 rounded-lg text-sm font-medium shadow-sm hover:bg-indigo-700 transition ease-in-out duration-150 flex-shrink-0 disabled:opacity-50">
                             <i class="fas fa-plus mr-1"></i> Añadir
                         </button>
                     </div>
-                    <div class="p-4">
-                        <ul class="divide-y divide-gray-200">
+                    <div class="p-2 overflow-y-auto flex-1 custom-scrollbar">
+                        <ul class="space-y-1">
                             @forelse ($schedules as $schedule)
-                                <li class="p-3 hover:bg-gray-100 rounded-lg">
-                                    <div class="flex justify-between items-center">
-                                        <div>
+                                <li wire:key="schedule-{{ $schedule->id }}" class="p-3 hover:bg-gray-50 rounded-lg border border-gray-100 transition-colors duration-150">
+                                    <div class="flex justify-between items-start">
+                                        <div class="flex-1 min-w-0">
                                             <span class="block font-medium text-gray-900">{{ $schedule->section_name ?? ('Sección ' . $schedule->id) }}</span>
-                                            <span class="block text-sm text-gray-500">Prof: {{ $schedule->teacher->name ?? 'No asignado' }}</span>
-                                            <span class="block text-sm text-gray-500">
+                                            <span class="block text-xs text-gray-500 mt-0.5">Prof: {{ $schedule->teacher->name ?? 'No asignado' }}</span>
+                                            <span class="block text-xs text-gray-500 mt-0.5 flex items-center">
+                                                <i class="far fa-clock mr-1"></i>
                                                 {{ implode(', ', $schedule->days_of_week ?? []) }} | {{ $schedule->start_time ? \Carbon\Carbon::parse($schedule->start_time)->format('h:i A') : 'N/A' }} - {{ $schedule->end_time ? \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') : 'N/A' }}
                                             </span>
                                             
                                             {{-- Etiqueta de Modalidad --}}
-                                            <span class="block text-xs font-semibold mt-1 {{ $schedule->modality === 'Virtual' ? 'text-purple-600' : ($schedule->modality === 'Semi-Presencial' ? 'text-orange-600' : 'text-blue-600') }}">
+                                            <span class="inline-block px-1.5 py-0.5 mt-1 text-[10px] font-semibold rounded {{ $schedule->modality === 'Virtual' ? 'bg-purple-100 text-purple-700' : ($schedule->modality === 'Semi-Presencial' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700') }}">
                                                 {{ $schedule->modality ?? 'Presencial' }}
                                             </span>
                                             
                                             @if($schedule->mapping)
-                                                <span class="block text-xs text-green-600" title="WP Horario: {{ $schedule->mapping->wp_schedule_data }}">
-                                                    <i class="fas fa-check-circle mr-1"></i>Sección Enlazada
+                                                <span class="block text-xs text-green-600 mt-1" title="WP Horario: {{ $schedule->mapping->wp_schedule_data }}">
+                                                    <i class="fas fa-check-circle mr-1"></i> Enlazado
                                                 </span>
                                             @endif
-
                                         </div>
                                         
-                                        <div class="flex items-center">
+                                        <div class="flex items-center space-x-1 pl-2">
                                             @if($selectedCourseObject?->mapping)
                                                 @php
                                                     $scheduleMapping = $schedule->mapping; 
                                                 @endphp
                                                 <button wire:click.stop="openMapSectionModal({{ $schedule->id }})" 
-                                                        class="text-gray-400 hover:text-blue-600 text-xs mr-2 {{ $scheduleMapping ? 'text-blue-600' : '' }}" 
+                                                        class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors {{ $scheduleMapping ? 'text-blue-600' : '' }}" 
                                                         title="{{ $scheduleMapping ? 'Modificar Enlace WP de Sección' : 'Enlazar Sección con WP' }}">
-                                                    <i class="fas fa-link"></i>
+                                                    <i class="fas fa-link text-xs"></i>
                                                 </button>
                                             @else
-                                                <button class="text-gray-300 text-xs mr-2 cursor-not-allowed" disabled title="Enlace el curso principal primero">
-                                                    <i class="fas fa-link"></i>
+                                                <button class="p-1.5 text-gray-300 cursor-not-allowed" disabled title="Enlace el curso principal primero">
+                                                    <i class="fas fa-link text-xs"></i>
                                                 </button>
                                             @endif
 
-                                            <button wire:click.stop="editSchedule({{ $schedule->id }})" class="text-gray-400 hover:text-indigo-600 text-xs">
-                                                <i class="fas fa-pencil-alt"></i>
+                                            <button wire:click.stop="editSchedule({{ $schedule->id }})" class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors">
+                                                <i class="fas fa-pencil-alt text-xs"></i>
                                             </button>
                                         </div>
-
                                     </div>
                                 </li>
                             @empty
-                                <li class="p-3 text-center text-gray-500">Este módulo no tiene secciones.</li>
+                                <li class="p-4 text-center text-gray-500 italic">Este módulo no tiene secciones.</li>
                             @endforelse
                         </ul>
                     </div>
                 @else
-                    <div class="p-4 border-b border-gray-200">
+                    <div class="p-4 border-b border-gray-200 bg-gray-50">
                         <h2 class="text-lg font-semibold text-gray-800">Secciones</h2>
                     </div>
-                    <div class="p-4 text-center text-gray-500">
-                        Selecciona un módulo para ver sus secciones.
+                    <div class="p-4 text-center text-gray-500 flex-1 flex flex-col items-center justify-center opacity-50">
+                        <i class="fas fa-arrow-left text-4xl mb-3 text-gray-300"></i>
+                        <p>Selecciona un módulo</p>
                     </div>
                 @endif
             </div>
@@ -303,7 +342,10 @@
                 
                 <div class="flex justify-end mt-6">
                     <button type="button" x-on:click="$dispatch('close-modal', 'course-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
-                    <button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">Guardar Curso</button>
+                    <button type="submit" wire:loading.attr="disabled" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                        <svg wire:loading wire:target="saveCourse" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Guardar Curso
+                    </button>
                 </div>
             </form>
         </div>
@@ -320,11 +362,12 @@
                     @error('module_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
 
-                {{-- ELIMINADO: Campo de Precio de Módulo --}}
-                
                 <div class="flex justify-end mt-6">
                     <button type="button" x-on:click="$dispatch('close-modal', 'module-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
-                    <button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">Guardar Módulo</button>
+                    <button type="submit" wire:loading.attr="disabled" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                        <svg wire:loading wire:target="saveModule" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Guardar Módulo
+                    </button>
                 </div>
             </form>
         </div>
@@ -406,13 +449,16 @@
 
                 <div class="flex justify-end mt-6">
                     <button type="button" x-on:click="$dispatch('close-modal', 'schedule-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
-                    <button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">Guardar Sección</button>
+                    <button type="submit" wire:loading.attr="disabled" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                        <svg wire:loading wire:target="saveSchedule" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Guardar Sección
+                    </button>
                 </div>
             </form>
         </div>
     </x-modal>
 
-    <!-- Modal Enlace WP (Sin cambios, solo contexto) -->
+    <!-- Modal Enlace WP -->
     <x-modal name="link-wp-modal" maxWidth="lg">
         <div class="p-6">
             <h2 class="text-lg font-medium text-gray-900 mb-2">Enlazar Curso con WordPress</h2>
@@ -464,12 +510,15 @@
 
             <div class="flex justify-end mt-6">
                 <button type="button" x-on:click="$dispatch('close-modal', 'link-wp-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
-                <button type="button" wire:click="saveLink()" wire:loading.attr="disabled" wire:target="saveLink" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">Guardar Enlace</button>
+                <button type="button" wire:click="saveLink()" wire:loading.attr="disabled" wire:target="saveLink" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                    <svg wire:loading wire:target="saveLink" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Guardar Enlace
+                </button>
             </div>
         </div>
     </x-modal>
 
-    <!-- Modal Enlace Sección (Sin cambios, solo contexto) -->
+    <!-- Modal Enlace Sección -->
     <x-modal name="link-section-modal" maxWidth="lg">
         <div class="p-6">
             <h2 class="text-lg font-medium text-gray-900 mb-2">Enlazar Sección con WordPress</h2>
@@ -523,7 +572,10 @@
             <div class="flex justify-end mt-6">
                 <button type="button" x-on:click="$dispatch('close-modal', 'link-section-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
                 @if(!empty($wpSchedules) || !empty($selectedWpScheduleId))
-                <button type="button" wire:click="saveSectionLink()" wire:loading.attr="disabled" wire:target="saveSectionLink" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">Guardar Enlace</button>
+                <button type="button" wire:click="saveSectionLink()" wire:loading.attr="disabled" wire:target="saveSectionLink" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                    <svg wire:loading wire:target="saveSectionLink" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Guardar Enlace
+                </button>
                 @endif
             </div>
         </div>
