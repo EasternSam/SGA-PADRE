@@ -11,9 +11,6 @@
                 <h2 class="text-xl font-bold leading-tight text-gray-900">
                     {{ __('Panel de Control') }}
                 </h2>
-                <p class="mt-1 text-sm text-gray-500">
-                    Bienvenido al sistema de gestión de {{ config('app.name', 'SGA') }}.
-                </p>
             </div>
             <div class="flex items-center gap-3">
                 {{-- Oculto en móviles para ahorrar espacio --}}
