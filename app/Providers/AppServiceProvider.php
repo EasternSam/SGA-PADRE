@@ -5,6 +5,9 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
+// Imports Añadidos
+use App\Models\Enrollment;
+use App\Observers\EnrollmentObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,14 +27,15 @@ class AppServiceProvider extends ServiceProvider
         // 1. Configuración de BD
         Schema::defaultStringLength(191);
 
-        // 2. CORRECCIÓN PARA NGROK (Error 401)
+        // 2. CORRECCIÓN PARA NGROK
         if ($this->app->environment('production') || str_contains(request()->getHost(), 'ngrok')) {
             URL::forceScheme('https');
         }
 
-        // 3. CORRECCIÓN LÍMITE LIVEWIRE (Error 12288KB)
-        // Livewire trae un límite por defecto de 12MB en su configuración interna.
-        // Aquí lo forzamos a 100MB (102400 KB) para que acepte tu CSV.
+        // 3. CORRECCIÓN LÍMITE LIVEWIRE
         config(['livewire.temporary_file_upload.rules' => 'file|max:102400']);
+
+        // 4. REGISTRAR OBSERVER DE INSCRIPCIONES (NUEVO)
+        Enrollment::observe(EnrollmentObserver::class);
     }
 }
