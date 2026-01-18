@@ -138,7 +138,8 @@
     </x-modal>
 
     {{-- Modal de Confirmación de Eliminación Masiva --}}
-    <x-modal :show="$confirmingMassDeletion">
+    {{-- FIX: Cambiado de :show a name="..." para usar eventos, igual que concept-modal --}}
+    <x-modal name="confirm-mass-deletion">
         <div class="p-6">
             <h2 class="text-lg font-medium text-red-600 mb-4">
                 ⚠️ ¿Borrado Masivo de Conceptos?
@@ -147,7 +148,7 @@
                 Estás a punto de eliminar <strong>TODOS</strong> los conceptos de pago. Esta acción es irreversible y podría afectar el historial de pagos si existen referencias. ¿Estás absolutamente seguro?
             </p>
             <div class="flex justify-end">
-                <button type="button" wire:click="$set('confirmingMassDeletion', false)" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2 transition ease-in-out duration-150">
+                <button type="button" x-on:click="$dispatch('close-modal', 'confirm-mass-deletion')" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2 transition ease-in-out duration-150">
                     Cancelar
                 </button>
                 <button type="button" wire:click="massDelete" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
