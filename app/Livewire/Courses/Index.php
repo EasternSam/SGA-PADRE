@@ -10,7 +10,7 @@ use App\Models\User; // Para buscar profesores
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB; // Añadido para transacciones
+use Illuminate\Support\Facades\DB; // Importar DB para escuchar queries
 use Illuminate\Validation\Rule; // Para validación 'unique'
 use Carbon\Carbon; // Para manejar fechas/horas
 
@@ -45,7 +45,7 @@ class Index extends Component
     public $schedule_id, $teacher_id, $days = [], $start_time, $end_time, $section_name, $start_date, $end_date;
     public $modality = 'Presencial'; 
     public $scheduleModalTitle = '';
-    public $teachers = []; // Se cargará bajo demanda
+    public $teachers = []; 
 
     // --- Propiedades para Enlace WP ---
     public $currentLinkingCourse;
@@ -64,6 +64,9 @@ class Index extends Component
     public $confirmingClearUnused = false;
     public $unusedCoursesCount = 0;
 
+    // === DEBUG ===
+    public $debugInfo = []; // Variable pública para mostrar debug en la vista si es necesario
+
     protected $queryString = [
         'search' => ['except' => ''],
         'selectedCourse' => ['except' => null],
@@ -72,32 +75,23 @@ class Index extends Component
 
     public function mount()
     {
-        // OPTIMIZACIÓN: No cargar profesores en el mount.
-        // Se cargarán solo cuando se abra el modal de horarios.
-        // Esto reduce drásticamente el tiempo de carga inicial.
-    }
-
-    /**
-     * Carga los profesores solo cuando es necesario para ahorrar memoria y tiempo.
-     */
-    public function loadTeachers()
-    {
-        if (!empty($this->teachers)) {
-            return; // Ya están cargados
-        }
-
         try {
-            // Optimización: Select solo columnas necesarias
+            // Optimización: Seleccionar solo columnas necesarias si la tabla users es muy grande
             $this->teachers = User::role('Profesor')->select('id', 'name')->orderBy('name')->get();
         } catch (\Exception $e) {
             Log::error("No se pudo cargar el rol 'Profesor': " . $e->getMessage());
-            // Fallback limitado
-            $this->teachers = User::select('id', 'name')->orderBy('name')->limit(100)->get(); 
+            // Fallback limitado a 100 para evitar colapso si hay miles de usuarios
+            $this->teachers = User::orderBy('name')->limit(100)->get(); 
         }
     }
 
     public function render()
     {
+        // INICIO DEBUG
+        $startTime = microtime(true);
+        DB::enableQueryLog();
+        $this->debugInfo = []; // Reiniciar info de debug
+
         $query = Course::query();
 
         if ($this->search) {
@@ -110,42 +104,38 @@ class Index extends Component
         // =================================================================================
         // OPTIMIZACIÓN CRÍTICA DE RENDIMIENTO (BACKEND)
         // =================================================================================
-        
-        // 1. CARGA DE LISTA PRINCIPAL
+        // 1. CARGA INICIAL LIGERA:
         $courses = $query->select('id', 'name', 'code', 'is_sequential', 'registration_fee', 'monthly_fee')
-                         ->with('mapping') // Solo eager loading de mapping
+                         ->with('mapping')
                          ->paginate(10);
 
         $selectedCourseObject = null;
         $modules = collect();
 
-        // 2. CARGA BAJO DEMANDA (Curso Seleccionado)
+        // 2. CARGA BAJO DEMANDA (Curso Seleccionado):
         if ($this->selectedCourse) {
-            // Optimización: Select específico también para los módulos dentro del 'with'
-            $selectedCourseObject = Course::select('id', 'name', 'code', 'is_sequential', 'registration_fee', 'monthly_fee')
-                ->with(['modules' => function($q) {
-                    $q->select('id', 'course_id', 'name'); // Solo traer ID y nombre del módulo
-                }, 'mapping'])
-                ->find($this->selectedCourse);
+            $courseStart = microtime(true);
+            $selectedCourseObject = Course::with(['modules', 'mapping'])->find($this->selectedCourse);
             
             if ($selectedCourseObject) {
                 $modules = $selectedCourseObject->modules;
             } else {
                 $this->reset(['selectedCourse', 'selectedModule']);
             }
+            $this->debugInfo['course_load_time'] = round((microtime(true) - $courseStart) * 1000, 2) . 'ms';
         }
 
         $schedules = collect();
         $selectedModuleName = null;
 
-        // 3. CARGA BAJO DEMANDA (Módulo Seleccionado)
+        // 3. CARGA BAJO DEMANDA (Módulo Seleccionado):
         if ($this->selectedModule) {
+            $moduleStart = microtime(true);
             $currentModule = $modules->firstWhere('id', $this->selectedModule);
             
             if ($currentModule) {
                 $selectedModuleName = $currentModule->name;
                 
-                // Optimización: Traer datos precisos para la tabla de horarios
                 $schedules = CourseSchedule::where('module_id', $this->selectedModule)
                     ->with(['teacher:id,name', 'mapping']) 
                     ->orderBy('start_time')
@@ -153,7 +143,19 @@ class Index extends Component
             } else {
                 $this->selectedModule = null;
             }
+            $this->debugInfo['module_load_time'] = round((microtime(true) - $moduleStart) * 1000, 2) . 'ms';
         }
+
+        // FIN DEBUG
+        $this->debugInfo['total_time'] = round((microtime(true) - $startTime) * 1000, 2) . 'ms';
+        $this->debugInfo['query_log'] = DB::getQueryLog();
+        $this->debugInfo['query_count'] = count($this->debugInfo['query_log']);
+        
+        // Imprimir debug en logs para revisión (Revisa storage/logs/laravel.log)
+        Log::info('LIVEWIRE RENDER DEBUG:', $this->debugInfo);
+
+        // Opcional: Dump directo si estás en local para ver en pantalla
+        // dump($this->debugInfo); 
 
         return view('livewire.courses.index', [
             'courses' => $courses,
@@ -169,12 +171,18 @@ class Index extends Component
 
     public function selectCourse($courseId)
     {
+        // DEBUG
+        Log::info("Selecting Course ID: {$courseId}");
+        
         $this->selectedCourse = $courseId;
         $this->selectedModule = null; 
     }
 
     public function selectModule($moduleId)
     {
+        // DEBUG
+        Log::info("Selecting Module ID: {$moduleId}");
+
         $this->selectedModule = $moduleId;
     }
 
@@ -189,8 +197,7 @@ class Index extends Component
 
     public function confirmClearUnusedCourses()
     {
-        // Optimización: count() es rápido, pero usamos whereDoesntHave optimizado por el motor DB
-        $this->unusedCoursesCount = Course::doesntHave('modules.enrollments')->count();
+        $this->unusedCoursesCount = Course::whereDoesntHave('modules.enrollments')->count();
 
         if ($this->unusedCoursesCount > 0) {
             $this->confirmingClearUnused = true;
@@ -202,27 +209,22 @@ class Index extends Component
 
     public function clearUnusedCourses()
     {
-        // OPTIMIZACIÓN: Uso de chunkById para evitar desbordamiento de memoria
-        // Y DB::transaction para integridad y velocidad
+        // Optimización: Usar chunking para grandes volúmenes de datos
+        // Si tienes miles de cursos vacíos, esto evita timeout.
+        $coursesToDelete = Course::whereDoesntHave('modules.enrollments')->get();
         $count = 0;
 
-        DB::transaction(function () use (&$count) {
-            Course::doesntHave('modules.enrollments')
-                ->chunkById(50, function ($courses) use (&$count) {
-                    foreach ($courses as $course) {
-                        // Borrado en cascada manual (si no está configurado en DB)
-                        foreach ($course->modules as $module) {
-                            $module->schedules()->delete();
-                            $module->delete();
-                        }
-                        if ($course->mapping) {
-                            $course->mapping->delete();
-                        }
-                        $course->delete();
-                        $count++;
-                    }
-                });
-        });
+        foreach ($coursesToDelete as $course) {
+            foreach ($course->modules as $module) {
+                $module->schedules()->delete();
+                $module->delete();
+            }
+            if ($course->mapping) {
+                $course->mapping->delete();
+            }
+            $course->delete();
+            $count++;
+        }
 
         $this->confirmingClearUnused = false;
         $this->unusedCoursesCount = 0;
@@ -284,18 +286,16 @@ class Index extends Component
     {
         $this->validate($this->courseRules());
 
-        DB::transaction(function () {
-            Course::updateOrCreate(
-                ['id' => $this->course_id],
-                [
-                    'name' => $this->course_name,
-                    'code' => $this->course_code,
-                    'is_sequential' => $this->is_sequential, 
-                    'registration_fee' => $this->registration_fee,
-                    'monthly_fee' => $this->monthly_fee,
-                ]
-            );
-        });
+        Course::updateOrCreate(
+            ['id' => $this->course_id],
+            [
+                'name' => $this->course_name,
+                'code' => $this->course_code,
+                'is_sequential' => $this->is_sequential, 
+                'registration_fee' => $this->registration_fee,
+                'monthly_fee' => $this->monthly_fee,
+            ]
+        );
 
         session()->flash('message', $this->course_id ? 'Curso actualizado.' : 'Curso creado.');
         $this->dispatch('close-modal', 'course-modal'); 
@@ -317,6 +317,7 @@ class Index extends Component
     {
         return [
             'module_name' => 'required|string|max:255',
+            // 'module_price' => 'required|numeric|min:0', // Eliminado según vista anterior
         ];
     }
 
@@ -328,9 +329,7 @@ class Index extends Component
         }
         $this->resetModuleFields();
         $this->resetValidation();
-        // Usamos find con select para optimizar
-        $courseName = Course::where('id', $this->selectedCourse)->value('name');
-        $this->moduleModalTitle = 'Nuevo Módulo para ' . $courseName;
+        $this->moduleModalTitle = 'Nuevo Módulo para ' . Course::find($this->selectedCourse)->name;
         $this->dispatch('open-modal', 'module-modal'); 
     }
 
@@ -341,6 +340,7 @@ class Index extends Component
             $module = Module::findOrFail($moduleId);
             $this->module_id = $module->id;
             $this->module_name = $module->name;
+            // $this->module_price = $module->price; 
 
             $this->moduleModalTitle = 'Editar Módulo: ' . $module->name;
             $this->dispatch('open-modal', 'module-modal'); 
@@ -353,15 +353,14 @@ class Index extends Component
     {
         $this->validate($this->moduleRules());
 
-        DB::transaction(function () {
-            Module::updateOrCreate(
-                ['id' => $this->module_id],
-                [
-                    'course_id' => $this->selectedCourse,
-                    'name' => $this->module_name,
-                ]
-            );
-        });
+        Module::updateOrCreate(
+            ['id' => $this->module_id],
+            [
+                'course_id' => $this->selectedCourse,
+                'name' => $this->module_name,
+                // 'price' => $this->module_price, 
+            ]
+        );
 
         session()->flash('message', $this->module_id ? 'Módulo actualizado.' : 'Módulo creado.');
         $this->dispatch('close-modal', 'module-modal'); 
@@ -371,6 +370,7 @@ class Index extends Component
     {
         $this->module_id = null;
         $this->module_name = '';
+        // $this->module_price = 0.00; 
     }
     
     // --- MÉTODOS PARA MODAL DE HORARIO (SECCIÓN) ---
@@ -381,21 +381,15 @@ class Index extends Component
             session()->flash('error', 'Debes seleccionar un módulo primero.');
             return;
         }
-        
-        $this->loadTeachers(); // Carga diferida de profesores
-
         $this->resetScheduleFields();
         $this->resetValidation();
-        $moduleName = Module::where('id', $this->selectedModule)->value('name');
-        $this->scheduleModalTitle = 'Nueva Sección para ' . $moduleName;
+        $this->scheduleModalTitle = 'Nueva Sección para ' . Module::find($this->selectedModule)->name;
         $this->dispatch('open-modal', 'schedule-modal'); 
     }
 
     public function editSchedule($scheduleId)
     {
         $this->resetValidation();
-        $this->loadTeachers(); // Carga diferida de profesores
-
         try {
             $schedule = CourseSchedule::findOrFail($scheduleId);
             $this->schedule_id = $schedule->id;
@@ -433,22 +427,20 @@ class Index extends Component
             'end_date' => 'required|date|after_or_equal:start_date',
         ]);
 
-        DB::transaction(function () {
-            CourseSchedule::updateOrCreate(
-                ['id' => $this->schedule_id],
-                [
-                    'module_id' => $this->selectedModule,
-                    'teacher_id' => $this->teacher_id,
-                    'days_of_week' => $this->days, 
-                    'section_name' => $this->section_name,
-                    'modality' => $this->modality,
-                    'start_time' => $this->start_time,
-                    'end_time' => $this->end_time,
-                    'start_date' => $this->start_date,
-                    'end_date' => $this->end_date,
-                ]
-            );
-        });
+        CourseSchedule::updateOrCreate(
+            ['id' => $this->schedule_id],
+            [
+                'module_id' => $this->selectedModule,
+                'teacher_id' => $this->teacher_id,
+                'days_of_week' => $this->days, 
+                'section_name' => $this->section_name,
+                'modality' => $this->modality,
+                'start_time' => $this->start_time,
+                'end_time' => $this->end_time,
+                'start_date' => $this->start_date,
+                'end_date' => $this->end_date,
+            ]
+        );
 
         session()->flash('message', $this->schedule_id ? 'Sección actualizada.' : 'Sección creada.');
         $this->dispatch('close-modal', 'schedule-modal'); 
@@ -491,9 +483,6 @@ class Index extends Component
         $this->selectedWpCourseId = $this->currentLinkingCourse->mapping->wp_course_id ?? '';
 
         try {
-            // Nota: Esta llamada es síncrona y depende de la API externa.
-            // Si la API es lenta, esto pausará la UI.
-            // Considerar cachear esta respuesta si es posible en el servicio.
             $this->wpCourses = $wpService->getSgaCourses();
             
             if (empty($this->wpCourses)) {
@@ -515,15 +504,12 @@ class Index extends Component
 
         if (empty($this->selectedWpCourseId)) {
             if ($this->currentLinkingCourse->mapping) {
-                DB::transaction(function () {
-                    $course = $this->currentLinkingCourse;
-                    $moduleIds = $course->modules()->pluck('id');
-                    $scheduleIds = CourseSchedule::whereIn('module_id', $moduleIds)->pluck('id');
-                    ScheduleMapping::whereIn('course_schedule_id', $scheduleIds)->delete();
-                    
-                    $this->currentLinkingCourse->mapping->delete();
-                });
+                $course = $this->currentLinkingCourse;
+                $moduleIds = $course->modules()->pluck('id');
+                $scheduleIds = CourseSchedule::whereIn('module_id', $moduleIds)->pluck('id');
+                ScheduleMapping::whereIn('course_schedule_id', $scheduleIds)->delete();
                 
+                $this->currentLinkingCourse->mapping->delete();
                 session()->flash('message', 'Enlace de curso y secciones asociadas eliminado.');
                 $this->currentLinkingCourse->refresh(); 
             }
@@ -574,9 +560,7 @@ class Index extends Component
         $this->closeSectionLinkModal(); 
 
         try {
-            // Eager loading optimizado: Solo lo necesario para verificar el mapping
-            $this->currentLinkingSection = CourseSchedule::with(['module.course.mapping'])
-                ->findOrFail($scheduleId);
+            $this->currentLinkingSection = CourseSchedule::with('module.course.mapping')->findOrFail($scheduleId);
         } catch (\Exception $e) {
             session()->flash('error', 'No se encontró la sección.');
             return;
@@ -593,7 +577,7 @@ class Index extends Component
             $this->wpSchedules = $wpService->getSchedulesForWpCourse($wpCourseId);
             
             if (empty($this->wpSchedules)) {
-                $this->sectionLinkErrorMessage = 'No se encontraron horarios definidos en WordPress para este curso.';
+                $this->sectionLinkErrorMessage = 'No se encontraron horarios definidos en WordPress para este curso. (Asegúrate de haberlos guardado en el metabox del curso en WP).';
             }
 
         } catch (\Exception $e) {
