@@ -204,16 +204,16 @@
                                                         @php
                                                             // Recuperamos el estudiante
                                                             $student = $enrollment->student ?? null;
-                                                            
-                                                            // Cálculo del nombre completo para mostrar
                                                             $studentName = 'N/A';
+                                                            
                                                             if ($student) {
-                                                                // Priorizamos first_name + last_name
-                                                                if (!empty($student->first_name) || !empty($student->last_name)) {
-                                                                    $studentName = trim(($student->first_name ?? '') . ' ' . ($student->last_name ?? ''));
-                                                                } else {
-                                                                    // Fallback
-                                                                    $studentName = $student->name ?? $student->last_name ?? $student->email ?? 'N/A';
+                                                                $first = $student->first_name ?? '';
+                                                                $last = $student->last_name ?? '';
+                                                                $studentName = trim($first . ' ' . $last);
+                                                                
+                                                                if (empty($studentName)) {
+                                                                     // Fallback a otros campos si first/last name estuvieran vacíos
+                                                                     $studentName = $student->name ?? $student->email ?? 'N/A';
                                                                 }
                                                             }
                                                         @endphp
