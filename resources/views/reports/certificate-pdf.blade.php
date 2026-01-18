@@ -2,181 +2,78 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Certificado - {{ $folio }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificado - {{ $folio ?? 'Vista Previa' }}</title>
+    <!-- Tailwind CSS (Vía CDN para facilitar estilos, aunque se recomienda CSS inline para producción PDF estricta) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fuentes de Google -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Pinyon+Script&display=swap" rel="stylesheet">
+    
     <style>
+        /* Reglas base y fuentes */
+        body {
+            background-color: #fff;
+            font-family: 'EB Garamond', serif;
+            color: #1a202c;
+        }
+        .diploma-font { font-family: 'Cinzel Decorative', cursive; }
+        .script-font { font-family: 'Pinyon Script', cursive; }
+        
+        /* Textura de pergamino sutil */
+        .parchment-bg {
+            background-color: #fdfbf7;
+            /* Patrón de ruido SVG embebido para textura de papel */
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+        }
+
+        /* Bordes ornamentales */
+        .ornate-border {
+            border: 3px solid #b49b5a; /* Dorado exterior */
+            padding: 4px;
+            outline: 4px solid #1a202c; /* Gris oscuro outline */
+            outline-offset: 4px;
+        }
+
+        /* Ajustes específicos para DomPDF */
         @page {
             margin: 0;
-            size: a4 landscape;
-        }
-        body {
-            font-family: 'Times New Roman', serif;
-            margin: 0;
-            padding: 0;
-            color: #333;
-            background: #fff;
-        }
-        /* Marco Ornamental */
-        .border-pattern {
-            position: absolute;
-            top: 15px; left: 15px; right: 15px; bottom: 15px;
-            border: 2px solid #1a365d;
-            padding: 5px;
-        }
-        .border-inner {
-            position: absolute;
-            top: 5px; left: 5px; right: 5px; bottom: 5px;
-            border: 4px double #c0b283; /* Dorado */
-            background-color: #fff;
-            /* Fondo sutil opcional */
-            /* background-image: radial-gradient(#f3f4f6 1px, transparent 1px); background-size: 20px 20px; */
+            size: A4 landscape;
         }
         
-        .content-layer {
-            position: relative;
-            z-index: 10;
-            padding: 40px 60px;
-            text-align: center;
-            height: 90%;
-        }
-
-        /* Encabezado */
-        .header-title {
-            font-size: 46px;
-            text-transform: uppercase;
-            letter-spacing: 6px;
-            color: #1a365d;
-            margin-top: 15px;
-            margin-bottom: 5px;
-            font-family: 'Helvetica', sans-serif;
-            font-weight: bold;
-        }
-        .institution-sub {
-            font-size: 18px;
-            text-transform: uppercase;
-            letter-spacing: 4px;
-            color: #888;
-            margin-bottom: 35px;
-            border-bottom: 1px solid #eee;
-            display: inline-block;
-            padding-bottom: 10px;
-        }
-
-        /* Cuerpo */
-        .certifies-text {
-            font-size: 20px;
-            font-style: italic;
-            color: #555;
-            margin-bottom: 15px;
-        }
-        .student-name {
-            font-size: 52px;
-            font-weight: bold;
-            color: #000;
-            margin: 10px 0;
-            /* Si tienes fuentes cursivas instaladas, úsalas aquí */
-            /* font-family: 'Pinyon Script', cursive; */
-            border-bottom: 1px solid #c0b283;
-            display: inline-block;
-            padding: 0 50px 5px 50px;
-            min-width: 60%;
-        }
-        .course-intro {
-            font-size: 20px;
-            margin-top: 30px;
-            color: #555;
-        }
-        .course-name {
-            font-size: 36px;
-            font-weight: bold;
-            color: #1a365d;
-            margin: 15px 0 45px 0;
-        }
-
-        /* Pie de página y Firmas */
-        .footer-table {
+        .page-container {
             width: 100%;
-            margin-top: 50px;
-            border-collapse: collapse;
-        }
-        .sign-cell {
-            text-align: center;
-            vertical-align: bottom;
-            width: 35%;
-        }
-        .qr-cell {
-            text-align: right;
-            vertical-align: bottom;
-            width: 30%;
-            padding-right: 20px;
-        }
-        .date-cell {
-            text-align: center;
-            vertical-align: bottom;
-            width: 35%;
-            font-size: 14px;
-            color: #666;
-            padding-bottom: 10px;
+            height: 100vh; /* Ocupar toda la altura de la página PDF */
+            padding: 40px;
+            box-sizing: border-box;
         }
 
-        .sign-line {
-            border-top: 1px solid #333;
-            width: 80%;
-            margin: 0 auto 8px auto;
+        /* Utilidades de posicionamiento para PDF (tablas son más seguras que flexbox en DomPDF antiguo) */
+        .layout-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
         }
-        .sign-title {
-            font-weight: bold;
-            font-size: 15px;
-            color: #1a365d;
-            text-transform: uppercase;
-        }
-        .sign-subtitle {
-            font-size: 12px;
-            color: #666;
+        .layout-table td {
+            vertical-align: bottom;
+            padding: 0 10px;
         }
         
-        /* QR Container */
-        .qr-box {
-            display: inline-block;
-            text-align: center;
-        }
-        .qr-img {
-            width: 100px;
-            height: 100px;
-            border: 1px solid #ddd;
-            padding: 4px;
-            background: #fff;
-        }
-        .validation-caption {
-            font-size: 9px;
-            color: #888;
-            margin-top: 4px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .folio-text {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 10px;
-            color: #aaa;
-            letter-spacing: 2px;
-            font-family: monospace;
+        /* Asegurar que las imágenes locales funcionen */
+        img {
+            max-width: 100%;
         }
     </style>
 </head>
 <body>
     @php
-        // Lógica unificada para Nombre e Iniciales
-        // Nota: Asumimos que $student se pasa desde el controlador. 
-        // Si se pasara $enrollment en su lugar, se usaría $enrollment->student.
-        // Aquí usamos $student directamente ya que es lo que el controlador CertificatePdfController envía.
-        
+        // Lógica para obtener el nombre completo del estudiante
         $user = $student->user ?? null;
         $studentName = 'N/A';
         
-        if ($student) {
+        if ($student ?? false) {
             $first = $student->first_name ?? $student->name ?? $student->nombres ?? $student->firstname ?? $user->first_name ?? $user->name ?? '';
             $last = $student->last_name ?? $student->apellidos ?? $student->lastname ?? $user->last_name ?? $user->lastname ?? '';
             $studentName = trim($first . ' ' . $last);
@@ -188,60 +85,118 @@
             if (empty($studentName) && $student) {
                  $studentName = $student->email ?? $user->email ?? 'Sin Nombre';
             }
-            
-            // Iniciales no se usan explícitamente en el diseño actual pero se calculan por si acaso
-            $initialFirst = !empty($first) ? substr($first, 0, 1) : 'U';
-            $initialLast = !empty($last) ? substr($last, 0, 1) : '';
-            $initials = strtoupper($initialFirst . $initialLast);
-        } else {
-            $initials = 'NA';
         }
     @endphp
 
-    <div class="border-pattern">
-        <div class="border-inner">
-            <div class="content-layer">
+    <!-- Contenedor Principal A4 Horizontal -->
+    <div class="page-container parchment-bg">
+        
+        <!-- Marco Exterior Doble -->
+        <div class="h-full w-full border-4 border-double border-gray-800 p-2 box-border relative">
+            
+            <!-- Marco Ornamental Dorado -->
+            <div class="h-full w-full border border-yellow-600 ornate-border relative p-8 text-center">
                 
-                <div class="header-title">Certificado</div>
-                <div class="institution-sub">{{ $institution_name }}</div>
+                <!-- Decoraciones en las esquinas -->
+                <div class="absolute top-2 left-2 w-16 h-16 border-t-4 border-l-4 border-yellow-600 opacity-60"></div>
+                <div class="absolute top-2 right-2 w-16 h-16 border-t-4 border-r-4 border-yellow-600 opacity-60"></div>
+                <div class="absolute bottom-2 left-2 w-16 h-16 border-b-4 border-l-4 border-yellow-600 opacity-60"></div>
+                <div class="absolute bottom-2 right-2 w-16 h-16 border-b-4 border-r-4 border-yellow-600 opacity-60"></div>
 
-                <div class="certifies-text">Otorga el presente reconocimiento a:</div>
+                <!-- Sección Superior: Logo y Título -->
+                <div class="w-full text-center mt-2">
+                    <!-- Logo Institucional -->
+                    <div style="height: 80px; margin-bottom: 10px; display: flex; justify-content: center;">
+                        @if(file_exists(public_path('centuu.png')))
+                            <img src="{{ public_path('centuu.png') }}" style="height: 80px; opacity: 0.9;" alt="Logo">
+                        @else
+                            <!-- Icono genérico si no hay logo -->
+                            <svg style="width: 50px; height: 50px; color: #4a5568; margin: 0 auto;" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2L1 21h22L12 2zm0 3.516L20.297 19H3.703L12 5.516zM11 10h2v4h-2zm0 5h2v2h-2z"/>
+                            </svg>
+                        @endif
+                    </div>
 
-                <div class="student-name">
-                    {{ $studentName }}
+                    <h1 class="text-5xl font-black text-gray-900 diploma-font tracking-widest uppercase leading-none mb-2">
+                        Diploma de Honor
+                    </h1>
+                    
+                    <div class="h-1 w-32 bg-yellow-600 mx-auto my-4"></div>
+                    
+                    <p class="text-xl text-gray-600 italic font-serif">
+                        La institución {{ $institution_name ?? 'SGA PADRE' }} otorga el presente reconocimiento a
+                    </p>
                 </div>
 
-                <div class="course-intro">Por haber completado satisfactoriamente el programa académico:</div>
-
-                <div class="course-name">
-                    {{ $course->name }}
+                <!-- Nombre del Estudiante -->
+                <div class="w-full my-6 text-center">
+                    <h2 class="text-6xl text-gray-900 script-font leading-none py-2 border-b border-gray-300 inline-block px-12 min-w-[60%]">
+                        {{ $studentName }}
+                    </h2>
                 </div>
 
-                <table class="footer-table">
+                <!-- Cuerpo del Texto -->
+                <div class="max-w-4xl mx-auto text-lg text-gray-700 leading-relaxed text-center px-8">
+                    <p>
+                        Por haber completado satisfactoriamente los requisitos académicos exigidos para el curso de:
+                    </p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2 mb-2 diploma-font text-blue-900">
+                        {{ $course->name ?? 'Nombre del Curso' }}
+                    </p>
+                    <p class="text-base italic">
+                        Demostrando excelencia, compromiso y dedicación en su desempeño durante el programa.
+                    </p>
+                </div>
+
+                <!-- Sección Inferior: Firmas y QR (Estructura de Tabla para PDF) -->
+                <table class="layout-table">
                     <tr>
-                        <td class="sign-cell">
-                            <!-- Espacio visual para la firma -->
-                            <div style="height: 50px;"></div> 
-                            <div class="sign-line"></div>
-                            <div class="sign-title">{{ $director_name }}</div>
-                            <div class="sign-subtitle">Director Académico</div>
-                        </td>
-                        
-                        <td class="date-cell">
-                            Expedido el:<br>
-                            <strong>{{ $date }}</strong>
+                        <!-- Firma Izquierda -->
+                        <td width="35%" class="text-center">
+                            <div style="height: 60px;">
+                                <!-- Espacio para firma escaneada si se desea -->
+                            </div>
+                            <div style="border-top: 1px solid #4a5568; width: 80%; margin: 0 auto;"></div>
+                            <p class="mt-2 font-bold text-gray-800 uppercase text-xs tracking-wider">
+                                {{ $director_name ?? 'Director Académico' }}
+                            </p>
+                            <p class="text-[10px] text-gray-500">Dirección Académica</p>
                         </td>
 
-                        <td class="qr-cell">
-                            <div class="qr-box">
-                                <img src="{{ $qr_code_url }}" class="qr-img" alt="Validación QR">
-                                <div class="validation-caption">Escanear para validar</div>
+                        <!-- QR Central -->
+                        <td width="30%" class="text-center align-bottom">
+                            <div style="display: inline-block; padding: 6px; border: 4px double #b49b5a; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                <!-- QR generado externamente pasado por el controlador -->
+                                <img src="{{ $qr_code_url ?? '' }}" alt="QR Validación" style="width: 90px; height: 90px; display: block;">
                             </div>
+                            <div style="margin-top: 8px; background-color: #fffaf0; border: 1px solid #fbd38d; padding: 2px 8px; display: inline-block;">
+                                <p class="uppercase text-[8px] font-bold tracking-[0.15em] text-yellow-800">
+                                    Validación Digital
+                                </p>
+                            </div>
+                        </td>
+
+                        <!-- Firma Derecha -->
+                        <td width="35%" class="text-center">
+                            <div style="height: 60px;">
+                                <!-- Espacio para segunda firma -->
+                            </div>
+                            <div style="border-top: 1px solid #4a5568; width: 80%; margin: 0 auto;"></div>
+                            <p class="mt-2 font-bold text-gray-800 uppercase text-xs tracking-wider">
+                                Secretaría General
+                            </p>
+                            <p class="text-[10px] text-gray-500">Certificación Oficial</p>
                         </td>
                     </tr>
                 </table>
 
-                <div class="folio-text">FOLIO: {{ $folio }}</div>
+                <!-- Pie de Página -->
+                <div class="absolute bottom-2 left-0 w-full text-center">
+                    <span class="text-[9px] text-gray-400 uppercase tracking-widest font-mono">
+                        Expedido el {{ $date ?? date('d/m/Y') }} • Folio: {{ $folio ?? 'PENDIENTE' }} • Registro Oficial
+                    </span>
+                </div>
+
             </div>
         </div>
     </div>
