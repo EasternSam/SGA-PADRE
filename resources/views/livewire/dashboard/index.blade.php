@@ -195,40 +195,44 @@
                                 @forelse ($recentEnrollments as $enrollment)
                                     <tr class="hover:bg-gray-50 transition-colors">
                                         <td class="px-6 py-4">
+                                            @php
+                                                // Lógica unificada para Nombre e Iniciales
+                                                $student = $enrollment->student ?? null;
+                                                
+                                                // Intentar obtener el nombre de múltiples campos posibles (español/inglés)
+                                                $first = $student->first_name ?? $student->name ?? $student->nombres ?? $student->firstname ?? '';
+                                                $last = $student->last_name ?? $student->apellidos ?? $student->lastname ?? '';
+                                                
+                                                // Crear nombre completo
+                                                $studentName = trim($first . ' ' . $last);
+                                                
+                                                // Fallback al email si no hay nombre
+                                                if (empty($studentName) && $student) {
+                                                     $studentName = $student->email ?? 'Sin Nombre';
+                                                }
+                                                
+                                                // Calcular iniciales basadas en lo encontrado
+                                                $initialFirst = !empty($first) ? substr($first, 0, 1) : 'U';
+                                                $initialLast = !empty($last) ? substr($last, 0, 1) : '';
+                                                $initials = strtoupper($initialFirst . $initialLast);
+                                            @endphp
+
                                             <div class="flex items-center">
                                                 <div class="h-10 w-10 flex-shrink-0 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold border border-gray-200">
-                                                    {{ substr($enrollment->student->first_name ?? $enrollment->student->name ?? 'U', 0, 1) }}{{ substr($enrollment->student->last_name ?? '', 0, 1) }}
+                                                    {{ $initials }}
                                                 </div>
                                                 <div class="ml-4">
                                                     <div class="font-medium text-gray-900">
-                                                        @php
-                                                            // Recuperamos el estudiante
-                                                            $student = $enrollment->student ?? null;
-                                                            $studentName = 'N/A';
-                                                            
-                                                            if ($student) {
-                                                                // Intentamos todas las combinaciones posibles
-                                                                $first = $student->first_name ?? $student->name ?? '';
-                                                                $last = $student->last_name ?? '';
-                                                                
-                                                                // Concatenación forzada con espacio si ambos existen
-                                                                $studentName = trim($first . ' ' . $last);
-                                                                
-                                                                // Si sigue vacío, probamos email
-                                                                if (empty($studentName)) {
-                                                                     $studentName = $student->email ?? 'Sin Nombre';
-                                                                }
-                                                            }
-                                                        @endphp
                                                         {{ $studentName }}
                                                         
-                                                        {{-- DEBUG SOLICITADO POR EL USUARIO --}}
+                                                        {{-- DEBUG ACTUALIZADO --}}
                                                         @if($student)
-                                                        <div class="text-[10px] text-red-500 font-mono mt-1 border border-red-100 bg-red-50 p-1 rounded">
-                                                            DEBUG: 
-                                                            first_name: "{{ $student->first_name ?? 'NULL' }}" | 
-                                                            last_name: "{{ $student->last_name ?? 'NULL' }}" |
-                                                            name: "{{ $student->name ?? 'NULL' }}"
+                                                        <div class="text-[10px] text-red-500 font-mono mt-1 border border-red-100 bg-red-50 p-1 rounded max-w-xs whitespace-normal">
+                                                            <strong>DEBUG (Valores DB):</strong><br>
+                                                            first_name: "{{ $student->first_name ?? 'NULL' }}"<br>
+                                                            nombres: "{{ $student->nombres ?? 'NULL' }}"<br>
+                                                            name: "{{ $student->name ?? 'NULL' }}"<br>
+                                                            last_name: "{{ $student->last_name ?? 'NULL' }}"
                                                         </div>
                                                         @endif
                                                     </div>
