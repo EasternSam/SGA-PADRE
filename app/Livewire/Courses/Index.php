@@ -32,8 +32,8 @@ class Index extends Component
     // --- Propiedades para el modal de Cursos ---
     public $course_id, $course_name, $course_code;
     public $is_sequential = false;
-    public $registration_fee = 0; // Nuevo: Precio de Inscripción
-    public $monthly_fee = 0;      // Nuevo: Precio de Mensualidad
+    public $registration_fee = 0; 
+    public $monthly_fee = 0;      
     public $courseModalTitle = '';
 
     // --- Propiedades para el modal de Módulos ---
@@ -71,80 +71,82 @@ class Index extends Component
 
     public function mount()
     {
+        // Optimización: Cargar profesores solo con ID y Nombre para el select
+        // Limitamos a 100 para evitar sobrecarga en el render inicial si hay muchos usuarios
         try {
-            // Optimización: Seleccionar solo columnas necesarias para el selector de profesores
             $this->teachers = User::role('Profesor')->select('id', 'name')->orderBy('name')->get();
         } catch (\Exception $e) {
-            Log::error("No se pudo cargar el rol 'Profesor': " . $e->getMessage());
-            // Fallback limitado para evitar colapso de memoria
             $this->teachers = User::orderBy('name')->select('id', 'name')->limit(100)->get(); 
         }
     }
 
     public function render()
     {
-        $query = Course::query();
+        // =================================================================================
+        // 1. CARGA DE LISTA DE CURSOS (Optimizada)
+        // =================================================================================
+        $coursesQuery = Course::query();
 
         if ($this->search) {
-            $query->where(function ($q) {
+            $coursesQuery->where(function ($q) {
                 $q->where('name', 'like', '%' . $this->search . '%')
                   ->orWhere('code', 'like', '%' . $this->search . '%');
             });
         }
 
-        // 1. CARGA DE LISTA DE CURSOS (Optimizado)
-        // Seleccionamos solo las columnas que usa la vista para la lista lateral.
-        // Usamos 'with' solo para 'mapping' (el icono verde).
-        $courses = $query->select('id', 'name', 'code', 'is_sequential', 'registration_fee', 'monthly_fee')
-                         ->with('mapping')
-                         ->paginate(10);
+        // Seleccionamos SOLO las columnas necesarias para la lista lateral.
+        // Eager loading de 'mapping' es ligero (1 a 1).
+        $courses = $coursesQuery->select('id', 'name', 'code', 'is_sequential', 'registration_fee', 'monthly_fee')
+                                ->with('mapping')
+                                ->paginate(10);
 
+        // =================================================================================
+        // 2. CARGA DE MÓDULOS (Solo si hay curso seleccionado)
+        // =================================================================================
         $selectedCourseObject = null;
-        $modules = collect();
+        $modules = collect(); // Colección vacía por defecto
 
-        // 2. CARGA DE MÓDULOS (Bajo demanda - Lazy Loading)
-        // Solo ejecutamos esto si el usuario ha hecho clic en un curso.
         if ($this->selectedCourse) {
-            // Eager Load inteligente:
-            // - Cargamos 'modules' pero solo sus columnas ID, Nombre y CourseID.
-            // - Usamos withCount('schedules') para saber cuántas clases tiene cada módulo sin cargar las clases en sí.
+            // Buscamos el curso seleccionado
             $selectedCourseObject = Course::select('id', 'name', 'code')
-                ->with(['modules' => function($q) {
-                    $q->select('id', 'course_id', 'name')
-                      ->withCount('schedules'); // Eficiente para mostrar "(5 clases)" en la vista
-                }, 'mapping'])
+                ->with('mapping') // Necesario para botones de enlace
                 ->find($this->selectedCourse);
             
             if ($selectedCourseObject) {
-                $modules = $selectedCourseObject->modules;
+                // CONSULTA SEPARADA PARA MÓDULOS: Más rápido que anidar todo en la principal.
+                // Traemos solo los módulos de este curso.
+                $modules = Module::where('course_id', $this->selectedCourse)
+                    ->select('id', 'course_id', 'name') // Solo columnas necesarias
+                    ->get();
             } else {
-                // Si el curso fue eliminado por otro usuario, reseteamos la selección
+                // Si el curso no existe (borrado), limpiar selección
                 $this->reset(['selectedCourse', 'selectedModule']);
             }
         }
 
-        // 3. CARGA DE SECCIONES / HORARIOS (Granular y Paginada)
-        // Solo ejecutamos esto si hay un módulo seleccionado.
-        $schedules = collect();
+        // =================================================================================
+        // 3. CARGA DE SECCIONES (Solo si hay módulo seleccionado)
+        // =================================================================================
+        $schedules = collect(); // Colección vacía por defecto
         $selectedModuleName = null;
 
         if ($this->selectedModule) {
-            // Buscamos el módulo en la colección que ya tenemos en memoria (evita ir a la DB solo por el nombre)
+            // Obtener nombre del módulo seleccionado de la colección en memoria (sin query extra)
             $currentModule = $modules->firstWhere('id', $this->selectedModule);
             
             if ($currentModule) {
                 $selectedModuleName = $currentModule->name;
                 
-                // QUERY OPTIMIZADA: Carga SOLO las secciones de este módulo.
-                // - Select: Solo columnas necesarias.
-                // - With: Solo datos del profesor (id, name) y mapeo.
-                // - Paginate: Solo trae 50 registros para evitar sobrecarga si hay miles.
+                // CONSULTA ESPECÍFICA DE HORARIOS
+                // Solo traemos los horarios de ESTE módulo.
+                // Limitamos con paginación (50) por si un módulo tuviera miles de clases (caso extremo).
                 $schedules = CourseSchedule::where('module_id', $this->selectedModule)
                     ->select('id', 'module_id', 'teacher_id', 'days_of_week', 'section_name', 'modality', 'start_time', 'end_time', 'start_date', 'end_date')
-                    ->with(['teacher:id,name', 'mapping']) 
+                    ->with(['teacher:id,name', 'mapping']) // Relaciones ligeras
                     ->orderBy('start_time')
                     ->paginate(50, ['*'], 'schedules-page');
             } else {
+                // El módulo seleccionado no pertenece al curso actual o no existe
                 $this->selectedModule = null;
             }
         }
@@ -165,15 +167,13 @@ class Index extends Component
     {
         $this->selectedCourse = $courseId;
         $this->selectedModule = null; 
-        // Resetear la página de horarios al cambiar de curso
-        $this->resetPage('schedules-page');
+        $this->resetPage('schedules-page'); // Resetear paginación de horarios
     }
 
     public function selectModule($moduleId)
     {
         $this->selectedModule = $moduleId;
-        // Resetear la página de horarios al cambiar de módulo para ver los primeros resultados
-        $this->resetPage('schedules-page');
+        $this->resetPage('schedules-page'); // Resetear paginación de horarios
     }
 
     public function clearFilters()
@@ -199,7 +199,7 @@ class Index extends Component
 
     public function clearUnusedCourses()
     {
-        // Optimización: Usar chunking para evitar timeout si son muchos registros
+        // Optimización: Chunking para borrar grandes cantidades sin memoria excedida
         Course::whereDoesntHave('modules.enrollments')->chunk(100, function ($courses) {
             foreach ($courses as $course) {
                 foreach ($course->modules as $module) {
