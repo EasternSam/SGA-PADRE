@@ -197,7 +197,7 @@
                                         <td class="px-6 py-4">
                                             <div class="flex items-center">
                                                 <div class="h-10 w-10 flex-shrink-0 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold border border-gray-200">
-                                                    {{ substr($enrollment->student->name ?? 'U', 0, 1) }}{{ substr($enrollment->student->last_name ?? '', 0, 1) }}
+                                                    {{ substr($enrollment->student->first_name ?? 'U', 0, 1) }}{{ substr($enrollment->student->last_name ?? '', 0, 1) }}
                                                 </div>
                                                 <div class="ml-4">
                                                     <div class="font-medium text-gray-900">
@@ -208,12 +208,21 @@
                                                             // Cálculo del nombre completo para mostrar
                                                             $studentName = 'N/A';
                                                             if ($student) {
-                                                                // Priorizamos first_name + last_name si existen
+                                                                // Intento 1: first_name y last_name (según migración mostrada)
                                                                 if (!empty($student->first_name) || !empty($student->last_name)) {
                                                                     $studentName = trim(($student->first_name ?? '') . ' ' . ($student->last_name ?? ''));
-                                                                } else {
-                                                                    // Fallback a otros campos si first/last name estuvieran vacíos
-                                                                    $studentName = $student->name ?? $student->email ?? 'N/A';
+                                                                } 
+                                                                // Intento 2: name y last_name (por si acaso)
+                                                                elseif (!empty($student->name) && !empty($student->last_name)) {
+                                                                    $studentName = trim($student->name . ' ' . $student->last_name);
+                                                                } 
+                                                                // Intento 3: full_name (accesor)
+                                                                elseif (!empty($student->full_name)) {
+                                                                    $studentName = $student->full_name;
+                                                                } 
+                                                                // Fallback
+                                                                else {
+                                                                    $studentName = $student->name ?? $student->last_name ?? $student->email ?? 'N/A';
                                                                 }
                                                             }
                                                         @endphp
