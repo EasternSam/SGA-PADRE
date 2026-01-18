@@ -34,9 +34,30 @@
                             @forelse ($enrollments as $enrollment)
                                 {{-- Verificación de seguridad en cascada: Schedule -> Module -> Course --}}
                                 @if($enrollment->courseSchedule && $enrollment->courseSchedule->module && $enrollment->courseSchedule->module->course)
+                                    @php
+                                        // Lógica unificada para Nombre en la Tabla
+                                        $student = $enrollment->student ?? null;
+                                        $user = $student->user ?? null;
+                                        $studentName = 'N/A';
+                                        
+                                        if ($student) {
+                                            $first = $student->first_name ?? $student->name ?? $student->nombres ?? $student->firstname ?? $user->first_name ?? $user->name ?? '';
+                                            $last = $student->last_name ?? $student->apellidos ?? $student->lastname ?? $user->last_name ?? $user->lastname ?? '';
+                                            $studentName = trim($first . ' ' . $last);
+                                            
+                                            if (empty($studentName)) {
+                                                $studentName = $student->full_name ?? $student->fullname ?? $user->full_name ?? $user->fullname ?? '';
+                                            }
+                                            
+                                            if (empty($studentName) && $student) {
+                                                 $studentName = $student->email ?? $user->email ?? 'Sin Nombre';
+                                            }
+                                        }
+                                    @endphp
                                 <tr class="bg-white border-b hover:bg-gray-50 transition">
                                     <td class="py-4 px-6 font-medium text-gray-900">
-                                        {{ $enrollment->student->name }} {{ $enrollment->student->last_name }}
+                                        {{-- Usamos la variable calculada $studentName --}}
+                                        <div class="text-base font-semibold">{{ $studentName }}</div>
                                         <div class="text-xs text-gray-500">{{ $enrollment->student->email }}</div>
                                     </td>
                                     <td class="py-4 px-6">
