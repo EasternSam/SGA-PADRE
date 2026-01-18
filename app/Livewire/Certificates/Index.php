@@ -16,15 +16,17 @@ class Index extends Component
 
     public function render()
     {
-        // CORRECCIÓN: Usamos 'courseSchedule.course' en lugar de 'course'
+        // CORRECCIÓN CRÍTICA:
+        // La relación correcta es: courseSchedule -> module -> course
+        // Usamos la notación de puntos para cargar todos los niveles.
         $enrollments = Enrollment::query()
-            ->with(['student', 'courseSchedule.course'])
+            ->with(['student', 'courseSchedule.module.course']) 
             ->whereHas('student', function (Builder $query) {
                 $query->where('name', 'like', '%' . $this->search . '%')
                       ->orWhere('last_name', 'like', '%' . $this->search . '%')
                       ->orWhere('email', 'like', '%' . $this->search . '%');
             })
-            // Opcional: Filtrar solo si tiene nota final asignada
+            // Opcional: Filtrar solo si tiene nota final asignada para evitar vacíos
             ->whereNotNull('final_grade')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
