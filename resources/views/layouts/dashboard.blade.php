@@ -108,7 +108,7 @@
         <div class="flex-1 flex flex-col min-w-0 lg:pl-64 transition-all duration-300 ease-in-out">
 
             <!-- 3. Top bar "Glassmorphism" -->
-            <header class="sticky top-0 z-20 flex flex-col bg-white/90 backdrop-blur-md border-b border-gray-200/60 shadow-sm supports-[backdrop-filter]:bg-white/60">
+            <header class="sticky top-0 z-20 flex flex-col bg-white/90 backdrop-blur-md border-b border-gray-200/60 shadow-sm supports-[backdrop-filter]:bg-white/60" style="padding-top: 16px; padding-bottom: 16px;">
                 <div class="flex flex-1 items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
                     
                     <!-- Left: Hamburger & Page Title / Breadcrumb -->
