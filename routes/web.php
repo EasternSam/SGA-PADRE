@@ -7,7 +7,7 @@ use App\Http\Controllers\AttendancePdfController;
 use App\Http\Controllers\GradesPdfController; 
 use App\Http\Controllers\FinancialPdfController;
 use App\Http\Controllers\StudentListPdfController; 
-use App\Http\Controllers\CertificatePdfController; // <--- NUEVO CONTROLADOR CERTIFICADOS
+use App\Http\Controllers\CertificatePdfController; 
 use Illuminate\Support\Facades\Auth;
 use App\Livewire\Admin\DatabaseImport; 
 use Illuminate\Support\Facades\Http;
@@ -24,6 +24,7 @@ use App\Livewire\TeacherPortal\Grades as TeacherPortalGrades;
 use App\Livewire\TeacherPortal\Attendance as TeacherPortalAttendance;
 
 use App\Livewire\Admin\RequestsManagement;
+use Illuminate\Support\Facades\URL; // Importante para la validación
 
 /*
 |--------------------------------------------------------------------------
@@ -34,6 +35,13 @@ use App\Livewire\Admin\RequestsManagement;
 Route::get('/', function () {
     return view('auth.login');
 });
+
+// --- RUTA PÚBLICA DE VALIDACIÓN DE CERTIFICADOS (QR) ---
+// Esta ruta permite verificar la autenticidad del certificado sin estar logueado.
+// El middleware 'signed' verifica que la URL no haya sido manipulada.
+Route::get('/certificates/verify/{student}/{course}', [CertificatePdfController::class, 'verify'])
+    ->name('certificates.verify')
+    ->middleware('signed');
 
 // --- INICIO: RUTA DE PRUEBA (Health Check) ---
 Route::get('/test', function () {
@@ -137,7 +145,7 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
     
     // --- GESTIÓN DE REPORTES Y CERTIFICADOS (Admin) ---
     Route::get('/reports', \App\Livewire\Reports\Index::class)->name('reports.index');
-    Route::get('/certificates', \App\Livewire\Certificates\Index::class)->name('admin.certificates.index'); // <--- NUEVA RUTA ADMIN
+    Route::get('/certificates', \App\Livewire\Certificates\Index::class)->name('admin.certificates.index'); 
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
 });
@@ -173,7 +181,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/reports/financial/{student}', [FinancialPdfController::class, 'download'])->name('reports.financial-report');
 
     // --- RUTA DESCARGA CERTIFICADO ---
-    Route::get('/reports/certificate/{student}/{course}/pdf', [CertificatePdfController::class, 'download'])->name('certificates.download'); // <--- NUEVA RUTA PDF
+    Route::get('/reports/certificate/{student}/{course}/pdf', [CertificatePdfController::class, 'download'])->name('certificates.download'); 
 });
 
 // --- RUTAS PARA CAMBIO DE CONTRASEÑA OBLIGATORIO ---
