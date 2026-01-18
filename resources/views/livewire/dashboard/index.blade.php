@@ -196,32 +196,45 @@
                                     <tr class="hover:bg-gray-50 transition-colors">
                                         <td class="px-6 py-4">
                                             @php
-                                                // Lógica unificada para Nombre e Iniciales
+                                                // Lógica unificada INTELIGENTE para Nombre
                                                 $student = $enrollment->student ?? null;
                                                 $user = $student->user ?? null;
+                                                $studentName = 'N/A';
+                                                $source = 'N/A';
                                                 
-                                                // 1. Intentar obtener el nombre de múltiples campos posibles (español/inglés)
-                                                // Prioridad: Student > User (relación)
-                                                $first = $student->first_name ?? $student->name ?? $student->nombres ?? $student->firstname ?? $user->first_name ?? $user->name ?? '';
-                                                $last = $student->last_name ?? $student->apellidos ?? $student->lastname ?? $user->last_name ?? $user->lastname ?? '';
-                                                
-                                                // Crear nombre completo
-                                                $studentName = trim($first . ' ' . $last);
-                                                
-                                                // 2. Si todavía está vacío, buscar campo 'full_name' o 'fullname'
-                                                if (empty($studentName)) {
-                                                    $studentName = $student->full_name ?? $student->fullname ?? $user->full_name ?? $user->fullname ?? '';
+                                                if ($student) {
+                                                    // CASO 1: El estudiante tiene 'first_name' explícito.
+                                                    // Usamos la concatenación estándar.
+                                                    if (!empty($student->first_name)) {
+                                                        $studentName = trim($student->first_name . ' ' . ($student->last_name ?? ''));
+                                                        $source = 'Student DB';
+                                                    }
+                                                    // CASO 2: El estudiante NO tiene 'first_name', pero el Usuario asociado sí tiene nombre.
+                                                    // Asumimos que User->name es el NOMBRE COMPLETO.
+                                                    elseif ($user && !empty($user->name)) {
+                                                        $studentName = $user->name;
+                                                        $source = 'User Rel';
+                                                    }
+                                                    // CASO 3: Solo tenemos apellido o datos parciales
+                                                    elseif (!empty($student->last_name)) {
+                                                        $studentName = $student->last_name;
+                                                        $source = 'Last Name Only';
+                                                    }
+                                                    // CASO 4: Fallback a email
+                                                    else {
+                                                        $studentName = $student->email ?? $user->email ?? 'Sin Nombre';
+                                                        $source = 'Email';
+                                                    }
                                                 }
 
-                                                // 3. Fallback al email si no hay nombre
-                                                if (empty($studentName) && $student) {
-                                                     $studentName = $student->email ?? $user->email ?? 'Sin Nombre';
+                                                // Calcular iniciales basadas en el nombre final calculado
+                                                $initials = 'U';
+                                                if ($studentName !== 'N/A' && $studentName !== 'Sin Nombre') {
+                                                    $parts = explode(' ', trim($studentName));
+                                                    $firstInit = substr($parts[0] ?? '', 0, 1);
+                                                    $lastInit = count($parts) > 1 ? substr(end($parts), 0, 1) : (isset($parts[0]) && strlen($parts[0]) > 1 ? substr($parts[0], 1, 1) : '');
+                                                    $initials = strtoupper($firstInit . $lastInit);
                                                 }
-                                                
-                                                // Calcular iniciales basadas en lo encontrado
-                                                $initialFirst = !empty($first) ? substr($first, 0, 1) : 'U';
-                                                $initialLast = !empty($last) ? substr($last, 0, 1) : '';
-                                                $initials = strtoupper($initialFirst . $initialLast);
                                             @endphp
 
                                             <div class="flex items-center">
@@ -232,14 +245,10 @@
                                                     <div class="font-medium text-gray-900">
                                                         {{ $studentName }}
                                                         
-                                                        {{-- DEBUG ACTUALIZADO - BUSCANDO EN RELACIONES --}}
+                                                        {{-- DEBUG SOLICITADO --}}
                                                         @if($student)
-                                                        <div class="text-[10px] text-red-500 font-mono mt-1 border border-red-100 bg-red-50 p-1 rounded max-w-xs whitespace-normal">
-                                                            <strong>DEBUG (DB & Rel):</strong><br>
-                                                            Stu.first_name: "{{ $student->first_name ?? 'NULL' }}"<br>
-                                                            Stu.last_name: "{{ $student->last_name ?? 'NULL' }}"<br>
-                                                            User.name: "{{ $student->user->name ?? 'NULL' }}"<br>
-                                                            User.first_name: "{{ $student->user->first_name ?? 'NULL' }}"
+                                                        <div class="text-[10px] {{ $source == 'User Rel' || $source == 'Student DB' ? 'text-green-600 bg-green-50 border-green-100' : 'text-red-500 bg-red-50 border-red-100' }} font-mono mt-1 border p-1 rounded max-w-xs whitespace-normal">
+                                                            DEBUG: Fuente usada: <strong>{{ $source }}</strong>
                                                         </div>
                                                         @endif
                                                     </div>
