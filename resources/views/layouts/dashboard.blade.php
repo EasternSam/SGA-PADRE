@@ -131,24 +131,14 @@
 
                     <!-- Center: 4. COMPONENTE DE BÚSQUEDA GLOBAL -->
                     <div class="hidden md:flex flex-1 max-w-md px-8 justify-center">
-                        {{-- 
-                             OPTIMIZACIÓN CRÍTICA: 'lazy'
-                             Esto hace que la barra de búsqueda se cargue DESPUÉS de que la página principal
-                             ya se haya mostrado. Evita que consultas pesadas en el buscador bloqueen la navegación.
-                        --}}
                         <livewire:global-search lazy />
                     </div>
 
                     <!-- Right: Actions -->
                     <div class="flex items-center gap-x-4 lg:gap-x-6">
                         
-                        <!-- 5. Notifications Bell (Estático por ahora para velocidad) -->
-                        <button type="button" class="relative -m-2.5 p-2.5 text-gray-400 hover:text-gray-500 transition-colors">
-                            <span class="sr-only">Ver notificaciones</span>
-                            <i class="far fa-bell text-xl"></i>
-                            <!-- Badge (Opcional: cargar vía JS o Livewire lazy si se necesita dinámico) -->
-                            {{-- <span class="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white"></span> --}}
-                        </button>
+                        <!-- 5. Notifications Dropdown (FUNCIONALIDAD NUEVA) -->
+                        <livewire:notifications-dropdown lazy />
 
                         <!-- Separator -->
                         <div class="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200" aria-hidden="true"></div>
@@ -166,7 +156,7 @@
                                             <img class="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-gray-100" 
                                                  src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&color=7F9CF5&background=EBF4FF&bold=true" 
                                                  alt="{{ Auth::user()->name }}"
-                                                 loading="lazy"> <!-- Lazy load para imagen -->
+                                                 loading="lazy">
                                             <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-400 ring-2 ring-white"></span>
                                         </div>
                                         <i class="fas fa-chevron-down text-gray-400 text-xs hidden lg:block ml-1"></i>
