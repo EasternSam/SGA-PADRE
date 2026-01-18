@@ -208,20 +208,11 @@
                                                             // Cálculo del nombre completo para mostrar
                                                             $studentName = 'N/A';
                                                             if ($student) {
-                                                                // Intento 1: first_name y last_name (según migración mostrada)
+                                                                // Priorizamos first_name + last_name
                                                                 if (!empty($student->first_name) || !empty($student->last_name)) {
                                                                     $studentName = trim(($student->first_name ?? '') . ' ' . ($student->last_name ?? ''));
-                                                                } 
-                                                                // Intento 2: name y last_name (por si acaso)
-                                                                elseif (!empty($student->name) && !empty($student->last_name)) {
-                                                                    $studentName = trim($student->name . ' ' . $student->last_name);
-                                                                } 
-                                                                // Intento 3: full_name (accesor)
-                                                                elseif (!empty($student->full_name)) {
-                                                                    $studentName = $student->full_name;
-                                                                } 
-                                                                // Fallback
-                                                                else {
+                                                                } else {
+                                                                    // Fallback
                                                                     $studentName = $student->name ?? $student->last_name ?? $student->email ?? 'N/A';
                                                                 }
                                                             }
