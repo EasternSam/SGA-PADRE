@@ -167,6 +167,37 @@
     </style>
 </head>
 <body>
+    @php
+        // Lógica unificada para Nombre e Iniciales
+        // Nota: Asumimos que $student se pasa desde el controlador. 
+        // Si se pasara $enrollment en su lugar, se usaría $enrollment->student.
+        // Aquí usamos $student directamente ya que es lo que el controlador CertificatePdfController envía.
+        
+        $user = $student->user ?? null;
+        $studentName = 'N/A';
+        
+        if ($student) {
+            $first = $student->first_name ?? $student->name ?? $student->nombres ?? $student->firstname ?? $user->first_name ?? $user->name ?? '';
+            $last = $student->last_name ?? $student->apellidos ?? $student->lastname ?? $user->last_name ?? $user->lastname ?? '';
+            $studentName = trim($first . ' ' . $last);
+            
+            if (empty($studentName)) {
+                $studentName = $student->full_name ?? $student->fullname ?? $user->full_name ?? $user->fullname ?? '';
+            }
+            
+            if (empty($studentName) && $student) {
+                 $studentName = $student->email ?? $user->email ?? 'Sin Nombre';
+            }
+            
+            // Iniciales no se usan explícitamente en el diseño actual pero se calculan por si acaso
+            $initialFirst = !empty($first) ? substr($first, 0, 1) : 'U';
+            $initialLast = !empty($last) ? substr($last, 0, 1) : '';
+            $initials = strtoupper($initialFirst . $initialLast);
+        } else {
+            $initials = 'NA';
+        }
+    @endphp
+
     <div class="border-pattern">
         <div class="border-inner">
             <div class="content-layer">
@@ -177,7 +208,7 @@
                 <div class="certifies-text">Otorga el presente reconocimiento a:</div>
 
                 <div class="student-name">
-                    {{ $student->name }} {{ $student->last_name }}
+                    {{ $studentName }}
                 </div>
 
                 <div class="course-intro">Por haber completado satisfactoriamente el programa académico:</div>
