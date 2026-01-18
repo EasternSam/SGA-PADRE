@@ -6,13 +6,12 @@ use Livewire\Component;
 use App\Models\Course;
 use App\Models\Module;
 use App\Models\CourseSchedule;
-use App\Models\User; // Para buscar profesores
+use App\Models\User; 
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB; // Necesario para el debug de queries
-use Illuminate\Validation\Rule; // Para validación 'unique'
-use Carbon\Carbon; // Para manejar fechas/horas
+use Illuminate\Validation\Rule; 
+use Carbon\Carbon; 
 
 // ====================================================================
 // IMPORTS AÑADIDOS PARA ENLACE CON WP
@@ -27,6 +26,8 @@ class Index extends Component
     use WithPagination;
 
     public $search = '';
+    
+    // IDs de selección (Solo guardamos el ID, nada más, para no inflar el estado)
     public $selectedCourse;
     public $selectedModule;
     
@@ -45,7 +46,8 @@ class Index extends Component
     public $schedule_id, $teacher_id, $days = [], $start_time, $end_time, $section_name, $start_date, $end_date;
     public $modality = 'Presencial'; 
     public $scheduleModalTitle = '';
-    public $teachers = []; 
+    
+    // NOTA: Se eliminó 'public $teachers = []' para evitar enviar la lista completa de usuarios en cada request.
 
     // --- Propiedades para Enlace WP ---
     public $currentLinkingCourse;
@@ -72,153 +74,89 @@ class Index extends Component
 
     public function mount()
     {
-        $startTime = microtime(true);
-        Log::info("[DEBUG-MOUNT] Iniciando montaje del componente Index.");
-
-        // Optimización: Cargar profesores solo con ID y Nombre para el select
-        // Limitamos a 100 para evitar sobrecarga en el render inicial si hay muchos usuarios
-        try {
-            $this->teachers = User::role('Profesor')->select('id', 'name')->orderBy('name')->get();
-            Log::info("[DEBUG-MOUNT] Profesores cargados exitosamente. Cantidad: " . count($this->teachers));
-        } catch (\Exception $e) {
-            Log::error("[DEBUG-MOUNT] Error al cargar profesores: " . $e->getMessage());
-            $this->teachers = User::orderBy('name')->select('id', 'name')->limit(100)->get(); 
-        }
-        
-        Log::info("[DEBUG-MOUNT] Finalizado en: " . round((microtime(true) - $startTime) * 1000, 2) . "ms");
+        // Ya no cargamos datos pesados aquí. El componente inicia ligero.
     }
 
     public function render()
     {
-        $renderStart = microtime(true);
-        Log::info("==================================================================================");
-        Log::info("[DEBUG-RENDER] Inicio del ciclo de renderizado.");
-        Log::info("[DEBUG-RENDER] Estado actual -> Curso Seleccionado: " . ($this->selectedCourse ?? 'Ninguno') . ", Módulo Seleccionado: " . ($this->selectedModule ?? 'Ninguno'));
-
-        DB::enableQueryLog(); // Habilitar log de queries para este ciclo
-
-        // =================================================================================
-        // 1. CARGA DE LISTA DE CURSOS (Optimizada)
-        // =================================================================================
+        // 1. CARGA DE CURSOS (Optimizado)
         $coursesQuery = Course::query();
 
         if ($this->search) {
-            Log::info("[DEBUG-RENDER] Aplicando filtro de búsqueda: " . $this->search);
             $coursesQuery->where(function ($q) {
                 $q->where('name', 'like', '%' . $this->search . '%')
                   ->orWhere('code', 'like', '%' . $this->search . '%');
             });
         }
 
-        // Seleccionamos SOLO las columnas necesarias para la lista lateral.
-        // Eager loading de 'mapping' es ligero (1 a 1).
-        $coursesStart = microtime(true);
         $courses = $coursesQuery->select('id', 'name', 'code', 'is_sequential', 'registration_fee', 'monthly_fee')
                                 ->with('mapping')
-                                ->paginate(10);
-        Log::info("[DEBUG-RENDER] Consulta de Cursos (Paginada) completada en: " . round((microtime(true) - $coursesStart) * 1000, 2) . "ms. Resultados en página: " . $courses->count());
+                                ->paginate(10); // Paginación ligera
 
-
-        // =================================================================================
-        // 2. CARGA DE MÓDULOS (Solo si hay curso seleccionado)
-        // =================================================================================
+        // 2. CARGA DE MÓDULOS (Optimizado & Paginado)
         $selectedCourseObject = null;
-        $modules = collect(); // Colección vacía por defecto
+        $modules = collect(); // Colección vacía por defecto o paginator
 
         if ($this->selectedCourse) {
-            Log::info("[DEBUG-RENDER] Curso seleccionado ID: " . $this->selectedCourse . ". Iniciando carga de detalles y módulos.");
-            $courseLoadStart = microtime(true);
-
-            // Buscamos el curso seleccionado
             $selectedCourseObject = Course::select('id', 'name', 'code')
-                ->with('mapping') // Necesario para botones de enlace
+                ->with('mapping')
                 ->find($this->selectedCourse);
             
             if ($selectedCourseObject) {
-                // CONSULTA SEPARADA PARA MÓDULOS: Más rápido que anidar todo en la principal.
-                // Traemos solo los módulos de este curso.
-                $modulesQueryStart = microtime(true);
+                // Ahora paginamos los módulos también (por si un curso tiene 500 módulos)
+                // Usamos un nombre de página personalizado 'modules-page' para no chocar con cursos
                 $modules = Module::where('course_id', $this->selectedCourse)
-                    ->select('id', 'course_id', 'name') // Solo columnas necesarias
-                    ->get();
-                
-                Log::info("[DEBUG-RENDER] Módulos cargados en: " . round((microtime(true) - $modulesQueryStart) * 1000, 2) . "ms. Cantidad encontrada: " . $modules->count());
+                    ->select('id', 'course_id', 'name')
+                    ->withCount('schedules')
+                    ->paginate(20, ['*'], 'modules-page'); 
             } else {
-                Log::warning("[DEBUG-RENDER] El curso seleccionado ID: " . $this->selectedCourse . " no fue encontrado en la DB. Reseteando selección.");
-                // Si el curso no existe (borrado), limpiar selección
                 $this->reset(['selectedCourse', 'selectedModule']);
             }
-            Log::info("[DEBUG-RENDER] Carga total de datos del Curso completada en: " . round((microtime(true) - $courseLoadStart) * 1000, 2) . "ms");
-        } else {
-            Log::info("[DEBUG-RENDER] No hay curso seleccionado. Saltando carga de módulos.");
         }
 
-        // =================================================================================
-        // 3. CARGA DE SECCIONES (Solo si hay módulo seleccionado)
-        // =================================================================================
-        $schedules = collect(); // Colección vacía por defecto
+        // 3. CARGA DE SECCIONES (Optimizado & Paginado)
+        $schedules = collect(); 
         $selectedModuleName = null;
 
         if ($this->selectedModule) {
-            Log::info("[DEBUG-RENDER] Módulo seleccionado ID: " . $this->selectedModule . ". Iniciando carga de secciones.");
-            $moduleLoadStart = microtime(true);
-
-            // Obtener nombre del módulo seleccionado de la colección en memoria (sin query extra)
-            $currentModule = $modules->firstWhere('id', $this->selectedModule);
+            // Verificamos si el módulo existe (consulta directa ligera)
+            // No usamos la colección $modules anterior porque ahora es un Paginator y es más complejo buscar.
+            $currentModule = Module::select('id', 'name')->find($this->selectedModule);
             
             if ($currentModule) {
                 $selectedModuleName = $currentModule->name;
-                Log::info("[DEBUG-RENDER] Nombre del módulo encontrado en memoria: " . $selectedModuleName);
                 
-                // CONSULTA ESPECÍFICA DE HORARIOS
-                // Solo traemos los horarios de ESTE módulo.
-                // Limitamos con paginación (50) por si un módulo tuviera miles de clases (caso extremo).
-                $schedulesQueryStart = microtime(true);
                 $schedules = CourseSchedule::where('module_id', $this->selectedModule)
                     ->select('id', 'module_id', 'teacher_id', 'days_of_week', 'section_name', 'modality', 'start_time', 'end_time', 'start_date', 'end_date')
-                    ->with(['teacher:id,name', 'mapping']) // Relaciones ligeras
+                    ->with(['teacher:id,name', 'mapping'])
                     ->orderBy('start_time')
                     ->paginate(50, ['*'], 'schedules-page');
-                
-                Log::info("[DEBUG-RENDER] Secciones cargadas en: " . round((microtime(true) - $schedulesQueryStart) * 1000, 2) . "ms. Cantidad en página: " . $schedules->count());
-
             } else {
-                Log::warning("[DEBUG-RENDER] El módulo seleccionado ID: " . $this->selectedModule . " no pertenece al curso actual o no existe. Reseteando módulo.");
-                // El módulo seleccionado no pertenece al curso actual o no existe
                 $this->selectedModule = null;
             }
-            Log::info("[DEBUG-RENDER] Carga total de datos del Módulo completada en: " . round((microtime(true) - $moduleLoadStart) * 1000, 2) . "ms");
-        } else {
-            Log::info("[DEBUG-RENDER] No hay módulo seleccionado. Saltando carga de secciones.");
         }
 
-        // --- INFORME FINAL DE QUERIES ---
-        $queryLog = DB::getQueryLog();
-        $totalQueries = count($queryLog);
-        $totalQueryTime = collect($queryLog)->sum('time');
-        
-        Log::info("[DEBUG-RENDER] Resumen de Queries SQL:");
-        Log::info("   - Total Queries Ejecutadas: " . $totalQueries);
-        Log::info("   - Tiempo Total DB (ms): " . $totalQueryTime);
-        
-        // Loggear queries lentas si existen (> 100ms)
-        foreach ($queryLog as $index => $query) {
-            if ($query['time'] > 100) {
-                Log::warning("[DEBUG-SLOW-QUERY] Query #$index tardó " . $query['time'] . "ms: " . $query['query'], $query['bindings']);
-            }
+        // 4. CARGA DE PROFESORES (Efímera)
+        // Se cargan en cada render para la vista, pero NO se guardan en public $properties.
+        // Esto evita que viajen por la red.
+        $teachersList = User::role('Profesor')
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
+            
+        // Si no hay roles configurados, fallback
+        if($teachersList->isEmpty()) {
+             $teachersList = User::select('id', 'name')->orderBy('name')->limit(100)->get();
         }
-
-        Log::info("[DEBUG-RENDER] Ciclo finalizado en: " . round((microtime(true) - $renderStart) * 1000, 2) . "ms");
-        Log::info("==================================================================================");
-
 
         return view('livewire.courses.index', [
             'courses' => $courses,
-            'modules' => $modules,
+            'modules' => $modules, // Ahora puede ser un Paginator
             'schedules' => $schedules,
             'selectedCourseName' => $selectedCourseObject?->name,
             'selectedModuleName' => $selectedModuleName,
-            'selectedCourseObject' => $selectedCourseObject 
+            'selectedCourseObject' => $selectedCourseObject,
+            'teachers' => $teachersList // Pasamos la lista directamente a la vista
         ]);
     }
 
@@ -226,17 +164,18 @@ class Index extends Component
 
     public function selectCourse($courseId)
     {
-        Log::info("[DEBUG-ACTION] Usuario hizo clic en Curso ID: " . $courseId);
         $this->selectedCourse = $courseId;
         $this->selectedModule = null; 
-        $this->resetPage('schedules-page'); // Resetear paginación de horarios
+        
+        // Resetear paginaciones internas
+        $this->resetPage('modules-page');
+        $this->resetPage('schedules-page');
     }
 
     public function selectModule($moduleId)
     {
-        Log::info("[DEBUG-ACTION] Usuario hizo clic en Módulo ID: " . $moduleId);
         $this->selectedModule = $moduleId;
-        $this->resetPage('schedules-page'); // Resetear paginación de horarios
+        $this->resetPage('schedules-page');
     }
 
     public function clearFilters()
@@ -262,7 +201,6 @@ class Index extends Component
 
     public function clearUnusedCourses()
     {
-        // Optimización: Chunking para borrar grandes cantidades sin memoria excedida
         Course::whereDoesntHave('modules.enrollments')->chunk(100, function ($courses) {
             foreach ($courses as $course) {
                 foreach ($course->modules as $module) {
