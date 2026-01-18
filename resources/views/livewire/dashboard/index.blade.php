@@ -18,7 +18,7 @@
             <div class="flex items-center gap-3">
                 {{-- Oculto en móviles para ahorrar espacio --}}
                 <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-md shadow-sm">
-                    <span class="flex h-2 w-2 rounded-full bg-green-500"></span>
+                    <span class="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
                     <span class="text-sm font-medium text-gray-600">Sistema en línea</span>
                 </div>
                 {{-- AHORA TAMBIÉN OCULTO EN MÓVILES (hidden sm:block) --}}
@@ -34,113 +34,122 @@
 
         {{-- 
             =================================================================
-            0. SECCIÓN NUEVA: GRÁFICO DE TENDENCIAS
-            ================================================================= 
-        --}}
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden">
-            <!-- Decoración de fondo sutil -->
-            <div class="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 rounded-full bg-indigo-50 blur-3xl opacity-50 pointer-events-none"></div>
-            
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 relative z-10">
-                <div>
-                    <h2 class="text-xl font-bold text-gray-800 tracking-tight">Tendencia de Inscripciones</h2>
-                    <p class="text-sm text-gray-500 mt-1">Comparativa de inscripciones Web (API) vs Físicas (Sistema) de los últimos 7 meses.</p>
-                </div>
-                <div class="mt-4 sm:mt-0 flex gap-2">
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        <span class="w-2 h-2 rounded-full bg-indigo-500"></span> Web
-                    </span>
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Físico
-                    </span>
-                </div>
-            </div>
-
-            <!-- Contenedor del Gráfico -->
-            <div id="enrollmentChart" class="w-full h-[350px]"></div>
-        </div>
-
-        {{-- 
-            =================================================================
-            1. TARJETAS DE ESTADÍSTICAS (KPIs)
+            1. TARJETAS DE ESTADÍSTICAS (KPIs) - REORDENADO
             ================================================================= 
         --}}
         <div class="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4">
             
             <!-- Card: Estudiantes -->
-            <div class="relative overflow-hidden rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-900/5 transition-all hover:shadow-md border-t-4 border-blue-500">
-                <div class="flex items-center gap-4">
-                    <div class="shrink-0 rounded-md bg-blue-50 p-3">
-                        <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <div class="group relative overflow-hidden rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5 transition-all hover:shadow-lg hover:-translate-y-1">
+                <div class="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-blue-50 opacity-50 blur-xl transition-all group-hover:bg-blue-100"></div>
+                <div class="flex items-center gap-4 relative z-10">
+                    <div class="shrink-0 rounded-lg bg-blue-50 p-3 text-blue-600 ring-1 ring-blue-100">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
                         </svg>
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-gray-500 truncate">Estudiantes</p>
-                        <div class="flex items-baseline">
-                            <p class="text-2xl font-semibold text-gray-900">{{ $totalStudents }}</p>
-                            <p class="ml-2 text-xs font-medium text-gray-400">Registrados</p>
+                        <div class="flex items-baseline gap-2">
+                            <p class="text-2xl font-bold text-gray-900 tracking-tight">{{ $totalStudents }}</p>
+                            <span class="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Active</span>
                         </div>
                     </div>
                 </div>
-                <a href="{{ route('admin.students.index') }}" wire:navigate class="absolute inset-0 z-10 focus:outline-none"></a>
+                <a href="{{ route('admin.students.index') }}" wire:navigate class="absolute inset-0 z-20 focus:outline-none"></a>
             </div>
 
             <!-- Card: Cursos -->
-            <div class="relative overflow-hidden rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-900/5 transition-all hover:shadow-md border-t-4 border-indigo-500">
-                <div class="flex items-center gap-4">
-                    <div class="shrink-0 rounded-md bg-indigo-50 p-3">
-                        <svg class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <div class="group relative overflow-hidden rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5 transition-all hover:shadow-lg hover:-translate-y-1">
+                <div class="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-indigo-50 opacity-50 blur-xl transition-all group-hover:bg-indigo-100"></div>
+                <div class="flex items-center gap-4 relative z-10">
+                    <div class="shrink-0 rounded-lg bg-indigo-50 p-3 text-indigo-600 ring-1 ring-indigo-100">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.499 5.221 50.59 50.59 0 00-2.658.814m-15.482 0A50.617 50.617 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
                         </svg>
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-gray-500 truncate">Cursos</p>
-                        <div class="flex items-baseline">
-                            <p class="text-2xl font-semibold text-gray-900">{{ $totalCourses }}</p>
-                            <p class="ml-2 text-xs font-medium text-gray-400">En catálogo</p>
+                        <div class="flex items-baseline gap-2">
+                            <p class="text-2xl font-bold text-gray-900 tracking-tight">{{ $totalCourses }}</p>
+                            <span class="text-xs text-gray-400 font-medium">Catálogo</span>
                         </div>
                     </div>
                 </div>
-                <a href="{{ route('admin.courses.index') }}" wire:navigate class="absolute inset-0 z-10 focus:outline-none"></a>
+                <a href="{{ route('admin.courses.index') }}" wire:navigate class="absolute inset-0 z-20 focus:outline-none"></a>
             </div>
 
             <!-- Card: Profesores -->
-            <div class="relative overflow-hidden rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-900/5 transition-all hover:shadow-md border-t-4 border-purple-500">
-                <div class="flex items-center gap-4">
-                    <div class="shrink-0 rounded-md bg-purple-50 p-3">
-                        <svg class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <div class="group relative overflow-hidden rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5 transition-all hover:shadow-lg hover:-translate-y-1">
+                <div class="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-purple-50 opacity-50 blur-xl transition-all group-hover:bg-purple-100"></div>
+                <div class="flex items-center gap-4 relative z-10">
+                    <div class="shrink-0 rounded-lg bg-purple-50 p-3 text-purple-600 ring-1 ring-purple-100">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-1.294-1.579 6.721 6.721 0 01-1.294 1.579 2.25 2.25 0 01-2.25 2.25h-1.5a2.25 2.25 0 00-2.25 2.25v.75h15v-.75a2.25 2.25 0 00-2.25-2.25h-1.5a2.25 2.25 0 01-2.25-2.25z" />
                         </svg>
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-gray-500 truncate">Profesores</p>
-                        <div class="flex items-baseline">
-                            <p class="text-2xl font-semibold text-gray-900">{{ $totalTeachers }}</p>
-                            <p class="ml-2 text-xs font-medium text-gray-400">Activos</p>
+                        <div class="flex items-baseline gap-2">
+                            <p class="text-2xl font-bold text-gray-900 tracking-tight">{{ $totalTeachers }}</p>
+                            <span class="text-xs text-gray-400 font-medium">Docentes</span>
                         </div>
                     </div>
                 </div>
-                <a href="{{ route('admin.teachers.index') }}" wire:navigate class="absolute inset-0 z-10 focus:outline-none"></a>
+                <a href="{{ route('admin.teachers.index') }}" wire:navigate class="absolute inset-0 z-20 focus:outline-none"></a>
             </div>
 
             <!-- Card: Inscripciones -->
-            <div class="relative overflow-hidden rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-900/5 transition-all hover:shadow-md border-t-4 border-green-500">
-                <div class="flex items-center gap-4">
-                    <div class="shrink-0 rounded-md bg-green-50 p-3">
-                        <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <div class="group relative overflow-hidden rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5 transition-all hover:shadow-lg hover:-translate-y-1">
+                <div class="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-emerald-50 opacity-50 blur-xl transition-all group-hover:bg-emerald-100"></div>
+                <div class="flex items-center gap-4 relative z-10">
+                    <div class="shrink-0 rounded-lg bg-emerald-50 p-3 text-emerald-600 ring-1 ring-emerald-100">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
                         </svg>
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-gray-500 truncate">Inscripciones</p>
-                        <div class="flex items-baseline">
-                            <p class="text-2xl font-semibold text-gray-900">{{ $totalEnrollments }}</p>
-                            <p class="ml-2 text-xs font-medium text-gray-400">Totales</p>
+                        <div class="flex items-baseline gap-2">
+                            <p class="text-2xl font-bold text-gray-900 tracking-tight">{{ $totalEnrollments }}</p>
+                            <span class="text-xs text-gray-400 font-medium">Totales</span>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+
+        {{-- 
+            =================================================================
+            0. SECCIÓN NUEVA: GRÁFICO DE TENDENCIAS (REDISEÑADO)
+            ================================================================= 
+        --}}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 relative overflow-hidden">
+            <!-- Decoración de fondo sutil y moderna -->
+            <div class="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-gradient-to-br from-indigo-50 to-blue-50 blur-3xl opacity-60 pointer-events-none"></div>
+            <div class="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 rounded-full bg-gradient-to-tr from-emerald-50 to-teal-50 blur-3xl opacity-60 pointer-events-none"></div>
+            
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 relative z-10">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900 tracking-tight">Tendencia de Inscripciones</h2>
+                    <p class="text-sm text-gray-500 mt-1">Comparativa de flujo Web vs Sistema (Últimos 7 meses)</p>
+                </div>
+                
+                <!-- Leyenda Personalizada -->
+                <div class="mt-4 sm:mt-0 flex gap-3 bg-gray-50/80 backdrop-blur-sm p-1.5 rounded-lg border border-gray-100">
+                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-md bg-white shadow-sm border border-gray-100">
+                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></span>
+                        <span class="text-xs font-semibold text-gray-700">Web</span>
+                    </div>
+                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-md bg-white shadow-sm border border-gray-100">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                        <span class="text-xs font-semibold text-gray-700">Sistema</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenedor del Gráfico con altura ajustada -->
+            <div id="enrollmentChart" class="w-full h-[380px]"></div>
         </div>
 
         {{-- 
@@ -153,25 +162,26 @@
             {{-- COLUMNA IZQUIERDA: Tabla Detallada --}}
             <div class="lg:col-span-2 space-y-6">
                 
-                <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-900/5">
+                <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-900/5 overflow-hidden">
                     {{-- Header con TABS FUNCIONALES --}}
-                    <div class="border-b border-gray-200 px-4 py-5 sm:px-6">
-                        <div class="-ml-4 -mt-2 flex flex-wrap items-center justify-between sm:flex-nowrap">
-                            <div class="ml-4 mt-2">
+                    <div class="border-b border-gray-100 px-6 py-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
                                 <h3 class="text-base font-semibold leading-6 text-gray-900">Inscripciones Recientes</h3>
+                                <p class="text-sm text-gray-500 mt-1">Gestión de últimos registros</p>
                             </div>
-                            <div class="ml-4 mt-2 flex-shrink-0">
-                                <nav class="flex flex-wrap gap-2" aria-label="Tabs">
+                            <div>
+                                <nav class="flex p-1 space-x-1 bg-gray-50/80 rounded-lg border border-gray-100" aria-label="Tabs">
                                     <button wire:click="setFilter('all')" 
-                                            class="rounded-md px-3 py-2 text-sm font-medium transition-colors {{ $enrollmentFilter === 'all' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50' }}">
+                                            class="rounded-md px-3 py-1.5 text-xs font-medium transition-all {{ $enrollmentFilter === 'all' ? 'bg-white text-gray-900 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700' }}">
                                         Todas
                                     </button>
                                     <button wire:click="setFilter('Pendiente')" 
-                                            class="rounded-md px-3 py-2 text-sm font-medium transition-colors {{ $enrollmentFilter === 'Pendiente' ? 'bg-yellow-50 text-yellow-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50' }}">
+                                            class="rounded-md px-3 py-1.5 text-xs font-medium transition-all {{ $enrollmentFilter === 'Pendiente' ? 'bg-white text-yellow-700 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700' }}">
                                         Pendientes
                                     </button>
                                     <button wire:click="setFilter('Activo')" 
-                                            class="rounded-md px-3 py-2 text-sm font-medium transition-colors {{ $enrollmentFilter === 'Activo' ? 'bg-green-50 text-green-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50' }}">
+                                            class="rounded-md px-3 py-1.5 text-xs font-medium transition-all {{ $enrollmentFilter === 'Activo' ? 'bg-white text-green-700 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700' }}">
                                         Activas
                                     </button>
                                 </nav>
@@ -182,62 +192,49 @@
                     {{-- Cuerpo de la Tabla --}}
                     <div class="overflow-x-auto">
                         <table class="min-w-full whitespace-nowrap text-left text-sm">
-                            <thead class="bg-gray-50">
+                            <thead class="bg-gray-50/50 text-gray-900">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3 font-medium text-gray-900">Estudiante</th>
-                                    <th scope="col" class="px-6 py-3 font-medium text-gray-900">Curso</th>
-                                    <th scope="col" class="px-6 py-3 font-medium text-gray-900">Estado</th>
-                                    <th scope="col" class="px-6 py-3 font-medium text-gray-900 text-right">Fecha</th>
-                                    <th scope="col" class="px-6 py-3 font-medium text-gray-900 text-right">Acciones</th>
+                                    <th scope="col" class="px-6 py-3 font-semibold">Estudiante</th>
+                                    <th scope="col" class="px-6 py-3 font-semibold">Curso</th>
+                                    <th scope="col" class="px-6 py-3 font-semibold">Estado</th>
+                                    <th scope="col" class="px-6 py-3 font-semibold text-right">Fecha</th>
+                                    <th scope="col" class="px-6 py-3 font-semibold text-right">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-200 bg-white">
+                            <tbody class="divide-y divide-gray-100 bg-white">
                                 @forelse ($recentEnrollments as $enrollment)
-                                    <tr class="hover:bg-gray-50 transition-colors">
+                                    <tr class="hover:bg-gray-50/80 transition-colors group">
                                         <td class="px-6 py-4">
                                             @php
-                                                // Lógica unificada INTELIGENTE para Nombre
+                                                // Lógica unificada para Nombre e Iniciales
                                                 $student = $enrollment->student ?? null;
                                                 $user = $student->user ?? null;
                                                 $studentName = 'N/A';
                                                 
                                                 if ($student) {
-                                                    // CASO 1: El estudiante tiene 'first_name' explícito.
-                                                    // Usamos la concatenación estándar.
-                                                    if (!empty($student->first_name)) {
-                                                        $studentName = trim($student->first_name . ' ' . ($student->last_name ?? ''));
+                                                    $first = $student->first_name ?? $student->name ?? $student->nombres ?? $student->firstname ?? $user->first_name ?? $user->name ?? '';
+                                                    $last = $student->last_name ?? $student->apellidos ?? $student->lastname ?? $user->last_name ?? $user->lastname ?? '';
+                                                    $studentName = trim($first . ' ' . $last);
+                                                    if (empty($studentName)) {
+                                                        $studentName = $student->full_name ?? $student->fullname ?? $user->full_name ?? $user->fullname ?? '';
                                                     }
-                                                    // CASO 2: El estudiante NO tiene 'first_name', pero el Usuario asociado sí tiene nombre.
-                                                    // Asumimos que User->name es el NOMBRE COMPLETO.
-                                                    elseif ($user && !empty($user->name)) {
-                                                        $studentName = $user->name;
+                                                    if (empty($studentName) && $student) {
+                                                         $studentName = $student->email ?? $user->email ?? 'Sin Nombre';
                                                     }
-                                                    // CASO 3: Solo tenemos apellido o datos parciales
-                                                    elseif (!empty($student->last_name)) {
-                                                        $studentName = $student->last_name;
-                                                    }
-                                                    // CASO 4: Fallback a email
-                                                    else {
-                                                        $studentName = $student->email ?? $user->email ?? 'Sin Nombre';
-                                                    }
-                                                }
-
-                                                // Calcular iniciales basadas en el nombre final calculado
-                                                $initials = 'U';
-                                                if ($studentName !== 'N/A' && $studentName !== 'Sin Nombre') {
-                                                    $parts = explode(' ', trim($studentName));
-                                                    $firstInit = substr($parts[0] ?? '', 0, 1);
-                                                    $lastInit = count($parts) > 1 ? substr(end($parts), 0, 1) : (isset($parts[0]) && strlen($parts[0]) > 1 ? substr($parts[0], 1, 1) : '');
-                                                    $initials = strtoupper($firstInit . $lastInit);
+                                                    $initialFirst = !empty($first) ? substr($first, 0, 1) : 'U';
+                                                    $initialLast = !empty($last) ? substr($last, 0, 1) : '';
+                                                    $initials = strtoupper($initialFirst . $initialLast);
+                                                } else {
+                                                    $initials = 'NA';
                                                 }
                                             @endphp
 
                                             <div class="flex items-center">
-                                                <div class="h-10 w-10 flex-shrink-0 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold border border-gray-200">
+                                                <div class="h-9 w-9 flex-shrink-0 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 font-bold border border-white shadow-sm ring-1 ring-gray-100 text-xs">
                                                     {{ $initials }}
                                                 </div>
                                                 <div class="ml-4">
-                                                    <div class="font-medium text-gray-900">
+                                                    <div class="font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
                                                         {{ $studentName }}
                                                     </div>
                                                     <div class="text-gray-500 text-xs">{{ $enrollment->student->email ?? '' }}</div>
@@ -252,27 +249,27 @@
                                         </td>
                                         <td class="px-6 py-4">
                                             @php
-                                                $badgeStyle = match($enrollment->status) {
-                                                    'Activo' => 'bg-green-50 text-green-700 border-green-200',
-                                                    'Pendiente' => 'bg-yellow-50 text-yellow-800 border-yellow-200',
-                                                    'Cancelado' => 'bg-red-50 text-red-700 border-red-200',
-                                                    default => 'bg-gray-50 text-gray-600 border-gray-200',
+                                                $badgeClass = match($enrollment->status) {
+                                                    'Activo' => 'bg-green-50 text-green-700 ring-green-600/20',
+                                                    'Pendiente' => 'bg-yellow-50 text-yellow-800 ring-yellow-600/20',
+                                                    'Cancelado' => 'bg-red-50 text-red-700 ring-red-600/20',
+                                                    default => 'bg-gray-50 text-gray-600 ring-gray-500/10',
                                                 };
                                             @endphp
-                                            <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold {{ $badgeStyle }}">
+                                            <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset {{ $badgeClass }}">
                                                 {{ $enrollment->status ?? 'N/A' }}
                                             </span>
                                         </td>
-                                        <td class="px-6 py-4 text-right text-gray-500">
+                                        <td class="px-6 py-4 text-right text-gray-500 font-mono text-xs">
                                             {{ $enrollment->created_at ? $enrollment->created_at->format('d M, Y') : '-' }}
                                         </td>
                                         <td class="px-6 py-4 text-right">
                                             @if($enrollment->student)
-                                                <a href="{{ route('admin.students.profile', $enrollment->student->id) }}" wire:navigate class="text-gray-400 hover:text-indigo-600 transition-colors">
+                                                <a href="{{ route('admin.students.profile', $enrollment->student->id) }}" wire:navigate class="text-gray-400 hover:text-indigo-600 transition-colors p-1.5 hover:bg-indigo-50 rounded-lg inline-block">
                                                     <span class="sr-only">Ver</span>
-                                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                     </svg>
                                                 </a>
                                             @else
@@ -282,8 +279,15 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="px-6 py-10 text-center text-gray-500 italic">
-                                            No hay inscripciones {{ $enrollmentFilter === 'all' ? 'recientes' : strtolower($enrollmentFilter).'s' }}.
+                                        <td colspan="5" class="px-6 py-12 text-center">
+                                            <div class="flex flex-col items-center justify-center">
+                                                <div class="h-12 w-12 rounded-full bg-gray-50 flex items-center justify-center mb-3">
+                                                    <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                                    </svg>
+                                                </div>
+                                                <p class="text-gray-500 text-sm">No se encontraron inscripciones.</p>
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforelse
@@ -291,10 +295,13 @@
                         </table>
                     </div>
                     
-                    <div class="border-t border-gray-200 bg-gray-50 px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                        <span class="text-xs text-gray-500 text-center sm:text-left">Mostrando últimos registros</span>
-                        <a href="{{ route('admin.students.index') }}" wire:navigate class="text-sm font-medium text-indigo-600 hover:text-indigo-500 text-center sm:text-right">
-                            Ver directorio completo &rarr;
+                    <div class="border-t border-gray-100 bg-gray-50/50 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <span class="text-xs text-gray-500 font-medium">Mostrando los últimos 5 registros</span>
+                        <a href="{{ route('admin.students.index') }}" wire:navigate class="text-xs font-semibold text-indigo-600 hover:text-indigo-500 flex items-center gap-1 group">
+                            Ver directorio completo 
+                            <svg class="h-3 w-3 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
                         </a>
                     </div>
                 </div>
@@ -304,70 +311,80 @@
             <div class="space-y-6">
                 
                 <!-- Panel: Accesos Directos -->
-                <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-900/5 p-5">
-                    <h3 class="text-base font-semibold text-gray-900 mb-4">Accesos Rápidos</h3>
-                    <div class="space-y-2">
-                        <a href="{{ route('admin.students.index') }}" wire:navigate class="group flex items-center justify-between rounded-md border border-gray-200 p-3 hover:border-indigo-500 hover:bg-indigo-50 hover:ring-1 hover:ring-indigo-500 transition-all">
+                <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-900/5 p-6">
+                    <h3 class="text-base font-bold text-gray-900 mb-5 flex items-center gap-2">
+                        <svg class="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Accesos Rápidos
+                    </h3>
+                    <div class="space-y-3">
+                        <a href="{{ route('admin.students.index') }}" wire:navigate class="group flex items-center justify-between rounded-lg border border-gray-200 p-3.5 hover:border-indigo-500 hover:bg-indigo-50/50 hover:shadow-sm transition-all duration-200">
                             <div class="flex items-center gap-3">
-                                <div class="flex h-8 w-8 items-center justify-center rounded bg-indigo-100 text-indigo-600 group-hover:bg-white">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 group-hover:bg-white group-hover:text-indigo-700 transition-colors">
                                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
                                     </svg>
                                 </div>
-                                <span class="font-medium text-gray-700 group-hover:text-indigo-900">Nuevo Estudiante</span>
+                                <span class="font-medium text-sm text-gray-700 group-hover:text-indigo-900">Nuevo Estudiante</span>
                             </div>
-                            <svg class="h-4 w-4 text-gray-400 group-hover:text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                            <svg class="h-4 w-4 text-gray-400 group-hover:text-indigo-500 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                         </a>
 
-                        <a href="{{ route('admin.finance.concepts') }}" wire:navigate class="group flex items-center justify-between rounded-md border border-gray-200 p-3 hover:border-green-500 hover:bg-green-50 hover:ring-1 hover:ring-green-500 transition-all">
+                        <a href="{{ route('admin.finance.concepts') }}" wire:navigate class="group flex items-center justify-between rounded-lg border border-gray-200 p-3.5 hover:border-emerald-500 hover:bg-emerald-50/50 hover:shadow-sm transition-all duration-200">
                             <div class="flex items-center gap-3">
-                                <div class="flex h-8 w-8 items-center justify-center rounded bg-green-100 text-green-600 group-hover:bg-white">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 group-hover:bg-white group-hover:text-emerald-700 transition-colors">
                                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
                                     </svg>
                                 </div>
-                                <span class="font-medium text-gray-700 group-hover:text-green-900">Registrar Pago</span>
+                                <span class="font-medium text-sm text-gray-700 group-hover:text-emerald-900">Registrar Pago</span>
                             </div>
-                            <svg class="h-4 w-4 text-gray-400 group-hover:text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                            <svg class="h-4 w-4 text-gray-400 group-hover:text-emerald-500 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                         </a>
 
-                        <a href="{{ route('admin.courses.index') }}" wire:navigate class="group flex items-center justify-between rounded-md border border-gray-200 p-3 hover:border-purple-500 hover:bg-purple-50 hover:ring-1 hover:ring-purple-500 transition-all">
+                        <a href="{{ route('admin.courses.index') }}" wire:navigate class="group flex items-center justify-between rounded-lg border border-gray-200 p-3.5 hover:border-purple-500 hover:bg-purple-50/50 hover:shadow-sm transition-all duration-200">
                             <div class="flex items-center gap-3">
-                                <div class="flex h-8 w-8 items-center justify-center rounded bg-purple-100 text-purple-600 group-hover:bg-white">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-50 text-purple-600 group-hover:bg-white group-hover:text-purple-700 transition-colors">
                                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                                     </svg>
                                 </div>
-                                <span class="font-medium text-gray-700 group-hover:text-purple-900">Gestionar Cursos</span>
+                                <span class="font-medium text-sm text-gray-700 group-hover:text-purple-900">Gestionar Cursos</span>
                             </div>
-                            <svg class="h-4 w-4 text-gray-400 group-hover:text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                            <svg class="h-4 w-4 text-gray-400 group-hover:text-purple-500 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                         </a>
                     </div>
                 </div>
 
                 <!-- Panel: Timeline de Actividad -->
-                <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-900/5 p-5">
-                    <h3 class="text-base font-semibold text-gray-900 mb-4">Actividad Reciente</h3>
+                <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-900/5 p-6">
+                    <h3 class="text-base font-bold text-gray-900 mb-5 flex items-center gap-2">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Actividad Reciente
+                    </h3>
                     <div class="flow-root">
                         <ul role="list" class="-mb-8">
                             @forelse($recentActivities as $activity)
                                 <li>
                                     <div class="relative pb-8">
                                         @unless($loop->last)
-                                            <span class="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                            <span class="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-100" aria-hidden="true"></span>
                                         @endunless
                                         <div class="relative flex space-x-3">
                                             <div>
                                                 @php
                                                     $desc = strtolower($activity->description ?? '');
                                                     $iconClass = match(true) {
-                                                        str_contains($desc, 'creado') || str_contains($desc, 'registrado') => 'bg-green-100 text-green-600',
-                                                        str_contains($desc, 'eliminado') => 'bg-red-100 text-red-600',
-                                                        str_contains($desc, 'actualizado') || str_contains($desc, 'editado') => 'bg-blue-100 text-blue-600',
-                                                        default => 'bg-gray-100 text-gray-600'
+                                                        str_contains($desc, 'creado') || str_contains($desc, 'registrado') => 'bg-green-100 text-green-600 ring-green-100',
+                                                        str_contains($desc, 'eliminado') => 'bg-red-100 text-red-600 ring-red-100',
+                                                        str_contains($desc, 'actualizado') || str_contains($desc, 'editado') => 'bg-blue-100 text-blue-600 ring-blue-100',
+                                                        default => 'bg-gray-100 text-gray-600 ring-gray-100'
                                                     };
                                                 @endphp
-                                                <span class="h-8 w-8 rounded-full {{ $iconClass }} flex items-center justify-center ring-8 ring-white">
+                                                <span class="h-8 w-8 rounded-full {{ $iconClass }} ring-4 ring-white flex items-center justify-center">
                                                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                                                     </svg>
@@ -375,15 +392,15 @@
                                             </div>
                                             <div class="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
                                                 <div>
-                                                    <p class="text-sm text-gray-500">
+                                                    <p class="text-xs text-gray-600">
                                                         {{ $activity->description }} 
                                                         @if(isset($activity->causer))
-                                                            por <span class="font-medium text-gray-900">{{ $activity->causer->name ?? 'Sistema' }}</span>
+                                                            <span class="block text-gray-400 mt-0.5">por <span class="font-medium text-gray-700">{{ $activity->causer->name ?? 'Sistema' }}</span></span>
                                                         @endif
                                                     </p>
                                                 </div>
-                                                <div class="whitespace-nowrap text-right text-xs text-gray-500">
-                                                    {{ $activity->created_at->diffForHumans() }}
+                                                <div class="whitespace-nowrap text-right text-[10px] text-gray-400">
+                                                    {{ $activity->created_at->diffForHumans(null, true, true) }}
                                                 </div>
                                             </div>
                                         </div>
@@ -394,8 +411,8 @@
                                     <div class="relative pb-8">
                                         <div class="relative flex space-x-3">
                                             <div>
-                                                <span class="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center ring-8 ring-white">
-                                                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                <span class="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center ring-4 ring-white">
+                                                    <svg class="h-4 w-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                                 </span>
                                             </div>
                                             <div class="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
@@ -408,10 +425,6 @@
                                 </li>
                             @endforelse
                         </ul>
-                    </div>
-                    
-                    <div class="mt-4 border-t border-gray-100 pt-3">
-                        <a href="#" class="text-sm font-medium text-indigo-600 hover:text-indigo-500 block text-center sm:text-left">Ver historial completo</a>
                     </div>
                 </div>
 
@@ -447,17 +460,33 @@
                 }],
                 chart: {
                     type: 'area',
-                    height: 350,
+                    height: 380, // Altura aumentada
                     fontFamily: 'Inter, sans-serif',
                     toolbar: { show: false },
                     zoom: { enabled: false },
                     animations: {
                         enabled: true,
                         easing: 'easeinout',
-                        speed: 800
+                        speed: 800,
+                        animateGradually: {
+                            enabled: true,
+                            delay: 150
+                        },
+                        dynamicAnimation: {
+                            enabled: true,
+                            speed: 350
+                        }
+                    },
+                    dropShadow: {
+                        enabled: true,
+                        color: '#000',
+                        top: 18,
+                        left: 7,
+                        blur: 10,
+                        opacity: 0.05
                     }
                 },
-                colors: ['#6366f1', '#10b981'],
+                colors: ['#6366f1', '#10b981'], // Indigo-500 y Emerald-500
                 dataLabels: { enabled: false },
                 stroke: {
                     curve: 'smooth',
@@ -467,9 +496,9 @@
                     type: 'gradient',
                     gradient: {
                         shadeIntensity: 1,
-                        opacityFrom: 0.45,
-                        opacityTo: 0.05,
-                        stops: [0, 100]
+                        opacityFrom: 0.6, // Más opaco al inicio
+                        opacityTo: 0.1,   // Más transparente al final
+                        stops: [0, 90, 100]
                     }
                 },
                 xaxis: {
@@ -477,31 +506,62 @@
                     axisBorder: { show: false },
                     axisTicks: { show: false },
                     labels: {
-                        style: { colors: '#9ca3af', fontSize: '12px' }
+                        style: { 
+                            colors: '#64748b', 
+                            fontSize: '12px',
+                            fontFamily: 'Inter, sans-serif'
+                        },
+                        offsetY: 5
+                    },
+                    tooltip: {
+                        enabled: false
                     }
                 },
                 yaxis: {
                     labels: {
-                        style: { colors: '#9ca3af', fontSize: '12px' },
-                        formatter: (val) => { return val ? val.toFixed(0) : 0 }
-                    }
+                        style: { 
+                            colors: '#64748b', 
+                            fontSize: '12px',
+                            fontFamily: 'Inter, sans-serif'
+                        },
+                        formatter: (val) => { return val ? val.toFixed(0) : 0 },
+                        offsetX: -10
+                    },
+                    min: 0 // Asegura que empiece en 0
                 },
                 grid: {
-                    borderColor: '#f3f4f6',
-                    strokeDashArray: 4,
+                    borderColor: '#f1f5f9', // Gray-100 más suave
+                    strokeDashArray: 5,     // Líneas discontinuas
                     yaxis: { lines: { show: true } },
                     xaxis: { lines: { show: false } },
-                    padding: { top: 0, right: 0, bottom: 0, left: 10 }
+                    padding: { top: 0, right: 20, bottom: 10, left: 20 }
                 },
                 tooltip: {
                     theme: 'light',
+                    style: {
+                        fontSize: '12px',
+                        fontFamily: 'Inter, sans-serif',
+                    },
+                    x: {
+                        show: true
+                    },
                     y: {
                         formatter: function (val) {
                             return val + " alumnos";
                         }
-                    }
+                    },
+                    marker: {
+                        show: true,
+                    },
                 },
-                legend: { show: false }
+                legend: { show: false }, // Oculta leyenda default porque hicimos una personalizada
+                markers: {
+                    size: 0,
+                    hover: {
+                        size: 6,
+                        sizeOffset: 3
+                    }
+                }
             };
 
             const chart = new ApexCharts(chartElement, options);
