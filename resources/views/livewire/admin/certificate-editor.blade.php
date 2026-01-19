@@ -1,5 +1,4 @@
-<!-- Agregamos 'fixed inset-0 z-[100]' para que flote sobre el layout del admin sin romperse -->
-<div class="fixed inset-0 z-[100] flex flex-col h-screen bg-gray-50 overflow-hidden font-sans select-none text-slate-900" 
+<div class="flex flex-col h-[calc(100vh-9rem)] bg-gray-50 overflow-hidden font-sans select-none text-slate-900 w-full rounded-xl border border-gray-300 shadow-sm relative" 
      x-data="certificateEditor(@entangle('elements').live, @entangle('canvasConfig').live)"
      @keydown.window.ctrl.z.prevent="undo()"
      @keydown.window.ctrl.y.prevent="redo()"
@@ -42,13 +41,13 @@
     </style>
 
     <!-- 1. BARRA SUPERIOR (HEADER) -->
-    <header class="h-16 bg-white border-b border-gray-300 flex items-center justify-between px-4 z-50 shrink-0 relative">
+    <header class="h-16 bg-white border-b border-gray-300 flex items-center justify-between px-4 z-50 shrink-0 relative rounded-t-xl">
         
         <!-- SECCIÓN IZQUIERDA -->
         <div class="flex items-center gap-4 flex-1 min-w-0">
-            <!-- Botón de Salir (Añadido para poder regresar al admin) -->
-            <a href="{{ route('admin.certificates.templates') }}" class="flex items-center justify-center w-10 h-10 bg-gray-100 hover:bg-red-50 hover:text-red-600 text-gray-600 rounded-lg transition shrink-0 border border-gray-200" title="Guardar y Salir">
-                <i class="ph-bold ph-x text-xl"></i>
+            <!-- Botón de Volver (Adaptado de Salir) -->
+            <a href="{{ route('admin.certificates.templates') }}" class="flex items-center justify-center w-10 h-10 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition shrink-0 border border-gray-200" title="Volver al listado">
+                <i class="ph-bold ph-arrow-left text-xl"></i>
             </a>
 
             <div class="flex items-center justify-center w-10 h-10 bg-indigo-600 text-white rounded-lg shadow-md shrink-0">
@@ -127,7 +126,7 @@
     </header>
 
     <!-- 2. CUERPO PRINCIPAL -->
-    <div class="flex-1 flex overflow-hidden relative z-0">
+    <div class="flex-1 flex overflow-hidden relative z-0 rounded-b-xl">
         
         <!-- 2.1 BARRA DE HERRAMIENTAS (Izquierda Fija) -->
         <aside class="w-18 bg-white border-r border-gray-200 flex flex-col items-center py-4 z-30 shrink-0 gap-3" x-show="!previewMode">
