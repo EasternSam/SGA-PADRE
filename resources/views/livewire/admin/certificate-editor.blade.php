@@ -1,4 +1,4 @@
-<div class="flex flex-col h-screen bg-gray-50 overflow-hidden font-sans select-none text-slate-900" 
+<div class="fixed inset-0 z-[100] flex flex-col h-screen bg-gray-50 overflow-hidden font-sans select-none text-slate-900" 
      x-data="certificateEditor(@entangle('elements').live, @entangle('canvasConfig').live)"
      @keydown.window.ctrl.z.prevent="undo()"
      @keydown.window.ctrl.y.prevent="redo()"
@@ -40,14 +40,16 @@
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 
-    <!-- 1. BARRA SUPERIOR (HEADER) - Estructura Flexible Robusta -->
-    <header class="h-16 bg-white border-b border-gray-300 flex items-center justify-between px-4 z-50 shrink-0 relative">
+    <!-- 1. BARRA SUPERIOR (HEADER) -->
+    <header class="h-16 bg-white border-b border-gray-300 flex items-center justify-between px-4 z-50 shrink-0 relative shadow-sm">
         
-        <!-- SECCIÓN IZQUIERDA (Ancho Flexible) -->
+        <!-- SECCIÓN IZQUIERDA -->
         <div class="flex items-center gap-4 flex-1 min-w-0">
-            <a href="{{ route('admin.certificates.index') }}" class="flex items-center justify-center w-10 h-10 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition shrink-0" title="Volver al listado">
-                <i class="ph-bold ph-arrow-left text-xl"></i>
+            <!-- Botón SALIR del modo pantalla completa -->
+            <a href="{{ route('admin.certificates.templates') }}" class="flex items-center justify-center w-10 h-10 bg-gray-100 hover:bg-red-50 hover:text-red-600 text-gray-600 rounded-lg transition shrink-0 border border-gray-200" title="Guardar y Salir">
+                <i class="ph-bold ph-x text-xl"></i>
             </a>
+            
             <div class="flex items-center justify-center w-10 h-10 bg-indigo-600 text-white rounded-lg shadow-md shrink-0">
                 <i class="ph-bold ph-certificate text-xl"></i>
             </div>
@@ -57,7 +59,7 @@
                        class="font-bold text-gray-900 text-sm bg-transparent border-b border-transparent hover:border-gray-300 focus:border-indigo-500 p-0 focus:ring-0 placeholder-gray-400 w-full truncate transition-colors" 
                        placeholder="Nombre del Diploma">
                 <div class="flex items-center gap-2 mt-1">
-                    <!-- Indicador de estado conectado a Livewire -->
+                    <!-- Indicador de estado -->
                     <span wire:loading.remove wire:target="save" class="w-2 h-2 rounded-full bg-green-500 ring-1 ring-green-600/20 shrink-0"></span>
                     <span wire:loading wire:target="save" class="w-2 h-2 rounded-full bg-yellow-500 ring-1 ring-yellow-600/20 shrink-0 animate-pulse"></span>
                     
@@ -79,9 +81,8 @@
             </div>
         </div>
 
-        <!-- SECCIÓN CENTRAL (Centrado Automático Flexible) -->
+        <!-- SECCIÓN CENTRAL -->
         <div class="flex items-center justify-center gap-2 flex-1">
-            <!-- Zoom Pill -->
             <div class="flex items-center bg-white p-1 rounded-lg border border-gray-300 shadow-sm shrink-0">
                 <button @click="zoomOut" class="w-7 h-7 flex items-center justify-center rounded bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-black transition">
                     <i class="ph-bold ph-minus text-xs"></i>
@@ -100,7 +101,7 @@
             </button>
         </div>
 
-        <!-- SECCIÓN DERECHA (Ancho Flexible) -->
+        <!-- SECCIÓN DERECHA -->
         <div class="flex items-center justify-end gap-3 flex-1">
             <button @click="snapToGrid = !snapToGrid" 
                     class="h-9 px-3 flex items-center justify-center gap-2 rounded-lg border transition font-bold text-xs"
@@ -124,9 +125,10 @@
     </header>
 
     <!-- 2. CUERPO PRINCIPAL -->
-    <div class="flex-1 flex overflow-hidden relative z-0">
+    <!-- flex-row explícito para evitar problemas de layout padre -->
+    <div class="flex-1 flex flex-row overflow-hidden relative z-0">
         
-        <!-- 2.1 BARRA DE HERRAMIENTAS (Izquierda Fija) -->
+        <!-- 2.1 BARRA DE HERRAMIENTAS -->
         <aside class="w-18 bg-white border-r border-gray-200 flex flex-col items-center py-4 z-30 shrink-0 gap-3" x-show="!previewMode">
             <template x-for="tab in [
                 { id: 'elements', icon: 'ph-shapes', label: 'Insertar' },
@@ -142,7 +144,7 @@
             </template>
         </aside>
 
-        <!-- 2.2 PANEL EXTENDIDO (Docked) -->
+        <!-- 2.2 PANEL EXTENDIDO -->
         <div class="w-80 bg-white border-r border-gray-200 flex flex-col z-20 shrink-0 transition-all duration-300 ease-in-out" 
              x-show="activeTab && !previewMode"
              style="display: flex;">
@@ -299,7 +301,7 @@
                     background-position: center;
                   `">
                 
-                <!-- Guías de Seguridad (Visualmente más fuertes) -->
+                <!-- Guías de Seguridad -->
                 <div x-show="!previewMode && snapToGrid" class="absolute top-[10mm] bottom-[10mm] left-[10mm] right-[10mm] border-2 border-indigo-400/20 pointer-events-none z-0 border-dashed">
                     <div class="absolute -top-5 left-0 text-indigo-400 text-[10px] font-bold font-mono tracking-wider bg-indigo-50 px-1 rounded">MARGEN SEGURO</div>
                 </div>
@@ -324,7 +326,7 @@
                                 <div x-text="element.content" class="w-full h-full whitespace-pre-wrap break-words leading-tight" style="outline: none;"></div>
                             </template>
                             
-                            <!-- Variable (FIX: Fondo transparente, solo borde discontinuo) -->
+                            <!-- Variable -->
                             <template x-if="element.type === 'variable'">
                                 <div class="w-full h-full flex items-center justify-center px-2 leading-tight transition-colors duration-200"
                                      :class="previewMode ? '' : 'text-indigo-600 border border-indigo-300 border-dashed rounded font-medium bg-transparent'">
@@ -402,7 +404,7 @@
 
                 <div class="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
                     
-                    <!-- Alineación y Distribución -->
+                    <!-- Alineación -->
                     <div class="space-y-3">
                         <label class="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest block">Alineación</label>
                         <div class="bg-white p-2 rounded-xl border border-gray-200 shadow-sm">

@@ -9,7 +9,7 @@
                         <h2 class="text-2xl font-bold text-gray-800">Plantillas de Certificados</h2>
                         <p class="text-sm text-gray-500">Gestiona los diseños base para los diplomas de tus cursos.</p>
                     </div>
-                    <a href="{{ route('admin.certificates.editor') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
+                    <a href="{{ route('admin.certificate.editor') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md">
                         <i class="ph-bold ph-plus mr-2 text-lg"></i> Nueva Plantilla
                     </a>
                 </div>
@@ -37,7 +37,11 @@
                 <!-- Grid de Plantillas -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @forelse($templates as $template)
-                        <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 bg-white flex flex-col group h-full">
+                        <div class="relative border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 bg-white flex flex-col group hover:-translate-y-1">
+                            
+                            <!-- Enlace envolvente para hacer toda la tarjeta clicable -->
+                            <a href="{{ route('admin.certificate.editor', ['templateId' => $template->id]) }}" class="absolute inset-0 z-10" title="Editar Plantilla"></a>
+
                             <!-- Previsualización Miniatura -->
                             <div class="h-48 bg-gray-100 w-full relative overflow-hidden flex items-center justify-center border-b border-gray-100 group-hover:bg-gray-50 transition">
                                 @if($template->background_image)
@@ -50,15 +54,15 @@
                                 @endif
                                 
                                 <!-- Overlay acciones rápidas -->
-                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                                    <a href="{{ route('admin.certificates.edit', $template->id) }}" class="p-2 bg-white rounded-full text-indigo-600 hover:scale-110 transition shadow-lg" title="Editar">
+                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 pointer-events-none">
+                                    <span class="p-2 bg-white rounded-full text-indigo-600 shadow-lg transform scale-75 group-hover:scale-100 transition duration-300">
                                         <i class="ph-bold ph-pencil-simple text-xl"></i>
-                                    </a>
+                                    </span>
                                 </div>
                             </div>
 
                             <!-- Info y Acciones -->
-                            <div class="p-5 flex flex-col flex-1">
+                            <div class="p-5 flex flex-col flex-1 relative z-20 pointer-events-none">
                                 <h3 class="text-lg font-bold text-gray-900 truncate mb-1 group-hover:text-indigo-600 transition">{{ $template->name }}</h3>
                                 <p class="text-xs text-gray-500 mb-4 flex items-center gap-1">
                                     <i class="ph-regular ph-calendar-blank"></i> 
@@ -68,7 +72,10 @@
                                 <div class="mt-auto flex justify-between items-center pt-4 border-t border-gray-100">
                                     <span class="text-[10px] font-mono text-gray-400 bg-gray-50 px-2 py-1 rounded">ID: {{ $template->id }}</span>
                                     
-                                    <button wire:click="delete({{ $template->id }})" wire:confirm="¿Estás seguro de eliminar esta plantilla? Esta acción no se puede deshacer." class="text-red-500 hover:text-red-700 text-xs font-bold flex items-center gap-1 px-2 py-1 hover:bg-red-50 rounded transition">
+                                    <!-- Botón de eliminar (con z-index superior para funcionar sobre el enlace principal) -->
+                                    <button wire:click="delete({{ $template->id }})" 
+                                            wire:confirm="¿Estás seguro de eliminar esta plantilla? Esta acción no se puede deshacer." 
+                                            class="text-red-500 hover:text-red-700 text-xs font-bold flex items-center gap-1 px-2 py-1 hover:bg-red-50 rounded transition pointer-events-auto cursor-pointer relative z-30">
                                         <i class="ph-bold ph-trash"></i> Eliminar
                                     </button>
                                 </div>
@@ -81,7 +88,7 @@
                             </div>
                             <h3 class="text-lg font-medium text-gray-900">No hay plantillas creadas</h3>
                             <p class="text-sm text-gray-500 max-w-sm mt-1 mb-6">Comienza creando tu primer diseño de certificado para tus estudiantes.</p>
-                            <a href="{{ route('admin.certificates.editor') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition shadow-md">
+                            <a href="{{ route('admin.certificate.editor') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition shadow-md">
                                 <i class="ph-bold ph-plus mr-2"></i> Crear Primera Plantilla
                             </a>
                         </div>
