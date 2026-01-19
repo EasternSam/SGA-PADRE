@@ -12,9 +12,10 @@ use Illuminate\Support\Facades\Auth;
 use App\Livewire\Admin\DatabaseImport; 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-use App\Livewire\Admin\CertificateEditor; // <--- Importante: Importar componente del Editor
+// Importamos ambos componentes
+use App\Livewire\Admin\CertificateEditor;
+use App\Livewire\Admin\CertificateTemplatesIndex;
 
-// Imports para Portales
 use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
 use App\Livewire\StudentPortal\CourseDetail as StudentPortalCourseDetail;
 use App\Livewire\StudentPortal\Requests as StudentPortalRequests;
@@ -146,8 +147,15 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
     Route::get('/reports', \App\Livewire\Reports\Index::class)->name('reports.index');
     Route::get('/certificates', \App\Livewire\Certificates\Index::class)->name('admin.certificates.index'); 
     
-    // --- NUEVO EDITOR DE CERTIFICADOS ---
-    Route::get('/certificate-editor/{templateId?}', CertificateEditor::class)->name('admin.certificate.editor');
+    // --- GESTIÓN DE PLANTILLAS DE DIPLOMAS (NUEVO) ---
+    // Listado de plantillas
+    Route::get('/certificate-templates', CertificateTemplatesIndex::class)->name('admin.certificates.templates');
+    
+    // Editor (Crear nueva)
+    Route::get('/certificate-editor', CertificateEditor::class)->name('admin.certificates.editor');
+    
+    // Editor (Editar existente - sobreescribimos la ruta anterior genérica para ser específicos)
+    Route::get('/certificate-editor/{templateId}', CertificateEditor::class)->name('admin.certificates.edit');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
 });
