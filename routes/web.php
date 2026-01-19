@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Livewire\Admin\DatabaseImport; 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use App\Livewire\Admin\CertificateEditor; // <--- Importante: Importar componente del Editor
 
 // Imports para Portales
 use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
@@ -24,7 +25,7 @@ use App\Livewire\TeacherPortal\Grades as TeacherPortalGrades;
 use App\Livewire\TeacherPortal\Attendance as TeacherPortalAttendance;
 
 use App\Livewire\Admin\RequestsManagement;
-use Illuminate\Support\Facades\URL; // Importante para la validación
+use Illuminate\Support\Facades\URL; 
 
 /*
 |--------------------------------------------------------------------------
@@ -37,8 +38,6 @@ Route::get('/', function () {
 });
 
 // --- RUTA PÚBLICA DE VALIDACIÓN DE CERTIFICADOS (QR) ---
-// Esta ruta permite verificar la autenticidad del certificado sin estar logueado.
-// El middleware 'signed' verifica que la URL no haya sido manipulada.
 Route::get('/certificates/verify/{student}/{course}', [CertificatePdfController::class, 'verify'])
     ->name('certificates.verify')
     ->middleware('signed');
@@ -146,6 +145,9 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
     // --- GESTIÓN DE REPORTES Y CERTIFICADOS (Admin) ---
     Route::get('/reports', \App\Livewire\Reports\Index::class)->name('reports.index');
     Route::get('/certificates', \App\Livewire\Certificates\Index::class)->name('admin.certificates.index'); 
+    
+    // --- NUEVO EDITOR DE CERTIFICADOS ---
+    Route::get('/certificate-editor/{templateId?}', CertificateEditor::class)->name('admin.certificate.editor');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
 });
@@ -169,11 +171,9 @@ Route::middleware(['auth', 'role:Profesor|Admin'])->prefix('teacher')->group(fun
 
 // --- RUTAS DE REPORTES (Generación PDF) ---
 Route::middleware(['auth'])->group(function () {
-    // Estas rutas de generación individual pueden ser usadas por profesores o admins
     Route::get('/reports/student-report/{student}', [ReportController::class, 'generateStudentReport'])->name('reports.student-report');
     Route::get('/reports/attendance-report/{section}', [ReportController::class, 'generateAttendanceReport'])->name('reports.attendance-report');
     
-    // --- RUTAS PDF ---
     Route::get('/reports/attendance/{section}/pdf', [AttendancePdfController::class, 'download'])->name('reports.attendance.pdf');
     Route::get('/reports/grades/{section}/pdf', [GradesPdfController::class, 'download'])->name('reports.grades.pdf');
     Route::get('/reports/financial/pdf', [FinancialPdfController::class, 'download'])->name('reports.financial.pdf');
