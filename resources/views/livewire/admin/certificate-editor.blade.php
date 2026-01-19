@@ -21,11 +21,11 @@
         
         [x-cloak] { display: none !important; }
         
-        /* Patrón de fondo estilo Dashboard técnico pero sutil */
+        /* Patrón de fondo estilo Dashboard */
         .workspace-pattern {
             background-color: #f8fafc;
-            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
-            background-size: 24px 24px;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
         }
 
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -39,87 +39,87 @@
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 
-    <!-- 1. BARRA SUPERIOR (HEADER) CLEAN & MINIMAL -->
-    <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 z-50 shrink-0 relative">
-        <!-- Izquierda: Título y Navegación -->
-        <div class="flex items-center gap-6">
-            <!-- Botón Volver / Logo -->
-            <button class="w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 hover:bg-gray-50 hover:text-gray-900 transition border border-transparent hover:border-gray-200">
-                <i class="ph-bold ph-arrow-left text-lg"></i>
-            </button>
-
-            <!-- Separador sutil -->
-            <div class="h-6 w-px bg-gray-200/50"></div>
-
-            <!-- Título del Documento -->
-            <div class="flex flex-col justify-center">
-                <div class="flex items-center gap-3">
+    <!-- 1. BARRA SUPERIOR (HEADER) ESTILO DASHBOARD -->
+    <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-50 shadow-sm shrink-0 relative">
+        <!-- Izquierda: Título y Estado -->
+        <div class="flex items-center gap-5">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 ring-1 ring-indigo-100 shadow-sm">
+                    <i class="ph-bold ph-certificate text-xl"></i>
+                </div>
+                <div class="flex flex-col justify-center">
                     <input type="text" wire:model.live.debounce.500ms="name" 
-                           class="font-semibold text-gray-800 border-none p-0 focus:ring-0 text-sm bg-transparent placeholder-gray-300 w-64 leading-none transition-colors hover:text-gray-900" 
-                           placeholder="Sin título">
-                    
-                    <!-- Estado de guardado minimalista -->
-                    <span class="flex items-center gap-1.5" title="Estado">
-                        <span wire:loading.remove wire:target="save" class="w-1.5 h-1.5 rounded-full bg-green-400"></span>
-                        <span wire:loading wire:target="save" class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
-                        <span wire:loading.remove wire:target="save" class="text-[10px] text-gray-400 font-medium">Guardado</span>
-                        <span wire:loading wire:target="save" class="text-[10px] text-indigo-400 font-medium">Guardando...</span>
-                    </span>
+                           class="font-bold text-gray-900 border-none p-0 focus:ring-0 text-sm bg-transparent placeholder-gray-400 w-48 leading-tight focus:border-b focus:border-indigo-500 transition-colors" 
+                           placeholder="Nombre del Diploma">
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Editor Visual</span>
+                        <!-- Indicador de guardado -->
+                        <span class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-50 border border-green-100">
+                            <span wire:loading.remove wire:target="save" class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                            <span wire:loading wire:target="save" class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                            <span wire:loading.remove wire:target="save" class="text-[9px] font-bold text-green-700">Guardado</span>
+                            <span wire:loading wire:target="save" class="text-[9px] font-bold text-indigo-700">Guardando...</span>
+                        </span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Undo/Redo Minimalistas -->
-            <div class="flex items-center gap-1 ml-2 pl-4 border-l border-gray-100">
-                <button @click="undo" :disabled="historyStep <= 0" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-lg disabled:opacity-20 disabled:hover:bg-transparent transition" title="Deshacer">
-                    <i class="ph-bold ph-arrow-u-up-left"></i>
+            <div class="h-8 w-px bg-gray-200 mx-2"></div>
+
+            <!-- Historia -->
+            <div class="flex items-center gap-1 bg-gray-50 p-1 rounded-lg border border-gray-200">
+                <button @click="undo" :disabled="historyStep <= 0" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-indigo-600 hover:bg-white rounded-md disabled:opacity-30 disabled:hover:bg-transparent transition shadow-sm disabled:shadow-none" title="Deshacer (Ctrl+Z)">
+                    <i class="ph-bold ph-arrow-u-up-left text-lg"></i>
                 </button>
-                <button @click="redo" :disabled="historyStep >= history.length - 1" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-lg disabled:opacity-20 disabled:hover:bg-transparent transition" title="Rehacer">
-                    <i class="ph-bold ph-arrow-u-up-right"></i>
+                <button @click="redo" :disabled="historyStep >= history.length - 1" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-indigo-600 hover:bg-white rounded-md disabled:opacity-30 disabled:hover:bg-transparent transition shadow-sm disabled:shadow-none" title="Rehacer (Ctrl+Y)">
+                    <i class="ph-bold ph-arrow-u-up-right text-lg"></i>
                 </button>
             </div>
         </div>
 
-        <!-- Centro: Controles de Vista (Integrados) -->
-        <div class="absolute left-[648px] top-1/2 transform -translate-y-1/2 flex items-center gap-1 bg-gray-50/80 p-1 rounded-lg border border-gray-100/50 shadow-[0_2px_8px_rgba(0,0,0,0.02)] backdrop-blur-sm">
-            <button @click="zoomOut" class="w-7 h-7 flex items-center justify-center rounded-md text-gray-500 hover:bg-white hover:shadow-sm hover:text-indigo-600 transition">
-                <i class="ph-bold ph-minus text-xs"></i>
-            </button>
-            <span class="text-[11px] font-semibold text-gray-600 w-10 text-center select-none font-mono" x-text="Math.round(zoom * 100) + '%'"></span>
-            <button @click="zoomIn" class="w-7 h-7 flex items-center justify-center rounded-md text-gray-500 hover:bg-white hover:shadow-sm hover:text-indigo-600 transition">
-                <i class="ph-bold ph-plus text-xs"></i>
+        <!-- Centro: Controles de Vista (Posicionamiento Absoluto Fijo) -->
+        <div class="absolute left-[648px] top-1/2 transform -translate-y-1/2 flex items-center gap-2 bg-white/90 backdrop-blur-md p-1.5 rounded-xl shadow-lg ring-1 ring-gray-900/5">
+            <div class="flex items-center bg-gray-50 rounded-lg p-0.5 border border-gray-200">
+                <button @click="zoomOut" class="w-7 h-7 flex items-center justify-center hover:bg-white rounded-md shadow-sm transition text-gray-600 hover:text-indigo-600">
+                    <i class="ph-bold ph-minus"></i>
+                </button>
+                <span class="text-xs font-mono w-10 text-center font-bold text-gray-700" x-text="Math.round(zoom * 100) + '%'"></span>
+                <button @click="zoomIn" class="w-7 h-7 flex items-center justify-center hover:bg-white rounded-md shadow-sm transition text-gray-600 hover:text-indigo-600">
+                    <i class="ph-bold ph-plus"></i>
+                </button>
+            </div>
+            
+            <div class="w-px h-5 bg-gray-200 mx-1"></div>
+            
+            <button @click="canvasConfig.orientation = canvasConfig.orientation === 'landscape' ? 'portrait' : 'landscape'; updateCanvasSize()" 
+                    class="text-[10px] px-3 py-1.5 rounded-lg transition flex items-center gap-2 font-bold uppercase tracking-wide border"
+                    :class="canvasConfig.orientation === 'landscape' ? 'bg-indigo-50 border-indigo-100 text-indigo-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'">
+                <i class="ph-bold text-lg" :class="canvasConfig.orientation === 'landscape' ? 'ph-rectangle' : 'ph-rectangle text-rotate-90'"></i>
+                <span x-text="canvasConfig.orientation === 'landscape' ? 'Horizontal' : 'Vertical'"></span>
             </button>
         </div>
 
-        <!-- Derecha: Acciones -->
+        <!-- Derecha: Acciones Principales -->
         <div class="flex items-center gap-3">
-            <!-- Orientación -->
-            <button @click="canvasConfig.orientation = canvasConfig.orientation === 'landscape' ? 'portrait' : 'landscape'; updateCanvasSize()" 
-                    class="group flex items-center gap-2 text-xs font-medium text-gray-500 hover:text-gray-900 transition px-2 py-1.5 rounded-lg hover:bg-gray-50" title="Cambiar Orientación">
-                <i class="ph-bold text-lg text-gray-400 group-hover:text-gray-600" :class="canvasConfig.orientation === 'landscape' ? 'ph-rectangle' : 'ph-rectangle text-rotate-90'"></i>
-                <span class="hidden xl:inline" x-text="canvasConfig.orientation === 'landscape' ? 'Horizontal' : 'Vertical'"></span>
-            </button>
-
-            <!-- Toggle Guías -->
             <button @click="snapToGrid = !snapToGrid" 
-                    class="group flex items-center gap-2 text-xs font-medium transition px-2 py-1.5 rounded-lg"
-                    :class="snapToGrid ? 'text-indigo-600 bg-indigo-50' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
-                    title="Ajustar a Guías">
-                <i class="ph-bold ph-magnet text-lg"></i>
+                    class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition border"
+                    :class="snapToGrid ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'text-gray-500 border-transparent hover:bg-gray-100'">
+                <i class="ph-bold ph-magnet text-base"></i>
+                <span class="hidden sm:inline">Guías</span>
             </button>
 
-            <!-- Separador -->
-            <div class="h-4 w-px bg-gray-200 mx-1"></div>
-
-            <!-- Preview -->
-            <button @click="togglePreview" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition text-xs font-medium" title="Vista Previa">
-                <i class="ph-bold text-lg" :class="previewMode ? 'ph-pencil-simple' : 'ph-eye'"></i>
-                <span x-text="previewMode ? 'Editar' : 'Preview'"></span>
+            <button @click="togglePreview" class="group relative flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold border transition-all duration-200" 
+                :class="previewMode ? 'bg-gray-900 text-white border-gray-900 shadow-md' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300 hover:shadow-sm'">
+                <i class="ph-bold text-base" :class="previewMode ? 'ph-pencil-simple' : 'ph-eye'"></i>
+                <span x-text="previewMode ? 'Editar Diseño' : 'Vista Previa'"></span>
             </button>
 
-            <!-- Guardar -->
-            <button wire:click="save" class="ml-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg shadow-slate-200 transition flex items-center gap-2 transform active:scale-95">
-                <span wire:loading wire:target="save" class="animate-spin"><i class="ph-bold ph-spinner"></i></span>
-                <span wire:loading.remove wire:target="save">Guardar</span>
+            <button wire:click="save" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg text-xs font-bold shadow-md shadow-indigo-200 transition flex items-center gap-2 relative overflow-hidden ring-1 ring-inset ring-indigo-700/10">
+                <div wire:loading wire:target="save" class="absolute inset-0 flex items-center justify-center bg-indigo-600 z-10">
+                    <i class="ph-bold ph-spinner animate-spin text-lg"></i>
+                </div>
+                <i class="ph-bold ph-floppy-disk text-base"></i>
+                <span>Guardar</span>
             </button>
         </div>
     </header>
@@ -300,8 +300,7 @@
             </div>
         </div>
 
-        <!-- 3. LIENZO (CANVAS) - REPARADO -->
-        <!-- NOTA: Usamos 'grid place-items-center' para solucionar el problema de alineación horizontal -->
+        <!-- 3. LIENZO (CANVAS) -->
         <main class="flex-1 relative overflow-hidden flex flex-col workspace-pattern z-0" 
               @mousedown="if($event.target === $el || $event.target.id === 'scroll-container') deselectAll()">
             
