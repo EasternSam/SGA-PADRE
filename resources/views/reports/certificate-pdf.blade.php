@@ -6,7 +6,7 @@
     <title>Certificado - {{ $folio ?? 'Vista Previa' }}</title>
     
     <style>
-        /* FUENTES */
+        /* FUENTES WEB */
         @font-face {
             font-family: 'Cinzel Decorative';
             font-style: normal;
@@ -28,7 +28,7 @@
             src: url('https://fonts.gstatic.com/s/pinyonscript/v17/6xKtdSZaM9PENbF29TaCNqsPPlWZ58M.ttf') format('truetype');
         }
 
-        /* Configuración de Página A4 Horizontal */
+        /* Configuración de Página A4 Horizontal (Landscape) */
         @page {
             margin: 0cm;
             size: 297mm 210mm;
@@ -51,11 +51,12 @@
             position: absolute;
             top: 0;
             left: 0;
-            /* Fondo sutil tipo papel de alta calidad */
+            /* Fondo sutil tipo papel */
             background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            background-repeat: repeat;
         }
 
-        /* Elementos de Diseño Moderno */
+        /* Marcos y Bordes */
         .border-frame {
             position: absolute;
             top: 12mm;
@@ -72,11 +73,11 @@
             left: 14mm;
             right: 14mm;
             bottom: 14mm;
-            border: 1px solid #e5e7eb; /* Gris muy claro */
+            border: 1px solid #e5e7eb; /* Gris claro */
             z-index: 10;
         }
 
-        /* Decoración de esquinas minimalista */
+        /* Decoración de esquinas */
         .corner-accent {
             position: absolute;
             width: 40px;
@@ -89,6 +90,7 @@
         .c-bl { bottom: 12mm; left: 12mm; border-bottom: 4px solid #1f2937; border-left: 4px solid #1f2937; }
         .c-br { bottom: 12mm; right: 12mm; border-bottom: 4px solid #1f2937; border-right: 4px solid #1f2937; }
 
+        /* Contenido */
         .content-wrapper {
             position: absolute;
             top: 20mm;
@@ -103,7 +105,7 @@
         .header-title {
             font-family: 'Cinzel Decorative', serif;
             font-size: 36pt;
-            color: #111827; /* Casi negro */
+            color: #111827;
             text-transform: uppercase;
             letter-spacing: 8px;
             margin-top: 10px;
@@ -112,7 +114,7 @@
 
         .sub-title {
             font-size: 14pt;
-            color: #6b7280; /* Gray 500 */
+            color: #6b7280;
             text-transform: uppercase;
             letter-spacing: 3px;
             margin-bottom: 30px;
@@ -137,7 +139,7 @@
         .separator-line {
             height: 1px;
             width: 60%;
-            background: linear-gradient(to right, transparent, #b49b5a, transparent);
+            background: #b49b5a; /* Color sólido para PDF */
             margin: 0 auto 25px auto;
         }
 
@@ -158,7 +160,7 @@
             letter-spacing: 1px;
         }
 
-        /* Layout de firmas */
+        /* Firmas */
         .footer-table {
             width: 100%;
             margin-top: 40px;
@@ -196,7 +198,6 @@
             background: white;
             border: 1px solid #e5e7eb;
             display: inline-block;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         .folio-footer {
@@ -212,7 +213,6 @@
     </style>
 </head>
 <body>
-    <!-- Lógica PHP para el nombre -->
     @php
         $user = $student->user ?? null;
         $studentName = 'N/A';
@@ -249,14 +249,13 @@
                 @if(file_exists(public_path('centuu.png')))
                     <img src="{{ public_path('centuu.png') }}" style="height: 100%; object-fit: contain;" alt="Logo">
                 @else
-                    <!-- Fallback elegante -->
                     <div style="font-size: 24pt; font-family: 'Cinzel Decorative'; color: #b49b5a;">SGA</div>
                 @endif
             </div>
 
             <!-- Títulos -->
             <div class="header-title">Diploma de Honor</div>
-            <div class="sub-title">{{ $institution_name ?? 'Institución Académica' }}</div>
+            <div class="sub-title">{{ $institution_name ?? 'CENTU' }}</div>
 
             <!-- Cuerpo -->
             <div class="presented-to">Otorga el presente reconocimiento a</div>
@@ -281,17 +280,21 @@
                 <tr>
                     <td width="35%">
                         <div style="height: 40px;">
-                            <!-- Espacio firma imagen opcional -->
+                            <!-- Espacio firma director -->
                         </div>
                         <div class="signature-box">
-                            <div class="sign-role">{{ $director_name ?? 'Director Académico' }}</div>
-                            <div class="sign-dept">Dirección Académica</div>
+                            <div class="sign-role">{{ $director_name ?? 'Dirección Académica' }}</div>
+                            <div class="sign-dept">Autoridad Certificadora</div>
                         </div>
                     </td>
                     
                     <td width="30%">
                         <div class="qr-container">
-                            <img src="{{ $qr_code_url ?? '' }}" alt="Validación" style="width: 80px; height: 80px; display: block;">
+                            @if(isset($qr_code_url))
+                                <img src="{{ $qr_code_url }}" alt="Validación" style="width: 80px; height: 80px; display: block;">
+                            @else
+                                <div style="width: 80px; height: 80px; background: #f3f4f6;"></div>
+                            @endif
                         </div>
                         <div style="margin-top: 5px; font-size: 7pt; color: #b49b5a; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">
                             Escanea para Validar
@@ -300,11 +303,11 @@
 
                     <td width="35%">
                         <div style="height: 40px;">
-                            <!-- Espacio firma imagen opcional -->
+                            <!-- Espacio firma secretaría -->
                         </div>
                         <div class="signature-box">
                             <div class="sign-role">Secretaría General</div>
-                            <div class="sign-dept">Certificación Oficial</div>
+                            <div class="sign-dept">Registro Oficial</div>
                         </div>
                     </td>
                 </tr>
@@ -312,7 +315,7 @@
         </div>
 
         <div class="folio-footer">
-            FOLIO ÚNICO: {{ $folio ?? 'PENDIENTE-GEN' }} • DOCUMENTO OFICIAL
+            FOLIO ÚNICO: {{ $folio ?? 'PENDIENTE' }} • DOCUMENTO OFICIAL DE VALIDACIÓN
         </div>
     </div>
 </body>
