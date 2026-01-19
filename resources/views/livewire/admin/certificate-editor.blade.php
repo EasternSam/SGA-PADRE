@@ -1,4 +1,4 @@
-<div class="flex flex-col h-[calc(100vh-65px)] bg-gray-100 overflow-hidden font-inter" 
+<div class="flex flex-col h-[calc(100vh-65px)] bg-gray-100 overflow-hidden font-inter select-none" 
      x-data="certificateEditor(@entangle('elements').live)"
      @keydown.window.ctrl.z.prevent="undo()"
      @keydown.window.ctrl.y.prevent="redo()"
@@ -22,7 +22,6 @@
             background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
         }
         
-        /* Cursor personalizado para rotación */
         .cursor-rotate { cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>') 10 10, auto; }
     </style>
 
@@ -57,7 +56,7 @@
         <div class="flex items-center gap-3">
             <div class="flex items-center gap-2 mr-2">
                 <input type="checkbox" id="snapGrid" x-model="snapToGrid" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 h-4 w-4">
-                <label for="snapGrid" class="text-xs text-gray-600 cursor-pointer select-none">Ajustar a cuadrícula</label>
+                <label for="snapGrid" class="text-xs text-gray-600 cursor-pointer select-none">Smart Snap</label>
             </div>
 
             <button @click="togglePreview" class="flex items-center gap-2 px-3 py-1.5 rounded text-xs font-medium border transition" :class="previewMode ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'">
@@ -74,8 +73,8 @@
 
     <div class="flex-1 flex overflow-hidden">
         
-        <!-- Panel Izquierdo: Herramientas -->
-        <aside class="w-72 bg-white border-r border-gray-200 flex flex-col z-20 flex-shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+        <!-- Panel Izquierdo -->
+        <aside class="w-72 bg-white border-r border-gray-200 flex flex-col z-20 flex-shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)]" x-show="!previewMode">
             <div class="flex border-b border-gray-200">
                 <button @click="activeTab = 'add'" :class="activeTab === 'add' ? 'border-b-2 border-indigo-500 text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-800'" class="flex-1 py-3 text-xs transition">Insertar</button>
                 <button @click="activeTab = 'settings'" :class="activeTab === 'settings' ? 'border-b-2 border-indigo-500 text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-800'" class="flex-1 py-3 text-xs transition">Lienzo</button>
@@ -179,17 +178,18 @@
             </div>
         </aside>
 
-        <!-- AREA DE LIENZO (CANVAS) -->
+        <!-- AREA DE LIENZO -->
         <main class="flex-1 bg-gray-200 overflow-hidden relative flex flex-col checkerboard" 
               @mousedown="if($event.target === $el) deselectAll()"
               @wheel.ctrl.prevent="handleWheelZoom">
             
-            <!-- Contenedor Transformable -->
+            <!-- Viewport -->
             <div class="w-full h-full flex items-center justify-center overflow-auto p-20" id="viewport">
                 
-                <!-- Hoja del Diploma -->
+                <!-- Lienzo -->
                 <div id="canvas" 
                      class="bg-white shadow-[0_0_50px_rgba(0,0,0,0.15)] relative transition-transform duration-75 ease-linear origin-center"
+                     :class="previewMode ? 'pointer-events-none' : ''"
                      :style="`
                         width: ${canvasConfig.width}px; 
                         height: ${canvasConfig.height}px; 
@@ -202,17 +202,16 @@
                      `">
                     
                     <!-- Guías -->
-                    <div x-show="showGuides" class="absolute top-[40px] bottom-[40px] left-[40px] right-[40px] border border-dashed border-red-300 pointer-events-none z-0 opacity-40"></div>
+                    <div x-show="showGuides && !previewMode" class="absolute top-[40px] bottom-[40px] left-[40px] right-[40px] border border-dashed border-red-300 pointer-events-none z-0 opacity-40"></div>
 
-                    <!-- Elementos Renderizados -->
+                    <!-- Elementos -->
                     <template x-for="(element, index) in elements" :key="element.id || index">
                         <div x-show="!element.hidden"
                              class="absolute group box-border select-none"
                              :class="{
-                                'cursor-move': !element.locked, 
-                                'cursor-not-allowed': element.locked,
-                                'ring-1 ring-indigo-500 ring-offset-1': isSelected(index),
-                                'hover:ring-1 hover:ring-indigo-300 hover:ring-offset-1': !isSelected(index) && !element.locked
+                                'cursor-move': !element.locked && !previewMode, 
+                                'ring-1 ring-indigo-500 ring-offset-1': isSelected(index) && !previewMode,
+                                'hover:ring-1 hover:ring-indigo-300 hover:ring-offset-1': !isSelected(index) && !element.locked && !previewMode
                              }"
                              :style="getElementStyle(element)"
                              @mousedown.stop="startDrag($event, index)"
@@ -237,7 +236,7 @@
                             </div>
 
                             <!-- Handles de Edición -->
-                            <template x-if="isSelected(index) && !element.locked">
+                            <template x-if="isSelected(index) && !element.locked && !previewMode">
                                 <div class="absolute inset-0 z-50 pointer-events-none">
                                     <div class="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-full pointer-events-auto cursor-nw-resize shadow-sm" @mousedown.stop="startResize($event, index, 'nw')"></div>
                                     <div class="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-full pointer-events-auto cursor-ne-resize shadow-sm" @mousedown.stop="startResize($event, index, 'ne')"></div>
@@ -256,7 +255,7 @@
         </main>
 
         <!-- Panel Derecho: Propiedades -->
-        <aside class="w-72 bg-white border-l border-gray-200 flex flex-col z-20 shadow-xl flex-shrink-0" x-cloak>
+        <aside class="w-72 bg-white border-l border-gray-200 flex flex-col z-20 shadow-xl flex-shrink-0" x-cloak x-show="!previewMode">
             <template x-if="selectedIds.length === 0">
                 <div class="h-full flex flex-col items-center justify-center text-gray-400 p-6 text-center">
                     <p class="text-sm font-medium text-gray-500">Selecciona un elemento</p>
@@ -283,10 +282,10 @@
                         <div class="space-y-3">
                             <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Contenido</label>
                             <template x-if="activeElement.type === 'text'">
-                                <textarea x-model="activeElement.content" rows="3" class="w-full rounded-lg border-gray-300 text-sm bg-gray-50 focus:bg-white"></textarea>
+                                <textarea x-model="activeElement.content" @input="queueHistory" rows="3" class="w-full rounded-lg border-gray-300 text-sm bg-gray-50 focus:bg-white"></textarea>
                             </template>
                             <template x-if="activeElement.type === 'variable'">
-                                <select x-model="activeElement.content" class="w-full rounded-lg border-gray-300 text-sm bg-blue-50 focus:bg-white">
+                                <select x-model="activeElement.content" @change="queueHistory" class="w-full rounded-lg border-gray-300 text-sm bg-blue-50 focus:bg-white">
                                     <template x-for="(label, key) in variables" :key="key">
                                         <option :value="key" x-text="label"></option>
                                     </template>
@@ -301,30 +300,30 @@
                             <div class="grid grid-cols-2 gap-3">
                                 <div class="relative">
                                     <span class="absolute left-3 top-2.5 text-xs text-gray-400 font-mono">X</span>
-                                    <input type="number" x-model.number="activeElement.x" class="w-full pl-8 rounded-lg border-gray-300 text-xs">
+                                    <input type="number" x-model.number="activeElement.x" @change="queueHistory" class="w-full pl-8 rounded-lg border-gray-300 text-xs">
                                 </div>
                                 <div class="relative">
                                     <span class="absolute left-3 top-2.5 text-xs text-gray-400 font-mono">Y</span>
-                                    <input type="number" x-model.number="activeElement.y" class="w-full pl-8 rounded-lg border-gray-300 text-xs">
+                                    <input type="number" x-model.number="activeElement.y" @change="queueHistory" class="w-full pl-8 rounded-lg border-gray-300 text-xs">
                                 </div>
                             </div>
                             <div class="grid grid-cols-2 gap-3">
                                 <div class="relative">
                                     <span class="absolute left-3 top-2.5 text-xs text-gray-400 font-mono">W</span>
-                                    <input type="number" x-model.number="activeElement.width" class="w-full pl-8 rounded-lg border-gray-300 text-xs">
+                                    <input type="number" x-model.number="activeElement.width" @change="queueHistory" class="w-full pl-8 rounded-lg border-gray-300 text-xs">
                                 </div>
                                 <template x-if="activeElement.height !== null">
                                     <div class="relative">
                                         <span class="absolute left-3 top-2.5 text-xs text-gray-400 font-mono">H</span>
-                                        <input type="number" x-model.number="activeElement.height" class="w-full pl-8 rounded-lg border-gray-300 text-xs">
+                                        <input type="number" x-model.number="activeElement.height" @change="queueHistory" class="w-full pl-8 rounded-lg border-gray-300 text-xs">
                                     </div>
                                 </template>
                             </div>
                             
                             <div class="flex items-center gap-2">
                                 <span class="text-xs text-gray-400 w-8">Rot</span>
-                                <input type="range" min="-180" max="180" x-model.number="activeElement.rotation" class="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                                <span class="text-xs text-gray-500 w-8 text-right" x-text="activeElement.rotation + '°'"></span>
+                                <input type="range" min="-180" max="180" x-model.number="activeElement.rotation" @change="queueHistory" class="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <span class="text-xs text-gray-500 w-8 text-right" x-text="Math.round(activeElement.rotation || 0) + '°'"></span>
                             </div>
                         </div>
 
@@ -333,7 +332,7 @@
                             <div class="space-y-4 pt-2 border-t border-gray-100">
                                 <div>
                                     <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Tipografía</label>
-                                    <select x-model="activeElement.fontFamily" class="w-full rounded-lg border-gray-300 text-xs mb-2">
+                                    <select x-model="activeElement.fontFamily" @change="queueHistory" class="w-full rounded-lg border-gray-300 text-xs mb-2">
                                         <option value="EB Garamond">Garamond</option>
                                         <option value="Cinzel Decorative">Cinzel</option>
                                         <option value="Pinyon Script">Script</option>
@@ -343,17 +342,17 @@
                                     
                                     <div class="flex gap-2">
                                         <div class="relative flex-1">
-                                            <input type="number" x-model="activeElement.fontSize" class="w-full rounded-lg border-gray-300 text-xs pl-8">
+                                            <input type="number" x-model="activeElement.fontSize" @change="queueHistory" class="w-full rounded-lg border-gray-300 text-xs pl-8">
                                             <span class="absolute left-2 top-2 text-xs text-gray-400">Pt</span>
                                         </div>
-                                        <input type="color" x-model="activeElement.color" class="w-10 h-[34px] rounded border-gray-300 cursor-pointer p-0">
+                                        <input type="color" x-model="activeElement.color" @change="queueHistory" class="w-10 h-[34px] rounded border-gray-300 cursor-pointer p-0">
                                     </div>
                                 </div>
 
                                 <div class="flex bg-gray-100 rounded-lg p-1">
-                                    <button @click="activeElement.textAlign = 'left'" class="flex-1 py-1 rounded transition" :class="activeElement.textAlign === 'left' ? 'bg-white shadow text-indigo-600' : 'text-gray-400'"><svg class="w-3.5 h-3.5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h7"></path></svg></button>
-                                    <button @click="activeElement.textAlign = 'center'" class="flex-1 py-1 rounded transition" :class="activeElement.textAlign === 'center' ? 'bg-white shadow text-indigo-600' : 'text-gray-400'"><svg class="w-3.5 h-3.5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M7 18h10"></path></svg></button>
-                                    <button @click="activeElement.textAlign = 'right'" class="flex-1 py-1 rounded transition" :class="activeElement.textAlign === 'right' ? 'bg-white shadow text-indigo-600' : 'text-gray-400'"><svg class="w-3.5 h-3.5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M10 12h10M13 18h7"></path></svg></button>
+                                    <button @click="activeElement.textAlign = 'left'; queueHistory()" class="flex-1 py-1 rounded transition" :class="activeElement.textAlign === 'left' ? 'bg-white shadow text-indigo-600' : 'text-gray-400'"><svg class="w-3.5 h-3.5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h7"></path></svg></button>
+                                    <button @click="activeElement.textAlign = 'center'; queueHistory()" class="flex-1 py-1 rounded transition" :class="activeElement.textAlign === 'center' ? 'bg-white shadow text-indigo-600' : 'text-gray-400'"><svg class="w-3.5 h-3.5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M7 18h10"></path></svg></button>
+                                    <button @click="activeElement.textAlign = 'right'; queueHistory()" class="flex-1 py-1 rounded transition" :class="activeElement.textAlign === 'right' ? 'bg-white shadow text-indigo-600' : 'text-gray-400'"><svg class="w-3.5 h-3.5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M10 12h10M13 18h7"></path></svg></button>
                                 </div>
                             </div>
                         </template>
@@ -363,7 +362,6 @@
         </aside>
     </div>
 
-    <!-- Lógica Alpine.js -->
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.data('certificateEditor', (wireElements) => ({
@@ -373,21 +371,22 @@
                 activeTab: 'add',
                 showGuides: true,
                 previewMode: false,
-                snapToGrid: false,
-                isDragging: false,
+                snapToGrid: true, // Auto-snap por defecto
                 
-                // Config Canvas
                 canvasConfig: { format: 'A4', orientation: 'landscape', width: 1123, height: 794 },
                 
-                // Historial
                 history: [],
                 historyStep: -1,
+                _historyTimeout: null,
                 
                 // Estado Interacción
+                isDragging: false,
+                interactionType: null,
                 dragStart: { x: 0, y: 0 },
                 elementStart: { x: 0, y: 0, w: 0, h: 0, r: 0 },
-                interactionType: null,
                 resizeHandle: null,
+                rotationCenter: { x: 0, y: 0 },
+                startAngle: 0,
 
                 variables: {
                     '{student_name}': 'Juan Pérez García',
@@ -404,18 +403,26 @@
                 },
 
                 init() {
-                    this.saveHistory();
+                    this.bindEvents();
                     this.updateCanvasSize();
-                    
-                    // Bindings seguros para eventos
-                    this._handleMove = this.handleMove.bind(this);
-                    this._stopInteraction = this.stopInteraction.bind(this);
+                    // Inicializar zIndex si faltan
+                    this.normalizeZ();
+                    this.saveHistory();
                 },
 
+                // --- Gestión de Eventos Globales ---
+                bindEvents() {
+                    this._move = this.handleMove.bind(this);
+                    this._up = this.stopInteraction.bind(this);
+                    window.addEventListener('mousemove', this._move);
+                    window.addEventListener('mouseup', this._up);
+                },
+
+                // --- Canvas Management ---
                 updateCanvasSize() {
-                    const dpi = 96;
+                    const dpi = 96; 
                     const mmToPx = (mm) => Math.round(mm * (dpi / 25.4));
-                    let w_mm = 210, h_mm = 297; // A4 Default
+                    let w_mm = 210, h_mm = 297; 
                     
                     if (this.canvasConfig.format === 'Letter') { w_mm = 215.9; h_mm = 279.4; }
                     else if (this.canvasConfig.format === 'Legal') { w_mm = 215.9; h_mm = 355.6; }
@@ -429,10 +436,10 @@
                     }
                 },
 
-                // --- Gestión de Elementos ---
+                // --- Elementos ---
                 addElement(type, props = {}) {
                     const startX = Math.round(this.canvasConfig.width / 2) - 150;
-                    const startY = Math.round(this.canvasConfig.height / 2) - 25;
+                    const startY = Math.round(this.canvasConfig.height / 2) - 50;
                     
                     this.elements.push({
                         id: Date.now() + Math.random(),
@@ -442,10 +449,10 @@
                         fontFamily: 'Inter', fontSize: 24, fontWeight: '400', color: '#000000',
                         textAlign: 'left', rotation: 0, locked: false, hidden: false,
                         zIndex: this.elements.length + 1,
-                        textTransform: 'none', letterSpacing: 0, lineHeight: 1.2,
                         ...props
                     });
                     this.selectElement(this.elements.length - 1);
+                    this.normalizeZ();
                     this.saveHistory();
                 },
 
@@ -453,6 +460,7 @@
                     if (this.selectedIds.length === 0) return;
                     this.elements.splice(this.selectedIds[0], 1);
                     this.selectedIds = [];
+                    this.normalizeZ();
                     this.saveHistory();
                 },
 
@@ -463,6 +471,7 @@
                     copy.x += 20; copy.y += 20;
                     this.elements.push(copy);
                     this.selectElement(this.elements.length - 1);
+                    this.normalizeZ();
                     this.saveHistory();
                 },
 
@@ -474,91 +483,140 @@
                     this.selectedIds = [];
                 },
 
-                // --- Capas ---
+                normalizeZ() {
+                    this.elements.forEach((el, i) => el.zIndex = i + 1);
+                },
+
                 toggleLock(index) { this.elements[index].locked = !this.elements[index].locked; },
                 toggleVisibility(index) { this.elements[index].hidden = !this.elements[index].hidden; },
                 getElementRealIndex(el) { return this.elements.indexOf(el); },
 
-                // --- Interacciones (Fixed Logic) ---
+                // --- Smart Snap ---
+                applySmartSnap(value, targets, threshold = 8) {
+                    // Si shift está presionado, desactivar snap magnético para precisión
+                    // Pero aquí usamos snapToGrid como toggle principal
+                    if (!this.snapToGrid) return value;
+                    
+                    for (let t of targets) {
+                        if (Math.abs(value - t) <= threshold) return t;
+                    }
+                    return value;
+                },
+
+                // --- Interacciones ---
                 startDrag(e, index) {
-                    if (e.button !== 0 || this.elements[index].locked) return;
+                    if (e.button !== 0 || this.elements[index].locked || this.previewMode) return;
                     this.selectElement(index);
                     this.isDragging = true;
                     this.interactionType = 'move';
                     this.dragStart = { x: e.clientX, y: e.clientY };
                     this.elementStart = { ...this.elements[index] };
-                    
-                    window.addEventListener('mousemove', this._handleMove);
-                    window.addEventListener('mouseup', this._stopInteraction);
                 },
 
                 startResize(e, index, handle) {
                     e.stopPropagation();
+                    if(this.previewMode) return;
                     this.isDragging = true;
                     this.interactionType = 'resize';
                     this.resizeHandle = handle;
                     this.dragStart = { x: e.clientX, y: e.clientY };
                     this.elementStart = { ...this.elements[index] };
-                    
-                    window.addEventListener('mousemove', this._handleMove);
-                    window.addEventListener('mouseup', this._stopInteraction);
                 },
 
                 startRotate(e, index) {
                     e.stopPropagation();
+                    if(this.previewMode) return;
                     this.isDragging = true;
                     this.interactionType = 'rotate';
-                    this.dragStart = { x: e.clientX, y: e.clientY };
-                    this.elementStart = { ...this.elements[index] };
                     
-                    window.addEventListener('mousemove', this._handleMove);
-                    window.addEventListener('mouseup', this._stopInteraction);
+                    const el = this.elements[index];
+                    // Obtenemos el centro real en pantalla
+                    const rect = e.target.closest('.group').getBoundingClientRect();
+                    this.rotationCenter = {
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2
+                    };
+                    
+                    // Ángulo inicial del mouse respecto al centro
+                    this.startAngle = Math.atan2(e.clientY - this.rotationCenter.y, e.clientX - this.rotationCenter.x);
+                    this.elementStart = { ...el };
                 },
 
                 handleMove(e) {
                     if (!this.isDragging) return;
-                    const el = this.elements[this.selectedIds[0]];
+                    
+                    const idx = this.selectedIds[0];
+                    const el = this.elements[idx];
+                    
+                    // Deltas ajustados por zoom
                     const deltaX = (e.clientX - this.dragStart.x) / this.zoom;
                     const deltaY = (e.clientY - this.dragStart.y) / this.zoom;
 
                     if (this.interactionType === 'move') {
                         let newX = this.elementStart.x + deltaX;
                         let newY = this.elementStart.y + deltaY;
-                        
-                        if (this.snapToGrid || e.shiftKey) {
-                            newX = Math.round(newX / 10) * 10;
-                            newY = Math.round(newY / 10) * 10;
+
+                        // Smart Snap Points (Bordes y centros de otros elementos)
+                        if (this.snapToGrid && !e.shiftKey) {
+                            const targetsX = [0, this.canvasConfig.width / 2, this.canvasConfig.width];
+                            const targetsY = [0, this.canvasConfig.height / 2, this.canvasConfig.height];
+                            
+                            // Añadir otros elementos como targets
+                            this.elements.forEach((other, i) => {
+                                if (i !== idx && !other.hidden) {
+                                    targetsX.push(other.x, other.x + other.width / 2, other.x + other.width);
+                                    targetsY.push(other.y, other.y + (other.height||0) / 2, other.y + (other.height||0));
+                                }
+                            });
+
+                            newX = this.applySmartSnap(newX, targetsX);
+                            newY = this.applySmartSnap(newY, targetsY);
                         }
+
                         el.x = Math.round(newX);
                         el.y = Math.round(newY);
                     }
                     else if (this.interactionType === 'resize') {
-                        if (this.resizeHandle.includes('e')) el.width = Math.max(20, this.elementStart.width + deltaX);
-                        if (this.resizeHandle.includes('s')) el.height = Math.max(20, this.elementStart.height + deltaY);
-                        if (this.resizeHandle.includes('w')) {
-                            const w = Math.max(20, this.elementStart.width - deltaX);
-                            el.x = this.elementStart.x + (this.elementStart.width - w);
-                            el.width = w;
+                        const h = this.resizeHandle;
+                        let newW = this.elementStart.width;
+                        let newH = this.elementStart.height || 100;
+                        let newX = this.elementStart.x;
+                        let newY = this.elementStart.y;
+
+                        // Resize lógica básica
+                        if (h.includes('e')) newW += deltaX;
+                        if (h.includes('w')) { newW -= deltaX; newX += deltaX; }
+                        if (h.includes('s')) newH += deltaY;
+                        if (h.includes('n')) { newH -= deltaY; newY += deltaY; }
+
+                        // Mantener aspect ratio con Shift
+                        if (e.shiftKey && this.elementStart.width && this.elementStart.height) {
+                            const ratio = this.elementStart.width / this.elementStart.height;
+                            if (Math.abs(deltaX) > Math.abs(deltaY)) newH = newW / ratio;
+                            else newW = newH * ratio;
                         }
-                        if (this.resizeHandle.includes('n')) {
-                            const h = Math.max(20, this.elementStart.height - deltaY);
-                            el.y = this.elementStart.y + (this.elementStart.height - h);
-                            el.height = h;
-                        }
+
+                        // Alt key = resize from center (avanzado, simplificado aquí)
+                        
+                        el.width = Math.max(20, Math.round(newW));
+                        if(el.height !== null) el.height = Math.max(20, Math.round(newH));
+                        el.x = Math.round(newX);
+                        el.y = Math.round(newY);
                     }
                     else if (this.interactionType === 'rotate') {
-                        const sensitivity = 0.5;
-                        let rot = this.elementStart.rotation + (deltaX * sensitivity);
-                        if (e.shiftKey) rot = Math.round(rot / 15) * 15;
-                        el.rotation = Math.round(rot % 360);
+                        const currentAngle = Math.atan2(e.clientY - this.rotationCenter.y, e.clientX - this.rotationCenter.x);
+                        let deg = (currentAngle - this.startAngle) * (180 / Math.PI) + this.elementStart.rotation;
+                        
+                        if (e.shiftKey) deg = Math.round(deg / 15) * 15;
+                        el.rotation = Math.round(deg);
                     }
                 },
 
                 stopInteraction() {
-                    this.isDragging = false;
-                    window.removeEventListener('mousemove', this._handleMove);
-                    window.removeEventListener('mouseup', this._stopInteraction);
-                    this.saveHistory();
+                    if (this.isDragging) {
+                        this.isDragging = false;
+                        this.queueHistory();
+                    }
                 },
 
                 // --- Utilidades ---
@@ -569,7 +627,7 @@
                         transform: rotate(${el.rotation || 0}deg);
                         font-family: '${el.fontFamily}'; font-size: ${el.fontSize}px;
                         font-weight: ${el.fontWeight}; color: ${el.color};
-                        text-align: ${el.textAlign}; text-transform: ${el.textTransform || 'none'};
+                        text-align: ${el.textAlign};
                         z-index: ${el.zIndex};
                     `;
                 },
@@ -581,16 +639,35 @@
                     return text;
                 },
 
+                togglePreview() {
+                    this.previewMode = !this.previewMode;
+                    this.showGuides = !this.previewMode;
+                    this.deselectAll();
+                },
+
                 zoomIn() { if(this.zoom < 2) this.zoom += 0.1; },
                 zoomOut() { if(this.zoom > 0.3) this.zoom -= 0.1; },
                 handleWheelZoom(e) { e.deltaY < 0 ? this.zoomIn() : this.zoomOut(); },
 
-                saveHistory() {
-                    if (this.historyStep < this.history.length - 1) this.history = this.history.slice(0, this.historyStep + 1);
-                    this.history.push(JSON.parse(JSON.stringify(this.elements)));
-                    this.historyStep++;
-                    if (this.history.length > 20) { this.history.shift(); this.historyStep--; }
+                // --- Historial Optimizado ---
+                queueHistory() {
+                    clearTimeout(this._historyTimeout);
+                    this._historyTimeout = setTimeout(() => {
+                        this.saveHistory();
+                    }, 300);
                 },
+
+                saveHistory() {
+                    // Evitar duplicados consecutivos
+                    const current = JSON.stringify(this.elements);
+                    if (this.historyStep >= 0 && JSON.stringify(this.history[this.historyStep]) === current) return;
+
+                    if (this.historyStep < this.history.length - 1) this.history = this.history.slice(0, this.historyStep + 1);
+                    this.history.push(JSON.parse(current));
+                    this.historyStep++;
+                    if (this.history.length > 30) { this.history.shift(); this.historyStep--; }
+                },
+                
                 undo() {
                     if (this.historyStep > 0) {
                         this.historyStep--;
@@ -598,6 +675,7 @@
                         this.deselectAll();
                     }
                 },
+                
                 redo() {
                     if (this.historyStep < this.history.length - 1) {
                         this.historyStep++;
