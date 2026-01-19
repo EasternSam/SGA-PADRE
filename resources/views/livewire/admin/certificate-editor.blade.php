@@ -23,13 +23,13 @@
         
         .canvas-bg {
             background-color: #f3f4f6;
-            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
             background-size: 20px 20px;
         }
 
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
         .cursor-rotate { cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>') 10 10, auto; }
@@ -52,47 +52,48 @@
     </style>
 
     <!-- 1. Barra Superior (Header) -->
-    <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-40 shadow-sm shrink-0">
+    <!-- z-50 asegura que esté siempre encima de todo -->
+    <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-50 shadow-sm shrink-0 relative">
         <div class="flex items-center gap-4">
             <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
                 <i class="ph ph-certificate text-2xl"></i>
             </div>
             
             <div class="flex flex-col">
-                <!-- Restaurado wire:model -->
-                <input type="text" wire:model="name" class="font-bold text-gray-800 border-none p-0 focus:ring-0 text-sm bg-transparent placeholder-gray-400" placeholder="Nombre del Certificado">
-                <span class="text-[10px] text-gray-400 font-medium">
-                    <span wire:loading.remove wire:target="save">Guardado</span>
-                    <span wire:loading wire:target="save" class="text-indigo-500">Guardando...</span>
+                <input type="text" wire:model="name" class="font-bold text-gray-800 border-none p-0 focus:ring-0 text-sm bg-transparent placeholder-gray-400 w-64" placeholder="Nombre del Certificado">
+                <span class="text-[10px] text-gray-400 font-medium flex items-center gap-1">
+                    <span wire:loading.remove wire:target="save" class="flex items-center gap-1 text-green-600"><i class="ph-bold ph-check"></i> Guardado</span>
+                    <span wire:loading wire:target="save" class="text-indigo-500 flex items-center gap-1"><i class="ph-bold ph-spinner animate-spin"></i> Guardando...</span>
                 </span>
             </div>
 
-            <div class="h-6 w-px bg-gray-200 mx-2"></div>
+            <div class="h-8 w-px bg-gray-200 mx-2"></div>
 
-            <div class="flex items-center gap-2">
-                <button @click="undo" class="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition" title="Deshacer (Ctrl+Z)">
+            <div class="flex items-center gap-1">
+                <button @click="undo" class="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Deshacer (Ctrl+Z)">
                     <i class="ph ph-arrow-u-up-left text-lg"></i>
                 </button>
-                <button @click="redo" class="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition" title="Rehacer (Ctrl+Y)">
+                <button @click="redo" class="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Rehacer (Ctrl+Y)">
                     <i class="ph ph-arrow-u-up-right text-lg"></i>
                 </button>
             </div>
         </div>
 
         <!-- Centro: Zoom y Configuración -->
-        <div class="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-gray-100/80 backdrop-blur-sm p-1.5 rounded-xl border border-gray-200 shadow-inner">
-            <button @click="zoomOut" class="p-1.5 hover:bg-white rounded-lg shadow-sm transition text-gray-600">
+        <div class="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-gray-100/50 backdrop-blur-md p-1 rounded-xl border border-gray-200 shadow-sm">
+            <button @click="zoomOut" class="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg shadow-sm transition text-gray-600">
                 <i class="ph ph-minus"></i>
             </button>
-            <span class="text-xs font-mono w-12 text-center font-medium select-none" x-text="Math.round(zoom * 100) + '%'"></span>
-            <button @click="zoomIn" class="p-1.5 hover:bg-white rounded-lg shadow-sm transition text-gray-600">
+            <span class="text-xs font-mono w-12 text-center font-medium select-none text-gray-600" x-text="Math.round(zoom * 100) + '%'"></span>
+            <button @click="zoomIn" class="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg shadow-sm transition text-gray-600">
                 <i class="ph ph-plus"></i>
             </button>
+            
             <div class="w-px h-4 bg-gray-300 mx-1"></div>
-            <!-- Restaurado x-model para la config local del canvas -->
+            
             <button @click="canvasConfig.orientation = canvasConfig.orientation === 'landscape' ? 'portrait' : 'landscape'; updateCanvasSize()" 
-                    class="text-xs px-2 py-1 rounded-md transition flex items-center gap-1 font-medium"
-                    :class="canvasConfig.orientation === 'landscape' ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-gray-200 text-gray-600'">
+                    class="text-xs px-3 py-1.5 rounded-lg transition flex items-center gap-2 font-medium"
+                    :class="canvasConfig.orientation === 'landscape' ? 'bg-white shadow-sm text-indigo-700' : 'hover:bg-gray-200 text-gray-600'">
                 <i class="ph" :class="canvasConfig.orientation === 'landscape' ? 'ph-rectangle' : 'ph-rectangle text-rotate-90'"></i>
                 <span x-text="canvasConfig.orientation === 'landscape' ? 'Horizontal' : 'Vertical'"></span>
             </button>
@@ -102,9 +103,9 @@
             <div class="flex items-center gap-2 mr-2">
                 <button @click="snapToGrid = !snapToGrid" 
                         class="p-2 rounded-lg transition relative group"
-                        :class="snapToGrid ? 'bg-indigo-50 text-indigo-600' : 'text-gray-400 hover:bg-gray-100'">
+                        :class="snapToGrid ? 'bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200' : 'text-gray-400 hover:bg-gray-100'">
                     <i class="ph ph-magnet text-xl"></i>
-                    <span class="absolute top-full right-0 mt-1 text-[10px] bg-gray-800 text-white px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap">Imán</span>
+                    <span class="absolute top-full right-0 mt-2 text-[10px] bg-gray-800 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-50">Ajuste Magnético</span>
                 </button>
             </div>
 
@@ -114,25 +115,25 @@
                 <span x-text="previewMode ? 'Editar' : 'Vista Previa'"></span>
             </button>
 
-            <!-- Restaurado wire:click -->
-            <button wire:click="save" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-xs font-bold shadow-lg shadow-indigo-200 transition flex items-center gap-2 relative">
+            <button wire:click="save" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-xs font-bold shadow-lg shadow-indigo-200 transition flex items-center gap-2 relative overflow-hidden">
                 <div wire:loading wire:target="save" class="absolute inset-0 flex items-center justify-center bg-indigo-600 rounded-lg">
                     <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                 </div>
-                <i class="ph ph-floppy-disk"></i>
+                <i class="ph ph-floppy-disk text-lg"></i>
                 <span>Guardar</span>
             </button>
         </div>
     </header>
 
-    <div class="flex-1 flex overflow-hidden">
+    <div class="flex-1 flex overflow-hidden relative z-0">
         
         <!-- 2. Barra Lateral Izquierda (Herramientas) -->
-        <aside class="w-20 bg-white border-r border-gray-200 flex flex-col items-center py-4 z-20 shrink-0 gap-6" x-show="!previewMode">
+        <!-- z-40 asegura que esté por encima del lienzo -->
+        <aside class="w-20 bg-white border-r border-gray-200 flex flex-col items-center py-4 z-40 shrink-0 gap-6 shadow-[4px_0_24px_rgba(0,0,0,0.02)]" x-show="!previewMode">
             <div class="flex flex-col gap-4 w-full px-2">
                 <button @click="activeTab = 'elements'" class="flex flex-col items-center gap-1 p-2 rounded-xl transition w-full group" :class="activeTab === 'elements' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'">
                     <i class="ph ph-shapes text-2xl mb-1"></i>
-                    <span class="text-[10px] font-medium">Elementos</span>
+                    <span class="text-[10px] font-medium">Insertar</span>
                 </button>
                 <button @click="activeTab = 'layers'" class="flex flex-col items-center gap-1 p-2 rounded-xl transition w-full group" :class="activeTab === 'layers' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'">
                     <i class="ph ph-stack text-2xl mb-1"></i>
@@ -146,10 +147,11 @@
         </aside>
 
         <!-- 2.1 Panel Extendido Izquierdo (Contextual) -->
-        <div class="w-64 bg-white border-r border-gray-200 flex flex-col z-10 shrink-0 transition-all duration-300" x-show="activeTab && !previewMode">
-            <div class="p-4 border-b border-gray-100 flex justify-between items-center">
-                <h3 class="font-bold text-gray-700" x-text="activeTab === 'elements' ? 'Insertar' : (activeTab === 'layers' ? 'Capas' : 'Configuración')"></h3>
-                <button @click="activeTab = null" class="text-gray-400 hover:text-gray-600"><i class="ph ph-x"></i></button>
+        <!-- z-30 para estar debajo de la barra de iconos pero sobre el lienzo -->
+        <div class="w-64 bg-white border-r border-gray-200 flex flex-col z-30 shrink-0 transition-all duration-300 relative shadow-xl" x-show="activeTab && !previewMode">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <h3 class="font-bold text-gray-700" x-text="activeTab === 'elements' ? 'Insertar Elemento' : (activeTab === 'layers' ? 'Gestión de Capas' : 'Configuración')"></h3>
+                <button @click="activeTab = null" class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded"><i class="ph ph-x"></i></button>
             </div>
 
             <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
@@ -157,35 +159,35 @@
                 <!-- TAB: ELEMENTOS -->
                 <div x-show="activeTab === 'elements'" class="space-y-6">
                     <div>
-                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-3">Texto</span>
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-3">Texto</span>
                         <div class="grid gap-2">
-                            <button @click="addElement('text', {fontSize: 48, fontWeight: 700, content: 'Título Principal'})" class="text-left px-4 py-3 border rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition group bg-gray-50">
-                                <span class="font-bold text-2xl text-gray-800 font-garamond group-hover:text-indigo-700">Añadir Título</span>
+                            <button @click="addElement('text', {fontSize: 48, fontWeight: 700, content: 'TÍTULO DIPLOMA'})" class="text-left px-4 py-3 border border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition group bg-white shadow-sm">
+                                <span class="font-bold text-xl text-gray-800 font-cinzel group-hover:text-indigo-700">Título Principal</span>
                             </button>
-                            <button @click="addElement('text', {fontSize: 24, content: 'Subtítulo del certificado'})" class="text-left px-4 py-2 border rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition group bg-gray-50">
+                            <button @click="addElement('text', {fontSize: 24, content: 'Subtítulo del documento'})" class="text-left px-4 py-2 border border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition group bg-white shadow-sm">
                                 <span class="font-medium text-sm text-gray-600 font-inter group-hover:text-indigo-600">Añadir Subtítulo</span>
                             </button>
-                            <button @click="addElement('variable')" class="flex items-center gap-3 px-4 py-2 border rounded-lg hover:border-blue-500 hover:bg-blue-50 transition bg-white border-dashed border-blue-200">
-                                <span class="bg-blue-100 text-blue-600 p-1 rounded font-mono text-xs">{ }</span>
+                            <button @click="addElement('variable')" class="flex items-center gap-3 px-4 py-2 border border-dashed border-blue-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition bg-blue-50/30 w-full">
+                                <span class="bg-blue-100 text-blue-600 p-1 rounded font-mono text-xs font-bold">{ }</span>
                                 <span class="text-sm text-gray-600">Variable Dinámica</span>
                             </button>
                         </div>
                     </div>
 
                     <div>
-                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-3">Gráficos</span>
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-3">Gráficos</span>
                         <div class="grid grid-cols-2 gap-2">
-                            <button @click="addElement('qr')" class="flex flex-col items-center justify-center h-20 border rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition bg-white">
-                                <i class="ph ph-qr-code text-2xl text-gray-400 mb-1"></i>
-                                <span class="text-[10px] font-medium text-gray-500">QR Code</span>
+                            <button @click="addElement('qr')" class="flex flex-col items-center justify-center h-24 border border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition bg-white shadow-sm group">
+                                <i class="ph ph-qr-code text-3xl text-gray-400 group-hover:text-indigo-600 mb-2 transition"></i>
+                                <span class="text-[10px] font-medium text-gray-500 group-hover:text-indigo-600">QR Validación</span>
                             </button>
-                            <button @click="addElement('shape', {width: 100, height: 100, borderRadius: 50, borderColor: '#e0e7ff', borderWidth: 2, fill: 'transparent'})" class="flex flex-col items-center justify-center h-20 border rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition bg-white">
-                                <div class="w-6 h-6 rounded-full bg-transparent border-2 border-indigo-300"></div>
-                                <span class="text-[10px] font-medium text-gray-500 mt-2">Círculo</span>
+                            <button @click="addElement('shape', {width: 100, height: 100, borderRadius: 50, borderColor: '#b49b5a', borderWidth: 2, fill: 'transparent'})" class="flex flex-col items-center justify-center h-24 border border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition bg-white shadow-sm group">
+                                <div class="w-8 h-8 rounded-full bg-transparent border-2 border-yellow-600 mb-2"></div>
+                                <span class="text-[10px] font-medium text-gray-500 group-hover:text-indigo-600">Círculo / Sello</span>
                             </button>
-                            <button @click="addElement('shape', {width: 200, height: 4, fill: '#1f2937', borderWidth: 0})" class="flex flex-col items-center justify-center h-20 border rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition bg-white col-span-2">
-                                <div class="w-12 h-0.5 bg-gray-800"></div>
-                                <span class="text-[10px] font-medium text-gray-500 mt-2">Línea Divisoria</span>
+                            <button @click="addElement('shape', {width: 200, height: 2, fill: '#1f2937', borderWidth: 0})" class="flex flex-col items-center justify-center h-16 border border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition bg-white shadow-sm col-span-2 group">
+                                <div class="w-16 h-0.5 bg-gray-800 mb-2"></div>
+                                <span class="text-[10px] font-medium text-gray-500 group-hover:text-indigo-600">Línea Divisoria</span>
                             </button>
                         </div>
                     </div>
@@ -194,49 +196,62 @@
                 <!-- TAB: CAPAS -->
                 <div x-show="activeTab === 'layers'" class="space-y-1">
                     <template x-for="(element, index) in [...elements].reverse()" :key="element.id || index">
-                        <div class="flex items-center gap-2 p-2 rounded-md cursor-pointer group border border-transparent"
+                        <div class="flex items-center gap-2 p-2 rounded-md cursor-pointer group border border-transparent transition"
                              :class="selectedIds.includes(getElementRealIndex(element)) ? 'bg-indigo-50 border-indigo-200' : 'hover:bg-gray-50'"
                              @click="selectElement(getElementRealIndex(element), $event.ctrlKey)">
                             
-                            <i class="ph text-gray-400" :class="getIconForType(element.type)"></i>
-                            <span class="text-xs font-medium text-gray-600 flex-1 truncate select-none" x-text="element.content || element.type"></span>
+                            <!-- Icono Tipo -->
+                            <div class="text-gray-400 w-5 text-center">
+                                <i class="ph" :class="getIconForType(element.type)"></i>
+                            </div>
+
+                            <!-- Nombre Capa -->
+                            <span class="text-xs font-medium text-gray-600 flex-1 truncate select-none" 
+                                  x-text="element.content || (element.type === 'shape' ? 'Forma' : 'Elemento')"></span>
                             
-                            <button @click.stop="toggleLock(getElementRealIndex(element))" class="text-gray-300 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition">
-                                <i class="ph" :class="element.locked ? 'ph-lock-key text-red-400 opacity-100' : 'ph-lock-key-open'"></i>
-                            </button>
-                            <button @click.stop="toggleVisibility(getElementRealIndex(element))" class="text-gray-300 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition">
-                                <i class="ph" :class="element.hidden ? 'ph-eye-slash text-gray-400 opacity-100' : 'ph-eye'"></i>
-                            </button>
+                            <!-- Acciones -->
+                            <div class="flex items-center gap-1">
+                                <button @click.stop="toggleLock(getElementRealIndex(element))" class="text-gray-300 hover:text-gray-600 transition p-1">
+                                    <i class="ph" :class="element.locked ? 'ph-lock-key text-red-400' : 'ph-lock-key-open'"></i>
+                                </button>
+                                <button @click.stop="toggleVisibility(getElementRealIndex(element))" class="text-gray-300 hover:text-gray-600 transition p-1">
+                                    <i class="ph" :class="element.hidden ? 'ph-eye-slash text-gray-400' : 'ph-eye'"></i>
+                                </button>
+                            </div>
                         </div>
                     </template>
                 </div>
 
-                <!-- TAB: CONFIGURACIÓN (Restaurado) -->
+                <!-- TAB: CONFIGURACIÓN -->
                 <div x-show="activeTab === 'settings'" class="space-y-6">
                     <div class="space-y-3">
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Imagen de Fondo</label>
-                        <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-200 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-white hover:border-indigo-400 transition relative overflow-hidden group">
+                        <label class="flex flex-col items-center justify-center w-full h-40 border-2 border-gray-200 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-white hover:border-indigo-400 transition relative overflow-hidden group">
                             
                             <!-- Estado Vacío -->
-                            <div class="flex flex-col items-center justify-center pt-5 pb-6 text-gray-400 group-hover:text-indigo-500">
-                                <i class="ph ph-upload-simple text-2xl mb-2"></i>
-                                <p class="text-xs font-medium">Subir imagen</p>
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6 text-gray-400 group-hover:text-indigo-500 z-10" x-show="!$wire.currentBg && !$wire.bgImage">
+                                <i class="ph ph-upload-simple text-3xl mb-2"></i>
+                                <p class="text-xs font-medium">Click para subir imagen</p>
                             </div>
                             
                             <!-- Preview Livewire -->
                             @if($currentBg && !$bgImage)
-                                <img src="{{ asset('storage/'.$currentBg) }}" class="absolute inset-0 w-full h-full object-cover opacity-80" />
+                                <img src="{{ asset('storage/'.$currentBg) }}" class="absolute inset-0 w-full h-full object-cover" />
+                                <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-20">
+                                    <span class="text-white text-xs font-bold">Cambiar Imagen</span>
+                                </div>
                             @endif
 
                             @if($bgImage)
-                                <img src="{{ $bgImage->temporaryUrl() }}" class="absolute inset-0 w-full h-full object-cover opacity-80" />
+                                <img src="{{ $bgImage->temporaryUrl() }}" class="absolute inset-0 w-full h-full object-cover" />
                             @endif
 
                             <input type="file" wire:model="bgImage" class="hidden" accept="image/*">
                         </label>
+                        
                         @if($currentBg || $bgImage)
-                            <button @click="$wire.set('bgImage', null); $wire.set('currentBg', null)" class="text-xs text-red-500 hover:text-red-700 w-full text-center flex items-center justify-center gap-1">
-                                <i class="ph ph-trash"></i> Eliminar fondo
+                            <button @click="$wire.set('bgImage', null); $wire.set('currentBg', null)" class="w-full py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg flex items-center justify-center gap-2 transition">
+                                <i class="ph ph-trash"></i> Eliminar fondo actual
                             </button>
                         @endif
                     </div>
@@ -245,104 +260,114 @@
         </div>
 
         <!-- 3. LIENZO (CANVAS) -->
-        <main class="flex-1 relative overflow-hidden flex flex-col">
+        <!-- z-0 y position relative para crear contexto de apilamiento base -->
+        <main class="flex-1 relative overflow-hidden flex flex-col bg-gray-100 z-0">
             <!-- Reglas -->
-            <div class="h-6 bg-white border-b border-gray-200 flex shrink-0 relative z-10">
-                <div class="w-6 border-r border-gray-200 bg-gray-50 shrink-0"></div> <!-- Esquina -->
+            <div class="h-6 bg-white border-b border-gray-200 flex shrink-0 relative z-20">
+                <div class="w-6 border-r border-gray-200 bg-gray-50 shrink-0 z-20"></div>
                 <div class="flex-1 overflow-hidden relative" id="ruler-x">
-                    <div class="h-full ruler-h opacity-50" :style="`background-size: ${50*zoom}px 100%, ${10*zoom}px 30%`"></div>
+                    <div class="h-full ruler-h opacity-60" :style="`background-size: ${50*zoom}px 100%, ${10*zoom}px 30%`"></div>
                 </div>
             </div>
             
             <div class="flex flex-1 overflow-hidden relative">
-                <div class="w-6 bg-white border-r border-gray-200 shrink-0 relative z-10" id="ruler-y">
-                     <div class="w-full h-full ruler-v opacity-50" :style="`background-size: 100% ${50*zoom}px, 30% ${10*zoom}px`"></div>
+                <div class="w-6 bg-white border-r border-gray-200 shrink-0 relative z-20" id="ruler-y">
+                     <div class="w-full h-full ruler-v opacity-60" :style="`background-size: 100% ${50*zoom}px, 30% ${10*zoom}px`"></div>
                 </div>
 
-                <!-- Contenedor GRID para centrado perfecto -->
-                <div class="flex-1 bg-gray-100 canvas-bg overflow-auto grid place-items-center w-full h-full p-20" 
+                <!-- Contenedor SCROLLABLE -->
+                <div class="flex-1 bg-gray-200 canvas-bg overflow-auto relative w-full h-full" 
                      @mousedown="if($event.target === $el) deselectAll()"
                      @wheel.ctrl.prevent="handleWheelZoom">
                     
-                    <!-- Wrapper del Lienzo con lógica Livewire para background -->
-                    <div id="canvas" 
-                         class="bg-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] relative transition-all duration-150 ease-out origin-center shrink-0 select-none ring-1 ring-black/5"
-                         :class="previewMode ? 'pointer-events-none' : ''"
-                         :style="`
-                            width: ${canvasConfig.width}px; 
-                            height: ${canvasConfig.height}px; 
-                            transform: scale(${zoom});
-                            background-image: url('${ $wire.bgImage ? '{{ $bgImage ? $bgImage->temporaryUrl() : '' }}' : ($wire.currentBg ? '{{ asset('storage') }}/' + $wire.currentBg : '') }');
-                            background-size: cover;
-                            background-position: center;
-                         `">
+                    <!-- Contenedor de Centrado -->
+                    <div class="min-w-full min-h-full flex items-center justify-center p-20">
                         
-                        <!-- Guías de Seguridad -->
-                        <div x-show="!previewMode" class="absolute top-[10mm] bottom-[10mm] left-[10mm] right-[10mm] border border-cyan-400/30 pointer-events-none z-0 border-dashed"></div>
+                        <!-- EL LIENZO -->
+                        <div id="canvas" 
+                             class="bg-white shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] relative transition-all duration-150 ease-out origin-center shrink-0 select-none ring-1 ring-black/5"
+                             :class="previewMode ? 'pointer-events-none' : ''"
+                             :style="`
+                                width: ${canvasConfig.width}px; 
+                                height: ${canvasConfig.height}px; 
+                                transform: scale(${zoom});
+                                background-image: url('${ $wire.bgImage ? '{{ $bgImage ? $bgImage->temporaryUrl() : '' }}' : ($wire.currentBg ? '{{ asset('storage') }}/' + $wire.currentBg : '') }');
+                                background-size: cover;
+                                background-position: center;
+                             `">
+                            
+                            <!-- Guías de Seguridad -->
+                            <div x-show="!previewMode" class="absolute top-[10mm] bottom-[10mm] left-[10mm] right-[10mm] border border-blue-400/30 pointer-events-none z-0 border-dashed"></div>
 
-                        <!-- Renderizado de Elementos -->
-                        <template x-for="(element, index) in elements" :key="element.id || index">
-                            <div x-show="!element.hidden"
-                                 class="absolute group box-border select-none flex items-center justify-center"
-                                 :class="{
-                                    'cursor-move': !element.locked && !previewMode, 
-                                    'ring-1 ring-indigo-500 z-50': isSelected(index) && !previewMode,
-                                    'hover:ring-1 hover:ring-indigo-300': !isSelected(index) && !element.locked && !previewMode
-                                 }"
-                                 :style="getElementStyle(element)"
-                                 @mousedown.stop="startDrag($event, index)"
-                                 @click.stop="selectElement(index)">
-                                
-                                <!-- Contenido Interno -->
-                                <div class="w-full h-full overflow-hidden pointer-events-none relative">
-                                    <!-- Texto -->
-                                    <template x-if="element.type === 'text'">
-                                        <div x-text="element.content" class="w-full h-full whitespace-pre-wrap break-words leading-tight" style="outline: none;"></div>
-                                    </template>
+                            <!-- Elementos Renderizados -->
+                            <template x-for="(element, index) in elements" :key="element.id || index">
+                                <div x-show="!element.hidden"
+                                     class="absolute group box-border select-none flex items-center justify-center"
+                                     :class="{
+                                        'cursor-move': !element.locked && !previewMode, 
+                                        'ring-2 ring-indigo-500 z-50': isSelected(index) && !previewMode,
+                                        'hover:ring-1 hover:ring-indigo-300 z-40': !isSelected(index) && !element.locked && !previewMode
+                                     }"
+                                     :style="getElementStyle(element)"
+                                     @mousedown.stop="startDrag($event, index)"
+                                     @click.stop="selectElement(index)">
                                     
-                                    <!-- Variable -->
-                                    <template x-if="element.type === 'variable'">
-                                        <div class="w-full h-full flex items-center justify-center px-1 leading-tight transition-colors duration-200"
-                                             :class="previewMode ? '' : 'bg-blue-50/50 text-blue-600/80 border border-blue-300/50 border-dashed'">
-                                            <span x-text="getPreviewValue(element.content)"></span>
-                                        </div>
-                                    </template>
+                                    <!-- Contenido Interno -->
+                                    <div class="w-full h-full overflow-hidden pointer-events-none relative">
+                                        <!-- Texto -->
+                                        <template x-if="element.type === 'text'">
+                                            <div x-text="element.content" class="w-full h-full whitespace-pre-wrap break-words leading-tight" style="outline: none;"></div>
+                                        </template>
+                                        
+                                        <!-- Variable -->
+                                        <template x-if="element.type === 'variable'">
+                                            <div class="w-full h-full flex items-center justify-center px-1 leading-tight transition-colors duration-200"
+                                                 :class="previewMode ? '' : 'bg-blue-50/50 text-blue-600/80 border border-blue-300/50 border-dashed'">
+                                                <span x-text="getPreviewValue(element.content)"></span>
+                                            </div>
+                                        </template>
 
-                                    <!-- QR -->
-                                    <template x-if="element.type === 'qr'">
-                                        <div class="w-full h-full bg-white flex items-center justify-center">
-                                             <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Example" class="w-full h-full object-cover mix-blend-multiply opacity-90">
-                                        </div>
-                                    </template>
+                                        <!-- QR -->
+                                        <template x-if="element.type === 'qr'">
+                                            <div class="w-full h-full bg-white flex items-center justify-center">
+                                                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Example" class="w-full h-full object-cover mix-blend-multiply opacity-90">
+                                            </div>
+                                        </template>
 
-                                    <!-- Forma -->
-                                    <template x-if="element.type === 'shape'">
-                                        <div class="w-full h-full" :style="`background-color: ${element.fill || 'transparent'}; border-radius: ${element.borderRadius || 0}px; border: ${element.borderWidth}px solid ${element.borderColor}`"></div>
+                                        <!-- Forma -->
+                                        <template x-if="element.type === 'shape'">
+                                            <div class="w-full h-full" :style="`background-color: ${element.fill || 'transparent'}; border-radius: ${element.borderRadius || 0}px; border: ${element.borderWidth}px solid ${element.borderColor}`"></div>
+                                        </template>
+                                    </div>
+
+                                    <!-- Controles de Transformación (Handles) -->
+                                    <template x-if="isSelected(index) && !element.locked && !previewMode">
+                                        <div class="absolute inset-0 z-50 pointer-events-none">
+                                            <!-- Puntos esquinas -->
+                                            <div class="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-indigo-600 shadow-sm pointer-events-auto cursor-nw-resize rounded-full" @mousedown.stop="startResize($event, index, 'nw')"></div>
+                                            <div class="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-indigo-600 shadow-sm pointer-events-auto cursor-ne-resize rounded-full" @mousedown.stop="startResize($event, index, 'ne')"></div>
+                                            <div class="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-indigo-600 shadow-sm pointer-events-auto cursor-sw-resize rounded-full" @mousedown.stop="startResize($event, index, 'sw')"></div>
+                                            <div class="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-indigo-600 shadow-sm pointer-events-auto cursor-se-resize rounded-full" @mousedown.stop="startResize($event, index, 'se')"></div>
+                                            
+                                            <!-- Rotación -->
+                                            <div class="absolute -top-10 left-1/2 -translate-x-1/2 w-7 h-7 bg-white rounded-full shadow-md border border-gray-200 flex items-center justify-center cursor-rotate pointer-events-auto hover:text-indigo-600 text-gray-500 hover:border-indigo-300 transition" @mousedown.stop="startRotate($event, index)">
+                                                <i class="ph-bold ph-arrow-clockwise text-sm"></i>
+                                            </div>
+                                            <!-- Linea conectora rotación -->
+                                            <div class="absolute -top-3 left-1/2 h-4 w-px bg-indigo-500 -translate-x-1/2"></div>
+                                        </div>
                                     </template>
                                 </div>
-
-                                <!-- Controles de Transformación -->
-                                <template x-if="isSelected(index) && !element.locked && !previewMode">
-                                    <div class="absolute inset-0 pointer-events-none">
-                                        <div class="absolute -top-1.5 -left-1.5 w-2.5 h-2.5 bg-white border border-indigo-600 shadow-sm pointer-events-auto cursor-nw-resize" @mousedown.stop="startResize($event, index, 'nw')"></div>
-                                        <div class="absolute -top-1.5 -right-1.5 w-2.5 h-2.5 bg-white border border-indigo-600 shadow-sm pointer-events-auto cursor-ne-resize" @mousedown.stop="startResize($event, index, 'ne')"></div>
-                                        <div class="absolute -bottom-1.5 -left-1.5 w-2.5 h-2.5 bg-white border border-indigo-600 shadow-sm pointer-events-auto cursor-sw-resize" @mousedown.stop="startResize($event, index, 'sw')"></div>
-                                        <div class="absolute -bottom-1.5 -right-1.5 w-2.5 h-2.5 bg-white border border-indigo-600 shadow-sm pointer-events-auto cursor-se-resize" @mousedown.stop="startResize($event, index, 'se')"></div>
-                                        
-                                        <div class="absolute -top-8 left-1/2 -translate-x-1/2 w-6 h-6 bg-white rounded-full shadow-md border border-gray-200 flex items-center justify-center cursor-rotate pointer-events-auto hover:text-indigo-600 text-gray-500" @mousedown.stop="startRotate($event, index)">
-                                            <i class="ph-bold ph-arrow-clockwise text-xs"></i>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
+                            </template>
+                        </div>
                     </div>
                 </div>
             </div>
         </main>
 
         <!-- 4. Panel Derecho (Propiedades) -->
-        <aside class="w-72 bg-white border-l border-gray-200 flex flex-col z-20 shrink-0 shadow-lg" x-show="!previewMode">
+        <!-- z-40 para que esté por encima de todo en la derecha -->
+        <aside class="w-72 bg-white border-l border-gray-200 flex flex-col z-40 shrink-0 shadow-lg" x-show="!previewMode">
             <template x-if="selectedIds.length === 0">
                 <div class="h-full flex flex-col items-center justify-center text-center p-8 space-y-4">
                     <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center">
