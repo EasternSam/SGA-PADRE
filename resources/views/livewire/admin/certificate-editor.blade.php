@@ -39,29 +39,29 @@
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 
-    <!-- 1. BARRA SUPERIOR (HEADER) - Alto Contraste -->
-    <header class="h-16 bg-white border-b border-gray-300 flex items-center justify-between px-4 z-50 shrink-0">
+    <!-- 1. BARRA SUPERIOR (HEADER) - Estructura Flexible Robusta -->
+    <header class="h-16 bg-white border-b border-gray-300 flex items-center justify-between px-4 z-50 shrink-0 relative">
         
-        <!-- SECCIÓN IZQUIERDA -->
-        <div class="flex items-center gap-4 w-1/3">
+        <!-- SECCIÓN IZQUIERDA (Ancho Flexible) -->
+        <div class="flex items-center gap-4 flex-1 min-w-0">
             <div class="flex items-center justify-center w-10 h-10 bg-indigo-600 text-white rounded-lg shadow-md shrink-0">
                 <i class="ph-bold ph-certificate text-xl"></i>
             </div>
             
-            <div class="flex flex-col overflow-hidden">
+            <div class="flex flex-col overflow-hidden min-w-0">
                 <input type="text" wire:model.live.debounce.500ms="name" 
                        class="font-bold text-gray-900 text-sm bg-transparent border-b border-transparent hover:border-gray-300 focus:border-indigo-500 p-0 focus:ring-0 placeholder-gray-400 w-full truncate transition-colors" 
                        placeholder="Nombre del Diploma">
                 <div class="flex items-center gap-2 mt-1">
-                    <span class="w-2 h-2 rounded-full bg-green-500 ring-1 ring-green-600/20"></span>
-                    <span class="text-[11px] text-gray-500 font-medium">Borrador guardado</span>
+                    <span class="w-2 h-2 rounded-full bg-green-500 ring-1 ring-green-600/20 shrink-0"></span>
+                    <span class="text-[11px] text-gray-500 font-medium truncate">Borrador guardado</span>
                 </div>
             </div>
 
-            <div class="h-8 w-px bg-gray-300 mx-2 hidden lg:block"></div>
+            <div class="h-8 w-px bg-gray-300 mx-2 hidden xl:block"></div>
 
-            <!-- Botones Historial con bordes visibles -->
-            <div class="hidden lg:flex items-center gap-1">
+            <!-- Botones Historial -->
+            <div class="hidden xl:flex items-center gap-1">
                 <button @click="undo" :disabled="historyStep <= 0" class="w-8 h-8 flex items-center justify-center text-gray-600 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900 rounded-lg disabled:opacity-40 disabled:bg-gray-50 transition shadow-sm" title="Deshacer">
                     <i class="ph-bold ph-arrow-u-up-left"></i>
                 </button>
@@ -71,10 +71,10 @@
             </div>
         </div>
 
-        <!-- SECCIÓN CENTRAL (Controles de Vista) -->
-        <div class="absolute left-[648px] top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+        <!-- SECCIÓN CENTRAL (Centrado Automático Flexible) -->
+        <div class="flex items-center justify-center gap-2 flex-1">
             <!-- Zoom Pill -->
-            <div class="flex items-center bg-white p-1 rounded-lg border border-gray-300 shadow-sm">
+            <div class="flex items-center bg-white p-1 rounded-lg border border-gray-300 shadow-sm shrink-0">
                 <button @click="zoomOut" class="w-7 h-7 flex items-center justify-center rounded bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-black transition">
                     <i class="ph-bold ph-minus text-xs"></i>
                 </button>
@@ -85,15 +85,15 @@
             </div>
             
             <button @click="canvasConfig.orientation = canvasConfig.orientation === 'landscape' ? 'portrait' : 'landscape'; updateCanvasSize()" 
-                    class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-700 hover:bg-gray-50 hover:text-black hover:border-gray-400 transition shadow-sm"
+                    class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-700 hover:bg-gray-50 hover:text-black hover:border-gray-400 transition shadow-sm shrink-0"
                     title="Cambiar Orientación">
                 <i class="ph-bold text-lg" :class="canvasConfig.orientation === 'landscape' ? 'ph-rectangle' : 'ph-rectangle text-rotate-90'"></i>
                 <span x-text="canvasConfig.orientation === 'landscape' ? 'Horizontal' : 'Vertical'"></span>
             </button>
         </div>
 
-        <!-- SECCIÓN DERECHA (Acciones) -->
-        <div class="flex items-center justify-end gap-3 w-1/3">
+        <!-- SECCIÓN DERECHA (Ancho Flexible) -->
+        <div class="flex items-center justify-end gap-3 flex-1">
             <button @click="snapToGrid = !snapToGrid" 
                     class="h-9 px-3 flex items-center justify-center gap-2 rounded-lg border transition font-bold text-xs"
                     :class="snapToGrid ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-inner' : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50 hover:text-gray-900 shadow-sm'"
