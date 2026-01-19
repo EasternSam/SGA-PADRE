@@ -155,7 +155,7 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
     Route::get('/certificate-editor', CertificateEditor::class)->name('admin.certificates.editor');
     
     // Editor (Editar existente - sobreescribimos la ruta anterior genérica para ser específicos)
-    Route::get('/certificate-editor/{templateId}', CertificateEditor::class)->name('admin.certificates.edit');
+    Route::get('/certificate-editor/{templateId?}', CertificateEditor::class)->name('admin.certificates.edit');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
 });
