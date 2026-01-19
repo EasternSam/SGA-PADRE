@@ -178,78 +178,85 @@
             </div>
         </aside>
 
-        <!-- AREA DE LIENZO -->
-        <main class="flex-1 bg-gray-200 overflow-hidden relative flex flex-col checkerboard" 
-              @mousedown="if($event.target === $el) deselectAll()"
+        <!-- AREA DE LIENZO (CANVAS) -->
+        <main class="flex-1 bg-gray-200 overflow-hidden relative flex flex-col" 
+              @mousedown="if($event.target.id === 'alignment-wrapper' || $event.target.id === 'scroll-container') deselectAll()"
               @wheel.ctrl.prevent="handleWheelZoom">
             
-            <!-- Viewport -->
-            <div class="w-full h-full flex items-center justify-center overflow-auto p-20" id="viewport">
-                
-                <!-- Lienzo -->
-                <div id="canvas" 
-                     class="bg-white shadow-[0_0_50px_rgba(0,0,0,0.15)] relative transition-transform duration-75 ease-linear origin-center"
-                     :class="previewMode ? 'pointer-events-none' : ''"
-                     :style="`
-                        width: ${canvasConfig.width}px; 
-                        height: ${canvasConfig.height}px; 
-                        min-width: ${canvasConfig.width}px; 
-                        min-height: ${canvasConfig.height}px; 
-                        transform: scale(${zoom});
-                        background-image: url('${ $wire.currentBg ? '{{ asset('storage') }}/' + $wire.currentBg : '' }');
-                        background-size: cover;
-                        background-position: center;
-                     `">
+            <!-- Viewport con Scroll y Centrado Seguro -->
+            <div id="scroll-container" class="w-full h-full overflow-auto checkerboard relative">
+                <!-- Wrapper que fuerza el tamaño para que el scroll funcione con Zoom -->
+                <div id="alignment-wrapper" class="min-w-full min-h-full flex items-center justify-center p-20">
                     
-                    <!-- Guías -->
-                    <div x-show="showGuides && !previewMode" class="absolute top-[40px] bottom-[40px] left-[40px] right-[40px] border border-dashed border-red-300 pointer-events-none z-0 opacity-40"></div>
-
-                    <!-- Elementos -->
-                    <template x-for="(element, index) in elements" :key="element.id || index">
-                        <div x-show="!element.hidden"
-                             class="absolute group box-border select-none"
-                             :class="{
-                                'cursor-move': !element.locked && !previewMode, 
-                                'ring-1 ring-indigo-500 ring-offset-1': isSelected(index) && !previewMode,
-                                'hover:ring-1 hover:ring-indigo-300 hover:ring-offset-1': !isSelected(index) && !element.locked && !previewMode
-                             }"
-                             :style="getElementStyle(element)"
-                             @mousedown.stop="startDrag($event, index)"
-                             @click.stop="selectElement(index)">
+                    <!-- Contenedor del Lienzo Escalado -->
+                    <!-- Este div mantiene el espacio físico necesario según el zoom -->
+                    <div :style="`width: ${canvasConfig.width * zoom}px; height: ${canvasConfig.height * zoom}px; position: relative; flex-shrink: 0; box-shadow: 0 0 50px rgba(0,0,0,0.15);`">
+                        
+                        <!-- Lienzo Transformado -->
+                        <!-- Transform-origin: top left asegura que el escalado coincida con el contenedor padre -->
+                        <div id="canvas" 
+                             class="bg-white relative transition-transform duration-75 ease-linear origin-top-left"
+                             :class="previewMode ? 'pointer-events-none' : ''"
+                             :style="`
+                                width: ${canvasConfig.width}px; 
+                                height: ${canvasConfig.height}px; 
+                                transform: scale(${zoom});
+                                background-image: url('${ $wire.currentBg ? '{{ asset('storage') }}/' + $wire.currentBg : '' }');
+                                background-size: cover;
+                                background-position: center;
+                             `">
                             
-                            <!-- Contenido Visual -->
-                            <div class="w-full h-full overflow-hidden pointer-events-none">
-                                <template x-if="element.type === 'text'">
-                                    <div x-text="element.content" class="w-full h-full whitespace-pre-wrap break-words leading-tight"></div>
-                                </template>
-                                <template x-if="element.type === 'variable'">
-                                    <div x-text="getPreviewValue(element.content)" class="w-full h-full flex items-center justify-center bg-blue-50/40 text-blue-800/80 border border-blue-300/30 border-dashed px-1 leading-tight"></div>
-                                </template>
-                                <template x-if="element.type === 'qr'">
-                                    <div class="w-full h-full bg-white border border-gray-300 flex items-center justify-center">
-                                        <svg class="w-full h-full p-1 text-gray-800" fill="currentColor" viewBox="0 0 24 24"><path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm8 4h2v2h-2v-2zm-2 2h2v2h-2v-2zm4 0h2v2h-2v-2zm2-2h2v2h-2v-2z"/></svg>
-                                    </div>
-                                </template>
-                                <template x-if="element.type === 'shape'">
-                                    <div class="w-full h-full" :style="`border: ${element.borderWidth}px solid ${element.borderColor}; background-color: ${element.fill}; border-radius: ${element.borderRadius}px;`"></div>
-                                </template>
-                            </div>
+                            <!-- Guías -->
+                            <div x-show="showGuides && !previewMode" class="absolute top-[40px] bottom-[40px] left-[40px] right-[40px] border border-dashed border-red-300 pointer-events-none z-0 opacity-40"></div>
 
-                            <!-- Handles de Edición -->
-                            <template x-if="isSelected(index) && !element.locked && !previewMode">
-                                <div class="absolute inset-0 z-50 pointer-events-none">
-                                    <div class="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-full pointer-events-auto cursor-nw-resize shadow-sm" @mousedown.stop="startResize($event, index, 'nw')"></div>
-                                    <div class="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-full pointer-events-auto cursor-ne-resize shadow-sm" @mousedown.stop="startResize($event, index, 'ne')"></div>
-                                    <div class="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-full pointer-events-auto cursor-sw-resize shadow-sm" @mousedown.stop="startResize($event, index, 'sw')"></div>
-                                    <div class="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-full pointer-events-auto cursor-se-resize shadow-sm" @mousedown.stop="startResize($event, index, 'se')"></div>
+                            <!-- Elementos -->
+                            <template x-for="(element, index) in elements" :key="element.id || index">
+                                <div x-show="!element.hidden"
+                                     class="absolute group box-border select-none"
+                                     :class="{
+                                        'cursor-move': !element.locked && !previewMode, 
+                                        'ring-1 ring-indigo-500 ring-offset-1': isSelected(index) && !previewMode,
+                                        'hover:ring-1 hover:ring-indigo-300 hover:ring-offset-1': !isSelected(index) && !element.locked && !previewMode
+                                     }"
+                                     :style="getElementStyle(element)"
+                                     @mousedown.stop="startDrag($event, index)"
+                                     @click.stop="selectElement(index)">
                                     
-                                    <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white border border-indigo-600 rounded-full flex items-center justify-center pointer-events-auto cursor-rotate shadow-sm hover:bg-gray-50 transition" @mousedown.stop="startRotate($event, index)">
-                                        <svg class="w-3 h-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                    <!-- Contenido Visual -->
+                                    <div class="w-full h-full overflow-hidden pointer-events-none">
+                                        <template x-if="element.type === 'text'">
+                                            <div x-text="element.content" class="w-full h-full whitespace-pre-wrap break-words leading-tight"></div>
+                                        </template>
+                                        <template x-if="element.type === 'variable'">
+                                            <div x-text="getPreviewValue(element.content)" class="w-full h-full flex items-center justify-center bg-blue-50/40 text-blue-800/80 border border-blue-300/30 border-dashed px-1 leading-tight"></div>
+                                        </template>
+                                        <template x-if="element.type === 'qr'">
+                                            <div class="w-full h-full bg-white border border-gray-300 flex items-center justify-center">
+                                                <svg class="w-full h-full p-1 text-gray-800" fill="currentColor" viewBox="0 0 24 24"><path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm8 4h2v2h-2v-2zm-2 2h2v2h-2v-2zm4 0h2v2h-2v-2zm2-2h2v2h-2v-2z"/></svg>
+                                            </div>
+                                        </template>
+                                        <template x-if="element.type === 'shape'">
+                                            <div class="w-full h-full" :style="`border: ${element.borderWidth}px solid ${element.borderColor}; background-color: ${element.fill}; border-radius: ${element.borderRadius}px;`"></div>
+                                        </template>
                                     </div>
+
+                                    <!-- Handles de Edición -->
+                                    <template x-if="isSelected(index) && !element.locked && !previewMode">
+                                        <div class="absolute inset-0 z-50 pointer-events-none">
+                                            <div class="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-full pointer-events-auto cursor-nw-resize shadow-sm" @mousedown.stop="startResize($event, index, 'nw')"></div>
+                                            <div class="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-full pointer-events-auto cursor-ne-resize shadow-sm" @mousedown.stop="startResize($event, index, 'ne')"></div>
+                                            <div class="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-full pointer-events-auto cursor-sw-resize shadow-sm" @mousedown.stop="startResize($event, index, 'sw')"></div>
+                                            <div class="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-full pointer-events-auto cursor-se-resize shadow-sm" @mousedown.stop="startResize($event, index, 'se')"></div>
+                                            
+                                            <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white border border-indigo-600 rounded-full flex items-center justify-center pointer-events-auto cursor-rotate shadow-sm hover:bg-gray-50 transition" @mousedown.stop="startRotate($event, index)">
+                                                <svg class="w-3 h-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
                             </template>
                         </div>
-                    </template>
+                    </div>
                 </div>
             </div>
         </main>
@@ -371,7 +378,7 @@
                 activeTab: 'add',
                 showGuides: true,
                 previewMode: false,
-                snapToGrid: true, // Auto-snap por defecto
+                snapToGrid: false, // OFF por defecto para movimiento libre
                 
                 canvasConfig: { format: 'A4', orientation: 'landscape', width: 1123, height: 794 },
                 
