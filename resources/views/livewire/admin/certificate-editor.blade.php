@@ -4,7 +4,8 @@
      @keydown.window.ctrl.y.prevent="redo()"
      @keydown.window.ctrl.d.prevent="duplicateElement()"
      @keydown.window.delete="removeElement()"
-     @keydown.window.escape="deselectAll()">
+     @keydown.window.escape="deselectAll()"
+     @keydown.window.ctrl.s.prevent="$wire.save()">
 
     <!-- Fuentes Web -->
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Pinyon+Script&family=Inter:wght@300;400;500;600&family=Montserrat:wght@400;700&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
@@ -53,8 +54,12 @@
                        class="font-bold text-gray-900 text-sm bg-transparent border-b border-transparent hover:border-gray-300 focus:border-indigo-500 p-0 focus:ring-0 placeholder-gray-400 w-full truncate transition-colors" 
                        placeholder="Nombre del Diploma">
                 <div class="flex items-center gap-2 mt-1">
-                    <span class="w-2 h-2 rounded-full bg-green-500 ring-1 ring-green-600/20 shrink-0"></span>
-                    <span class="text-[11px] text-gray-500 font-medium truncate">Borrador guardado</span>
+                    <!-- Indicador de estado conectado a Livewire -->
+                    <span wire:loading.remove wire:target="save" class="w-2 h-2 rounded-full bg-green-500 ring-1 ring-green-600/20 shrink-0"></span>
+                    <span wire:loading wire:target="save" class="w-2 h-2 rounded-full bg-yellow-500 ring-1 ring-yellow-600/20 shrink-0 animate-pulse"></span>
+                    
+                    <span wire:loading.remove wire:target="save" class="text-[11px] text-gray-500 font-medium truncate">Guardado</span>
+                    <span wire:loading wire:target="save" class="text-[11px] text-yellow-600 font-medium truncate">Guardando...</span>
                 </div>
             </div>
 
@@ -119,7 +124,7 @@
     <div class="flex-1 flex overflow-hidden relative z-0">
         
         <!-- 2.1 BARRA DE HERRAMIENTAS (Izquierda Fija) -->
-        <aside class="w-21 bg-white border-r border-gray-200 flex flex-col items-center py-4 z-30 shrink-0 gap-3" x-show="!previewMode">
+        <aside class="w-18 bg-white border-r border-gray-200 flex flex-col items-center py-4 z-30 shrink-0 gap-3" x-show="!previewMode">
             <template x-for="tab in [
                 { id: 'elements', icon: 'ph-shapes', label: 'Insertar' },
                 { id: 'layers', icon: 'ph-stack', label: 'Capas' },
@@ -315,10 +320,10 @@
                                     <div x-text="element.content" class="w-full h-full whitespace-pre-wrap break-words leading-tight" style="outline: none;"></div>
                                 </template>
                                 
-                                <!-- Variable (Visualización más fuerte) -->
+                                <!-- Variable (FIX: Fondo transparente, solo borde discontinuo) -->
                                 <template x-if="element.type === 'variable'">
                                     <div class="w-full h-full flex items-center justify-center px-2 leading-tight transition-colors duration-200"
-                                         :class="previewMode ? '' : 'bg-indigo-100 text-indigo-800 border border-indigo-300 border-dashed rounded font-medium'">
+                                         :class="previewMode ? '' : 'text-indigo-600 border border-indigo-300 border-dashed rounded font-medium bg-transparent'">
                                         <span x-text="getPreviewValue(element.content)"></span>
                                     </div>
                                 </template>
