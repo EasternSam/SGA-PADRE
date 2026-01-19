@@ -36,20 +36,25 @@ class CertificateEditor extends Component
 
     public function mount($templateId = null)
     {
-        // SOLUCIÓN: Si Livewire no inyecta el parámetro, lo intentamos tomar de la ruta
-        if (!$templateId) {
-            $templateId = request()->route('templateId');
+        // INTENTO DE CAPTURA ROBUSTA:
+        // Buscamos el ID ya sea por inyección directa, parámetro 'templateId' o parámetro 'id'
+        $id = $templateId ?? request()->route('templateId') ?? request()->route('id');
+
+        $template = null;
+
+        if ($id) {
+            $template = CertificateTemplate::find($id);
         }
 
-        if ($templateId) {
-            $template = CertificateTemplate::findOrFail($templateId);
+        if ($template) {
+            // --- MODO EDICIÓN ---
             $this->templateId = $template->id;
             $this->name = $template->name;
             
             // Cargar datos del layout
             $data = $template->layout_data ?? [];
             
-            if (isset($data['elements'])) {
+            if (is_array($data) && isset($data['elements'])) {
                 $this->elements = $data['elements'];
                 $this->canvasConfig = $data['canvasConfig'] ?? $this->canvasConfig;
             } else {
@@ -57,10 +62,10 @@ class CertificateEditor extends Component
                 $this->elements = is_array($data) ? $data : [];
             }
 
-            // Cargar imagen de fondo (prioriza bg_image_path)
+            // Cargar imagen de fondo (soporte para ambos nombres de columna posibles)
             $this->currentBg = $template->bg_image_path ?? $template->background_image;
         } else {
-            // Inicializar nuevo si no hay ID
+            // --- MODO CREACIÓN (Por defecto) ---
             $this->name = 'Nuevo Diploma ' . date('d-m-Y');
             $this->elements = [
                 [
@@ -96,7 +101,6 @@ class CertificateEditor extends Component
             'canvasConfig' => $this->canvasConfig
         ];
 
-        // Preparar datos básicos
         $data = [
             'name' => $this->name,
             'layout_data' => $layoutData, 
@@ -106,22 +110,28 @@ class CertificateEditor extends Component
         // Manejo de imagen
         if ($this->bgImage) {
             if ($this->templateId && $this->currentBg) {
-                Storage::disk('public')->delete($this->currentBg);
+                if (Storage::disk('public')->exists($this->currentBg)) {
+                    Storage::disk('public')->delete($this->currentBg);
+                }
             }
             $path = $this->bgImage->store('certificates/backgrounds', 'public');
             
-            // Guardamos en ambas columnas por si acaso, o priorizamos la correcta según tu tabla
-            // Asumiendo que tu migración usa 'bg_image_path'
+            // Guardamos en bg_image_path (ajustar si tu base de datos usa otro nombre)
             $data['bg_image_path'] = $path; 
-            // $data['background_image'] = $path; // Descomenta si tu BD usa este nombre antiguo
-            
             $this->currentBg = $path;
         }
 
         if ($this->templateId) {
-            $template = CertificateTemplate::findOrFail($this->templateId);
-            $template->update($data);
-            $message = 'Diseño actualizado exitosamente.';
+            $template = CertificateTemplate::find($this->templateId);
+            if ($template) {
+                $template->update($data);
+                $message = 'Diseño actualizado exitosamente.';
+            } else {
+                // Si el ID existe en memoria pero no en BD, creamos uno nuevo
+                $template = CertificateTemplate::create($data);
+                $this->templateId = $template->id;
+                $message = 'Diseño recreado exitosamente.';
+            }
         } else {
             $template = CertificateTemplate::create($data);
             $this->templateId = $template->id;
@@ -130,7 +140,6 @@ class CertificateEditor extends Component
 
         session()->flash('message', $message);
         
-        // Redirigir usando el nombre de ruta correcto (plural)
         return redirect()->route('admin.certificates.templates');
     }
 
