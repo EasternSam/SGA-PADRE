@@ -11,7 +11,7 @@ class CertificateEditor extends Component
 {
     use WithFileUploads;
 
-    public $templateId;
+    public $templateId; // Propiedad pública para el ID
     public $name = '';
     public $bgImage;
     public $currentBg;
@@ -36,9 +36,12 @@ class CertificateEditor extends Component
 
     public function mount($templateId = null)
     {
-        // INTENTO DE CAPTURA ROBUSTA:
-        // Buscamos el ID ya sea por inyección directa, parámetro 'templateId' o parámetro 'id'
-        $id = $templateId ?? request()->route('templateId') ?? request()->route('id');
+        // 1. Estrategia Robusta de Captura de ID
+        // Prioridad: Argumento > Propiedad Pública (Livewire) > Parámetro de Ruta > Query String
+        $id = $templateId 
+              ?? $this->templateId 
+              ?? request()->route('templateId') 
+              ?? request()->query('templateId');
 
         $template = null;
 
@@ -46,46 +49,60 @@ class CertificateEditor extends Component
             $template = CertificateTemplate::find($id);
         }
 
+        // 2. Cargar Estado según si existe la plantilla o es nueva
         if ($template) {
-            // --- MODO EDICIÓN ---
-            $this->templateId = $template->id;
-            $this->name = $template->name;
-            
-            // Cargar datos del layout
-            $data = $template->layout_data ?? [];
-            
-            if (is_array($data) && isset($data['elements'])) {
-                $this->elements = $data['elements'];
-                $this->canvasConfig = $data['canvasConfig'] ?? $this->canvasConfig;
-            } else {
-                // Retrocompatibilidad con datos antiguos
-                $this->elements = is_array($data) ? $data : [];
-            }
-
-            // Cargar imagen de fondo (soporte para ambos nombres de columna posibles)
-            $this->currentBg = $template->bg_image_path ?? $template->background_image;
+            $this->loadTemplate($template);
         } else {
-            // --- MODO CREACIÓN (Por defecto) ---
-            $this->name = 'Nuevo Diploma ' . date('d-m-Y');
-            $this->elements = [
-                [
-                    'id' => uniqid(),
-                    'type' => 'text',
-                    'content' => 'DIPLOMA DE HONOR',
-                    'x' => 260, 'y' => 100,
-                    'width' => 600, 'height' => 60,
-                    'fontFamily' => 'Cinzel Decorative',
-                    'fontSize' => 48,
-                    'fontWeight' => '700',
-                    'color' => '#1a202c',
-                    'textAlign' => 'center',
-                    'zIndex' => 10,
-                    'rotation' => 0,
-                    'locked' => false,
-                    'hidden' => false
-                ]
-            ];
+            $this->initializeNewTemplate();
         }
+    }
+
+    protected function loadTemplate($template)
+    {
+        $this->templateId = $template->id;
+        $this->name = $template->name;
+        
+        // Decodificar datos del layout
+        $data = $template->layout_data;
+        
+        // Normalizar estructura (Soporte para formato nuevo y antiguo)
+        if (is_array($data) && isset($data['elements'])) {
+            // Formato Nuevo: { elements: [...], canvasConfig: {...} }
+            $this->elements = $data['elements'];
+            if (isset($data['canvasConfig']) && is_array($data['canvasConfig'])) {
+                $this->canvasConfig = array_merge($this->canvasConfig, $data['canvasConfig']);
+            }
+        } else {
+            // Formato Antiguo: [ {...}, {...} ] (Solo elementos)
+            $this->elements = is_array($data) ? $data : [];
+        }
+
+        // Cargar imagen (prioriza columna nueva, fallback a antigua)
+        $this->currentBg = $template->bg_image_path ?? $template->background_image;
+    }
+
+    protected function initializeNewTemplate()
+    {
+        $this->templateId = null;
+        $this->name = 'Nuevo Diploma ' . date('d/m/Y');
+        $this->elements = [
+            [
+                'id' => uniqid(),
+                'type' => 'text',
+                'content' => 'DIPLOMA DE HONOR',
+                'x' => 260, 'y' => 100,
+                'width' => 600, 'height' => 60,
+                'fontFamily' => 'Cinzel Decorative',
+                'fontSize' => 48,
+                'fontWeight' => '700',
+                'color' => '#1a202c',
+                'textAlign' => 'center',
+                'zIndex' => 10,
+                'rotation' => 0,
+                'locked' => false,
+                'hidden' => false
+            ]
+        ];
     }
 
     public function save()
@@ -109,25 +126,26 @@ class CertificateEditor extends Component
 
         // Manejo de imagen
         if ($this->bgImage) {
+            // Eliminar anterior solo si existe y es diferente
             if ($this->templateId && $this->currentBg) {
                 if (Storage::disk('public')->exists($this->currentBg)) {
                     Storage::disk('public')->delete($this->currentBg);
                 }
             }
-            $path = $this->bgImage->store('certificates/backgrounds', 'public');
             
-            // Guardamos en bg_image_path (ajustar si tu base de datos usa otro nombre)
+            $path = $this->bgImage->store('certificates/backgrounds', 'public');
             $data['bg_image_path'] = $path; 
             $this->currentBg = $path;
         }
 
         if ($this->templateId) {
             $template = CertificateTemplate::find($this->templateId);
+            
             if ($template) {
                 $template->update($data);
                 $message = 'Diseño actualizado exitosamente.';
             } else {
-                // Si el ID existe en memoria pero no en BD, creamos uno nuevo
+                // Si tenemos un ID en memoria pero no en BD (raro), creamos uno nuevo
                 $template = CertificateTemplate::create($data);
                 $this->templateId = $template->id;
                 $message = 'Diseño recreado exitosamente.';
