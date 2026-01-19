@@ -283,7 +283,7 @@
                             <!-- Espacio firma director -->
                         </div>
                         <div class="signature-box">
-                            <div class="sign-role">{{ $director_name ?? 'Dirección Académica' }}</div>
+                            <div class="sign-role">{{ $director_name ?? 'Lic. Cielo Reynoso' }}</div>
                             <div class="sign-dept">Autoridad Certificadora</div>
                         </div>
                     </td>
@@ -306,7 +306,7 @@
                             <!-- Espacio firma secretaría -->
                         </div>
                         <div class="signature-box">
-                            <div class="sign-role">Secretaría General</div>
+                            <div class="sign-role">Vice-Rector</div>
                             <div class="sign-dept">Registro Oficial</div>
                         </div>
                     </td>
