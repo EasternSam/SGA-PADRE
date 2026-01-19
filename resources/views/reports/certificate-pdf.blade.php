@@ -254,8 +254,8 @@
             </div>
 
             <!-- Títulos -->
-            <div class="header-title">Diploma de Honor</div>
-            <div class="sub-title">{{ $institution_name ?? 'CENTU' }}</div>
+            <div class="header-title">CERTIFICADO</div>
+            <div class="sub-title">Centro de Tecnología Universal</div>
 
             <!-- Cuerpo -->
             <div class="presented-to">Otorga el presente reconocimiento a</div>
@@ -297,7 +297,7 @@
                             @endif
                         </div>
                         <div style="margin-top: 5px; font-size: 7pt; color: #b49b5a; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">
-                            Escanea para Validar
+                            Validación Digital Única
                         </div>
                     </td>
 
@@ -315,7 +315,7 @@
         </div>
 
         <div class="folio-footer">
-            FOLIO ÚNICO: {{ $folio ?? 'PENDIENTE' }} • DOCUMENTO OFICIAL DE VALIDACIÓN
+            FOLIO: {{ $folio ?? 'PENDIENTE' }} • DOCUMENTO OFICIAL DE VALIDACIÓN
         </div>
     </div>
 </body>
