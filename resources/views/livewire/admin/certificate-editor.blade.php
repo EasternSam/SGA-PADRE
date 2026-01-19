@@ -155,7 +155,7 @@
                                     Vertical
                                 </button>
                                 <button @click="canvasConfig.orientation = 'landscape'; updateCanvasSize()" class="flex-1 py-1.5 rounded-md text-xs transition flex items-center justify-center gap-1" :class="canvasConfig.orientation === 'landscape' ? 'bg-white shadow text-indigo-600 font-medium' : 'text-gray-500 hover:text-gray-700'">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" transform="rotate(-90 12 12)"></path></svg>
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.293.707V19a2 2 0 01-2 2z" transform="rotate(-90 12 12)"></path></svg>
                                     Horizontal
                                 </button>
                             </div>
@@ -354,17 +354,19 @@
                         <!-- Sección de Contenido -->
                         <div class="space-y-3">
                             <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Contenido</label>
-                            @if($elements[$selectedElementIndex]['type'] === 'text')
+                            <template x-if="activeElement.type === 'text'">
                                 <textarea x-model="activeElement.content" rows="3" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-50" placeholder="Escribe aquí..."></textarea>
-                            @elseif($elements[$selectedElementIndex]['type'] === 'variable')
+                            </template>
+                            <template x-if="activeElement.type === 'variable'">
                                 <select x-model="activeElement.content" class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500 bg-blue-50">
                                     <template x-for="(label, key) in variables" :key="key">
                                         <option :value="key" x-text="label"></option>
                                     </template>
                                 </select>
-                            @elseif($elements[$selectedElementIndex]['type'] === 'shape')
+                            </template>
+                            <template x-if="activeElement.type === 'shape'">
                                 <div class="text-xs text-gray-500 italic">Elemento decorativo sin texto.</div>
-                            @endif
+                            </template>
                         </div>
 
                         <hr class="border-gray-100">
