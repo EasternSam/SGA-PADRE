@@ -45,7 +45,7 @@
         
         <!-- SECCIÓN IZQUIERDA -->
         <div class="flex items-center gap-4 flex-1 min-w-0">
-            <!-- Botón de Volver (Adaptado de Salir) -->
+            <!-- Botón Volver -->
             <a href="{{ route('admin.certificates.templates') }}" class="flex items-center justify-center w-10 h-10 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition shrink-0 border border-gray-200" title="Volver al listado">
                 <i class="ph-bold ph-arrow-left text-xl"></i>
             </a>
