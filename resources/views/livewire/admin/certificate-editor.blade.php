@@ -119,7 +119,7 @@
     <div class="flex-1 flex overflow-hidden relative z-0">
         
         <!-- 2.1 BARRA DE HERRAMIENTAS (Izquierda Fija) -->
-        <aside class="w-18 bg-white border-r border-gray-200 flex flex-col items-center py-4 z-30 shrink-0 gap-3" x-show="!previewMode">
+        <aside class="w-21 bg-white border-r border-gray-200 flex flex-col items-center py-4 z-30 shrink-0 gap-3" x-show="!previewMode">
             <template x-for="tab in [
                 { id: 'elements', icon: 'ph-shapes', label: 'Insertar' },
                 { id: 'layers', icon: 'ph-stack', label: 'Capas' },
