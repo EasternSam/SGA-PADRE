@@ -37,9 +37,9 @@
                 <!-- Grid de Plantillas -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @forelse($templates as $template)
-                        <div class="relative border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 bg-white flex flex-col group hover:-translate-y-1">
+                        <div class="relative border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 bg-white flex flex-col group hover:-translate-y-1 cursor-pointer">
                             
-                            <!-- Enlace envolvente para hacer toda la tarjeta clicable -->
+                            <!-- Enlace envolvente (CLIC EN TODA LA TARJETA) -->
                             <a href="{{ route('admin.certificate.editor', ['templateId' => $template->id]) }}" class="absolute inset-0 z-10" title="Editar Plantilla"></a>
 
                             <!-- Previsualización Miniatura -->

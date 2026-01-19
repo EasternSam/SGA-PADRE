@@ -1,5 +1,6 @@
-<div class="flex flex-col h-screen bg-gray-50 overflow-hidden font-sans select-none text-slate-900" 
-     x-data="certificateEditor(@entangle('elements').live)"
+<!-- Agregamos 'fixed inset-0 z-[100]' para que flote sobre el layout del admin sin romperse -->
+<div class="fixed inset-0 z-[100] flex flex-col h-screen bg-gray-50 overflow-hidden font-sans select-none text-slate-900" 
+     x-data="certificateEditor(@entangle('elements').live, @entangle('canvasConfig').live)"
      @keydown.window.ctrl.z.prevent="undo()"
      @keydown.window.ctrl.y.prevent="redo()"
      @keydown.window.ctrl.d.prevent="duplicateElement()"
@@ -40,11 +41,16 @@
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 
-    <!-- 1. BARRA SUPERIOR (HEADER) - Estructura Flexible Robusta -->
+    <!-- 1. BARRA SUPERIOR (HEADER) -->
     <header class="h-16 bg-white border-b border-gray-300 flex items-center justify-between px-4 z-50 shrink-0 relative">
         
-        <!-- SECCIÓN IZQUIERDA (Ancho Flexible) -->
+        <!-- SECCIÓN IZQUIERDA -->
         <div class="flex items-center gap-4 flex-1 min-w-0">
+            <!-- Botón de Salir (Añadido para poder regresar al admin) -->
+            <a href="{{ route('admin.certificates.templates') }}" class="flex items-center justify-center w-10 h-10 bg-gray-100 hover:bg-red-50 hover:text-red-600 text-gray-600 rounded-lg transition shrink-0 border border-gray-200" title="Guardar y Salir">
+                <i class="ph-bold ph-x text-xl"></i>
+            </a>
+
             <div class="flex items-center justify-center w-10 h-10 bg-indigo-600 text-white rounded-lg shadow-md shrink-0">
                 <i class="ph-bold ph-certificate text-xl"></i>
             </div>
@@ -54,7 +60,7 @@
                        class="font-bold text-gray-900 text-sm bg-transparent border-b border-transparent hover:border-gray-300 focus:border-indigo-500 p-0 focus:ring-0 placeholder-gray-400 w-full truncate transition-colors" 
                        placeholder="Nombre del Diploma">
                 <div class="flex items-center gap-2 mt-1">
-                    <!-- Indicador de estado conectado a Livewire -->
+                    <!-- Indicador de estado -->
                     <span wire:loading.remove wire:target="save" class="w-2 h-2 rounded-full bg-green-500 ring-1 ring-green-600/20 shrink-0"></span>
                     <span wire:loading wire:target="save" class="w-2 h-2 rounded-full bg-yellow-500 ring-1 ring-yellow-600/20 shrink-0 animate-pulse"></span>
                     
@@ -76,7 +82,7 @@
             </div>
         </div>
 
-        <!-- SECCIÓN CENTRAL (Centrado Automático Flexible) -->
+        <!-- SECCIÓN CENTRAL -->
         <div class="flex items-center justify-center gap-2 flex-1">
             <!-- Zoom Pill -->
             <div class="flex items-center bg-white p-1 rounded-lg border border-gray-300 shadow-sm shrink-0">
@@ -92,12 +98,12 @@
             <button @click="canvasConfig.orientation = canvasConfig.orientation === 'landscape' ? 'portrait' : 'landscape'; updateCanvasSize()" 
                     class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-700 hover:bg-gray-50 hover:text-black hover:border-gray-400 transition shadow-sm shrink-0"
                     title="Cambiar Orientación">
-                <i class="ph-bold text-lg" :class="canvasConfig.orientation === 'landscape' ? 'ph-rectangle' : 'ph-rectangle text-rotate-90'"></i>
+                <i class="ph-bold text-lg" :class="canvasConfig.orientation === 'landscape' ? 'ph-rectangle' : 'ph-rectangle text-rotate-9'"></i>
                 <span x-text="canvasConfig.orientation === 'landscape' ? 'Horizontal' : 'Vertical'"></span>
             </button>
         </div>
 
-        <!-- SECCIÓN DERECHA (Ancho Flexible) -->
+        <!-- SECCIÓN DERECHA -->
         <div class="flex items-center justify-end gap-3 flex-1">
             <button @click="snapToGrid = !snapToGrid" 
                     class="h-9 px-3 flex items-center justify-center gap-2 rounded-lg border transition font-bold text-xs"
@@ -293,7 +299,7 @@
                         background-image: url('${ $wire.bgImage ? '{{ $bgImage ? $bgImage->temporaryUrl() : '' }}' : ($wire.currentBg ? '{{ asset('storage') }}/' + $wire.currentBg : '') }');
                         background-size: cover;
                         background-position: center;
-                     `">
+                      `">
                     
                     <!-- Guías de Seguridad (Visualmente más fuertes) -->
                     <div x-show="!previewMode && snapToGrid" class="absolute top-[10mm] bottom-[10mm] left-[10mm] right-[10mm] border-2 border-indigo-400/20 pointer-events-none z-0 border-dashed">
@@ -544,14 +550,14 @@
     <!-- Script de Lógica Alpine -->
     <script>
         document.addEventListener('alpine:init', () => {
-            Alpine.data('certificateEditor', (wireElements) => ({
+            Alpine.data('certificateEditor', (wireElements, wireConfig) => ({
                 elements: wireElements || [],
                 selectedIds: [],
                 zoom: 0.6,
                 activeTab: 'elements',
                 previewMode: false,
                 snapToGrid: true,
-                canvasConfig: { format: 'A4', orientation: 'landscape', width: 0, height: 0 },
+                canvasConfig: wireConfig || { format: 'A4', orientation: 'landscape', width: 0, height: 0 },
                 
                 // History
                 history: [],
