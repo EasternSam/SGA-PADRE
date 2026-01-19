@@ -6,9 +6,7 @@
     <title>Certificado - {{ $folio ?? 'Vista Previa' }}</title>
     
     <style>
-        /* =========================================
-           FUENTES
-           ========================================= */
+        /* FUENTES WEB */
         @font-face {
             font-family: 'Cinzel Decorative';
             font-style: normal;
@@ -30,71 +28,69 @@
             src: url('https://fonts.gstatic.com/s/pinyonscript/v17/6xKtdSZaM9PENbF29TaCNqsPPlWZ58M.ttf') format('truetype');
         }
 
-        /* =========================================
-           CONFIGURACIÓN DE PÁGINA
-           ========================================= */
+        /* Configuración de Página A4 Horizontal (Landscape) */
         @page {
             margin: 0cm;
-            size: 297mm 210mm; /* A4 Landscape */
+            size: 297mm 210mm;
         }
         
         body {
             font-family: 'EB Garamond', serif;
-            color: #1f2937;
+            color: #1f2937; /* Gray 800 */
             margin: 0;
             padding: 0;
             width: 297mm;
             height: 210mm;
-            background-color: #ffffff;
+            background-color: #fff;
         }
 
-        /* =========================================
-           ESTRUCTURA
-           ========================================= */
+        /* Contenedor Principal */
         .page-container {
             width: 297mm;
             height: 210mm;
-            position: relative;
-            box-sizing: border-box;
-            background-color: #ffffff;
-            overflow: hidden;
+            position: absolute;
+            top: 0;
+            left: 0;
+            /* Fondo sutil tipo papel */
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            background-repeat: repeat;
         }
 
-        /* Fondo decorativo sutil (opcional, moderno y limpio) */
-        .bg-watermark {
+        /* Marcos y Bordes */
+        .border-frame {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 600px;
-            height: 600px;
-            opacity: 0.03;
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        /* Marcos Modernos */
-        .frame-outer {
-            position: absolute;
-            top: 10mm;
-            left: 10mm;
-            right: 10mm;
-            bottom: 10mm;
-            border: 1px solid #1f2937; /* Marco fino oscuro */
+            top: 12mm;
+            left: 12mm;
+            right: 12mm;
+            bottom: 12mm;
+            border: 2px solid #b49b5a; /* Dorado */
             z-index: 10;
         }
 
-        .frame-inner {
+        .border-frame-inner {
             position: absolute;
-            top: 13mm;
-            left: 13mm;
-            right: 13mm;
-            bottom: 13mm;
-            border: 2px solid #c5a059; /* Dorado elegante */
+            top: 14mm;
+            left: 14mm;
+            right: 14mm;
+            bottom: 14mm;
+            border: 1px solid #e5e7eb; /* Gris claro */
             z-index: 10;
         }
 
-        /* Contenido Central */
+        /* Decoración de esquinas */
+        .corner-accent {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-color: #1f2937; /* Dark Gray */
+            z-index: 20;
+        }
+        .c-tl { top: 12mm; left: 12mm; border-top: 4px solid #1f2937; border-left: 4px solid #1f2937; }
+        .c-tr { top: 12mm; right: 12mm; border-top: 4px solid #1f2937; border-right: 4px solid #1f2937; }
+        .c-bl { bottom: 12mm; left: 12mm; border-bottom: 4px solid #1f2937; border-left: 4px solid #1f2937; }
+        .c-br { bottom: 12mm; right: 12mm; border-bottom: 4px solid #1f2937; border-right: 4px solid #1f2937; }
+
+        /* Contenido */
         .content-wrapper {
             position: absolute;
             top: 20mm;
@@ -103,175 +99,121 @@
             bottom: 20mm;
             text-align: center;
             z-index: 30;
-            display: table; /* Hack para centrado vertical en domPDF si fuera necesario, pero usaremos margin */
-            width: 90%; /* Ajuste relativo al contenedor padre */
-            margin: 0 auto;
         }
 
-        /* =========================================
-           TIPOGRAFÍA Y ELEMENTOS
-           ========================================= */
-        
-        .logo-container {
-            height: 70px;
-            margin-bottom: 25px;
-            margin-top: 10px;
-        }
-
+        /* Tipografía */
         .header-title {
             font-family: 'Cinzel Decorative', serif;
-            font-size: 42pt;
-            color: #1f2937;
+            font-size: 36pt;
+            color: #111827;
             text-transform: uppercase;
-            letter-spacing: 12px; /* Espaciado moderno */
-            line-height: 1;
+            letter-spacing: 8px;
+            margin-top: 10px;
             margin-bottom: 5px;
         }
 
         .sub-title {
-            font-family: 'EB Garamond', serif;
-            font-size: 13pt;
-            color: #c5a059; /* Dorado */
+            font-size: 14pt;
+            color: #6b7280;
             text-transform: uppercase;
-            letter-spacing: 4px;
-            margin-bottom: 35px;
-            font-weight: 600;
+            letter-spacing: 3px;
+            margin-bottom: 30px;
         }
 
         .presented-to {
-            font-size: 14pt;
+            font-size: 16pt;
             font-style: italic;
             color: #4b5563;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
         }
 
         .student-name {
             font-family: 'Pinyon Script', cursive;
-            font-size: 64pt;
-            color: #1f2937; /* Nombre oscuro para contraste moderno */
-            line-height: 1.1;
-            margin: 10px 0 15px 0;
-            padding: 0 20px;
+            font-size: 58pt;
+            color: #b49b5a; /* Dorado */
+            line-height: 1;
+            margin: 10px 0 20px 0;
+            text-shadow: 1px 1px 0px rgba(0,0,0,0.1);
         }
 
-        /* Línea decorativa minimalista */
         .separator-line {
             height: 1px;
-            width: 150px;
-            background: #c5a059;
+            width: 60%;
+            background: #b49b5a; /* Color sólido para PDF */
             margin: 0 auto 25px auto;
-            position: relative;
-        }
-        
-        /* Diamante central en la línea */
-        .separator-diamond {
-            width: 6px;
-            height: 6px;
-            background: #c5a059;
-            transform: rotate(45deg);
-            position: absolute;
-            top: -2.5px;
-            left: 50%;
-            margin-left: -3px;
         }
 
         .course-text {
-            font-size: 14pt;
-            color: #4b5563;
-            margin-bottom: 15px;
-            line-height: 1.6;
-            width: 80%;
-            margin-left: auto;
-            margin-right: auto;
+            font-size: 16pt;
+            color: #374151;
+            margin-bottom: 10px;
+            line-height: 1.5;
         }
 
         .course-name {
-            font-family: 'Cinzel Decorative', serif; /* Cambio a fuente decorativa para el curso */
-            font-size: 22pt;
-            font-weight: 700;
-            color: #c5a059;
+            font-family: 'EB Garamond', serif;
+            font-size: 26pt;
+            font-weight: bold;
+            color: #111827;
             margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            padding: 0 20px;
         }
 
-        .date-text {
-            font-family: 'EB Garamond', serif;
-            font-size: 11pt;
-            font-style: italic;
-            color: #6b7280;
-            margin-top: 5px;
-        }
-
-        /* =========================================
-           FIRMAS (Tabla)
-           ========================================= */
+        /* Firmas */
         .footer-table {
             width: 100%;
-            margin-top: 45px;
+            margin-top: 40px;
             border-collapse: collapse;
         }
         
         .footer-table td {
             vertical-align: bottom;
             text-align: center;
-            padding: 0 20px;
+            padding: 0 15px;
         }
 
         .signature-box {
-            border-top: 1px solid #d1d5db; /* Gris muy claro */
-            padding-top: 12px;
-            width: 85%;
+            border-top: 1px solid #9ca3af;
+            padding-top: 10px;
+            width: 80%;
             margin: 0 auto;
         }
 
         .sign-role {
-            font-family: 'EB Garamond', serif;
-            font-size: 10pt;
-            font-weight: 700;
+            font-size: 9pt;
+            font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             color: #1f2937;
-            margin-bottom: 2px;
         }
         
         .sign-dept {
-            font-size: 9pt;
-            color: #9ca3af;
-            font-style: italic;
+            font-size: 8pt;
+            color: #6b7280;
         }
 
-        /* QR Estilizado */
-        .qr-wrapper {
-            padding: 8px;
-            background: #ffffff;
+        .qr-container {
+            padding: 5px;
+            background: white;
             border: 1px solid #e5e7eb;
             display: inline-block;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
 
-        /* Folio Footer */
         .folio-footer {
             position: absolute;
-            bottom: 16mm; /* Ajustado para estar dentro del marco */
+            bottom: 5mm;
             width: 100%;
             text-align: center;
-            font-size: 7pt;
+            font-size: 8pt;
             color: #9ca3af;
-            letter-spacing: 3px;
-            font-family: sans-serif;
-            text-transform: uppercase;
-            z-index: 40;
+            letter-spacing: 2px;
+            font-family: monospace;
         }
-        
-        /* Utilidad para debug de layout */
-        /* table, td { border: 1px solid red; } */
     </style>
 </head>
 <body>
     @php
-        // Lógica de usuario preservada exactamente como el original
         $user = $student->user ?? null;
         $studentName = 'N/A';
         
@@ -291,60 +233,54 @@
     @endphp
 
     <div class="page-container">
-        <!-- Marcos Estilizados -->
-        <div class="frame-outer"></div>
-        <div class="frame-inner"></div>
+        <!-- Elementos decorativos del marco -->
+        <div class="border-frame"></div>
+        <div class="border-frame-inner"></div>
         
-        <!-- Marca de agua sutil (Logo SVG o texto) -->
-        <div class="bg-watermark">
-            <!-- Si tienes un SVG de logo se puede poner aquí con opacity baja, 
-                 o dejar vacío para un look ultra limpio -->
-        </div>
+        <div class="corner-accent c-tl"></div>
+        <div class="corner-accent c-tr"></div>
+        <div class="corner-accent c-bl"></div>
+        <div class="corner-accent c-br"></div>
 
         <div class="content-wrapper">
             
             <!-- Logo -->
-            <div class="logo-container">
+            <div style="height: 60px; margin-bottom: 20px;">
                 @if(file_exists(public_path('centuu.png')))
                     <img src="{{ public_path('centuu.png') }}" style="height: 100%; object-fit: contain;" alt="Logo">
                 @else
-                    <!-- Fallback más elegante -->
-                    <div style="font-size: 32pt; font-family: 'Cinzel Decorative'; color: #c5a059; line-height: 1;">SGA</div>
+                    <div style="font-size: 24pt; font-family: 'Cinzel Decorative'; color: #b49b5a;">SGA</div>
                 @endif
             </div>
 
-            <!-- Cabecera -->
+            <!-- Títulos -->
+            <div class="header-title">CERTIFICADO</div>
             <div class="sub-title">Centro de Tecnología Universal</div>
-            <div class="header-title">Certificado</div>
 
-            <!-- Cuerpo Principal -->
-            <div style="margin-top: 30px;">
-                <div class="presented-to">Se otorga el presente reconocimiento a</div>
-                
-                <div class="student-name">{{ $studentName }}</div>
-                
-                <div class="separator-line">
-                    <div class="separator-diamond"></div>
-                </div>
+            <!-- Cuerpo -->
+            <div class="presented-to">Otorga el presente reconocimiento a</div>
+            
+            <div class="student-name">{{ $studentName }}</div>
+            
+            <div class="separator-line"></div>
 
-                <div class="course-text">
-                    Por haber completado satisfactoriamente los requisitos académicos<br>
-                    y demostrado excelencia en el programa de:
-                </div>
-
-                <div class="course-name">{{ $course->name ?? 'Nombre del Curso' }}</div>
-
-                <div class="date-text">
-                    Expedido el día {{ $date ?? date('d/m/Y') }}
-                </div>
+            <div class="course-text">
+                Por haber completado satisfactoriamente los requisitos académicos<br>
+                y demostrado excelencia en el programa de:
             </div>
 
-            <!-- Sección Inferior: Firmas y QR -->
+            <div class="course-name">{{ $course->name ?? 'Nombre del Curso' }}</div>
+
+            <div class="course-text" style="font-size: 12pt; margin-top: 5px; color: #6b7280;">
+                Expedido el día {{ $date ?? date('d/m/Y') }}
+            </div>
+
+            <!-- Firmas y QR -->
             <table class="footer-table">
                 <tr>
                     <td width="35%">
-                        <div style="height: 50px; margin-bottom: 5px;">
-                            <!-- Espacio para imagen de firma digital Director -->
+                        <div style="height: 40px;">
+                            <!-- Espacio firma director -->
                         </div>
                         <div class="signature-box">
                             <div class="sign-role">{{ $director_name ?? 'Dirección Académica' }}</div>
@@ -353,21 +289,21 @@
                     </td>
                     
                     <td width="30%">
-                        <div class="qr-wrapper">
+                        <div class="qr-container">
                             @if(isset($qr_code_url))
-                                <img src="{{ $qr_code_url }}" alt="Validación" style="width: 70px; height: 70px; display: block;">
+                                <img src="{{ $qr_code_url }}" alt="Validación" style="width: 80px; height: 80px; display: block;">
                             @else
-                                <div style="width: 70px; height: 70px; background: #f9fafb; display: flex; align-items: center; justify-content: center; color: #d1d5db; font-size: 9px;">QR CODE</div>
+                                <div style="width: 80px; height: 80px; background: #f3f4f6;"></div>
                             @endif
                         </div>
-                        <div style="margin-top: 8px; font-size: 6pt; color: #c5a059; text-transform: uppercase; letter-spacing: 2px;">
-                            Validación Oficial
+                        <div style="margin-top: 5px; font-size: 7pt; color: #b49b5a; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">
+                            Validación Digital Única
                         </div>
                     </td>
 
                     <td width="35%">
-                        <div style="height: 50px; margin-bottom: 5px;">
-                            <!-- Espacio para imagen de firma digital Secretaría -->
+                        <div style="height: 40px;">
+                            <!-- Espacio firma secretaría -->
                         </div>
                         <div class="signature-box">
                             <div class="sign-role">Secretaría General</div>
@@ -379,7 +315,7 @@
         </div>
 
         <div class="folio-footer">
-            FOLIO: {{ $folio ?? 'PENDIENTE' }} &nbsp;|&nbsp; DOCUMENTO OFICIAL DE VALIDACIÓN
+            FOLIO: {{ $folio ?? 'PENDIENTE' }} • DOCUMENTO OFICIAL DE VALIDACIÓN
         </div>
     </div>
 </body>
