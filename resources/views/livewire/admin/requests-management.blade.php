@@ -15,15 +15,20 @@
                             {{ session('success') }}
                         </div>
                     @endif
+                    @if (session()->has('error'))
+                        <div class="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
+                            {{ session('error') }}
+                        </div>
+                    @endif
 
                     <!-- Filtros -->
                     <div class="mb-4">
                         <x-input-label for="filterStatus" :value="__('Filtrar por Estado')" />
                         <select wire:model.live="filterStatus" id="filterStatus" class="block mt-1 w-full md:w-1/3 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                            <option value="">{{ __('Todas') }}</option>
                             <option value="pendiente">{{ __('Pendientes') }}</option>
                             <option value="aprobado">{{ __('Aprobadas') }}</option>
                             <option value="rechazado">{{ __('Rechazadas') }}</option>
-                            <option value="">{{ __('Todas') }}</option>
                         </select>
                     </div>
 
@@ -34,8 +39,9 @@
                                 <tr>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estudiante</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo / Curso</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cobro Generado</th>
                                     <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                                 </tr>
                             </thead>
@@ -43,8 +49,16 @@
                                 @forelse($requests as $request)
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $request->created_at->format('d/m/Y H:i') }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->student->user->name ?? 'N/A' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $request->type }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            <div class="font-bold">{{ $request->student->user->name ?? 'N/A' }}</div>
+                                            <div class="text-xs text-gray-500">{{ $request->student->user->email ?? '' }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-500">
+                                            <span class="block font-medium text-gray-700">{{ $request->type }}</span>
+                                            @if($request->course)
+                                                <span class="text-xs text-gray-500">{{ $request->course->name }}</span>
+                                            @endif
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                                 @if($request->status == 'aprobado') bg-green-100 text-green-800
@@ -53,16 +67,29 @@
                                                 {{ ucfirst($request->status) }}
                                             </span>
                                         </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            @if($request->payment)
+                                                <div class="flex flex-col">
+                                                    <span class="text-xs font-bold {{ $request->payment->status == 'Pagado' ? 'text-green-600' : 'text-orange-600' }}">
+                                                        {{ strtoupper($request->payment->status) }}
+                                                    </span>
+                                                    <span class="text-xs text-gray-500">
+                                                        {{ number_format($request->payment->amount, 2) }} {{ $request->payment->currency }}
+                                                    </span>
+                                                </div>
+                                            @else
+                                                <span class="text-gray-400 text-xs">-</span>
+                                            @endif
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <!-- type="button" es crucial para prevenir submit accidental -->
                                             <x-primary-button type="button" wire:click="viewRequest({{ $request->id }})">
-                                                {{ __('Ver / Gestionar') }}
+                                                {{ __('Gestionar') }}
                                             </x-primary-button>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No se encontraron solicitudes con ese estado.</td>
+                                        <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No se encontraron solicitudes.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -79,47 +106,54 @@
 
     <!-- Modal para Gestionar Solicitud -->
     @if($showingModal)
-        <!-- Corrección: Usamos show="true" como string o variable PHP limpia para evitar conflictos de parsing -->
         <x-modal name="request-modal" :show="$showingModal" max-width="lg" x-on:close="$wire.closeModal()">
             
             @if($selectedRequest)
                 <div class="p-6">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">
-                        {{ __('Detalles de la Solicitud') }}
+                        {{ __('Detalles de la Solicitud') }} #{{ $selectedRequest->id }}
                     </h3>
 
-                    <div class="space-y-4">
+                    <div class="space-y-4 text-sm">
+                        <!-- Info Estudiante -->
+                        <div class="bg-gray-50 p-3 rounded-md">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <span class="block text-xs text-gray-500 uppercase">Estudiante</span>
+                                    <span class="font-medium">{{ $selectedRequest->student->user->name ?? 'N/A' }}</span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-gray-500 uppercase">Curso</span>
+                                    <span class="font-medium">{{ $selectedRequest->course->name ?? 'No especificado' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Detalles Solicitud -->
                         <div>
-                            <strong>{{ __('Estudiante') }}:</strong>
-                            <span>{{ $selectedRequest->student->user->name ?? 'N/A' }}</span>
+                            <span class="block text-xs text-gray-500 uppercase mb-1">Motivo / Detalles</span>
+                            <div class="p-3 bg-white border border-gray-200 rounded-md text-gray-700" style="white-space: pre-wrap; word-break: break-word;">{!! nl2br(e($selectedRequest->details)) !!}</div>
                         </div>
-                        <div>
-                            <strong>{{ __('Email') }}:</strong>
-                            <span>{{ $selectedRequest->student->user->email ?? 'N/A' }}</span>
-                        </div>
-                         <div>
-                            <strong>{{ __('Fecha') }}:</strong>
-                            <span>{{ $selectedRequest->created_at->format('d/m/Y H:i A') }}</span>
-                        </div>
-                        <div>
-                            <strong>{{ __('Tipo') }}:</strong>
-                            <span>{{ $selectedRequest->type }}</span>
-                        </div>
-                        <div>
-                            <strong>{{ __('Detalles del Estudiante') }}:</strong>
-                            <p class="mt-1 p-2 bg-gray-50 rounded-md border border-gray-200" style="white-space: pre-wrap; word-break: break-word;">{!! nl2br(e($selectedRequest->details)) !!}</p>
-                        </div>
-                        <div>
-                            <strong>{{ __('Estado Actual') }}:</strong>
-                            <span>{{ ucfirst($selectedRequest->status) }}</span>
-                        </div>
+
+                        <!-- Información de Pago Generado (si existe) -->
+                        @if($selectedRequest->payment)
+                            <div class="border-l-4 border-green-400 bg-green-50 p-3">
+                                <h4 class="text-green-800 font-bold text-xs uppercase mb-1">Cobro Asociado Generado</h4>
+                                <div class="flex justify-between items-center">
+                                    <span>Monto: <strong>{{ number_format($selectedRequest->payment->amount, 2) }}</strong></span>
+                                    <span class="px-2 py-1 rounded text-xs font-bold {{ $selectedRequest->payment->status == 'Pagado' ? 'bg-green-200 text-green-800' : 'bg-orange-200 text-orange-800' }}">
+                                        {{ $selectedRequest->payment->status }}
+                                    </span>
+                                </div>
+                            </div>
+                        @endif
 
                         <hr>
 
                         <!-- Formulario de Admin -->
                         <div>
-                            <x-input-label for="adminNotes" :value="__('Notas del Administrador (Respuesta)')" />
-                            <textarea wire:model="adminNotes" id="adminNotes" rows="4" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" placeholder="{{ __('Escriba aquí la respuesta o notas internas...') }}"></textarea>
+                            <x-input-label for="adminNotes" :value="__('Respuesta / Notas Admin')" />
+                            <textarea wire:model="adminNotes" id="adminNotes" rows="3" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" placeholder="{{ __('Escriba la respuesta para el estudiante...') }}"></textarea>
                         </div>
                     </div>
 
@@ -128,13 +162,17 @@
                             {{ __('Cancelar') }}
                         </x-secondary-button>
                         
-                        <x-danger-button type="button" wire:click="updateRequest('rechazado')">
-                            {{ __('Rechazar') }}
-                        </x-danger-button>
+                        @if($selectedRequest->status !== 'rechazado')
+                            <x-danger-button type="button" wire:click="updateRequest('rechazado')" wire:confirm="¿Seguro que desea rechazar esta solicitud?">
+                                {{ __('Rechazar') }}
+                            </x-danger-button>
+                        @endif
 
-                        <x-primary-button type="button" class="bg-green-600 hover:bg-green-700" wire:click="updateRequest('aprobado')">
-                            {{ __('Aprobar') }}
-                        </x-primary-button>
+                        @if($selectedRequest->status !== 'aprobado')
+                            <x-primary-button type="button" class="bg-green-600 hover:bg-green-700" wire:click="updateRequest('aprobado')">
+                                {{ __('Aprobar y Procesar') }}
+                            </x-primary-button>
+                        @endif
                     </div>
                 </div>
             @endif
