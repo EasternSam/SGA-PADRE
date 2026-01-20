@@ -36,20 +36,23 @@ class Index extends Component
     public $chartDataWeb = [];
     public $chartDataSystem = [];
 
+    // Bandera para Lazy Loading
+    public $readyToLoad = false;
+
     // VARIABLE DE DEBUG
     public $debugTrace = [];
 
     /**
-     * Carga inicial de datos estáticos.
+     * Carga inicial de datos estáticos (Ligeros).
      */
-    public function mount(WordpressApiService $wpService)
+    public function mount()
     {
         // Inicializar como colección vacía por defecto
         $this->recentActivities = new Collection();
         $this->addTrace('Inicio del componente Dashboard');
 
         try {
-            // Optimizaciones de conteo: count() es ligero, pero aseguramos
+            // Optimizaciones de conteo: count() es ligero
             $this->totalStudents = Student::count();
             $this->totalCourses = Course::count();
             $this->totalEnrollments = Enrollment::count();
@@ -67,21 +70,39 @@ class Index extends Component
                  $this->totalTeachers = 0; 
             }
 
-            // Cargar actividades recientes optimizado - LIMITANDO CAMPOS PARA EVITAR MEMORY LEAK
+            // Cargar actividades recientes optimizado - Solo campos necesarios
             if (class_exists(ActivityLog::class)) {
-                $this->recentActivities = ActivityLog::with('causer:id,name') // Solo traer ID y nombre del usuario
+                $this->recentActivities = ActivityLog::with('causer:id,name') 
                     ->latest()
                     ->take(5)
-                    ->get(['id', 'description', 'causer_id', 'created_at']); // Solo campos necesarios
+                    ->get(['id', 'description', 'causer_id', 'created_at']);
             }
 
-            // Preparar gráfico
-            $this->prepareChartData($wpService);
+            // NOTA: El gráfico ya no se carga aquí para evitar lentitud.
+            // Se cargará en loadStats().
 
         } catch (\Exception $e) {
             $this->addTrace('ERROR CRÍTICO EN MOUNT: ' . $e->getMessage());
             Log::error("Dashboard Error: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Método invocado por wire:init para cargar datos pesados (API).
+     */
+    public function loadStats(WordpressApiService $wpService)
+    {
+        $this->readyToLoad = true;
+        
+        // Preparar gráfico (Llamada API pesada)
+        $this->prepareChartData($wpService);
+
+        // Disparar evento para que el JS renderice el gráfico
+        $this->dispatch('stats-loaded', [
+            'web' => $this->chartDataWeb,
+            'system' => $this->chartDataSystem,
+            'labels' => $this->chartLabels
+        ]);
     }
 
     /**
@@ -112,7 +133,7 @@ class Index extends Component
         $this->chartDataWeb = [];
         $this->chartDataSystem = [];
 
-        $this->addTrace('Solicitando datos a WordPress API...');
+        $this->addTrace('Solicitando datos a WordPress API (Lazy Loading)...');
         
         try {
             $wpStats = $wpService->getEnrollmentStats();
@@ -143,8 +164,7 @@ class Index extends Component
             
             $this->chartLabels[] = $monthLabel;
 
-            // --- 1. Obtener TOTAL REAL de inscripciones del mes (Fuente de la verdad) ---
-            // Esto incluye TANTO las que vinieron de la Web como las del Sistema.
+            // --- 1. Obtener TOTAL REAL de inscripciones del mes ---
             $totalEnrollmentsInMonth = Enrollment::whereYear('created_at', $date->year)
                 ->whereMonth('created_at', $date->month)
                 ->count();
@@ -154,16 +174,13 @@ class Index extends Component
             $webCount = (int) ($wpDataMap[$searchKey] ?? 0);
             
             // --- 3. Calcular inscripciones SISTEMA (Físico) ---
-            // Lógica: Total Real - Web = Sistema
-            // Si por alguna razón la Web reporta más que el total (desfase de tiempos), asumimos 0 para no dar negativos.
             $systemCount = max(0, $totalEnrollmentsInMonth - $webCount);
 
             $this->chartDataWeb[] = $webCount;
             $this->chartDataSystem[] = $systemCount;
         }
         
-        $this->addTrace('Datos Finales Calculados (Resumen)', [
-            'Labels' => $this->chartLabels,
+        $this->addTrace('Datos Finales Calculados', [
             'Web_Count' => array_sum($this->chartDataWeb),
             'System_Count' => array_sum($this->chartDataSystem)
         ]);
@@ -184,8 +201,8 @@ class Index extends Component
         // Consulta base optimizada con Eager Loading selectivo para la TABLA
         // Solo traemos los campos necesarios para pintar la tabla
         $query = Enrollment::with([
-            'student:id,name,last_name,email,user_id,first_name', // Añadido first_name
-            'student.user:id,name,email,first_name,last_name', // Añadido first_name, last_name
+            'student:id,name,last_name,email,user_id,first_name', 
+            'student.user:id,name,email,first_name,last_name',
             'courseSchedule:id,module_id,teacher_id', 
             'courseSchedule.module:id,course_id,name', 
             'courseSchedule.module.course:id,name', 
@@ -201,6 +218,7 @@ class Index extends Component
 
         return view('livewire.dashboard.index', [
             'recentEnrollments' => $recentEnrollments,
+            // Las variables del gráfico se pasan, pero estarán vacías hasta que loadStats termine
             'chartLabels' => $this->chartLabels,
             'chartDataWeb' => $this->chartDataWeb,
             'chartDataSystem' => $this->chartDataSystem,

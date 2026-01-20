@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-gray-50 pb-8">
+<div class="min-h-screen bg-gray-50 pb-8" wire:init="loadStats">
     
     {{-- 
         =================================================================
@@ -31,7 +31,7 @@
 
         {{-- 
             =================================================================
-            1. TARJETAS DE ESTADÍSTICAS (KPIs) - REORDENADO
+            1. TARJETAS DE ESTADÍSTICAS (KPIs) - SE CARGAN DE INMEDIATO
             ================================================================= 
         --}}
         <div class="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -118,11 +118,11 @@
 
         {{-- 
             =================================================================
-            0. SECCIÓN NUEVA: GRÁFICO DE TENDENCIAS (REDISEÑADO)
+            0. SECCIÓN NUEVA: GRÁFICO DE TENDENCIAS (LAZY LOADED)
             ================================================================= 
         --}}
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 relative overflow-hidden">
-            <!-- Decoración de fondo sutil y moderna -->
+            <!-- Decoración -->
             <div class="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-gradient-to-br from-indigo-50 to-blue-50 blur-3xl opacity-60 pointer-events-none"></div>
             <div class="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 rounded-full bg-gradient-to-tr from-emerald-50 to-teal-50 blur-3xl opacity-60 pointer-events-none"></div>
             
@@ -132,7 +132,6 @@
                     <p class="text-sm text-gray-500 mt-1">Comparativa de flujo Web vs Sistema (Últimos 12 meses)</p>
                 </div>
                 
-                <!-- Leyenda Personalizada -->
                 <div class="mt-4 sm:mt-0 flex gap-3 bg-gray-50/80 backdrop-blur-sm p-1.5 rounded-lg border border-gray-100">
                     <div class="flex items-center gap-2 px-3 py-1.5 rounded-md bg-white shadow-sm border border-gray-100">
                         <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></span>
@@ -145,8 +144,26 @@
                 </div>
             </div>
 
-            <!-- Contenedor del Gráfico con altura ajustada -->
-            <div id="enrollmentChart" class="w-full h-[380px]"></div>
+            <!-- Contenedor del Gráfico con Lazy Loading -->
+            <div class="w-full h-[380px] relative">
+                @if(!$readyToLoad)
+                    <!-- ESQUELETO DE CARGA -->
+                    <div class="absolute inset-0 flex items-center justify-center bg-gray-50/50 rounded-lg animate-pulse border border-gray-100 backdrop-blur-sm z-20">
+                        <div class="flex flex-col items-center">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-3"></div>
+                            <span class="text-sm text-gray-600 font-medium bg-white px-3 py-1 rounded-full shadow-sm">Obteniendo datos de WordPress...</span>
+                        </div>
+                    </div>
+                    <!-- Placeholder visual del gráfico -->
+                    <div class="absolute inset-0 flex items-end justify-between px-4 pb-4 opacity-30">
+                        @for($i = 0; $i < 12; $i++)
+                            <div class="w-full bg-gray-200 mx-1 rounded-t-sm h-[{{ rand(20, 80) }}%]"></div>
+                        @endfor
+                    </div>
+                @else
+                    <div id="enrollmentChart" wire:ignore></div>
+                @endif
+            </div>
         </div>
 
         {{-- 
@@ -307,7 +324,7 @@
             {{-- COLUMNA DERECHA: Sidebar --}}
             <div class="space-y-6">
                 
-                <!-- Panel: Accesos Directos (OPTIMIZADO VISUALMENTE) -->
+                <!-- Panel: Accesos Directos -->
                 <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-900/5 p-6">
                     <h3 class="text-base font-bold text-gray-900 mb-5 flex items-center gap-2">
                         <div class="p-1.5 rounded-lg bg-indigo-50 text-indigo-600">
@@ -454,14 +471,14 @@
 
     <script>
         // Función segura de inicialización
-        window.initDashboardChart = function() {
+        window.initDashboardChart = function(chartData) {
             const chartElement = document.querySelector("#enrollmentChart");
             
             if (!chartElement) return;
 
-            const chartDataWeb = @json($chartDataWeb ?? []);
-            const chartDataSystem = @json($chartDataSystem ?? []);
-            const chartLabels = @json($chartLabels ?? []);
+            const dataWeb = chartData?.web || [];
+            const dataSystem = chartData?.system || [];
+            const labels = chartData?.labels || [];
 
             // Limpiar si ya existe algo para evitar duplicados en SPA
             chartElement.innerHTML = '';
@@ -469,10 +486,10 @@
             const options = {
                 series: [{
                     name: 'Web (API)',
-                    data: chartDataWeb || []
+                    data: dataWeb || []
                 }, {
                     name: 'Físico (Sistema)',
-                    data: chartDataSystem || []
+                    data: dataSystem || []
                 }],
                 chart: {
                     type: 'area',
@@ -518,7 +535,7 @@
                     }
                 },
                 xaxis: {
-                    categories: chartLabels || [],
+                    categories: labels || [],
                     axisBorder: { show: false },
                     axisTicks: { show: false },
                     labels: {
@@ -584,18 +601,13 @@
             chart.render();
         };
 
-        // Ejecutar en navegación Livewire
-        document.addEventListener('livewire:navigated', () => {
-            if (typeof window.initDashboardChart === 'function') {
-                window.initDashboardChart();
-            }
-        });
-
-        // Ejecutar en carga inicial (si no es SPA/Livewire 3 completo)
-        document.addEventListener('DOMContentLoaded', () => {
-            if (typeof window.initDashboardChart === 'function') {
-                window.initDashboardChart();
-            }
+        // Escuchar evento personalizado
+        document.addEventListener('livewire:init', () => {
+            Livewire.on('stats-loaded', (event) => {
+                // Livewire v3 pasa los params dentro de un array en event[0]
+                const chartData = event[0]; 
+                window.initDashboardChart(chartData);
+            });
         });
     </script>
 </div>
