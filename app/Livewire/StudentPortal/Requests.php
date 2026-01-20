@@ -17,13 +17,11 @@ class Requests extends Component
 
     public $type = '';
     public $details = '';
-    
-    // ID genérico para seleccionar inscripción (retiro/cambio) o curso (diploma)
-    public $selectedTargetId = ''; 
+    public $selectedTargetId = ''; // ID de la inscripción seleccionada
 
     public $student;
-    public $activeEnrollments = []; // Para retiros/cambios
-    public $completedEnrollments = []; // Para diplomas
+    public $activeEnrollments = [];
+    public $completedEnrollments = [];
     public $canRequestDiploma = false;
 
     // Opciones para el dropdown de tipos de solicitud
@@ -43,7 +41,7 @@ class Requests extends Component
             return;
         }
 
-        // Cargar inscripciones ACTIVAS (para retiros o cambios)
+        // Cargar inscripciones ACTIVAS (para retiros/cambios)
         $this->activeEnrollments = Enrollment::where('student_id', $this->student->id)
             ->whereIn('status', ['Cursando', 'cursando', 'Activo', 'activo'])
             ->with('courseSchedule.module.course')
@@ -65,14 +63,12 @@ class Requests extends Component
             'details' => 'required|string|min:10',
         ];
 
-        // Reglas condicionales según el tipo
         if (in_array($this->type, ['retiro_curso', 'cambio_seccion'])) {
             $rules['selectedTargetId'] = 'required|integer|exists:enrollments,id';
             $rules['details'] = 'required|string|min:5';
         } elseif ($this->type === 'solicitar_diploma') {
-            // Para diploma, selectedTargetId es el enrollment_id del curso completado
             $rules['selectedTargetId'] = 'required|integer|exists:enrollments,id';
-            $rules['details'] = 'nullable|string'; // Opcional para diploma
+            $rules['details'] = 'nullable|string'; 
         }
 
         return $rules;
@@ -83,7 +79,6 @@ class Requests extends Component
         $this->reset('details', 'selectedTargetId');
         $this->resetErrorBag();
         
-        // Texto por defecto para diploma
         if ($this->type === 'solicitar_diploma') {
             $this->details = "Solicito la emisión del diploma correspondiente al curso finalizado.";
         }
@@ -98,54 +93,65 @@ class Requests extends Component
             return;
         }
 
-        $finalDetails = $this->details;
-        $courseId = null;
+        // 1. Buscamos la inscripción directamente en la BD para asegurar integridad de datos
+        // Esto soluciona el problema de "Curso No especificado"
+        $enrollment = Enrollment::with('courseSchedule.module.course')
+            ->where('student_id', $this->student->id)
+            ->where('id', $this->selectedTargetId)
+            ->first();
 
-        // Lógica para procesar datos según el tipo
+        if (!$enrollment) {
+            session()->flash('error', 'La inscripción seleccionada no es válida.');
+            return;
+        }
+
+        $finalDetails = $this->details;
+        $courseId = $enrollment->course_id; // Obtenemos el ID del curso de forma segura
+
+        // 2. Lógica específica por tipo
         if (in_array($this->type, ['retiro_curso', 'cambio_seccion'])) {
-            $enrollment = $this->activeEnrollments->find($this->selectedTargetId);
             
-            if ($enrollment) {
-                $courseId = $enrollment->course_id; // Guardamos el ID del curso
-                $courseName = $enrollment->courseSchedule->module->course->name ?? 'Curso Desconocido'; 
-                $sectionName = $enrollment->courseSchedule->section_name ?? 'Sección Desconocida';
-                
-                $finalDetails = "Curso Afectado: $courseName (Sección: $sectionName)\n" .
-                                "ID Inscripción: $enrollment->id\n\n" .
-                                "Motivo: $this->details";
-            }
+            $courseName = $enrollment->courseSchedule->module->course->name ?? 'Curso Desconocido'; 
+            $sectionName = $enrollment->courseSchedule->section_name ?? 'Sección Desconocida';
+            
+            $finalDetails = "Curso Afectado: $courseName (Sección: $sectionName)\n" .
+                            "ID Inscripción: $enrollment->id\n\n" .
+                            "Motivo: $this->details";
+
         } elseif ($this->type === 'solicitar_diploma') {
             if (!$this->canRequestDiploma) {
                 session()->flash('error', 'No cumple los requisitos para solicitar diploma.');
                 return;
             }
 
-            $enrollment = $this->completedEnrollments->find($this->selectedTargetId);
-            
-            if ($enrollment) {
-                $courseId = $enrollment->course_id; // Importante para vincular
-                $courseName = $enrollment->courseSchedule->module->course->name ?? 'Curso';
-                
-                // Verificamos si ya existe una solicitud pendiente o aprobada para este curso y tipo
-                $existingRequest = StudentRequest::where('student_id', $this->student->id)
-                    ->where('course_id', $courseId)
-                    ->where('type', 'solicitar_diploma')
-                    ->whereIn('status', ['pendiente', 'aprobado'])
-                    ->exists();
-                
-                if ($existingRequest) {
-                    session()->flash('error', 'Ya tiene una solicitud de diploma activa para este curso.');
-                    return;
-                }
-
-                $finalDetails = "Solicitud de Diploma para el curso: $courseName.\n" .
-                                "Fecha de finalización: " . ($enrollment->updated_at?->format('d/m/Y') ?? 'N/A');
+            // Validar nuevamente el estado por seguridad
+            if (!in_array(strtolower($enrollment->status), ['completado', 'aprobado'])) {
+                 session()->flash('error', 'El curso seleccionado no consta como completado en el sistema.');
+                 return;
             }
+
+            $courseName = $enrollment->courseSchedule->module->course->name ?? 'Curso';
+            
+            // Verificar duplicados pendientes o aprobados
+            $existingRequest = StudentRequest::where('student_id', $this->student->id)
+                ->where('course_id', $courseId)
+                ->where('type', 'solicitar_diploma')
+                ->whereIn('status', ['pendiente', 'aprobado'])
+                ->exists();
+            
+            if ($existingRequest) {
+                session()->flash('error', 'Ya tiene una solicitud de diploma activa para este curso.');
+                return;
+            }
+
+            $finalDetails = "Solicitud de Diploma para el curso: $courseName.\n" .
+                            "Fecha de finalización: " . ($enrollment->updated_at?->format('d/m/Y') ?? 'N/A');
         }
 
+        // 3. Crear la solicitud con el course_id asegurado
         StudentRequest::create([
             'student_id' => $this->student->id,
-            'course_id' => $courseId,
+            'course_id' => $courseId, // <--- Aquí estaba el problema, ahora está garantizado
             'type' => $this->type,
             'details' => $finalDetails,
             'status' => 'pendiente',
@@ -154,13 +160,13 @@ class Requests extends Component
         session()->flash('success', 'Solicitud enviada correctamente. Espere la aprobación del administrador.');
         
         $this->reset('type', 'details', 'selectedTargetId');
-        $this->mount(); // Recargar datos
+        $this->mount(); // Recargar listas
     }
 
     public function render()
     {
         $studentRequests = $this->student 
-            ? $this->student->requests()->with('payment')->latest()->paginate(10) 
+            ? $this->student->requests()->with(['payment', 'course'])->latest()->paginate(10) 
             : collect();
 
         return view('livewire.student-portal.requests', [
