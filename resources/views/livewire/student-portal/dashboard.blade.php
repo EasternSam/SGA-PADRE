@@ -153,15 +153,15 @@
 
         {{-- 
             =================================================================
-            2. LAYOUT PRINCIPAL (TABLA + ACTIVIDAD) vs (SIDEBAR)
+            2. LAYOUT PRINCIPAL (TABLA + SIDEBAR)
             ================================================================= 
         --}}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            {{-- COLUMNA IZQUIERDA: Cursos + Finanzas (Ocupa 2/3) --}}
+            {{-- COLUMNA IZQUIERDA: Cursos (Ocupa 2/3) --}}
             <div class="lg:col-span-2 space-y-8">
                 
-                {{-- 2.1 TABLA DE CURSOS --}}
+                {{-- 2.1 TABLA DE CURSOS ACTIVOS --}}
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div class="border-b border-gray-100 px-6 py-5 flex items-center justify-between">
                         <div>
@@ -260,7 +260,73 @@
                     </div>
                 </div>
 
-                {{-- 2.2 ACTIVIDAD FINANCIERA (MOVIDO AQUÍ) --}}
+                {{-- 2.2 HISTORIAL ACADÉMICO (CURSOS COMPLETADOS) --}}
+                @if($completedEnrollments->count() > 0)
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="border-b border-gray-100 px-6 py-5 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">Historial Académico</h3>
+                            <p class="text-sm text-gray-500">Cursos finalizados satisfactoriamente</p>
+                        </div>
+                        <div class="hidden sm:block">
+                            <span class="inline-flex items-center rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">
+                                {{ $completedEnrollments->count() }} Completados
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full whitespace-nowrap text-left text-sm">
+                            <thead class="bg-gray-50/50 text-gray-900">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 font-semibold">Curso / Módulo</th>
+                                    <th scope="col" class="px-6 py-3 font-semibold text-center">Calificación</th>
+                                    <th scope="col" class="px-6 py-3 font-semibold text-center">Fecha Fin</th>
+                                    <th scope="col" class="px-6 py-3 font-semibold text-right"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 bg-white">
+                                @foreach ($completedEnrollments as $enrollment)
+                                    <tr class="hover:bg-gray-50/50 transition-colors group">
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center gap-3">
+                                                <div class="h-10 w-10 flex-shrink-0 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 font-bold text-lg">
+                                                    {{ substr($enrollment->courseSchedule->module->course->name ?? 'C', 0, 1) }}
+                                                </div>
+                                                <div class="flex flex-col">
+                                                    <span class="text-gray-900 font-semibold">{{ $enrollment->courseSchedule->module->course->name ?? 'N/A' }}</span>
+                                                    <span class="text-gray-500 text-xs truncate max-w-[200px]" title="{{ $enrollment->courseSchedule->module->name ?? '' }}">
+                                                        {{ $enrollment->courseSchedule->module->name ?? 'N/A' }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 text-center">
+                                            @if($enrollment->final_grade)
+                                                <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-sm font-bold text-gray-700 ring-1 ring-inset ring-gray-500/10">
+                                                    {{ number_format($enrollment->final_grade, 1) }}
+                                                </span>
+                                            @else
+                                                <span class="text-gray-400 text-xs">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4 text-center text-gray-500 text-xs">
+                                            {{ $enrollment->updated_at->format('d/m/Y') }}
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <a href="{{ route('student.course.detail', $enrollment->id) }}" class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                                                Ver Detalles
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                @endif
+
+                {{-- 2.3 ACTIVIDAD FINANCIERA --}}
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider text-xs">Actividad Financiera Reciente</h3>
