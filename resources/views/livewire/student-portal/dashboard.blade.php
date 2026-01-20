@@ -8,7 +8,7 @@
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight text-gray-900">
-                    Hola, {{ explode(' ', $student->first_name)[0] }}
+                    Hola, {{ explode(' ', $student->first_name)[0] }} 👋
                 </h1>
             </div>
             <div class="flex items-center gap-3">
@@ -24,7 +24,6 @@
     </x-slot>
 
     {{-- CONTENEDOR PRINCIPAL --}}
-    <!-- Se cambió max-w-7xl a max-w-[98%] para ocupar todo el ancho disponible -->
     <div class="mx-auto w-full max-w-[98%] px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
 
         {{-- MENSAJES FLASH --}}
@@ -154,14 +153,15 @@
 
         {{-- 
             =================================================================
-            2. LAYOUT PRINCIPAL (TABLA + SIDEBAR)
+            2. LAYOUT PRINCIPAL (TABLA + ACTIVIDAD) vs (SIDEBAR)
             ================================================================= 
         --}}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            {{-- COLUMNA IZQUIERDA: Cursos (Ocupa 2/3) --}}
+            {{-- COLUMNA IZQUIERDA: Cursos + Finanzas (Ocupa 2/3) --}}
             <div class="lg:col-span-2 space-y-8">
                 
+                {{-- 2.1 TABLA DE CURSOS --}}
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div class="border-b border-gray-100 px-6 py-5 flex items-center justify-between">
                         <div>
@@ -202,7 +202,6 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        {{-- CELDA PROFESOR ELIMINADA --}}
                                         <td class="px-6 py-4">
                                             <div class="flex flex-col">
                                                 <span class="text-gray-900 font-medium text-xs">
@@ -260,6 +259,50 @@
                         </table>
                     </div>
                 </div>
+
+                {{-- 2.2 ACTIVIDAD FINANCIERA (MOVIDO AQUÍ) --}}
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider text-xs">Actividad Financiera Reciente</h3>
+                        <a href="{{ route('student.payments') }}" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Ver todo el historial</a>
+                    </div>
+                    
+                    <div class="relative border-l border-gray-100 ml-3 space-y-6">
+                        @forelse($paymentHistory->take(5) as $payment)
+                            <div class="relative pl-6">
+                                {{-- Punto de la línea de tiempo --}}
+                                <div class="absolute -left-1.5 top-1 h-3 w-3 rounded-full border-2 border-white 
+                                    {{ $payment->status == 'Pendiente' ? 'bg-red-400' : 'bg-emerald-400' }}"></div>
+                                
+                                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
+                                    <div class="flex-1">
+                                        {{-- Descripción del Pago --}}
+                                        <span class="text-sm font-semibold text-gray-900 break-words leading-tight">
+                                            {{ $payment->paymentConcept->name ?? $payment->description ?? 'Pago General' }}
+                                        </span>
+                                        <div class="text-xs text-gray-500 mt-0.5 break-words">
+                                            {{ $payment->enrollment->courseSchedule->module->course->name ?? 'Sin curso asociado' }}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-center gap-3 sm:text-right mt-1 sm:mt-0">
+                                        <span class="text-xs font-bold {{ $payment->status == 'Pendiente' ? 'text-red-600' : 'text-emerald-600' }}">
+                                            ${{ number_format($payment->amount, 0) }}
+                                        </span>
+                                        <span class="text-[10px] text-gray-400 min-w-[60px] text-right">
+                                            {{ $payment->created_at->format('d/m/Y') }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-4">
+                                <span class="text-xs text-gray-400">No hay movimientos recientes.</span>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+
             </div>
 
             {{-- COLUMNA DERECHA: Perfil + Sidebar --}}
@@ -325,49 +368,6 @@
                         </a>
                     </div>
                 </div>
-
-                {{-- ESTADO DE CUENTA (RECIENTE) --}}
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider text-xs">Actividad Financiera</h3>
-                        <a href="{{ route('student.payments') }}" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Ver todo</a>
-                    </div>
-                    
-                    <div class="relative border-l border-gray-100 ml-3 space-y-6">
-                        @forelse($paymentHistory->take(5) as $payment)
-                            <div class="relative pl-6">
-                                {{-- Punto de la línea de tiempo --}}
-                                <div class="absolute -left-1.5 top-1 h-3 w-3 rounded-full border-2 border-white 
-                                    {{ $payment->status == 'Pendiente' ? 'bg-red-400' : 'bg-emerald-400' }}"></div>
-                                
-                                <div class="flex flex-col">
-                                    {{-- CORRECCIÓN APLICADA: Mostrar Concepto o Descripción y manejar palabras largas --}}
-                                    <span class="text-sm font-semibold text-gray-900 break-words leading-tight">
-                                        {{ $payment->paymentConcept->name ?? $payment->description ?? 'Pago General' }}
-                                    </span>
-                                    
-                                    <span class="text-xs text-gray-500 mt-0.5 break-words">
-                                        {{ $payment->enrollment->courseSchedule->module->course->name ?? 'Sin curso asociado' }}
-                                    </span>
-                                    
-                                    <div class="flex items-center justify-between mt-2">
-                                        <span class="text-xs font-bold {{ $payment->status == 'Pendiente' ? 'text-red-600' : 'text-emerald-600' }}">
-                                            ${{ number_format($payment->amount, 0) }}
-                                        </span>
-                                        <span class="text-[10px] text-gray-400">
-                                            {{ $payment->created_at->format('d/m/Y') }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        @empty
-                            <div class="text-center py-4">
-                                <span class="text-xs text-gray-400">No hay movimientos recientes.</span>
-                            </div>
-                        @endforelse
-                    </div>
-                </div>
-
             </div>
         </div>
     </div>
