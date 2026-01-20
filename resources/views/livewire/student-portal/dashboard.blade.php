@@ -8,11 +8,8 @@
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight text-gray-900">
-                    Hola, {{ explode(' ', $student->first_name)[0] }} 👋
+                    Hola, {{ explode(' ', $student->first_name)[0] }}
                 </h1>
-                <p class="mt-1 text-sm text-gray-500">
-                    Bienvenido a tu portal estudiantil. Aquí tienes el resumen de tu actividad académica.
-                </p>
             </div>
             <div class="flex items-center gap-3">
                 <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-full shadow-sm">
@@ -27,7 +24,8 @@
     </x-slot>
 
     {{-- CONTENEDOR PRINCIPAL --}}
-    <div class="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
+    <!-- Se cambió max-w-7xl a max-w-[98%] para ocupar todo el ancho disponible -->
+    <div class="mx-auto w-full max-w-[98%] px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
 
         {{-- MENSAJES FLASH --}}
         @if (session()->has('message'))
@@ -182,7 +180,7 @@
                             <thead class="bg-gray-50/50 text-gray-900">
                                 <tr>
                                     <th scope="col" class="px-6 py-3 font-semibold">Curso / Módulo</th>
-                                    <th scope="col" class="px-6 py-3 font-semibold">Profesor</th>
+                                    {{-- COLUMNA PROFESOR ELIMINADA --}}
                                     <th scope="col" class="px-6 py-3 font-semibold">Horario</th>
                                     <th scope="col" class="px-6 py-3 font-semibold text-center">Estado</th>
                                     <th scope="col" class="px-6 py-3 font-semibold text-right"></th>
@@ -204,9 +202,7 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4 text-gray-600">
-                                            {{ $enrollment->courseSchedule->teacher->name ?? 'No asignado' }}
-                                        </td>
+                                        {{-- CELDA PROFESOR ELIMINADA --}}
                                         <td class="px-6 py-4">
                                             <div class="flex flex-col">
                                                 <span class="text-gray-900 font-medium text-xs">
