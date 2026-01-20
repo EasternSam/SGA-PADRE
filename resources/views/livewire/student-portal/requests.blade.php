@@ -1,211 +1,298 @@
-<div>
+<div class="min-h-screen bg-gray-50/50 pb-12">
+    {{-- 
+        =================================================================
+        ENCABEZADO (HEADER)
+        ================================================================= 
+    --}}
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Módulo de Solicitudes') }}
-        </h2>
-    </x-slot>
-
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    
-                    <!-- Formulario de Nueva Solicitud -->
-                    <div class="mb-8 border-b pb-8">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">{{ __('Crear Nueva Solicitud') }}</h3>
-                        
-                        @if (session()->has('success'))
-                            <div class="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
-                                {{ session('success') }}
-                            </div>
-                        @endif
-                        @if (session()->has('error'))
-                            <div class="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
-                                {{ session('error') }}
-                            </div>
-                        @endif
-
-                        <form wire:submit.prevent="submitRequest">
-                            <div class="grid grid-cols-1 gap-6 max-w-2xl">
-                                <!-- Tipo de Solicitud -->
-                                <div>
-                                    <x-input-label for="type" :value="__('Tipo de Solicitud')" />
-                                    <select wire:model.live="type" id="type" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
-                                        <option value="">{{ __('Seleccione un tipo') }}</option>
-                                        @foreach($requestTypes as $key => $value)
-                                            @if($key === 'solicitar_diploma')
-                                                <option value="{{ $key }}" @disabled(!$canRequestDiploma)>
-                                                    {{ $value }} @if(!$canRequestDiploma) (No elegible - Requiere cursos completados) @endif
-                                                </option>
-                                            @else
-                                                <option value="{{ $key }}">{{ $value }}</option>
-                                            @endif
-                                        @endforeach
-                                    </select>
-                                    <x-input-error :messages="$errors->get('type')" class="mt-2" />
-                                </div>
-
-                                <!-- LÓGICA CONDICIONAL DE INPUTS -->
-                                
-                                <!-- Caso 1: Retiro o Cambio (Requiere Curso Activo) -->
-                                @if ($type === 'retiro_curso' || $type === 'cambio_seccion')
-                                    <div class="animate-in fade-in slide-in-from-top-2 duration-300">
-                                        <x-input-label for="selectedTargetId" :value="__('Seleccione el Curso Activo')" />
-                                        <select wire:model="selectedTargetId" id="selectedTargetId" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
-                                            <option value="">{{ __('Seleccione curso...') }}</option>
-                                            @forelse($activeEnrollments as $enrollment)
-                                                <option value="{{ $enrollment->id }}">
-                                                    {{ $enrollment->courseSchedule->module->course->name ?? 'Curso' }} 
-                                                    ({{ $enrollment->courseSchedule->section_name ?? 'Sección' }})
-                                                </option>
-                                            @empty
-                                                <option value="" disabled>{{ __('No hay cursos activos disponibles.') }}</option>
-                                            @endforelse
-                                        </select>
-                                        <x-input-error :messages="$errors->get('selectedTargetId')" class="mt-2" />
-                                    </div>
-                                @endif
-
-                                <!-- Caso 2: Diploma (Requiere Curso Completado) -->
-                                @if ($type === 'solicitar_diploma')
-                                    <div class="animate-in fade-in slide-in-from-top-2 duration-300">
-                                        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
-                                            <div class="flex">
-                                                <div class="ml-3">
-                                                    <p class="text-sm text-blue-700">
-                                                        Al ser aprobada esta solicitud, se generará un cobro administrativo. Una vez pagado, podrá descargar su diploma.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <x-input-label for="selectedTargetId" :value="__('Seleccione el Curso Completado')" />
-                                        <select wire:model="selectedTargetId" id="selectedTargetId" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
-                                            <option value="">{{ __('Seleccione curso completado...') }}</option>
-                                            @forelse($completedEnrollments as $enrollment)
-                                                <option value="{{ $enrollment->id }}">
-                                                    {{ $enrollment->courseSchedule->module->course->name ?? 'Curso' }} 
-                                                    (Finalizado: {{ $enrollment->updated_at->format('d/m/Y') }})
-                                                </option>
-                                            @empty
-                                                <option value="" disabled>{{ __('No hay cursos completados disponibles.') }}</option>
-                                            @endforelse
-                                        </select>
-                                        <x-input-error :messages="$errors->get('selectedTargetId')" class="mt-2" />
-                                    </div>
-                                @endif
-
-                                <!-- Detalles / Motivo -->
-                                <div>
-                                    <x-input-label for="details" :value="__('Comentarios Adicionales')" />
-                                    <textarea wire:model="details" id="details" rows="4" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" 
-                                              placeholder="{{ __('Escriba aquí cualquier detalle adicional...') }}"></textarea>
-                                    <x-input-error :messages="$errors->get('details')" class="mt-2" />
-                                </div>
-
-                                <div>
-                                    <x-primary-button wire:loading.attr="disabled">
-                                        <span wire:loading wire:target="submitRequest" class="animate-spin mr-2">...</span>
-                                        {{ __('Enviar Solicitud') }}
-                                    </x-primary-button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- Historial de Solicitudes -->
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">{{ __('Mis Solicitudes e Historial') }}</h3>
-                        
-                        <div class="overflow-x-auto bg-white rounded-lg shadow border border-gray-200">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado Solicitud</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado Pago</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    @forelse($studentRequests as $request)
-                                        <tr>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {{ $request->created_at->format('d/m/Y') }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {{ $requestTypes[$request->type] ?? $request->type }}
-                                                @if($request->course)
-                                                    <div class="text-xs text-gray-500 font-normal">{{ $request->course->name }}</div>
-                                                @endif
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                                    @if($request->status == 'aprobado') bg-green-100 text-green-800
-                                                    @elseif($request->status == 'rechazado') bg-red-100 text-red-800
-                                                    @else bg-yellow-100 text-yellow-800 @endif">
-                                                    {{ ucfirst($request->status) }}
-                                                </span>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                                @if($request->payment)
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                                        @if($request->payment->status == 'Pagado') bg-green-100 text-green-800
-                                                        @elseif($request->payment->status == 'Pendiente') bg-orange-100 text-orange-800
-                                                        @else bg-gray-100 text-gray-800 @endif">
-                                                        {{ $request->payment->status }}
-                                                        ({{ number_format($request->payment->amount, 2) }} {{ $request->payment->currency }})
-                                                    </span>
-                                                @else
-                                                    <span class="text-gray-400 text-xs">-</span>
-                                                @endif
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                <!-- LÓGICA DE ACCIONES SEGÚN ESTADO Y PAGO -->
-                                                
-                                                @if($request->type == 'solicitar_diploma' && $request->status == 'aprobado')
-                                                    @if($request->payment && $request->payment->status == 'Pagado')
-                                                        <!-- Botón Habilitado para generar diploma -->
-                                                        <a href="#" class="text-indigo-600 hover:text-indigo-900 flex items-center">
-                                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                                            Descargar Diploma
-                                                        </a>
-                                                    @elseif($request->payment && $request->payment->status == 'Pendiente')
-                                                        <!-- Botón para ir a pagar -->
-                                                        <a href="{{ route('student.payments') }}" class="text-orange-600 hover:text-orange-900 font-bold flex items-center">
-                                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
-                                                            Pagar Ahora
-                                                        </a>
-                                                    @else
-                                                        <span class="text-gray-500 italic">Procesando cobro...</span>
-                                                    @endif
-                                                @endif
-                                            </td>
-                                        </tr>
-                                        <!-- Fila de detalles/notas admin si existen -->
-                                        @if($request->admin_notes)
-                                            <tr class="bg-gray-50">
-                                                <td colspan="5" class="px-6 py-2 text-xs text-gray-600 italic border-b">
-                                                    <strong>Nota Admin:</strong> {{ $request->admin_notes }}
-                                                </td>
-                                            </tr>
-                                        @endif
-                                    @empty
-                                        <tr>
-                                            <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No tiene solicitudes registradas.</td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="mt-4">
-                            {{ $studentRequests->links() }}
-                        </div>
-                    </div>
-
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-gray-900">Módulo de Solicitudes</h1>
+                <p class="mt-1 text-sm text-gray-500">
+                    Gestiona tus trámites académicos, retiros y solicitudes de diplomas.
+                </p>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="bg-white border border-gray-200 text-gray-700 px-4 py-1.5 rounded-full text-sm font-medium flex items-center gap-2 shadow-sm">
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                    Sistema Operativo
                 </div>
             </div>
+        </div>
+    </x-slot>
+
+    {{-- CONTENEDOR PRINCIPAL --}}
+    <div class="mx-auto w-full max-w-[98%] px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {{-- COLUMNA IZQUIERDA: Formulario de Nueva Solicitud --}}
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-8">
+                    <div class="mb-6 pb-4 border-b border-gray-50">
+                        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Nueva Solicitud
+                        </h3>
+                        <p class="text-sm text-gray-500 mt-1">Completa el formulario para iniciar un trámite.</p>
+                    </div>
+
+                    @if (session()->has('success'))
+                        <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" class="mb-6 rounded-xl border border-green-200 bg-green-50 p-4 shadow-sm transition-all">
+                            <div class="flex items-center gap-3">
+                                <svg class="h-5 w-5 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
+                            </div>
+                        </div>
+                    @endif
+
+                    @if (session()->has('error'))
+                        <div class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <svg class="h-5 w-5 text-red-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <p class="text-sm font-medium text-red-800">{{ session('error') }}</p>
+                            </div>
+                        </div>
+                    @endif
+
+                    <form wire:submit.prevent="submitRequest" class="space-y-5">
+                        
+                        <!-- Tipo de Solicitud -->
+                        <div>
+                            <x-input-label for="type" :value="__('Tipo de Trámite')" class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5" />
+                            <div class="relative">
+                                <select wire:model.live="type" id="type" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5 pl-3 pr-10">
+                                    <option value="">Seleccione una opción...</option>
+                                    @foreach($requestTypes as $key => $value)
+                                        @if($key === 'solicitar_diploma')
+                                            <option value="{{ $key }}" @disabled(!$canRequestDiploma)>
+                                                {{ $value }} @if(!$canRequestDiploma) (No elegible) @endif
+                                            </option>
+                                        @else
+                                            <option value="{{ $key }}">{{ $value }}</option>
+                                        @endif
+                                    @endforeach
+                                </select>
+                            </div>
+                            <x-input-error :messages="$errors->get('type')" class="mt-1" />
+                        </div>
+
+                        <!-- LÓGICA CONDICIONAL -->
+                        
+                        <!-- Caso 1: Retiro o Cambio -->
+                        @if ($type === 'retiro_curso' || $type === 'cambio_seccion')
+                            <div class="animate-in fade-in slide-in-from-top-2 duration-300 space-y-5">
+                                <div>
+                                    <x-input-label for="selectedTargetId" :value="__('Curso Activo Afectado')" class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5" />
+                                    <select wire:model="selectedTargetId" id="selectedTargetId" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5">
+                                        <option value="">Seleccione curso...</option>
+                                        @forelse($activeEnrollments as $enrollment)
+                                            <option value="{{ $enrollment->id }}">
+                                                {{ $enrollment->courseSchedule->module->course->name ?? 'Curso' }} 
+                                                ({{ $enrollment->courseSchedule->section_name ?? 'Sección' }})
+                                            </option>
+                                        @empty
+                                            <option value="" disabled>{{ __('No hay cursos activos disponibles.') }}</option>
+                                        @endforelse
+                                    </select>
+                                    <x-input-error :messages="$errors->get('selectedTargetId')" class="mt-1" />
+                                </div>
+                            </div>
+                        @endif
+
+                        <!-- Caso 2: Diploma -->
+                        @if ($type === 'solicitar_diploma')
+                            <div class="animate-in fade-in slide-in-from-top-2 duration-300 space-y-5">
+                                <div class="rounded-lg bg-blue-50 border border-blue-100 p-4 flex gap-3">
+                                    <svg class="w-5 h-5 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <p class="text-sm text-blue-700 leading-relaxed">
+                                        Al aprobarse, se generará un cobro administrativo. Podrás descargar el diploma tras el pago.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <x-input-label for="selectedTargetId" :value="__('Curso Finalizado')" class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5" />
+                                    <select wire:model="selectedTargetId" id="selectedTargetId" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5">
+                                        <option value="">Seleccione curso completado...</option>
+                                        @forelse($completedEnrollments as $enrollment)
+                                            <option value="{{ $enrollment->id }}">
+                                                {{ $enrollment->courseSchedule->module->course->name ?? 'Curso' }} 
+                                                (Finalizado: {{ $enrollment->updated_at->format('d/m/Y') }})
+                                            </option>
+                                        @empty
+                                            <option value="" disabled>{{ __('No hay cursos completados disponibles.') }}</option>
+                                        @endforelse
+                                    </select>
+                                    <x-input-error :messages="$errors->get('selectedTargetId')" class="mt-1" />
+                                </div>
+                            </div>
+                        @endif
+
+                        <!-- Detalles / Motivo -->
+                        <div>
+                            <x-input-label for="details" :value="__('Detalles Adicionales')" class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5" />
+                            <textarea wire:model="details" id="details" rows="4" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2" placeholder="Escriba aquí los detalles o motivos de su solicitud..."></textarea>
+                            <x-input-error :messages="$errors->get('details')" class="mt-1" />
+                        </div>
+
+                        <div class="pt-2">
+                            <x-primary-button wire:loading.attr="disabled" class="w-full justify-center py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-md transition-all text-sm font-semibold">
+                                <span wire:loading wire:target="submitRequest" class="animate-spin mr-2">
+                                    <svg class="h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </span>
+                                {{ __('Enviar Solicitud') }}
+                            </x-primary-button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {{-- COLUMNA DERECHA: Historial de Solicitudes --}}
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="border-b border-gray-100 px-6 py-5 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">Historial de Solicitudes</h3>
+                            <p class="text-sm text-gray-500">Seguimiento de tus trámites realizados</p>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-100">
+                            <thead class="bg-gray-50/50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Trámite / Curso</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Pago</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 bg-white">
+                                @forelse($studentRequests as $request)
+                                    <tr class="hover:bg-gray-50/50 transition-colors group">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {{ $request->created_at->format('d/m/Y') }}
+                                            <div class="text-xs text-gray-400">{{ $request->created_at->format('h:i A') }}</div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex flex-col">
+                                                <span class="text-sm font-medium text-gray-900">{{ $requestTypes[$request->type] ?? $request->type }}</span>
+                                                @if($request->course)
+                                                    <span class="text-xs text-gray-500 mt-0.5">{{ $request->course->name }}</span>
+                                                @endif
+                                            </div>
+                                            <!-- Mostrar nota del admin si existe -->
+                                            @if($request->admin_notes)
+                                                <div class="mt-2 p-2 bg-gray-50 rounded border border-gray-100 text-xs text-gray-600 italic flex gap-2 items-start">
+                                                    <svg class="w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                                                    </svg>
+                                                    {{ $request->admin_notes }}
+                                                </div>
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                                            @php
+                                                $statusClass = match($request->status) {
+                                                    'aprobado' => 'bg-green-50 text-green-700 ring-green-600/20',
+                                                    'rechazado' => 'bg-red-50 text-red-700 ring-red-600/20',
+                                                    default => 'bg-yellow-50 text-yellow-800 ring-yellow-600/20',
+                                                };
+                                                $dotClass = match($request->status) {
+                                                    'aprobado' => 'bg-green-500',
+                                                    'rechazado' => 'bg-red-500',
+                                                    default => 'bg-yellow-500',
+                                                };
+                                            @endphp
+                                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset {{ $statusClass }}">
+                                                <span class="w-1.5 h-1.5 rounded-full mr-1.5 {{ $dotClass }}"></span>
+                                                {{ ucfirst($request->status) }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                                            @if($request->payment)
+                                                @php
+                                                    $payStatusClass = match($request->payment->status) {
+                                                        'Pagado', 'Completado' => 'bg-emerald-50 text-emerald-700 border-emerald-100',
+                                                        'Pendiente' => 'bg-orange-50 text-orange-700 border-orange-100',
+                                                        default => 'bg-gray-50 text-gray-600 border-gray-100',
+                                                    };
+                                                @endphp
+                                                <div class="flex flex-col items-center gap-1">
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border {{ $payStatusClass }}">
+                                                        {{ $request->payment->status }}
+                                                    </span>
+                                                    <span class="text-xs font-semibold text-gray-700">
+                                                        RD$ {{ number_format($request->payment->amount, 2) }}
+                                                    </span>
+                                                </div>
+                                            @else
+                                                <span class="text-gray-300 text-xs">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                                            @if($request->type == 'solicitar_diploma' && $request->status == 'aprobado')
+                                                @if($request->payment && ($request->payment->status == 'Pagado' || $request->payment->status == 'Completado'))
+                                                    <a href="#" class="inline-flex items-center text-indigo-600 hover:text-indigo-800 font-medium text-xs bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors">
+                                                        <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                                        </svg>
+                                                        Descargar
+                                                    </a>
+                                                @elseif($request->payment && $request->payment->status == 'Pendiente')
+                                                    <a href="{{ route('student.payments') }}" class="inline-flex items-center text-white bg-gray-900 hover:bg-gray-800 font-medium text-xs px-3 py-1.5 rounded-lg shadow-sm transition-colors">
+                                                        <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                                                        </svg>
+                                                        Pagar
+                                                    </a>
+                                                @else
+                                                    <span class="text-gray-400 text-xs italic">Procesando...</span>
+                                                @endif
+                                            @else
+                                                <span class="text-gray-300 text-xs">-</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-12 text-center">
+                                            <div class="flex flex-col items-center justify-center">
+                                                <div class="h-12 w-12 rounded-full bg-gray-50 flex items-center justify-center mb-3 border border-gray-100">
+                                                    <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                </div>
+                                                <p class="text-gray-500 text-sm font-medium">No tienes solicitudes registradas.</p>
+                                                <p class="text-gray-400 text-xs mt-1">Usa el formulario para crear una nueva.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    @if($studentRequests->hasPages())
+                        <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                            {{ $studentRequests->links() }}
+                        </div>
+                    @endif
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
