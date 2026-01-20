@@ -93,8 +93,8 @@ class Requests extends Component
             return;
         }
 
-        // 1. Buscamos la inscripción directamente en la BD para asegurar integridad de datos
-        $enrollment = Enrollment::with('courseSchedule.module.course')
+        // 1. Obtener la inscripción con todas las relaciones anidadas necesarias
+        $enrollment = Enrollment::with(['courseSchedule.module.course'])
             ->where('student_id', $this->student->id)
             ->where('id', $this->selectedTargetId)
             ->first();
@@ -104,21 +104,35 @@ class Requests extends Component
             return;
         }
 
-        $finalDetails = $this->details;
-        
-        // CORRECCIÓN: Obtener el objeto Curso navegando por las relaciones
-        // Enrollment -> CourseSchedule -> Module -> Course
-        $course = $enrollment->courseSchedule?->module?->course;
-        
-        // Usamos el ID del objeto curso encontrado, o fallback a la propiedad directa si existiera
-        $courseId = $course?->id ?? $enrollment->course_id;
+        // 2. Extracción ROBUSTA del ID del Curso
+        $courseId = null;
+        $courseName = 'Curso Desconocido';
 
-        // 2. Lógica específica por tipo
+        // Intentamos obtener el ID navegando por las relaciones
+        if ($enrollment->courseSchedule && $enrollment->courseSchedule->module) {
+            $courseId = $enrollment->courseSchedule->module->course_id; // ID directo desde el módulo
+            
+            // Si el objeto curso está cargado, obtenemos el nombre
+            if ($enrollment->courseSchedule->module->course) {
+                $courseName = $enrollment->courseSchedule->module->course->name;
+                // Por seguridad, si el ID anterior falló, usamos el del objeto
+                if (!$courseId) {
+                    $courseId = $enrollment->courseSchedule->module->course->id;
+                }
+            }
+        }
+
+        // Validación Crítica: Si no tenemos ID de curso, no podemos proceder
+        if (!$courseId) {
+            session()->flash('error', 'Error técnico: No se pudo identificar el ID del curso asociado a esta inscripción. Por favor contacte soporte.');
+            return;
+        }
+
+        $finalDetails = $this->details;
+
+        // 3. Lógica específica por tipo
         if (in_array($this->type, ['retiro_curso', 'cambio_seccion'])) {
-            
-            $courseName = $course->name ?? 'Curso Desconocido'; 
             $sectionName = $enrollment->courseSchedule->section_name ?? 'Sección Desconocida';
-            
             $finalDetails = "Curso Afectado: $courseName (Sección: $sectionName)\n" .
                             "ID Inscripción: $enrollment->id\n\n" .
                             "Motivo: $this->details";
@@ -131,21 +145,19 @@ class Requests extends Component
 
             // Validar nuevamente el estado por seguridad
             if (!in_array(strtolower($enrollment->status), ['completado', 'aprobado'])) {
-                 session()->flash('error', 'El curso seleccionado no consta como completado en el sistema.');
+                 session()->flash('error', "El curso seleccionado ($courseName) no consta como completado.");
                  return;
             }
 
-            $courseName = $course->name ?? 'Curso';
-            
-            // Verificar duplicados pendientes o aprobados
+            // Verificar duplicados
             $existingRequest = StudentRequest::where('student_id', $this->student->id)
                 ->where('course_id', $courseId)
                 ->where('type', 'solicitar_diploma')
                 ->whereIn('status', ['pendiente', 'aprobado'])
-                ->exists();
+                ->first();
             
             if ($existingRequest) {
-                session()->flash('error', 'Ya tiene una solicitud de diploma activa para este curso.');
+                session()->flash('error', "Ya existe una solicitud activa para el curso: $courseName.");
                 return;
             }
 
@@ -153,16 +165,16 @@ class Requests extends Component
                             "Fecha de finalización: " . ($enrollment->updated_at?->format('d/m/Y') ?? 'N/A');
         }
 
-        // 3. Crear la solicitud con el course_id asegurado
+        // 4. Crear la solicitud
         StudentRequest::create([
             'student_id' => $this->student->id,
-            'course_id' => $courseId, // Ahora sí lleva el ID correcto
+            'course_id' => $courseId,
             'type' => $this->type,
             'details' => $finalDetails,
             'status' => 'pendiente',
         ]);
 
-        session()->flash('success', 'Solicitud enviada correctamente. Espere la aprobación del administrador.');
+        session()->flash('success', 'Solicitud enviada correctamente.');
         
         $this->reset('type', 'details', 'selectedTargetId');
         $this->mount(); // Recargar listas
