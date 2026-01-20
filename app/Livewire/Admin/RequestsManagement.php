@@ -24,7 +24,7 @@ class RequestsManagement extends Component
     public $adminNotes = '';
     public $showingModal = false;
 
-    // Configuración de precios por defecto (idealmente debería venir de DB o Config)
+    // Configuración de precios por defecto
     const PRECIO_DIPLOMA = 500; 
 
     protected $paginationTheme = 'tailwind';
@@ -34,7 +34,8 @@ class RequestsManagement extends Component
 
     public function viewRequest($requestId)
     {
-        $this->selectedRequest = StudentRequest::with(['student.user', 'course', 'payment'])->find($requestId);
+        // Cargamos todas las relaciones necesarias
+        $this->selectedRequest = StudentRequest::with(['student.user', 'course', 'payment.paymentConcept'])->find($requestId);
 
         if ($this->selectedRequest) {
             $this->adminNotes = $this->selectedRequest->admin_notes ?? '';
@@ -70,6 +71,10 @@ class RequestsManagement extends Component
             }
 
             DB::commit();
+            
+            // Refrescamos la solicitud para mostrar los cambios en el modal
+            $this->selectedRequest->refresh();
+            
             session()->flash('success', 'Solicitud actualizada correctamente.');
             $this->closeModal();
 
@@ -85,20 +90,18 @@ class RequestsManagement extends Component
      */
     protected function handleSpecificLogic(StudentRequest $request)
     {
+        Log::info("Ejecutando lógica específica para solicitud tipo: {$request->type}");
+
         switch ($request->type) {
             case 'solicitar_diploma':
                 $this->approveDiplomaRequest($request);
                 break;
             
             case 'retiro_curso':
-                // Aquí podrías automatizar el cambio de estado del enrollment a 'Retirado'
                 // $this->approveRetiroRequest($request);
                 break;
             
-            // Agregar más casos según necesidad...
-            
             default:
-                // Lógica por defecto o no hacer nada específico
                 break;
         }
     }
@@ -110,46 +113,55 @@ class RequestsManagement extends Component
     {
         // 1. Verificar si ya existe un pago asociado para evitar duplicados
         if ($request->payment_id) {
+            Log::info("Solicitud #{$request->id} ya tiene pago asociado. Omitiendo.");
             return;
         }
 
-        // 2. Obtener la inscripción asociada al curso para vincular el pago
-        // Como es diploma, buscamos una inscripción completada/aprobada de este estudiante en este curso
+        // 2. Obtener la inscripción usando whereHas para navegar por las relaciones
+        // Enrollment -> CourseSchedule -> Module -> Course
         $enrollment = Enrollment::where('student_id', $request->student_id)
-            ->where('course_id', $request->course_id)
-            ->whereIn('status', ['Completado', 'completado', 'Aprobado', 'aprobado'])
+            ->whereHas('courseSchedule.module', function ($q) use ($request) {
+                $q->where('course_id', $request->course_id);
+            })
+            // Buscamos cualquier estado válido que indique que cursó la materia
+            ->whereIn('status', ['Completado', 'completado', 'Aprobado', 'aprobado', 'Cursando', 'cursando']) 
             ->latest()
             ->first();
 
         if (!$enrollment) {
-            // Si no encontramos enrollment, no podemos vincular el pago correctamente, 
-            // pero podemos crearlo solo con student_id si la estructura lo permite.
-            // Para mantener consistencia, lanzamos warning pero intentamos proceder si es posible.
-             Log::warning("Aprobando diploma sin enrollment encontrado para Request ID: {$request->id}");
+             Log::warning("Aprobando diploma sin enrollment encontrado para Request ID: {$request->id}. Creando pago sin enrollment_id.");
         }
 
         // 3. Obtener o Crear Concepto de Pago
         $concept = PaymentConcept::firstOrCreate(
             ['name' => 'Solicitud de Diploma'],
-            ['description' => 'Pago por emisión y trámite de diploma', 'amount' => self::PRECIO_DIPLOMA]
+            [
+                'description' => 'Pago por emisión y trámite de diploma', 
+                'amount' => self::PRECIO_DIPLOMA
+            ]
         );
+
+        $monto = $concept->amount > 0 ? $concept->amount : self::PRECIO_DIPLOMA;
+        $nombreCurso = $request->course->name ?? 'General';
 
         // 4. Crear el Pago Pendiente
         $payment = Payment::create([
             'student_id' => $request->student_id,
-            'enrollment_id' => $enrollment ? $enrollment->id : null,
+            'enrollment_id' => $enrollment ? $enrollment->id : null, // Ahora sí debería encontrarse
             'payment_concept_id' => $concept->id,
-            'amount' => $concept->amount ?? self::PRECIO_DIPLOMA,
+            'amount' => $monto,
             'currency' => 'DOP',
             'status' => 'Pendiente',
-            'gateway' => 'Sistema',
-            'due_date' => now()->addDays(7), // Damos 7 días para pagar
+            'gateway' => 'Sistema', 
+            'due_date' => now()->addDays(7), 
+            'description' => "Diploma - $nombreCurso", // Descripción clara para que se vea en el admin
         ]);
 
         // 5. Vincular el pago a la solicitud
-        $request->update(['payment_id' => $payment->id]);
+        $request->payment_id = $payment->id;
+        $request->save(); 
 
-        Log::info("Cobro de diploma generado para solicitud #{$request->id}");
+        Log::info("Cobro de diploma generado (Pago ID: {$payment->id}) para solicitud #{$request->id}");
     }
 
     public function render()
