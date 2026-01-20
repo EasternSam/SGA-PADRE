@@ -151,7 +151,7 @@
                     <div class="absolute inset-0 flex items-center justify-center bg-gray-50/50 rounded-lg animate-pulse border border-gray-100 backdrop-blur-sm z-20">
                         <div class="flex flex-col items-center">
                             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-3"></div>
-                            <span class="text-sm text-gray-600 font-medium bg-white px-3 py-1 rounded-full shadow-sm">Obteniendo datos de WordPress...</span>
+                            <span class="text-sm text-gray-600 font-medium bg-white px-3 py-1 rounded-full shadow-sm">Obteniendo datos...</span>
                         </div>
                     </div>
                     <!-- Placeholder visual del gráfico -->
@@ -161,7 +161,7 @@
                         @endfor
                     </div>
                 @else
-                    <div id="enrollmentChart" wire:ignore></div>
+                    <div id="enrollmentChart" wire:ignore class="w-full h-full"></div>
                 @endif
             </div>
         </div>
@@ -324,7 +324,7 @@
             {{-- COLUMNA DERECHA: Sidebar --}}
             <div class="space-y-6">
                 
-                <!-- Panel: Accesos Directos -->
+                <!-- Panel: Accesos Directos (OPTIMIZADO VISUALMENTE) -->
                 <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-900/5 p-6">
                     <h3 class="text-base font-bold text-gray-900 mb-5 flex items-center gap-2">
                         <div class="p-1.5 rounded-lg bg-indigo-50 text-indigo-600">
@@ -606,7 +606,12 @@
             Livewire.on('stats-loaded', (event) => {
                 // Livewire v3 pasa los params dentro de un array en event[0]
                 const chartData = event[0]; 
-                window.initDashboardChart(chartData);
+                
+                // Usamos setTimeout para asegurar que el DOM se haya actualizado (el div #enrollmentChart exista)
+                // antes de intentar renderizar el gráfico.
+                setTimeout(() => {
+                    window.initDashboardChart(chartData);
+                }, 50);
             });
         });
     </script>
