@@ -94,7 +94,6 @@ class Requests extends Component
         }
 
         // 1. Buscamos la inscripción directamente en la BD para asegurar integridad de datos
-        // Esto soluciona el problema de "Curso No especificado"
         $enrollment = Enrollment::with('courseSchedule.module.course')
             ->where('student_id', $this->student->id)
             ->where('id', $this->selectedTargetId)
@@ -106,12 +105,18 @@ class Requests extends Component
         }
 
         $finalDetails = $this->details;
-        $courseId = $enrollment->course_id; // Obtenemos el ID del curso de forma segura
+        
+        // CORRECCIÓN: Obtener el objeto Curso navegando por las relaciones
+        // Enrollment -> CourseSchedule -> Module -> Course
+        $course = $enrollment->courseSchedule?->module?->course;
+        
+        // Usamos el ID del objeto curso encontrado, o fallback a la propiedad directa si existiera
+        $courseId = $course?->id ?? $enrollment->course_id;
 
         // 2. Lógica específica por tipo
         if (in_array($this->type, ['retiro_curso', 'cambio_seccion'])) {
             
-            $courseName = $enrollment->courseSchedule->module->course->name ?? 'Curso Desconocido'; 
+            $courseName = $course->name ?? 'Curso Desconocido'; 
             $sectionName = $enrollment->courseSchedule->section_name ?? 'Sección Desconocida';
             
             $finalDetails = "Curso Afectado: $courseName (Sección: $sectionName)\n" .
@@ -130,7 +135,7 @@ class Requests extends Component
                  return;
             }
 
-            $courseName = $enrollment->courseSchedule->module->course->name ?? 'Curso';
+            $courseName = $course->name ?? 'Curso';
             
             // Verificar duplicados pendientes o aprobados
             $existingRequest = StudentRequest::where('student_id', $this->student->id)
@@ -151,7 +156,7 @@ class Requests extends Component
         // 3. Crear la solicitud con el course_id asegurado
         StudentRequest::create([
             'student_id' => $this->student->id,
-            'course_id' => $courseId, // <--- Aquí estaba el problema, ahora está garantizado
+            'course_id' => $courseId, // Ahora sí lleva el ID correcto
             'type' => $this->type,
             'details' => $finalDetails,
             'status' => 'pendiente',
