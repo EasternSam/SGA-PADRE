@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 class PaymentConcept extends Model
 {
     use HasFactory;
-    protected $guarded = []; // Permitir asignación masiva
+    
+    protected $guarded = []; // Permitir asignación masiva (incluye 'amount' automáticamente)
 
     /**
      * Un concepto de pago puede estar en múltiples pagos.
