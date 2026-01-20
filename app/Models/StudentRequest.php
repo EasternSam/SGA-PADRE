@@ -9,10 +9,11 @@ class StudentRequest extends Model
 {
     use HasFactory;
 
+    // Aseguramos que estos campos sean asignables para evitar "Curso No especificado"
     protected $fillable = [
         'student_id',
-        'course_id', // Vincula la solicitud a un curso específico (útil para diplomas/retiros)
-        'payment_id', // Nuevo campo para rastrear el cobro generado
+        'course_id',   // Crucial para vincular el curso
+        'payment_id',  // Crucial para el cobro
         'type',
         'details',
         'status',
