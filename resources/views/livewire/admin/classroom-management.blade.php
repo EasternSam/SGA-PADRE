@@ -67,11 +67,10 @@
     </div>
 
     {{-- MODAL DE HORARIO DETALLADO --}}
-    <!-- IMPORTANTE: name="schedule-view-modal" debe coincidir con dispatch('open-modal', 'schedule-view-modal') -->
-    <x-modal name="schedule-view-modal" :show="$showingScheduleModal" maxWidth="5xl">
-        <div class="p-6">
+    <x-modal name="schedule-view-modal" :show="$showingScheduleModal" maxWidth="6xl">
+        <div class="p-6 h-[85vh] flex flex-col">
             @if($selectedClassroom)
-                <div class="flex justify-between items-start mb-6 pb-4 border-b border-gray-100">
+                <div class="flex justify-between items-start mb-4 pb-4 border-b border-gray-100 flex-shrink-0">
                     <div>
                         <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
                             {{ $selectedClassroom->name }}
@@ -86,46 +85,68 @@
                     </button>
                 </div>
 
-                {{-- CALENDARIO VISUAL (GRID) --}}
-                <div class="overflow-x-auto">
-                    <div class="min-w-[800px]">
-                        {{-- Encabezados Días --}}
-                        <div class="grid grid-cols-7 gap-1 mb-2">
-                            <div class="text-center text-xs font-bold text-gray-400 uppercase py-2">Hora</div>
-                            @foreach($daysOfWeek as $day)
-                                <div class="text-center text-sm font-bold text-gray-700 bg-gray-50 py-2 rounded">{{ $day }}</div>
-                            @endforeach
-                        </div>
-
-                        {{-- Filas de Horas --}}
-                        <div class="space-y-1">
+                {{-- CALENDARIO VISUAL (GRID MEJORADO CON TABLA) --}}
+                <div class="flex-1 overflow-auto relative bg-gray-50 border rounded-lg">
+                    <table class="w-full border-collapse" style="min-width: 800px;">
+                        <thead class="sticky top-0 z-20 bg-white shadow-sm">
+                            <tr>
+                                <th class="w-16 p-2 border-r border-b text-xs text-gray-400 font-medium uppercase bg-white sticky left-0 z-30">Hora</th>
+                                @foreach($daysOfWeek as $day)
+                                    <th class="p-3 border-b text-sm font-bold text-gray-700 text-center min-w-[120px]">{{ $day }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white">
                             @foreach($timeSlots as $time)
-                                <div class="grid grid-cols-7 gap-1 h-12"> <!-- Altura fija por bloque de hora -->
-                                    {{-- Columna Hora --}}
-                                    <div class="text-center text-xs text-gray-400 py-1 -mt-2 transform translate-y-1/2">
+                                <tr>
+                                    <!-- Columna Hora -->
+                                    <td class="border-r border-b text-xs text-gray-400 text-center py-2 bg-gray-50 sticky left-0 z-10 font-mono">
                                         {{ $time }}
-                                    </div>
+                                    </td>
 
+                                    <!-- Columnas Días -->
                                     @foreach($daysOfWeek as $day)
-                                        <div class="relative border border-gray-100 rounded bg-white hover:bg-gray-50 transition-colors">
+                                        <td class="border-r border-b relative p-0 h-16 hover:bg-gray-50 transition-colors">
                                             @if(isset($calendarGrid[$time][$day]))
                                                 @php $slot = $calendarGrid[$time][$day]; @endphp
-                                                {{-- Tarjeta de curso (usa absolute y z-index para superponerse si dura mas de 1 hora) --}}
-                                                <div class="absolute inset-0 m-0.5 rounded p-1.5 shadow-sm text-xs leading-tight flex flex-col justify-center {{ $slot['color'] }}"
-                                                     style="height: calc(100% * {{ $slot['rowspan'] }} - 4px); z-index: 10;">
-                                                    <span class="font-bold truncate">{{ $slot['course'] }}</span>
-                                                    <span class="opacity-75 truncate text-[10px]">{{ $slot['teacher'] }}</span>
+                                                
+                                                {{-- Tarjeta de curso --}}
+                                                <div class="absolute inset-x-1 inset-y-1 rounded-md p-2 shadow-sm text-xs leading-tight flex flex-col justify-center border-l-4 overflow-hidden {{ $slot['color'] }}"
+                                                     style="height: calc(100% * {{ $slot['rowspan'] }} - 8px); z-index: 10;">
+                                                    
+                                                    <span class="font-bold truncate text-sm" title="{{ $slot['course'] }}">
+                                                        {{ $slot['course'] }}
+                                                    </span>
+                                                    
+                                                    @if(!empty($slot['section']))
+                                                        <span class="text-[10px] uppercase tracking-wide opacity-80 truncate">
+                                                            Sec: {{ $slot['section'] }}
+                                                        </span>
+                                                    @endif
+
+                                                    <span class="mt-1 opacity-90 truncate text-[10px] flex items-center gap-1">
+                                                        <svg class="w-3 h-3 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                                        {{ $slot['teacher'] }}
+                                                    </span>
+                                                    
+                                                    {{-- Hora Real del Curso --}}
+                                                    <span class="absolute bottom-1 right-2 text-[9px] font-mono opacity-60">
+                                                        {{ $slot['start_real'] }} - {{ $slot['end_real'] }}
+                                                    </span>
                                                 </div>
                                             @endif
-                                        </div>
+                                        </td>
                                     @endforeach
-                                </div>
+                                </tr>
                             @endforeach
-                        </div>
-                    </div>
+                        </tbody>
+                    </table>
                 </div>
 
-                <div class="mt-6 flex justify-end">
+                <div class="mt-4 flex justify-between items-center flex-shrink-0">
+                    <div class="text-xs text-gray-400">
+                        * Mostrando horarios de cursos activos y futuros.
+                    </div>
                     <x-secondary-button wire:click="closeModal">
                         Cerrar Calendario
                     </x-secondary-button>
