@@ -69,7 +69,7 @@
                             <li wire:key="course-{{ $course->id }}"
                                 wire:click="selectCourse({{ $course->id }})" 
                                 class="p-3 cursor-pointer rounded-lg border border-transparent transition-all duration-150 relative
-                                       {{ $selectedCourse == $course->id ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'hover:bg-gray-50 hover:border-gray-200' }}">
+                                     {{ $selectedCourse == $course->id ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'hover:bg-gray-50 hover:border-gray-200' }}">
                                 
                                 {{-- Feedback Visual de Carga al hacer clic --}}
                                 <div wire:loading.flex wire:target="selectCourse({{ $course->id }})" class="absolute inset-0 bg-white/60 z-10 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
@@ -206,6 +206,13 @@
                                             <span class="inline-block px-1.5 py-0.5 mt-1 text-[10px] font-semibold rounded {{ $schedule->modality === 'Virtual' ? 'bg-purple-100 text-purple-700' : ($schedule->modality === 'Semi-Presencial' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700') }}">
                                                 {{ $schedule->modality ?? 'Presencial' }}
                                             </span>
+
+                                            {{-- Etiqueta de Aula (NUEVO) --}}
+                                            @if($schedule->classroom)
+                                                <span class="inline-block ml-1 px-1.5 py-0.5 mt-1 text-[10px] font-semibold rounded bg-gray-100 text-gray-700 border border-gray-200">
+                                                    {{ $schedule->classroom->name }}
+                                                </span>
+                                            @endif
                                             
                                             @if($schedule->mapping)
                                                 <span class="block text-xs text-green-600 mt-1" title="WP Horario: {{ $schedule->mapping->wp_schedule_data }}">
@@ -408,6 +415,27 @@
                     @error('modality') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
 
+                <!-- NUEVO: SELECTOR DE AULA -->
+                <div class="mt-4">
+                    <x-input-label for="classroom_id" :value="__('Aula / Laboratorio')" />
+                    <select wire:model="classroom_id" id="classroom_id" class="block mt-1 w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="">-- Sin Asignar / Virtual --</option>
+                        @if(!empty($classroomsGrouped))
+                            @foreach($classroomsGrouped as $buildingName => $classrooms)
+                                <optgroup label="{{ $buildingName }}">
+                                    @foreach($classrooms as $room)
+                                        <option value="{{ $room->id }}">
+                                            {{ $room->name }} (Cap: {{ $room->capacity }})
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                            @endforeach
+                        @endif
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">El sistema verificará disponibilidad de horario automáticamente.</p>
+                    <x-input-error :messages="$errors->get('classroom_id')" class="mt-2" />
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <div>
                         <label for="start_date" class="block text-sm font-medium text-gray-700">Fecha de Inicio</label>
@@ -581,4 +609,4 @@
         </div>
     </x-modal>
 
-</div> {{-- <--- ESTE ES EL DIV RAÍZ OBLIGATORIO QUE CIERRA --}}
+</div>

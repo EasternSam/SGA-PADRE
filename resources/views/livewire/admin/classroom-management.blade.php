@@ -67,6 +67,7 @@
     </div>
 
     {{-- MODAL DE HORARIO DETALLADO --}}
+    <!-- IMPORTANTE: name="schedule-view-modal" debe coincidir con dispatch('open-modal', 'schedule-view-modal') -->
     <x-modal name="schedule-view-modal" :show="$showingScheduleModal" maxWidth="5xl">
         <div class="p-6">
             @if($selectedClassroom)
