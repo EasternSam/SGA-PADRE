@@ -19,9 +19,24 @@
                         @foreach($building->classrooms as $classroom)
                             @php
                                 $isOccupied = $classroom->isOccupiedNow();
-                                $statusColor = $isOccupied ? 'bg-red-50 border-red-200 ring-1 ring-red-200' : 'bg-white border-gray-200 hover:border-indigo-300';
-                                $statusBadge = $isOccupied ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700';
-                                $statusText = $isOccupied ? 'Ocupada' : 'Disponible';
+                                // Verificamos si tiene horarios asignados aunque no esté ocupada ahora
+                                $hasSchedules = $classroom->schedules->isNotEmpty();
+
+                                if ($isOccupied) {
+                                    $statusColor = 'bg-red-50 border-red-200 ring-1 ring-red-200';
+                                    $statusBadge = 'bg-red-100 text-red-700';
+                                    $statusText = 'Ocupada';
+                                } elseif ($hasSchedules) {
+                                    // Disponible pero con uso programado -> Ámbar
+                                    $statusColor = 'bg-amber-50 border-amber-200 ring-1 ring-amber-200';
+                                    $statusBadge = 'bg-amber-100 text-amber-800';
+                                    $statusText = 'Disponible';
+                                } else {
+                                    // Totalmente libre -> Verde
+                                    $statusColor = 'bg-white border-gray-200 hover:border-indigo-300';
+                                    $statusBadge = 'bg-green-100 text-green-700';
+                                    $statusText = 'Libre';
+                                }
                             @endphp
 
                             <button wire:click="showSchedule({{ $classroom->id }})" 
