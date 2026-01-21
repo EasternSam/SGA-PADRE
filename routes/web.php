@@ -15,6 +15,8 @@ use Illuminate\Support\Str;
 // Importamos ambos componentes
 use App\Livewire\Admin\CertificateEditor;
 use App\Livewire\Admin\CertificateTemplatesIndex;
+// Importamos el nuevo componente de gestión de aulas
+use App\Livewire\Admin\ClassroomManagement;
 
 use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
 use App\Livewire\StudentPortal\CourseDetail as StudentPortalCourseDetail;
@@ -147,7 +149,7 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
     Route::get('/reports', \App\Livewire\Reports\Index::class)->name('reports.index');
     Route::get('/certificates', \App\Livewire\Certificates\Index::class)->name('admin.certificates.index'); 
     
-    // --- GESTIÓN DE PLANTILLAS DE DIPLOMAS (NUEVO) ---
+    // --- GESTIÓN DE PLANTILLAS DE DIPLOMAS ---
     // Listado de plantillas
     Route::get('/certificate-templates', CertificateTemplatesIndex::class)->name('admin.certificates.templates');
     
@@ -156,6 +158,9 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
     
     // Editor (Editar existente - sobreescribimos la ruta anterior genérica para ser específicos)
     Route::get('/certificate-editor/{templateId?}', CertificateEditor::class)->name('admin.certificates.edit');
+
+    // --- NUEVO: GESTIÓN DE AULAS ---
+    Route::get('/classrooms', ClassroomManagement::class)->name('admin.classrooms.index');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
 });
