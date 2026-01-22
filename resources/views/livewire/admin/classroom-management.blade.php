@@ -144,7 +144,7 @@
                                             'end_real' => \Carbon\Carbon::parse($schedule->end_time)->format('g:i A'),
                                             'start_timestamp' => $schedule->start_time, // Para ordenar
                                             // Generamos un color consistente basado en el ID del curso
-                                            'color' => 'border-indigo-500' 
+                                            'color' => 'border-indigo-500 bg-indigo-50' 
                                         ];
                                     }
                                 }
@@ -170,9 +170,9 @@
                                 <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 ml-1">{{ $dayName }}</h3>
                                 <div class="space-y-3">
                                     @foreach($slots as $slot)
-                                        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col sm:flex-row gap-4 hover:shadow-md transition-shadow relative overflow-hidden">
+                                        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col sm:flex-row gap-4 hover:shadow-md transition-shadow relative overflow-hidden {{ $slot->color ?? '' }}">
                                             <!-- Banda de color lateral -->
-                                            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
+                                            <div class="absolute left-0 top-0 bottom-0 w-1.5 {{ str_replace('bg-', 'bg-', $slot->color) }} bg-indigo-500"></div>
                                             
                                             <!-- Hora -->
                                             <div class="flex-shrink-0 min-w-[100px] flex flex-col justify-center border-r border-gray-100 pr-4 sm:mr-0 mr-4">
@@ -189,7 +189,7 @@
                                                             {{ $slot->course }}
                                                         </h4>
                                                         @if(!empty($slot->section))
-                                                            <p class="text-sm text-gray-600 mt-0.5">Sección: <strong>{{ $slot->section }}</strong></p>
+                                                            <p class="text-sm text-gray-600 mt-0.5">Sección: <strong class="bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded text-xs">{{ $slot->section }}</strong></p>
                                                         @endif
                                                     </div>
                                                 </div>
