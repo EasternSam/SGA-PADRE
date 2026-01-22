@@ -7,6 +7,7 @@
 
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
         
+        {{-- VISTA PRINCIPAL DE TARJETAS (SIN CAMBIOS) --}}
         @foreach($buildings as $building)
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
@@ -19,7 +20,6 @@
                         @foreach($building->classrooms as $classroom)
                             @php
                                 $isOccupied = $classroom->isOccupiedNow();
-                                // Verificamos si tiene horarios asignados aunque no esté ocupada ahora
                                 $hasSchedules = $classroom->schedules->isNotEmpty();
 
                                 if ($isOccupied) {
@@ -27,12 +27,10 @@
                                     $statusBadge = 'bg-red-100 text-red-700';
                                     $statusText = 'Ocupada';
                                 } elseif ($hasSchedules) {
-                                    // Disponible pero con uso programado -> Ámbar
                                     $statusColor = 'bg-amber-50 border-amber-200 ring-1 ring-amber-200';
                                     $statusBadge = 'bg-amber-100 text-amber-800';
                                     $statusText = 'Disponible';
                                 } else {
-                                    // Totalmente libre -> Verde
                                     $statusColor = 'bg-white border-gray-200 hover:border-indigo-300';
                                     $statusBadge = 'bg-green-100 text-green-700';
                                     $statusText = 'Libre';
@@ -81,13 +79,13 @@
         @endforeach
     </div>
 
-    {{-- MODAL DE HORARIO DETALLADO (DISEÑO AGENDA DINÁMICA) --}}
+    {{-- MODAL DE HORARIO DETALLADO (DISEÑO AGENDA DINÁMICA MEJORADO) --}}
     <x-modal name="schedule-view-modal" :show="$showingScheduleModal" maxWidth="7xl">
-        <div class="bg-white rounded-xl overflow-hidden shadow-2xl flex flex-col h-[85vh]">
+        <div class="bg-white rounded-xl overflow-hidden shadow-2xl flex flex-col h-[90vh]">
             @if($selectedClassroom)
                 
-                {{-- 1. ENCABEZADO DEL MODAL --}}
-                <div class="bg-white border-b border-gray-200 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 z-30 shadow-sm">
+                {{-- 1. ENCABEZADO DEL MODAL (INFO DEL AULA) --}}
+                <div class="bg-white border-b border-gray-200 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 z-30 shadow-sm relative">
                     <div class="flex items-center gap-5">
                         <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200">
                             @if($selectedClassroom->type == 'Laboratorio')
@@ -128,7 +126,7 @@
                     </div>
                 </div>
 
-                {{-- 2. CUERPO DEL CALENDARIO (Scrollable con Sticky Headers) --}}
+                {{-- 2. CUERPO DEL CALENDARIO (GRID DE HORAS Y DÍAS) --}}
                 <div class="flex-1 overflow-hidden flex flex-col bg-white relative">
                     
                     {{-- Cabecera de Días (Sticky Top) --}}
