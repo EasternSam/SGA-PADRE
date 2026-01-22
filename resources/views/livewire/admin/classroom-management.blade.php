@@ -115,30 +115,53 @@
 
                 {{-- 2. LISTA DE CURSOS PROGRAMADOS --}}
                 <div class="flex-1 overflow-y-auto custom-scrollbar bg-gray-50 p-6 space-y-4">
-                    @if(count($calendarGrid) > 0)
+                    @php
+                        // Verificamos si hay horarios cargados en weekSchedules en lugar de usar calendarGrid
+                        // Esto simplifica la lógica y evita el proceso de aplanado que causaba duplicados
+                        $schedules = $weekSchedules ?? collect();
+                        $hasSchedules = $schedules->isNotEmpty();
+                    @endphp
+
+                    @if($hasSchedules)
                         @php
-                            // Aplanar la estructura del calendario para mostrar una lista ordenada
-                            $flatSchedule = [];
-                            foreach ($calendarGrid as $timeKey => $dayData) {
-                                foreach ($dayData as $dayName => $slot) {
-                                    $flatSchedule[] = array_merge($slot, ['day' => $dayName]);
+                            // Agrupamos por días de la semana. Un curso puede aparecer en varios días.
+                            $groupedByDay = [];
+                            $dayOrder = array_flip($daysOfWeek);
+                            
+                            foreach($schedules as $schedule) {
+                                if(is_array($schedule->days_of_week)) {
+                                    foreach($schedule->days_of_week as $day) {
+                                        // Normalizamos el día para agrupar
+                                        $dayKey = ucfirst(strtolower($day));
+                                        
+                                        // Creamos un objeto simplificado para la vista para evitar conflictos de claves
+                                        $groupedByDay[$dayKey][] = (object) [
+                                            'id' => $schedule->id, // Útil para claves únicas si fuera necesario
+                                            'course' => $schedule->module->course->name ?? 'Curso',
+                                            'section' => $schedule->section_name,
+                                            'teacher' => $schedule->teacher->name ?? 'Sin profesor',
+                                            'start_real' => \Carbon\Carbon::parse($schedule->start_time)->format('g:i A'),
+                                            'end_real' => \Carbon\Carbon::parse($schedule->end_time)->format('g:i A'),
+                                            'start_timestamp' => $schedule->start_time, // Para ordenar
+                                            // Generamos un color consistente basado en el ID del curso
+                                            'color' => 'border-indigo-500' 
+                                        ];
+                                    }
                                 }
                             }
-                            
-                            // Ordenar por día de la semana y luego por hora
-                            usort($flatSchedule, function($a, $b) use ($daysOfWeek) {
-                                $dayOrder = array_flip($daysOfWeek);
-                                $dayA = $dayOrder[$a['day']] ?? 99;
-                                $dayB = $dayOrder[$b['day']] ?? 99;
-                                
-                                if ($dayA !== $dayB) return $dayA - $dayB;
-                                return strcmp($a['start_real'], $b['start_real']);
+
+                            // Ordenar los días según el orden de la semana
+                            uksort($groupedByDay, function($a, $b) use ($dayOrder) {
+                                $aIndex = $dayOrder[$a] ?? 99;
+                                $bIndex = $dayOrder[$b] ?? 99;
+                                return $aIndex - $bIndex;
                             });
 
-                            // Agrupar por día para una mejor visualización
-                            $groupedByDay = [];
-                            foreach ($flatSchedule as $item) {
-                                $groupedByDay[$item['day']][] = $item;
+                            // Ordenar los horarios dentro de cada día
+                            foreach($groupedByDay as $day => &$items) {
+                                usort($items, function($a, $b) {
+                                    return strcmp($a->start_timestamp, $b->start_timestamp);
+                                });
                             }
                         @endphp
 
@@ -147,19 +170,14 @@
                                 <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 ml-1">{{ $dayName }}</h3>
                                 <div class="space-y-3">
                                     @foreach($slots as $slot)
-                                        @php
-                                            // Formateo de hora a 12 horas
-                                            $startTime = \Carbon\Carbon::parse($slot['start_real'])->format('g:i A');
-                                            $endTime = \Carbon\Carbon::parse($slot['end_real'])->format('g:i A');
-                                        @endphp
                                         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col sm:flex-row gap-4 hover:shadow-md transition-shadow relative overflow-hidden">
                                             <!-- Banda de color lateral -->
-                                            <div class="absolute left-0 top-0 bottom-0 w-1.5 {{ str_replace(['bg-', 'text-', 'border-'], ['bg-', '', ''], $slot['color']) }}"></div>
+                                            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
                                             
                                             <!-- Hora -->
                                             <div class="flex-shrink-0 min-w-[100px] flex flex-col justify-center border-r border-gray-100 pr-4 sm:mr-0 mr-4">
-                                                <span class="text-lg font-bold text-gray-900 font-mono">{{ $startTime }}</span>
-                                                <span class="text-xs text-gray-500 font-medium">{{ $endTime }}</span>
+                                                <span class="text-lg font-bold text-gray-900 font-mono">{{ $slot->start_real }}</span>
+                                                <span class="text-xs text-gray-500 font-medium">{{ $slot->end_real }}</span>
                                                 <span class="text-[10px] text-gray-400 mt-1 uppercase tracking-wide">Horario</span>
                                             </div>
 
@@ -167,20 +185,19 @@
                                             <div class="flex-1 min-w-0">
                                                 <div class="flex justify-between items-start">
                                                     <div>
-                                                        <h4 class="text-base font-bold text-gray-900 truncate" title="{{ $slot['course'] }}">
-                                                            {{ $slot['course'] }}
+                                                        <h4 class="text-base font-bold text-gray-900 truncate" title="{{ $slot->course }}">
+                                                            {{ $slot->course }}
                                                         </h4>
-                                                        @if(!empty($slot['section']))
-                                                            <p class="text-sm text-gray-600 mt-0.5">Sección: <strong>{{ $slot['section'] }}</strong></p>
+                                                        @if(!empty($slot->section))
+                                                            <p class="text-sm text-gray-600 mt-0.5">Sección: <strong>{{ $slot->section }}</strong></p>
                                                         @endif
                                                     </div>
-                                                    <!-- Badge opcional si quisieras poner tipo de curso -->
                                                 </div>
 
                                                 <div class="flex items-center gap-4 mt-3 text-sm text-gray-500">
                                                     <div class="flex items-center gap-1.5" title="Profesor">
                                                         <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                                                        <span class="truncate max-w-[150px]">{{ $slot['teacher'] }}</span>
+                                                        <span class="truncate max-w-[150px]">{{ $slot->teacher }}</span>
                                                     </div>
                                                 </div>
                                             </div>
