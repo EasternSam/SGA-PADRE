@@ -79,15 +79,16 @@
         @endforeach
     </div>
 
-    {{-- MODAL DE HORARIO DETALLADO (DISEÑO AGENDA DINÁMICA MEJORADO) --}}
+    {{-- MODAL DE HORARIO DETALLADO (DISEÑO AGENDA DINÁMICA MEJORADO - NO FLEX) --}}
     <x-modal name="schedule-view-modal" :show="$showingScheduleModal" maxWidth="7xl">
-        <div class="bg-white rounded-xl overflow-hidden shadow-2xl flex flex-col h-[90vh]">
+        {{-- Usamos grid para el layout principal del modal en lugar de flex --}}
+        <div class="bg-white rounded-xl overflow-hidden shadow-2xl h-[90vh] grid grid-rows-[auto_1fr_auto]">
             @if($selectedClassroom)
                 
                 {{-- 1. ENCABEZADO DEL MODAL (INFO DEL AULA) --}}
-                <div class="bg-white border-b border-gray-200 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 z-30 shadow-sm relative">
+                <div class="bg-white border-b border-gray-200 p-5 grid grid-cols-[1fr_auto] gap-4 z-30 shadow-sm relative items-center">
                     <div class="flex items-center gap-5">
-                        <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200">
+                        <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200 shrink-0">
                             @if($selectedClassroom->type == 'Laboratorio')
                                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
                             @else
@@ -126,31 +127,31 @@
                     </div>
                 </div>
 
-                {{-- 2. CUERPO DEL CALENDARIO (GRID DE HORAS Y DÍAS) --}}
-                <div class="flex-1 overflow-hidden flex flex-col bg-white relative">
-                    
-                    {{-- Cabecera de Días (Sticky Top) --}}
-                    <div class="grid grid-cols-8 border-b border-gray-200 min-w-[800px] sticky top-0 z-20 shadow-sm bg-gray-50">
-                        <div class="col-span-1 py-3 px-2 text-center text-xs font-bold text-gray-400 uppercase tracking-wider border-r border-gray-200 bg-gray-50">
-                            Hora
-                        </div>
-                        @foreach($daysOfWeek as $day)
-                            <div class="col-span-1 py-3 px-2 text-center border-r border-gray-200 last:border-r-0">
-                                <span class="block text-xs font-bold text-gray-400 uppercase mb-0.5">{{ substr($day, 0, 3) }}</span>
-                                <span class="block text-sm font-bold text-gray-800">{{ $day }}</span>
+                {{-- 2. CUERPO DEL CALENDARIO (GRID SCROLLABLE) --}}
+                <div class="overflow-hidden bg-white relative w-full">
+                    <div class="h-full overflow-y-auto custom-scrollbar w-full relative">
+                        
+                        {{-- Cabecera de Días (Sticky Top) --}}
+                        <div class="grid grid-cols-8 border-b border-gray-200 min-w-[800px] sticky top-0 z-30 shadow-sm bg-gray-50">
+                            <div class="col-span-1 py-3 px-2 text-center text-xs font-bold text-gray-400 uppercase tracking-wider border-r border-gray-200 bg-gray-50">
+                                Hora
                             </div>
-                        @endforeach
-                    </div>
+                            @foreach($daysOfWeek as $day)
+                                <div class="col-span-1 py-3 px-2 text-center border-r border-gray-200 last:border-r-0 bg-gray-50">
+                                    <span class="block text-xs font-bold text-gray-400 uppercase mb-0.5">{{ substr($day, 0, 3) }}</span>
+                                    <span class="block text-sm font-bold text-gray-800">{{ $day }}</span>
+                                </div>
+                            @endforeach
+                        </div>
 
-                    {{-- Grilla de Horarios (Scrollable) --}}
-                    <div class="flex-1 overflow-y-auto custom-scrollbar relative bg-white">
-                        <div class="relative min-w-[800px] min-h-[600px]"> 
+                        {{-- Grilla de Horarios --}}
+                        <div class="relative min-w-[800px]"> 
                             
                             <!-- Grilla Base (Líneas y Horas) -->
                             @foreach($timeSlots as $index => $time)
                                 <div class="grid grid-cols-8 h-20 border-b border-gray-100 group">
                                     <!-- Columna Hora (Sticky Left) -->
-                                    <div class="col-span-1 bg-gray-50 border-r border-gray-200 text-xs text-gray-400 font-mono flex justify-center pt-2 relative sticky left-0 z-10">
+                                    <div class="col-span-1 bg-gray-50 border-r border-gray-200 text-xs text-gray-400 font-mono flex justify-center pt-2 relative sticky left-0 z-20">
                                         <span class="-mt-3 bg-gray-50 px-1 rounded">{{ $time }}</span>
                                         <!-- Línea guía visual -->
                                         <div class="absolute top-0 right-0 w-2 h-[1px] bg-gray-300"></div>
@@ -164,7 +165,7 @@
                             @endforeach
 
                             <!-- CAPA DE EVENTOS (Superpuesta con Posición Absoluta) -->
-                            <div class="absolute inset-0 grid grid-cols-8 pointer-events-none">
+                            <div class="absolute inset-0 grid grid-cols-8 pointer-events-none z-10">
                                 <div class="col-span-1"></div> <!-- Espacio para columna de hora -->
                                 
                                 @foreach($daysOfWeek as $dayIndex => $day)
@@ -180,8 +181,14 @@
                                                     $gridStartHour = 7; // Debe coincidir con $start en mount()
                                                     
                                                     // Top (px) = (Horas desde inicio * 80px) + (Minutos / 60 * 80px)
-                                                    // 80px es la altura fija de la fila h-20
-                                                    $topPosition = (($startHour - $gridStartHour) * 80) + (($startMin / 60) * 80);
+                                                    // 80px es la altura fija de la fila h-20 (más el header de 50px aprox si no fuera sticky relativo al container)
+                                                    // Pero como el container 'absolute' empieza debajo del header sticky, calculamos desde 0
+                                                    // Ajuste: 80px por hora. El header sticky está fuera de este absolute container si se hace bien, 
+                                                    // pero aquí está dentro del mismo scroll container.
+                                                    // El container absolute empieza en top:0 del scroll container. 
+                                                    // El header ocupa espacio físico (aprox 65px), así que sumamos offset.
+                                                    $headerOffset = 65; // Altura aproximada del header de días
+                                                    $topPosition = $headerOffset + (($startHour - $gridStartHour) * 80) + (($startMin / 60) * 80);
                                                     
                                                     // Height (px) = Duración en horas * 80px
                                                     $s = \Carbon\Carbon::parse($slot['start_real']);
@@ -228,7 +235,7 @@
                 </div>
 
                 {{-- 3. FOOTER DEL MODAL --}}
-                <div class="bg-gray-50 border-t border-gray-200 p-4 flex justify-between items-center shrink-0 rounded-b-xl">
+                <div class="bg-gray-50 border-t border-gray-200 p-4 flex justify-between items-center shrink-0">
                     <div class="flex items-center gap-4 text-xs text-gray-500">
                         <div class="flex items-center gap-1.5">
                             <span class="w-3 h-3 rounded bg-blue-100 border border-blue-200"></span> Curso Regular
