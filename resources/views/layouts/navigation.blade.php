@@ -41,7 +41,6 @@
         <!-- Sección Administrador -->
         @role('Admin')
             <div class="pt-4 space-y-1">
-                {{-- CAMBIO: text-white para el título de la sección --}}
                 <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white">
                     {{ __('Administración') }}
                 </p>
@@ -79,14 +78,15 @@
                     <span>{{ __('Académico') }}</span>
                 </x-responsive-nav-link>
 
-                <x-responsive-nav-link :href="route('admin.finance.concepts')" :active="request()->routeIs('admin.finance.concepts')"
+                <!-- NUEVO ENLACE: DASHBOARD FINANCIERO -->
+                <x-responsive-nav-link :href="route('admin.finance.dashboard')" :active="request()->routeIs('admin.finance.dashboard')"
                     wire:navigate>
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.75A.75.75 0 0 1 3 4.5h.75m0 0H21m-18 0h18M3 6h18M3 6v10.5A2.25 2.25 0 0 0 5.25 18.75h13.5A2.25 2.25 0 0 0 21 16.5V6M3 6l.902.902A2.25 2.25 0 0 0 5.625 9h12.75c1.03 0 1.94-.5 2.48-1.272L21 6" />
+                            d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span>{{ __('Conceptos de Pago') }}</span>
+                    <span>{{ __('Finanzas') }}</span>
                 </x-responsive-nav-link>
 
                 <x-responsive-nav-link :href="route('admin.requests')" :active="request()->routeIs('admin.requests')" wire:navigate>
@@ -96,12 +96,11 @@
                     <span>{{ __('Solicitudes') }}</span>
                 </x-responsive-nav-link>
 
-                <!-- NUEVO ENLACE: GESTIÓN DE AULAS -->
                 <x-responsive-nav-link :href="route('admin.classrooms.index')" :active="request()->routeIs('admin.classrooms.index')" wire:navigate>
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
                     </svg>
-                    <span>{{ __('Gestión de Aulas') }}</span>
+                    <span>{{ __('Aulas') }}</span>
                 </x-responsive-nav-link>
 
                 <x-responsive-nav-link :href="route('admin.import')" :active="request()->routeIs('admin.import')" wire:navigate>
@@ -118,7 +117,6 @@
                     <span>{{ __('Reportes') }}</span>
                 </x-responsive-nav-link>
 
-                {{-- Enlace para Certificados y Diplomas --}}
                 <x-responsive-nav-link :href="route('admin.certificates.index')" :active="request()->routeIs('admin.certificates.index')" wire:navigate>
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
