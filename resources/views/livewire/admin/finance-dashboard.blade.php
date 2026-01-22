@@ -10,15 +10,28 @@
                 <p class="text-sm text-gray-500 mt-1">Visión general del estado financiero de la academia.</p>
             </div>
             
-            {{-- Filtro de Fecha Rápido --}}
-            <div class="flex bg-white rounded-lg shadow-sm p-1 border border-gray-200">
-                @foreach(['all' => 'Todo', 'this_month' => 'Este Mes', 'today' => 'Hoy'] as $key => $label)
-                    <button 
-                        wire:click="$set('dateFilter', '{{ $key }}')"
-                        class="px-3 py-1.5 text-xs font-medium rounded-md transition-all {{ $dateFilter === $key ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50' }}">
-                        {{ $label }}
-                    </button>
-                @endforeach
+            <div class="flex items-center gap-3">
+                {{-- BOTÓN REGISTRAR COBRO (MOVIDO AQUÍ) --}}
+                <button 
+                    onclick="Livewire.dispatch('openPaymentModal')"
+                    class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm"
+                >
+                    <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    {{ __('Registrar Cobro') }}
+                </button>
+
+                {{-- Filtro de Fecha Rápido --}}
+                <div class="flex bg-white rounded-lg shadow-sm p-1 border border-gray-200">
+                    @foreach(['all' => 'Todo', 'this_month' => 'Este Mes', 'today' => 'Hoy'] as $key => $label)
+                        <button 
+                            wire:click="$set('dateFilter', '{{ $key }}')"
+                            class="px-3 py-1.5 text-xs font-medium rounded-md transition-all {{ $dateFilter === $key ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50' }}">
+                            {{ $label }}
+                        </button>
+                    @endforeach
+                </div>
             </div>
         </div>
     </x-slot>
