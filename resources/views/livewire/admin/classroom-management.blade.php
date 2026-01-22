@@ -79,7 +79,7 @@
         @endforeach
     </div>
 
-    {{-- MODAL DE HORARIO DETALLADO (DISEÑO LISTA DE TARJETAS MEJORADO) --}}
+    {{-- MODAL DE HORARIO DETALLADO (DISEÑO LISTA DE TARJETAS) --}}
     <x-modal name="schedule-view-modal" :show="$showingScheduleModal" maxWidth="3xl">
         <div class="bg-white rounded-xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
             @if($selectedClassroom)
@@ -114,7 +114,13 @@
                 </div>
 
                 {{-- 2. LISTA DE CURSOS PROGRAMADOS --}}
-                <div class="flex-1 overflow-y-auto custom-scrollbar bg-gray-50 p-6 space-y-6">
+                <div class="flex-1 overflow-y-auto custom-scrollbar bg-gray-50 p-6 space-y-4">
+                    @if (session()->has('message'))
+                        <div class="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
+                            {{ session('message') }}
+                        </div>
+                    @endif
+                    
                     @php
                         // Usamos data_get para acceder a weekSchedules de forma segura (objeto o array)
                         // Aseguramos que sea una colección iterable
@@ -182,35 +188,37 @@
 
                         @foreach($groupedByDay as $dayName => $slots)
                             <div class="mb-6 last:mb-0">
-                                <div class="flex items-center mb-3 ml-1">
-                                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">{{ $dayName }}</h3>
-                                    <div class="ml-3 h-px bg-gray-200 flex-1"></div>
-                                </div>
-                                
+                                <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 ml-1">{{ $dayName }}</h3>
                                 <div class="space-y-3">
                                     @foreach($slots as $slot)
-                                        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-0 flex flex-col sm:flex-row hover:shadow-md transition-all relative overflow-hidden group">
+                                        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col sm:flex-row gap-4 hover:shadow-md transition-shadow relative overflow-hidden group">
                                             <!-- Banda lateral color -->
                                             <div class="w-1.5 bg-indigo-500 absolute left-0 top-0 bottom-0"></div>
                                             
-                                            <!-- Columna Hora -->
-                                            <div class="flex-shrink-0 w-32 bg-gray-50/50 border-r border-gray-100 p-4 flex flex-col justify-center items-center text-center">
+                                            <!-- Hora -->
+                                            <div class="flex-shrink-0 min-w-[100px] flex flex-col justify-center border-r border-gray-100 pr-4 sm:mr-0 mr-4">
                                                 <span class="text-lg font-bold text-gray-900 font-mono leading-none">{{ $slot['start_real'] }}</span>
                                                 <span class="text-xs text-gray-400 font-medium my-1">a</span>
                                                 <span class="text-sm text-gray-600 font-medium">{{ $slot['end_real'] }}</span>
                                             </div>
 
-                                            <!-- Columna Info -->
+                                            <!-- Info Curso -->
                                             <div class="flex-1 p-4 min-w-0 flex flex-col justify-center">
                                                 <div class="flex justify-between items-start mb-1">
-                                                    <h4 class="text-base font-bold text-gray-900 truncate pr-2" title="{{ $slot['course'] }}">
-                                                        {{ $slot['course'] }}
-                                                    </h4>
-                                                    @if(!empty($slot['section']))
-                                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 whitespace-nowrap">
-                                                            Sec: {{ $slot['section'] }}
-                                                        </span>
-                                                    @endif
+                                                    <div>
+                                                        <h4 class="text-base font-bold text-gray-900 truncate pr-2" title="{{ $slot['course'] }}">
+                                                            {{ $slot['course'] }}
+                                                        </h4>
+                                                        @if(!empty($slot['section']))
+                                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 whitespace-nowrap">
+                                                                Sec: {{ $slot['section'] }}
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                    <!-- Botón Desvincular -->
+                                                    <button wire:click="detachClassroom({{ $slot['id'] }})" wire:confirm="¿Seguro que deseas liberar esta aula de esta sección?" class="text-gray-400 hover:text-red-600 transition-colors p-1" title="Desvincular Aula">
+                                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                    </button>
                                                 </div>
                                                 
                                                 <p class="text-xs text-gray-500 mb-2 truncate">{{ $slot['module'] }}</p>
@@ -228,9 +236,9 @@
                             </div>
                         @endforeach
                     @else
-                        <div class="flex flex-col items-center justify-center h-full text-center py-12">
-                            <div class="h-20 w-20 rounded-full bg-green-50 flex items-center justify-center mb-4">
-                                <svg class="w-10 h-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <div class="flex flex-col items-center justify-center h-64 text-center">
+                            <div class="h-16 w-16 rounded-full bg-green-50 flex items-center justify-center mb-4">
+                                <svg class="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                             </div>
                             <h3 class="text-xl font-bold text-gray-900">¡Aula Disponible!</h3>
                             <p class="text-gray-500 mt-2 max-w-sm">No hay horarios programados para este espacio en las fechas actuales. Está libre para asignación.</p>
@@ -244,7 +252,7 @@
                         * Mostrando agenda activa.
                     </div>
                     <x-secondary-button wire:click="closeModal">
-                        Cerrar Agenda
+                        Cerrar
                     </x-secondary-button>
                 </div>
             @endif

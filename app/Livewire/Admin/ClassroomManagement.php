@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use Livewire\Component;
 use App\Models\Building;
 use App\Models\Classroom;
+use App\Models\CourseSchedule; // Importar CourseSchedule
 use Livewire\Attributes\Layout;
 use Carbon\Carbon;
 
@@ -78,6 +79,26 @@ class ClassroomManagement extends Component
         $this->weekSchedules = collect(); // Reset a colección vacía
         $this->calendarGrid = [];
         $this->dispatch('close-modal', 'schedule-view-modal');
+    }
+
+    /**
+     * Desvincular un aula de una sección (CourseSchedule)
+     */
+    public function detachClassroom($scheduleId)
+    {
+        $schedule = CourseSchedule::find($scheduleId);
+
+        if ($schedule) {
+            $schedule->classroom_id = null;
+            $schedule->save();
+            
+            // Recargar los horarios del aula seleccionada para reflejar cambios
+            if ($this->selectedClassroom) {
+                $this->showSchedule($this->selectedClassroom->id);
+            }
+            
+            session()->flash('message', 'Aula desvinculada correctamente.');
+        }
     }
 
     /**
