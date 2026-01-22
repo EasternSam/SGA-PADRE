@@ -12,11 +12,12 @@ use Illuminate\Support\Facades\Auth;
 use App\Livewire\Admin\DatabaseImport; 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-// Importamos ambos componentes
+// Importamos componentes existentes
 use App\Livewire\Admin\CertificateEditor;
 use App\Livewire\Admin\CertificateTemplatesIndex;
-// Importamos el nuevo componente de gestión de aulas
 use App\Livewire\Admin\ClassroomManagement;
+// Importamos el NUEVO componente financiero
+use App\Livewire\Admin\FinanceDashboard;
 
 use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
 use App\Livewire\StudentPortal\CourseDetail as StudentPortalCourseDetail;
@@ -137,6 +138,11 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
     Route::get('/students', \App\Livewire\Students\Index::class)->name('admin.students.index');
     Route::get('/students/profile/{student}', \App\Livewire\StudentProfile\Index::class)->name('admin.students.profile');
     Route::get('/courses', \App\Livewire\Courses\Index::class)->name('admin.courses.index');
+    
+    // --- GESTIÓN FINANCIERA (NUEVO) ---
+    // Dashboard General de Finanzas
+    Route::get('/finance/dashboard', FinanceDashboard::class)->name('admin.finance.dashboard');
+    // Configuración de Conceptos (Ya existía, lo mantenemos)
     Route::get('/finance/payment-concepts', \App\Livewire\Finance\PaymentConcepts::class)->name('admin.finance.concepts');
 
     Route::get('/teachers', \App\Livewire\Teachers\Index::class)->name('admin.teachers.index');
@@ -150,16 +156,11 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
     Route::get('/certificates', \App\Livewire\Certificates\Index::class)->name('admin.certificates.index'); 
     
     // --- GESTIÓN DE PLANTILLAS DE DIPLOMAS ---
-    // Listado de plantillas
     Route::get('/certificate-templates', CertificateTemplatesIndex::class)->name('admin.certificates.templates');
-    
-    // Editor (Crear nueva)
     Route::get('/certificate-editor', CertificateEditor::class)->name('admin.certificates.editor');
-    
-    // Editor (Editar existente - sobreescribimos la ruta anterior genérica para ser específicos)
     Route::get('/certificate-editor/{templateId?}', CertificateEditor::class)->name('admin.certificates.edit');
 
-    // --- NUEVO: GESTIÓN DE AULAS ---
+    // --- GESTIÓN DE AULAS ---
     Route::get('/classrooms', ClassroomManagement::class)->name('admin.classrooms.index');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
