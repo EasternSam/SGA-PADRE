@@ -47,7 +47,7 @@
                 
                 {{-- NUEVO BOTÓN: REGISTRAR COBRO RÁPIDO --}}
                 <button 
-                    @click="$dispatch('openPaymentModal')"
+                    @click="Livewire.dispatch('openPaymentModal')"
                     class="w-full flex items-center pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-white hover:text-white hover:bg-white/10 hover:border-white focus:outline-none focus:text-white focus:bg-white/10 focus:border-white transition duration-150 ease-in-out group"
                 >
                     <div class="mr-3 p-1 bg-green-500 rounded-md text-white shadow-sm group-hover:bg-green-400 transition-colors">
