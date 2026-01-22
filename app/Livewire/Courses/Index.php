@@ -7,18 +7,14 @@ use App\Models\Course;
 use App\Models\Module;
 use App\Models\CourseSchedule;
 use App\Models\User; 
-use App\Models\Classroom; // <-- IMPORTANTE
-use App\Services\ClassroomService; // <-- IMPORTANTE
+use App\Models\Classroom; 
+use App\Services\ClassroomService;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache; 
 use Illuminate\Validation\Rule; 
 use Carbon\Carbon; 
-
-// ====================================================================
-// IMPORTS AÑADIDOS PARA ENLACE CON WP
-// ====================================================================
 use App\Models\CourseMapping;
 use App\Services\WordpressApiService;
 use App\Models\ScheduleMapping;
@@ -47,7 +43,7 @@ class Index extends Component
     
     // --- Propiedades para el modal de Horarios ---
     public $schedule_id, $teacher_id, $days = [], $start_time, $end_time, $section_name, $start_date, $end_date;
-    public $classroom_id; // <-- NUEVA PROPIEDAD
+    public $classroom_id; 
     public $modality = 'Presencial'; 
     public $scheduleModalTitle = '';
     
@@ -64,9 +60,14 @@ class Index extends Component
     public $selectedWpScheduleId = '';
     public $sectionLinkErrorMessage = '';
 
-    // === NUEVAS PROPIEDADES PARA LIMPIEZA DE CURSOS ===
+    // === PROPIEDADES PARA ELIMINACIÓN Y LIMPIEZA ===
     public $confirmingClearUnused = false;
     public $unusedCoursesCount = 0;
+
+    // Nuevas propiedades para eliminar individualmente
+    public $confirmingDeleteType = ''; // 'course', 'module', 'schedule'
+    public $deleteId = null;
+    public $deleteMessage = '';
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -126,7 +127,7 @@ class Index extends Component
                 
                 $schedules = CourseSchedule::where('module_id', $this->selectedModule)
                     ->select('id', 'module_id', 'teacher_id', 'classroom_id', 'days_of_week', 'section_name', 'modality', 'start_time', 'end_time', 'start_date', 'end_date')
-                    ->with(['teacher:id,name', 'mapping', 'classroom']) // <-- AÑADIDO CLASSROOM
+                    ->with(['teacher:id,name', 'mapping', 'classroom']) 
                     ->orderBy('start_time')
                     ->paginate(50, ['*'], 'schedules-page');
             } else {
@@ -147,8 +148,7 @@ class Index extends Component
              $teachersList = User::select('id', 'name')->orderBy('name')->limit(100)->get();
         }
 
-        // 5. CARGA DE AULAS (NUEVO)
-        // Agrupamos por Edificio para mostrar mejor en el select
+        // 5. CARGA DE AULAS
         $classroomsList = Cache::remember('classrooms_list_grouped', 3600, function () {
             return Classroom::with('building')->where('is_active', true)->get()->groupBy('building.name');
         });
@@ -161,7 +161,7 @@ class Index extends Component
             'selectedModuleName' => $selectedModuleName,
             'selectedCourseObject' => $selectedCourseObject,
             'teachers' => $teachersList,
-            'classroomsGrouped' => $classroomsList // <-- Pasamos las aulas a la vista
+            'classroomsGrouped' => $classroomsList
         ]);
     }
 
@@ -188,10 +188,75 @@ class Index extends Component
         $this->selectedModule = null;
     }
 
+    // --- MÉTODOS PARA ELIMINACIÓN INDIVIDUAL (SOFT DELETE) ---
+    
+    public function confirmDelete($type, $id)
+    {
+        $this->confirmingDeleteType = $type;
+        $this->deleteId = $id;
+
+        if ($type === 'course') {
+            $course = Course::find($id);
+            $this->deleteMessage = "¿Estás seguro de eliminar el curso '{$course->name}'? Se eliminarán también sus módulos y secciones, pero se mantendrá el historial de los estudiantes.";
+        } elseif ($type === 'module') {
+            $module = Module::find($id);
+            $this->deleteMessage = "¿Estás seguro de eliminar el módulo '{$module->name}'? Se eliminarán sus secciones, pero se mantendrá el historial.";
+        } elseif ($type === 'schedule') {
+            $schedule = CourseSchedule::find($id);
+            $name = $schedule->section_name ?? 'Sección ' . $schedule->id;
+            $this->deleteMessage = "¿Estás seguro de eliminar la sección '{$name}'? Los estudiantes inscritos mantendrán este registro en su historial.";
+        }
+
+        $this->dispatch('open-modal', 'confirm-delete-modal');
+    }
+
+    public function deleteItem()
+    {
+        if ($this->confirmingDeleteType === 'course') {
+            $course = Course::find($this->deleteId);
+            if ($course) {
+                // Eliminar en cascada suave (Soft Delete manual para limpiar vista)
+                foreach ($course->modules as $module) {
+                    $module->schedules()->delete(); 
+                    $module->delete(); 
+                }
+                $course->delete(); 
+                
+                if ($this->selectedCourse == $this->deleteId) {
+                    $this->selectedCourse = null;
+                    $this->selectedModule = null;
+                }
+                session()->flash('message', 'Curso eliminado correctamente (Historial preservado).');
+            }
+        } elseif ($this->confirmingDeleteType === 'module') {
+            $module = Module::find($this->deleteId);
+            if ($module) {
+                $module->schedules()->delete();
+                $module->delete(); 
+                
+                if ($this->selectedModule == $this->deleteId) {
+                    $this->selectedModule = null;
+                }
+                session()->flash('message', 'Módulo eliminado correctamente.');
+            }
+        } elseif ($this->confirmingDeleteType === 'schedule') {
+            $schedule = CourseSchedule::find($this->deleteId);
+            if ($schedule) {
+                $schedule->delete();
+                session()->flash('message', 'Sección eliminada correctamente.');
+            }
+        }
+
+        $this->dispatch('close-modal', 'confirm-delete-modal');
+        $this->reset(['confirmingDeleteType', 'deleteId', 'deleteMessage']);
+    }
+
     // --- MÉTODOS PARA LIMPIEZA DE CURSOS ---
-    // (Sin cambios aquí)
-    public function confirmClearUnusedCourses() { 
+
+    public function confirmClearUnusedCourses()
+    {
         $this->unusedCoursesCount = Course::whereDoesntHave('modules.enrollments')->count();
+
         if ($this->unusedCoursesCount > 0) {
             $this->confirmingClearUnused = true;
             $this->dispatch('open-modal', 'confirm-clear-unused-modal');
@@ -200,7 +265,8 @@ class Index extends Component
         }
     }
 
-    public function clearUnusedCourses() { 
+    public function clearUnusedCourses()
+    {
         Course::whereDoesntHave('modules.enrollments')->chunk(100, function ($courses) {
             foreach ($courses as $course) {
                 foreach ($course->modules as $module) {
@@ -213,19 +279,22 @@ class Index extends Component
                 $course->delete();
             }
         });
+
         $this->confirmingClearUnused = false;
         $this->unusedCoursesCount = 0;
+        
         if ($this->selectedCourse && !Course::find($this->selectedCourse)) {
             $this->selectedCourse = null;
             $this->selectedModule = null;
         }
+
         session()->flash('message', "Limpieza completada.");
         $this->dispatch('close-modal', 'confirm-clear-unused-modal');
     }
 
     // --- MÉTODOS PARA MODAL DE CURSO ---
-    // (Sin cambios aquí)
-    protected function courseRules() { 
+    protected function courseRules()
+    {
         return [
             'course_name' => 'required|string|max:255',
             'course_code' => [
@@ -236,8 +305,17 @@ class Index extends Component
             'monthly_fee' => 'required|numeric|min:0',
         ];
     }
-    public function createCourse() { $this->resetCourseFields(); $this->resetValidation(); $this->courseModalTitle = 'Crear Nuevo Curso'; $this->dispatch('open-modal', 'course-modal'); }
-    public function editCourse($courseId) { 
+
+    public function createCourse()
+    {
+        $this->resetCourseFields();
+        $this->resetValidation(); 
+        $this->courseModalTitle = 'Crear Nuevo Curso';
+        $this->dispatch('open-modal', 'course-modal'); 
+    }
+
+    public function editCourse($courseId)
+    {
         $this->resetValidation(); 
         try {
             $course = Course::findOrFail($courseId);
@@ -247,18 +325,35 @@ class Index extends Component
             $this->is_sequential = $course->is_sequential;
             $this->registration_fee = $course->registration_fee;
             $this->monthly_fee = $course->monthly_fee;
+            
             $this->courseModalTitle = 'Editar Curso: ' . $course->name;
             $this->dispatch('open-modal', 'course-modal'); 
         } catch (\Exception $e) {
             session()->flash('error', 'Curso no encontrado.');
         }
     }
-    public function saveCourse() { 
+
+    public function saveCourse()
+    {
         $this->validate($this->courseRules());
-        Course::updateOrCreate(['id' => $this->course_id], ['name' => $this->course_name, 'code' => $this->course_code, 'is_sequential' => $this->is_sequential, 'registration_fee' => $this->registration_fee, 'monthly_fee' => $this->monthly_fee]); 
-        session()->flash('message', $this->course_id ? 'Curso actualizado.' : 'Curso creado.'); $this->dispatch('close-modal', 'course-modal'); 
+
+        Course::updateOrCreate(
+            ['id' => $this->course_id],
+            [
+                'name' => $this->course_name,
+                'code' => $this->course_code,
+                'is_sequential' => $this->is_sequential, 
+                'registration_fee' => $this->registration_fee,
+                'monthly_fee' => $this->monthly_fee,
+            ]
+        );
+
+        session()->flash('message', $this->course_id ? 'Curso actualizado.' : 'Curso creado.');
+        $this->dispatch('close-modal', 'course-modal'); 
     }
-    private function resetCourseFields() { 
+
+    private function resetCourseFields()
+    {
         $this->course_id = null;
         $this->course_name = '';
         $this->course_code = '';
@@ -268,33 +363,61 @@ class Index extends Component
     }
 
     // --- MÉTODOS PARA MODAL DE MÓDULO ---
-    // (Sin cambios aquí)
-    protected function moduleRules() { return ['module_name' => 'required|string|max:255']; }
-    public function createModule() { 
-        if (!$this->selectedCourse) { session()->flash('error', 'Debes seleccionar un curso primero.'); return; }
+    protected function moduleRules()
+    {
+        return [
+            'module_name' => 'required|string|max:255',
+        ];
+    }
+
+    public function createModule()
+    {
+        if (!$this->selectedCourse) {
+            session()->flash('error', 'Debes seleccionar un curso primero.');
+            return;
+        }
         $this->resetModuleFields();
         $this->resetValidation();
         $this->moduleModalTitle = 'Nuevo Módulo para ' . Course::find($this->selectedCourse)->name;
         $this->dispatch('open-modal', 'module-modal'); 
     }
-    public function editModule($moduleId) { 
+
+    public function editModule($moduleId)
+    {
         $this->resetValidation();
         try {
             $module = Module::findOrFail($moduleId);
             $this->module_id = $module->id;
             $this->module_name = $module->name;
+
             $this->moduleModalTitle = 'Editar Módulo: ' . $module->name;
             $this->dispatch('open-modal', 'module-modal'); 
         } catch (\Exception $e) {
             session()->flash('error', 'Módulo no encontrado.');
         }
     }
-    public function saveModule() { 
+
+    public function saveModule()
+    {
         $this->validate($this->moduleRules());
-        Module::updateOrCreate(['id' => $this->module_id], ['course_id' => $this->selectedCourse, 'name' => $this->module_name]); 
-        session()->flash('message', $this->module_id ? 'Módulo actualizado.' : 'Módulo creado.'); $this->dispatch('close-modal', 'module-modal'); 
+
+        Module::updateOrCreate(
+            ['id' => $this->module_id],
+            [
+                'course_id' => $this->selectedCourse,
+                'name' => $this->module_name,
+            ]
+        );
+
+        session()->flash('message', $this->module_id ? 'Módulo actualizado.' : 'Módulo creado.');
+        $this->dispatch('close-modal', 'module-modal'); 
     }
-    private function resetModuleFields() { $this->module_id = null; $this->module_name = ''; }
+
+    private function resetModuleFields()
+    {
+        $this->module_id = null;
+        $this->module_name = '';
+    }
     
     // --- MÉTODOS PARA MODAL DE HORARIO (SECCIÓN) ---
 
@@ -317,7 +440,7 @@ class Index extends Component
             $schedule = CourseSchedule::findOrFail($scheduleId);
             $this->schedule_id = $schedule->id;
             $this->teacher_id = $schedule->teacher_id;
-            $this->classroom_id = $schedule->classroom_id; // <-- CARGAR AULA
+            $this->classroom_id = $schedule->classroom_id; 
             
             $this->days = $schedule->days_of_week ?? []; 
             
@@ -338,7 +461,7 @@ class Index extends Component
         }
     }
 
-    public function saveSchedule(ClassroomService $classroomService) // <-- INYECTAR SERVICIO
+    public function saveSchedule(ClassroomService $classroomService) 
     {
         $this->validate([
             'teacher_id' => 'required|exists:users,id',
@@ -349,10 +472,9 @@ class Index extends Component
             'end_time' => 'required|date_format:H:i|after:start_time',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
-            'classroom_id' => 'nullable|exists:classrooms,id', // <-- Validación básica
+            'classroom_id' => 'nullable|exists:classrooms,id', 
         ]);
 
-        // 1. VALIDACIÓN DE DISPONIBILIDAD (Solo si es presencial/semi y tiene aula)
         if ($this->classroom_id && in_array($this->modality, ['Presencial', 'Semi-Presencial'])) {
             $availability = $classroomService->checkAvailability(
                 $this->classroom_id,
@@ -361,18 +483,15 @@ class Index extends Component
                 $this->end_time,
                 $this->start_date,
                 $this->end_date,
-                $this->schedule_id // Excluir actual si estamos editando
+                $this->schedule_id 
             );
 
             if ($availability !== true) {
-                // Si no es true, es un mensaje de error
                 $this->addError('classroom_id', $availability);
-                return; // Detener guardado
+                return; 
             }
         }
         
-        // 2. GENERAR NOMBRE DE SECCIÓN SI ESTÁ VACÍO
-        // Formato: [Aula] - [Días] [Hora]
         if (empty($this->section_name) && $this->classroom_id) {
             $classroom = Classroom::find($this->classroom_id);
             $daysInitials = collect($this->days)->map(fn($d) => substr($d, 0, 2))->join('-');
@@ -384,7 +503,7 @@ class Index extends Component
             [
                 'module_id' => $this->selectedModule,
                 'teacher_id' => $this->teacher_id,
-                'classroom_id' => $this->classroom_id, // <-- GUARDAR AULA
+                'classroom_id' => $this->classroom_id, 
                 'days_of_week' => $this->days, 
                 'section_name' => $this->section_name,
                 'modality' => $this->modality,
@@ -403,7 +522,7 @@ class Index extends Component
     {
         $this->schedule_id = null;
         $this->teacher_id = null;
-        $this->classroom_id = null; // <-- RESETEAR
+        $this->classroom_id = null; 
         $this->days = [];
         $this->start_time = '';
         $this->end_time = '';
@@ -417,6 +536,7 @@ class Index extends Component
     public function closeLinkModal() { 
         $this->reset(['currentLinkingCourse', 'selectedWpCourseId', 'linkFeedbackMessage', 'linkErrorMessage']);
     }
+
     public function openLinkModal($courseId, WordpressApiService $wpService) { 
         $this->reset(['currentLinkingCourse', 'selectedWpCourseId', 'linkFeedbackMessage', 'linkErrorMessage']); 
         try {
@@ -437,6 +557,7 @@ class Index extends Component
         }
         $this->dispatch('open-modal', 'link-wp-modal');
     }
+
     public function saveLink() { 
         $this->reset(['linkFeedbackMessage', 'linkErrorMessage']);
         if (empty($this->selectedWpCourseId)) {
@@ -474,13 +595,21 @@ class Index extends Component
             $this->linkErrorMessage = 'Error al guardar el enlace.';
         }
     }
+
     public function closeSectionLinkModal() { $this->reset(['currentLinkingSection', 'wpSchedules', 'selectedWpScheduleId', 'sectionLinkErrorMessage']); }
+    
     public function openMapSectionModal($scheduleId, WordpressApiService $wpService) { 
         $this->closeSectionLinkModal(); 
         try {
             $this->currentLinkingSection = CourseSchedule::with('module.course.mapping')->findOrFail($scheduleId);
-        } catch (\Exception $e) { session()->flash('error', 'No se encontró la sección.'); return; }
-        if (!$this->currentLinkingSection->module?->course?->mapping) { session()->flash('error', 'Enlace el curso principal primero.'); return; }
+        } catch (\Exception $e) {
+            session()->flash('error', 'No se encontró la sección.');
+            return;
+        }
+        if (!$this->currentLinkingSection->module?->course?->mapping) {
+            session()->flash('error', 'Enlace el curso principal primero.');
+            return;
+        }
         $wpCourseId = $this->currentLinkingSection->module->course->mapping->wp_course_id;
         try {
             $this->wpSchedules = $wpService->getSchedulesForWpCourse($wpCourseId);
@@ -493,6 +622,7 @@ class Index extends Component
         $this->selectedWpScheduleId = $existingMapping->wp_schedule_string ?? ''; 
         $this->dispatch('open-modal', 'link-section-modal');
     }
+
     public function saveSectionLink() { 
         $this->reset(['sectionLinkErrorMessage']);
         if (!$this->currentLinkingSection || !$this->currentLinkingSection->module?->course?->mapping) { $this->sectionLinkErrorMessage = 'Error de validación.'; return; }

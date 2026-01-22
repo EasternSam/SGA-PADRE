@@ -4,14 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes; // <-- Importar
 
 class CourseSchedule extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes; // <-- Habilitar SoftDeletes
     
     protected $fillable = [
         'module_id',
-        'classroom_id', // <-- NUEVO
+        'classroom_id',
         'start_time',
         'end_time',
         'start_date', 
@@ -36,7 +37,6 @@ class CourseSchedule extends Model
         return $this->belongsTo(User::class, 'teacher_id');
     }
     
-    // Relación con el Aula
     public function classroom()
     {
         return $this->belongsTo(Classroom::class);

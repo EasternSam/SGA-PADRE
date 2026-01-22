@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes; // <-- Importar
 
 class Course extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes; // <-- Usar Trait
 
     /**
      * Los atributos que se pueden asignar masivamente.
@@ -19,8 +20,8 @@ class Course extends Model
         'description',
         'code',
         'is_sequential',
-        'registration_fee', // Nuevo
-        'monthly_fee',      // Nuevo
+        'registration_fee',
+        'monthly_fee',
     ];
 
     /**
@@ -43,19 +44,14 @@ class Course extends Model
     }
 
     // ====================================================================
-    // NUEVA RELACIÓN PARA ENLACE CON WP (PUNTO 3)
+    // RELACIÓN PARA ENLACE CON WP
     // ====================================================================
 
     /**
      * Define la relación con el mapeo/enlace de WordPress.
-     * Un curso de Laravel puede tener un (1) enlace a un curso de WP.
      */
     public function mapping()
     {
         return $this->hasOne(CourseMapping::class);
     }
-    
-    // ====================================================================
-    // FIN DE NUEVA RELACIÓN
-    // ====================================================================
 }

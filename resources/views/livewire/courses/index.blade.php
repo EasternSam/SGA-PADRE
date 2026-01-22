@@ -28,14 +28,12 @@
                        placeholder="Buscar cursos por nombre o código..." 
                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
                 
-                {{-- Spinner de búsqueda (Absolute right) --}}
                 <div wire:loading wire:target="search" class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                     <svg class="animate-spin h-5 w-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                 </div>
             </div>
         </div>
         
-        {{-- Loader Global Superior (Linea de carga) --}}
         <div wire:loading class="absolute bottom-0 left-0 w-full h-1 bg-indigo-100 overflow-hidden">
             <div class="h-full bg-indigo-500 animate-progress origin-left"></div>
         </div>
@@ -51,11 +49,9 @@
                 <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
                     <h2 class="text-lg font-semibold text-gray-800">Cursos</h2>
                     <div class="flex space-x-2">
-                        <!-- Botón de Limpieza -->
                         <button wire:click="confirmClearUnusedCourses" wire:loading.attr="disabled" class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded-lg text-xs font-medium shadow-sm transition ease-in-out duration-150 disabled:opacity-50" title="Eliminar cursos sin estudiantes">
                             <i class="fas fa-trash-alt mr-1"></i> Limpiar
                         </button>
-                        <!-- Botón Añadir -->
                         <button wire:click="createCourse" wire:loading.attr="disabled" class="bg-indigo-600 text-white px-3 py-1 rounded-lg text-sm font-medium shadow-sm hover:bg-indigo-700 transition ease-in-out duration-150 flex items-center disabled:opacity-50">
                             <svg wire:loading wire:target="createCourse" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                             <span wire:loading.remove wire:target="createCourse"><i class="fas fa-plus mr-1"></i> Añadir</span>
@@ -68,10 +64,9 @@
                         @forelse ($courses as $course)
                             <li wire:key="course-{{ $course->id }}"
                                 wire:click="selectCourse({{ $course->id }})" 
-                                class="p-3 cursor-pointer rounded-lg border border-transparent transition-all duration-150 relative
+                                class="p-3 cursor-pointer rounded-lg border border-transparent transition-all duration-150 relative group
                                      {{ $selectedCourse == $course->id ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'hover:bg-gray-50 hover:border-gray-200' }}">
                                 
-                                {{-- Feedback Visual de Carga al hacer clic --}}
                                 <div wire:loading.flex wire:target="selectCourse({{ $course->id }})" class="absolute inset-0 bg-white/60 z-10 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
                                     <svg class="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                 </div>
@@ -87,12 +82,9 @@
                                             @endif
                                         </div>
                                         <span class="block text-sm text-gray-500 font-mono">{{ $course->code }}</span>
-                                        
-                                        <!-- Mostrar precios en lista -->
                                         <span class="block text-xs text-gray-400 mt-1">
                                             Insc: ${{ number_format($course->registration_fee, 2) }} | Mes: ${{ number_format($course->monthly_fee, 2) }}
                                         </span>
-
                                         @if($course->mapping)
                                             <span class="block text-xs text-green-600 mt-1 truncate" title="ID de WP: {{ $course->mapping->wp_course_id }}">
                                                 <i class="fas fa-check-circle mr-1"></i>Enlazado
@@ -105,6 +97,10 @@
                                         </button>
                                         <button wire:click.stop="editCourse({{ $course->id }})" class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors">
                                             <i class="fas fa-pencil-alt text-xs"></i>
+                                        </button>
+                                        <!-- BOTÓN ELIMINAR CURSO -->
+                                        <button wire:click.stop="confirmDelete('course', {{ $course->id }})" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar Curso">
+                                            <i class="fas fa-trash-alt text-xs"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -122,7 +118,6 @@
             <!-- Columna 2: Módulos -->
             <div class="bg-white rounded-lg shadow border border-gray-200 flex flex-col h-full overflow-hidden relative">
                 
-                {{-- Loader de Bloque Completo para Módulos --}}
                 <div wire:loading.flex wire:target="selectCourse" class="absolute inset-0 bg-white/80 z-20 flex-col items-center justify-center backdrop-blur-sm transition-opacity">
                     <svg class="animate-spin h-8 w-8 text-indigo-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     <span class="text-sm font-medium text-gray-600">Cargando módulos...</span>
@@ -140,10 +135,9 @@
                             @forelse ($modules as $module)
                                 <li wire:key="module-{{ $module->id }}"
                                     wire:click="selectModule({{ $module->id }})"
-                                    class="p-3 cursor-pointer rounded-lg border border-transparent transition-all duration-150 relative
+                                    class="p-3 cursor-pointer rounded-lg border border-transparent transition-all duration-150 relative group
                                            {{ $selectedModule == $module->id ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'hover:bg-gray-50 hover:border-gray-200' }}">
                                     
-                                    {{-- Feedback Visual --}}
                                     <div wire:loading.flex wire:target="selectModule({{ $module->id }})" class="absolute inset-0 bg-white/60 z-10 flex items-center justify-center rounded-lg backdrop-blur-[1px]">
                                         <svg class="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                     </div>
@@ -152,9 +146,15 @@
                                         <div>
                                             <span class="block font-medium text-gray-900 {{ $selectedModule == $module->id ? 'text-indigo-700' : '' }}">{{ $module->name }}</span>
                                         </div>
-                                        <button wire:click.stop="editModule({{ $module->id }})" class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors">
-                                            <i class="fas fa-pencil-alt text-xs"></i>
-                                        </button>
+                                        <div class="flex items-center space-x-1">
+                                            <button wire:click.stop="editModule({{ $module->id }})" class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors">
+                                                <i class="fas fa-pencil-alt text-xs"></i>
+                                            </button>
+                                            <!-- BOTÓN ELIMINAR MÓDULO -->
+                                            <button wire:click.stop="confirmDelete('module', {{ $module->id }})" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar Módulo">
+                                                <i class="fas fa-trash-alt text-xs"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </li>
                             @empty
@@ -176,7 +176,6 @@
             <!-- Columna 3: Secciones (Horarios) -->
             <div class="bg-white rounded-lg shadow border border-gray-200 flex flex-col h-full overflow-hidden relative">
                 
-                {{-- Loader de Bloque Completo para Secciones --}}
                 <div wire:loading.flex wire:target="selectModule" class="absolute inset-0 bg-white/80 z-20 flex-col items-center justify-center backdrop-blur-sm transition-opacity">
                     <svg class="animate-spin h-8 w-8 text-indigo-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     <span class="text-sm font-medium text-gray-600">Cargando secciones...</span>
@@ -192,7 +191,7 @@
                     <div class="p-2 overflow-y-auto flex-1 custom-scrollbar">
                         <ul class="space-y-1">
                             @forelse ($schedules as $schedule)
-                                <li wire:key="schedule-{{ $schedule->id }}" class="p-3 hover:bg-gray-50 rounded-lg border border-gray-100 transition-colors duration-150">
+                                <li wire:key="schedule-{{ $schedule->id }}" class="p-3 hover:bg-gray-50 rounded-lg border border-gray-100 transition-colors duration-150 group">
                                     <div class="flex justify-between items-start">
                                         <div class="flex-1 min-w-0">
                                             <span class="block font-medium text-gray-900">{{ $schedule->section_name ?? ('Sección ' . $schedule->id) }}</span>
@@ -202,12 +201,10 @@
                                                 {{ implode(', ', $schedule->days_of_week ?? []) }} | {{ $schedule->start_time ? \Carbon\Carbon::parse($schedule->start_time)->format('h:i A') : 'N/A' }} - {{ $schedule->end_time ? \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') : 'N/A' }}
                                             </span>
                                             
-                                            {{-- Etiqueta de Modalidad --}}
                                             <span class="inline-block px-1.5 py-0.5 mt-1 text-[10px] font-semibold rounded {{ $schedule->modality === 'Virtual' ? 'bg-purple-100 text-purple-700' : ($schedule->modality === 'Semi-Presencial' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700') }}">
                                                 {{ $schedule->modality ?? 'Presencial' }}
                                             </span>
 
-                                            {{-- Etiqueta de Aula (NUEVO) --}}
                                             @if($schedule->classroom)
                                                 <span class="inline-block ml-1 px-1.5 py-0.5 mt-1 text-[10px] font-semibold rounded bg-gray-100 text-gray-700 border border-gray-200">
                                                     {{ $schedule->classroom->name }}
@@ -240,6 +237,11 @@
                                             <button wire:click.stop="editSchedule({{ $schedule->id }})" class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors">
                                                 <i class="fas fa-pencil-alt text-xs"></i>
                                             </button>
+                                            
+                                            <!-- BOTÓN ELIMINAR SECCIÓN -->
+                                            <button wire:click.stop="confirmDelete('schedule', {{ $schedule->id }})" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar Sección">
+                                                <i class="fas fa-trash-alt text-xs"></i>
+                                            </button>
                                         </div>
                                     </div>
                                 </li>
@@ -264,11 +266,10 @@
 
     {{-- MODALES --}}
 
-    <!-- Modal de Confirmación de Limpieza -->
+    <!-- Modal de Confirmación de Limpieza (EXISTENTE) -->
     <x-modal name="confirm-clear-unused-modal">
         <div class="p-6">
             <h2 class="text-lg font-medium text-red-600 mb-4">⚠️ Confirmar Limpieza Masiva</h2>
-            
             <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
                 <div class="flex">
                     <div class="flex-shrink-0">
@@ -284,7 +285,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="flex justify-end mt-6 space-x-3">
                 <button type="button" x-on:click="$dispatch('close-modal', 'confirm-clear-unused-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">
                     Cancelar
@@ -296,7 +296,36 @@
         </div>
     </x-modal>
 
-    <!-- Modal de Curso -->
+    <!-- Modal de Confirmación de Eliminación Individual (NUEVO) -->
+    <x-modal name="confirm-delete-modal">
+        <div class="p-6">
+            <h2 class="text-lg font-medium text-red-600 mb-4">⚠️ Confirmar Eliminación</h2>
+            
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-circle text-red-500"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-red-700">
+                            {{ $deleteMessage }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end mt-6 space-x-3">
+                <button type="button" x-on:click="$dispatch('close-modal', 'confirm-delete-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">
+                    Cancelar
+                </button>
+                <button type="button" wire:click="deleteItem" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700">
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </x-modal>
+
+    <!-- Modal de Curso (EXISTENTE) -->
     <x-modal name="course-modal">
         <div class="p-6">
             <h2 class="text-lg font-medium text-gray-900 mb-4">{{ $courseModalTitle }}</h2>
@@ -313,8 +342,6 @@
                     <x-text-input wire:model="course_name" id="course_name" class="block mt-1 w-full" type="text" />
                     @error('course_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
-
-                <!-- NUEVOS CAMPOS DE PRECIOS -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <div>
                         <x-input-label for="registration_fee" value="Precio de Inscripción" />
@@ -337,8 +364,6 @@
                         @error('monthly_fee') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
                 </div>
-
-                <!-- Checkbox para Módulos Secuenciales -->
                 <div class="mt-4 flex items-center">
                     <input type="checkbox" id="is_sequential" wire:model="is_sequential" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                     <label for="is_sequential" class="ml-2 block text-sm text-gray-900">
@@ -346,7 +371,6 @@
                         <span class="text-xs text-gray-500 block">Si se activa, los estudiantes deben aprobar el módulo 1 para inscribirse en el 2, etc.</span>
                     </label>
                 </div>
-                
                 <div class="flex justify-end mt-6">
                     <button type="button" x-on:click="$dispatch('close-modal', 'course-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
                     <button type="submit" wire:loading.attr="disabled" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg flex items-center">
@@ -358,7 +382,7 @@
         </div>
     </x-modal>
 
-    <!-- Modal de Módulo -->
+    <!-- Modal de Módulo (EXISTENTE) -->
     <x-modal name="module-modal">
         <div class="p-6">
             <h2 class="text-lg font-medium text-gray-900 mb-4">{{ $moduleModalTitle }}</h2>
@@ -368,7 +392,6 @@
                     <input id="module_name" wire:model="module_name" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                     @error('module_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
-
                 <div class="flex justify-end mt-6">
                     <button type="button" x-on:click="$dispatch('close-modal', 'module-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
                     <button type="submit" wire:loading.attr="disabled" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg flex items-center">
@@ -380,12 +403,11 @@
         </div>
     </x-modal>
 
-    <!-- Modal de Horario (Sección) -->
+    <!-- Modal de Horario (Sección) (EXISTENTE) -->
     <x-modal name="schedule-modal" maxWidth="3xl">
         <div class="p-6">
             <h2 class="text-lg font-medium text-gray-900 mb-4">{{ $scheduleModalTitle }}</h2>
             <form wire:submit.prevent="saveSchedule">
-                
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="section_name" class="block text-sm font-medium text-gray-700">Nombre/Código de Sección (Opcional)</label>
@@ -403,8 +425,6 @@
                         @error('teacher_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
                 </div>
-
-                <!-- CAMPO MODALIDAD -->
                 <div class="mt-4">
                     <label for="modality" class="block text-sm font-medium text-gray-700">Modalidad</label>
                     <select id="modality" wire:model="modality" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
@@ -414,8 +434,6 @@
                     </select>
                     @error('modality') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
-
-                <!-- NUEVO: SELECTOR DE AULA -->
                 <div class="mt-4">
                     <x-input-label for="classroom_id" :value="__('Aula / Laboratorio')" />
                     <select wire:model="classroom_id" id="classroom_id" class="block mt-1 w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
@@ -435,7 +453,6 @@
                     <p class="text-xs text-gray-500 mt-1">El sistema verificará disponibilidad de horario automáticamente.</p>
                     <x-input-error :messages="$errors->get('classroom_id')" class="mt-2" />
                 </div>
-
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <div>
                         <label for="start_date" class="block text-sm font-medium text-gray-700">Fecha de Inicio</label>
@@ -448,7 +465,6 @@
                         @error('end_date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
                 </div>
-
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <div>
                         <label for="start_time" class="block text-sm font-medium text-gray-700">Hora de Inicio</label>
@@ -461,7 +477,6 @@
                         @error('end_time') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
                 </div>
-
                 <div class="mt-4">
                     <label class="block text-sm font-medium text-gray-700">Días de la Semana</label>
                     <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 mt-2">
@@ -474,7 +489,6 @@
                     </div>
                     @error('days') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
-
                 <div class="flex justify-end mt-6">
                     <button type="button" x-on:click="$dispatch('close-modal', 'schedule-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
                     <button type="submit" wire:loading.attr="disabled" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg flex items-center">
@@ -486,38 +500,21 @@
         </div>
     </x-modal>
 
-    <!-- Modal Enlace WP -->
+    <!-- Modal Enlace WP (EXISTENTE) -->
     <x-modal name="link-wp-modal" maxWidth="lg">
         <div class="p-6">
             <h2 class="text-lg font-medium text-gray-900 mb-2">Enlazar Curso con WordPress</h2>
-            
             @if($currentLinkingCourse)
-                <p class="text-sm text-gray-600 mb-4">
-                    Estás enlazando el curso: <strong class="text-gray-900">{{ $currentLinkingCourse->name }}</strong>
-                </p>
+                <p class="text-sm text-gray-600 mb-4">Estás enlazando el curso: <strong class="text-gray-900">{{ $currentLinkingCourse->name }}</strong></p>
             @endif
-            
             <div wire:loading wire:target="openLinkModal, saveLink" class="w-full">
                 <div class="flex items-center p-3 text-sm text-blue-700 bg-blue-50 rounded-lg" role="alert">
-                    <svg class="w-4 h-4 mr-2 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <svg class="w-4 h-4 mr-2 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     <span class="font-medium">Cargando cursos de WordPress...</span>
                 </div>
             </div>
-
-            @if($linkFeedbackMessage)
-                <div class="p-3 text-sm text-green-700 bg-green-50 rounded-lg mb-4" role="alert">
-                    {{ $linkFeedbackMessage }}
-                </div>
-            @endif
-            @if($linkErrorMessage)
-                <div class="p-3 text-sm text-red-700 bg-red-50 rounded-lg mb-4" role="alert">
-                    <span class="font-medium">Error:</span> {{ $linkErrorMessage }}
-                </div>
-            @endif
-
+            @if($linkFeedbackMessage) <div class="p-3 text-sm text-green-700 bg-green-50 rounded-lg mb-4" role="alert">{{ $linkFeedbackMessage }}</div> @endif
+            @if($linkErrorMessage) <div class="p-3 text-sm text-red-700 bg-red-50 rounded-lg mb-4" role="alert"><span class="font-medium">Error:</span> {{ $linkErrorMessage }}</div> @endif
             <div wire:loading.remove wire:target="openLinkModal">
                 @if(!$linkErrorMessage && !empty($wpCourses))
                     <div class="mt-4">
@@ -525,9 +522,7 @@
                         <select id="wp_course_select" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm mt-1 block w-full" wire:model="selectedWpCourseId">
                             <option value="">-- Ninguno (Quitar enlace) --</option>
                             @foreach($wpCourses as $wpCourse)
-                                <option value="{{ $wpCourse['wp_course_id'] }}">
-                                    {{ $wpCourse['wp_course_name'] }} (ID: {{ $wpCourse['wp_course_id'] }})
-                                </option>
+                                <option value="{{ $wpCourse['wp_course_id'] }}">{{ $wpCourse['wp_course_name'] }} (ID: {{ $wpCourse['wp_course_id'] }})</option>
                             @endforeach
                         </select>
                     </div>
@@ -535,7 +530,6 @@
                     <p class="mt-4 text-sm text-gray-500 italic">No se encontraron cursos en WordPress.</p>
                 @endif
             </div>
-
             <div class="flex justify-end mt-6">
                 <button type="button" x-on:click="$dispatch('close-modal', 'link-wp-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
                 <button type="button" wire:click="saveLink()" wire:loading.attr="disabled" wire:target="saveLink" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg flex items-center">
@@ -546,33 +540,20 @@
         </div>
     </x-modal>
 
-    <!-- Modal Enlace Sección -->
+    <!-- Modal Enlace Sección (EXISTENTE) -->
     <x-modal name="link-section-modal" maxWidth="lg">
         <div class="p-6">
             <h2 class="text-lg font-medium text-gray-900 mb-2">Enlazar Sección con WordPress</h2>
-
             @if($currentLinkingSection)
-                <p class="text-sm text-gray-600 mb-4">
-                    Estás enlazando la sección: <strong class="text-gray-900">{{ $currentLinkingSection->section_name ?? 'Sección ' . $currentLinkingSection->id }}</strong>
-                </p>
+                <p class="text-sm text-gray-600 mb-4">Estás enlazando la sección: <strong class="text-gray-900">{{ $currentLinkingSection->section_name ?? 'Sección ' . $currentLinkingSection->id }}</strong></p>
             @endif
-
             <div wire:loading wire:target="openMapSectionModal, saveSectionLink" class="w-full">
                 <div class="flex items-center p-3 text-sm text-blue-700 bg-blue-50 rounded-lg" role="alert">
-                    <svg class="w-4 h-4 mr-2 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <svg class="w-4 h-4 mr-2 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     <span class="font-medium">Cargando horarios de WordPress...</span>
                 </div>
             </div>
-            
-            @if($sectionLinkErrorMessage)
-                <div class="p-3 text-sm text-red-700 bg-red-50 rounded-lg mb-4" role="alert">
-                    <span class="font-medium">Error:</span> {{ $sectionLinkErrorMessage }}
-                </div>
-            @endif
-
+            @if($sectionLinkErrorMessage) <div class="p-3 text-sm text-red-700 bg-red-50 rounded-lg mb-4" role="alert"><span class="font-medium">Error:</span> {{ $sectionLinkErrorMessage }}</div> @endif
             <div wire:loading.remove wire:target="openMapSectionModal">
                 @if(!$sectionLinkErrorMessage && !empty($wpSchedules))
                     <div class="mt-4">
@@ -586,9 +567,7 @@
                                     $end = isset($wpSchedule['end_time']) ? \Carbon\Carbon::parse($wpSchedule['end_time'])->format('h:i A') : 'N/A';
                                     $displayText = ucfirst($day) . " de {$start} a {$end}";
                                 @endphp
-                                <option value="{{ $wpSchedule['id'] }}">
-                                    {{ $displayText }} (ID: {{ $wpSchedule['id'] }})
-                                </option>
+                                <option value="{{ $wpSchedule['id'] }}">{{ $displayText }} (ID: {{ $wpSchedule['id'] }})</option>
                             @endforeach
                         </select>
                     </div>
@@ -596,7 +575,6 @@
                     <p class="mt-4 text-sm text-gray-500 italic">No se encontraron horarios definidos en WordPress para el curso enlazado.</p>
                 @endif
             </div>
-
             <div class="flex justify-end mt-6">
                 <button type="button" x-on:click="$dispatch('close-modal', 'link-section-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
                 @if(!empty($wpSchedules) || !empty($selectedWpScheduleId))
