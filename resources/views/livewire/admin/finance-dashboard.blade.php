@@ -251,6 +251,17 @@
                 const chart = new ApexCharts(chartElement, options);
                 chart.render();
             });
+
+            // Manejar impresión de tickets
+            Livewire.on('printTicket', (event) => {
+                const url = event.url;
+                if (url) {
+                    const printWindow = window.open(url, 'Ticket', 'width=400,height=600');
+                    if (printWindow) {
+                        printWindow.focus();
+                    }
+                }
+            });
         });
     </script>
 </div>

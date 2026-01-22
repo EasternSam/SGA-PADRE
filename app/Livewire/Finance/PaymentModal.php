@@ -387,7 +387,12 @@ class PaymentModal extends Component
             
             $this->closeModal(); 
             $this->dispatch('paymentAdded'); 
-            $this->dispatch('$refresh'); 
+            $this->dispatch('$refresh');
+            
+            // --- NUEVO: ABRIR TICKET AUTOMÁTICAMENTE SI ES COMPLETADO ---
+            if ($payment && $payment->status === 'Completado') {
+                $this->dispatch('printTicket', url: route('finance.ticket', $payment->id));
+            }
 
         } catch (\Exception $e) {
             Log::error("Error al guardar el pago: " . $e->getMessage());

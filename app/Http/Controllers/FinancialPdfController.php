@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Models\Payment; // Importar modelo Payment
+use App\Models\Student; // Importar modelo Student
+use Illuminate\Support\Str; // Importar Str para el ticket
 
 class FinancialPdfController extends Controller
 {
@@ -156,5 +159,16 @@ class FinancialPdfController extends Controller
         }
 
         return $pdf->stream('Reporte_Financiero.pdf');
+    }
+
+    /**
+     * NUEVO: Generar vista de Ticket Térmico
+     */
+    public function ticket(Payment $payment)
+    {
+        // Cargamos relaciones necesarias
+        $payment->load('student', 'paymentConcept', 'enrollment.courseSchedule.module');
+        
+        return view('reports.thermal-invoice', compact('payment'));
     }
 }

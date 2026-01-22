@@ -16,7 +16,7 @@ use Illuminate\Support\Str;
 use App\Livewire\Admin\CertificateEditor;
 use App\Livewire\Admin\CertificateTemplatesIndex;
 use App\Livewire\Admin\ClassroomManagement;
-// Importamos el NUEVO componente financiero
+// Importamos el componente financiero
 use App\Livewire\Admin\FinanceDashboard;
 
 use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
@@ -139,10 +139,10 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
     Route::get('/students/profile/{student}', \App\Livewire\StudentProfile\Index::class)->name('admin.students.profile');
     Route::get('/courses', \App\Livewire\Courses\Index::class)->name('admin.courses.index');
     
-    // --- GESTIÓN FINANCIERA (NUEVO) ---
+    // --- GESTIÓN FINANCIERA ---
     // Dashboard General de Finanzas
     Route::get('/finance/dashboard', FinanceDashboard::class)->name('admin.finance.dashboard');
-    // Configuración de Conceptos (Ya existía, lo mantenemos)
+    // Configuración de Conceptos
     Route::get('/finance/payment-concepts', \App\Livewire\Finance\PaymentConcepts::class)->name('admin.finance.concepts');
 
     Route::get('/teachers', \App\Livewire\Teachers\Index::class)->name('admin.teachers.index');
@@ -156,8 +156,13 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
     Route::get('/certificates', \App\Livewire\Certificates\Index::class)->name('admin.certificates.index'); 
     
     // --- GESTIÓN DE PLANTILLAS DE DIPLOMAS ---
+    // Listado de plantillas
     Route::get('/certificate-templates', CertificateTemplatesIndex::class)->name('admin.certificates.templates');
+    
+    // Editor (Crear nueva)
     Route::get('/certificate-editor', CertificateEditor::class)->name('admin.certificates.editor');
+    
+    // Editor (Editar existente - sobreescribimos la ruta anterior genérica para ser específicos)
     Route::get('/certificate-editor/{templateId?}', CertificateEditor::class)->name('admin.certificates.edit');
 
     // --- GESTIÓN DE AULAS ---
@@ -196,6 +201,9 @@ Route::middleware(['auth'])->group(function () {
 
     // --- RUTA DESCARGA CERTIFICADO ---
     Route::get('/reports/certificate/{student}/{course}/pdf', [CertificatePdfController::class, 'download'])->name('certificates.download'); 
+    
+    // --- RUTA TICKET TÉRMICO (NUEVO) ---
+    Route::get('/finance/ticket/{payment}', [\App\Http\Controllers\FinancialPdfController::class, 'ticket'])->name('finance.ticket');
 });
 
 // --- RUTAS PARA CAMBIO DE CONTRASEÑA OBLIGATORIO ---

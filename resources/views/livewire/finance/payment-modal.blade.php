@@ -98,6 +98,17 @@
                                             {{ $student->student_code ?? 'Nuevo' }}
                                         </span>
                                     </div>
+                                    
+                                    <div class="mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">Email:</span>
+                                            <span class="text-gray-900 font-medium truncate max-w-[140px]">{{ $student->email }}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">Móvil:</span>
+                                            <span class="text-gray-900 font-medium">{{ $student->mobile_phone ?? '-' }}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             @elseif(count($student_results) > 0)
                                 <div class="px-1 text-xs font-bold text-gray-400 uppercase">Resultados</div>
@@ -211,7 +222,7 @@
                                                 <option value="Completado">Cobrar Ahora (Ingreso)</option>
                                                 <option value="Pendiente">Generar Deuda (Crédito)</option>
                                             </select>
-                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
                                                 <svg x-show="$wire.status === 'Completado'" class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
                                                 <svg x-show="$wire.status === 'Pendiente'" class="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
                                             </div>
@@ -267,15 +278,15 @@
                             </div>
                         </div>
 
-                        {{-- FOOTER FIJO --}}
+                        {{-- FOOTER (Sticky Bottom) --}}
                         <div class="px-6 py-5 bg-white border-t border-gray-200 flex justify-end gap-3 shrink-0 z-20">
-                            <button wire:click="closeModal" class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none">
+                            <button wire:click="closeModal" class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200">
                                 Cancelar
                             </button>
                             <button 
                                 wire:click="savePayment" 
                                 wire:loading.attr="disabled"
-                                class="px-8 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all transform active:scale-95 focus:outline-none flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                class="px-8 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all transform active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <span wire:loading.remove>
                                     {{ $status === 'Pendiente' ? 'Generar Deuda' : 'Procesar Cobro' }}
