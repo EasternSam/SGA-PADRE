@@ -31,7 +31,6 @@
         .separator { border-bottom: 1px dashed #000; margin: 6px 0; }
         .separator-solid { border-bottom: 1px solid #000; margin: 6px 0; }
         
-        /* Título del tipo de comprobante */
         .ncf-title {
             text-align: center;
             font-weight: bold;
@@ -56,7 +55,6 @@
         
         .footer { text-align: center; margin-top: 15px; font-size: 9px; line-height: 1.4; }
         .qr-code { text-align: center; margin-top: 10px; margin-bottom: 5px; }
-        .qr-placeholder { display: inline-block; width: 80px; height: 80px; background: #eee; border: 1px solid #ddd; }
     </style>
 </head>
 <body onload="window.print()">
@@ -66,9 +64,9 @@
         <img src="{{ asset('centuu.png') }}" alt="LOGO" class="logo-img">
         <div class="company-name">CENTRO DE TECNOLOGÍA UNIVERSAL</div>
         <div class="info">
-            <strong>RNC: 101-14245-6</strong><br>
-            Av. Doctor Delgado #103 Gazcue, Distrito Nacional, RD<br>
-            Tel: (809) 221-3222
+            <strong>RNC: 1-01-00000-0</strong><br>
+            Calle Principal #123, Hato Mayor<br>
+            Tel: (809) 555-5555
         </div>
     </div>
 
@@ -76,20 +74,30 @@
 
     <!-- DATOS DEL COMPROBANTE -->
     <div class="ncf-title">
-        {{-- Lógica simple para el título: Si tiene RNC el cliente es Crédito Fiscal, sino Consumo --}}
-        FACTURA DE {{ $payment->student->rnc ? 'CRÉDITO FISCAL' : 'CONSUMO' }} ELECTRÓNICA
+        @if($payment->ncf)
+            FACTURA DE {{ $payment->ncf_type == '31' ? 'CRÉDITO FISCAL' : 'CONSUMO' }} ELECTRÓNICA
+        @else
+            RECIBO DE INGRESO (NO VÁLIDO PARA CRÉDITO FISCAL)
+        @endif
     </div>
 
     <div class="info">
-        <div class="kv-row">
-            <span class="kv-label">e-NCF:</span>
-            {{-- Simulación de e-NCF si no existe en BD --}}
-            <span class="kv-value">{{ $payment->ncf ?? 'E3100000001' }}</span>
-        </div>
-        <div class="kv-row">
-            <span class="kv-label">VENCIMIENTO:</span>
-            <span class="kv-value">{{ now()->addYear()->format('d/m/Y') }}</span>
-        </div>
+        @if($payment->ncf)
+            <div class="kv-row">
+                <span class="kv-label">e-NCF:</span>
+                <span class="kv-value">{{ $payment->ncf }}</span>
+            </div>
+            <div class="kv-row">
+                <span class="kv-label">VENCIMIENTO:</span>
+                <span class="kv-value">{{ $payment->ncf_expiration ? $payment->ncf_expiration->format('d/m/Y') : 'N/A' }}</span>
+            </div>
+        @else
+            <div class="kv-row">
+                <span class="kv-label">ID INTERNO:</span>
+                <span class="kv-value">#{{ str_pad($payment->id, 8, '0', STR_PAD_LEFT) }}</span>
+            </div>
+        @endif
+        
         <div class="kv-row">
             <span class="kv-label">FECHA:</span>
             <span class="kv-value">{{ $payment->created_at->format('d/m/Y') }}</span>
@@ -110,31 +118,24 @@
         </div>
         <div class="kv-row">
             <span class="kv-label">RNC/CÉDULA:</span>
-            {{-- Usamos student_code como fallback si no hay campo rnc/cedula específico --}}
             <span class="kv-value">{{ $payment->student->rnc ?? $payment->student->student_code ?? '000-0000000-0' }}</span>
         </div>
-        @if($payment->student->mobile_phone)
-        <div class="kv-row">
-            <span class="kv-label">TELÉFONO:</span>
-            <span class="kv-value">{{ $payment->student->mobile_phone }}</span>
-        </div>
-        @endif
     </div>
 
     <div class="separator-solid"></div>
 
-    <!-- DETALLE DE ARTÍCULOS/SERVICIOS -->
+    <!-- DETALLE -->
     <table class="details-table">
         <thead>
             <tr>
                 <th class="col-desc">DESCRIPCIÓN</th>
-                <th class="col-price">ITBIS / VALOR</th>
+                <th class="col-price">TOTAL</th>
             </tr>
         </thead>
         <tbody>
             <tr>
                 <td class="col-desc">
-                    <strong>{{ strtoupper($payment->paymentConcept->name ?? 'SERVICIOS EDUCATIVOS') }}</strong>
+                    <strong>{{ strtoupper($payment->paymentConcept->name ?? 'SERVICIOS') }}</strong>
                     @if($payment->enrollment)
                         <br>
                         <span style="font-size: 9px; color: #333;">
@@ -152,15 +153,6 @@
 
     <!-- TOTALES -->
     <div class="totals-area">
-        <div class="kv-row">
-            <span class="kv-label">SUBTOTAL:</span>
-            <span class="kv-value">{{ number_format($payment->amount, 2) }}</span>
-        </div>
-        <div class="kv-row">
-            <span class="kv-label">TOTAL ITBIS (0%):</span>
-            <span class="kv-value">0.00</span>
-        </div>
-        
         <div class="kv-row total-row">
             <span class="kv-label" style="font-size: 13px;">TOTAL A PAGAR:</span>
             <span class="kv-value" style="font-size: 13px;">RD$ {{ number_format($payment->amount, 2) }}</span>
@@ -186,12 +178,17 @@
 
     <!-- PIE DE PÁGINA Y QR -->
     <div class="footer">
-        <div class="qr-code">
-            <!-- Aquí iría el QR real generado con la URL de consulta de la DGII -->
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data={{ urlencode('https://ecf.dgii.gov.do/consultas?rnc=101000000&encf=E3100000001&monto=' . $payment->amount) }}" alt="QR Validación" width="80">
-        </div>
-        <p><strong>CÓDIGO DE SEGURIDAD:</strong> abc1234</p>
-        <p>¡Gracias por preferirnos!</p>
+        @if($payment->dgii_qr_url)
+            <div class="qr-code">
+                <!-- Generación de QR usando API pública (Para producción usar biblioteca local como simple-qrcode) -->
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data={{ urlencode($payment->dgii_qr_url) }}" alt="QR e-CF" width="90">
+            </div>
+            <p><strong>CÓDIGO SEGURIDAD:</strong> {{ $payment->security_code }}</p>
+        @else
+            <p style="margin-top:10px; border:1px solid #000; padding:2px;">COMPROBANTE PROVISIONAL</p>
+        @endif
+
+        <p style="margin-top:10px">¡Gracias por preferirnos!</p>
         <p style="margin-top: 5px; font-size: 8px;">Copia Cliente</p>
     </div>
 

@@ -13,17 +13,25 @@ class Payment extends Model
         'student_id',
         'enrollment_id',
         'payment_concept_id',
-        'user_id', // Agregamos user_id al fillable por si usas la asignación masiva
+        'user_id',
         'amount',
         'currency',
         'status',
         'gateway',
         'transaction_id',
         'due_date',
+        // --- Campos e-CF ---
+        'ncf',
+        'ncf_type',
+        'security_code',
+        'ncf_expiration',
+        'dgii_track_id',
+        'dgii_status'
     ];
 
     protected $casts = [
         'due_date' => 'date',
+        'ncf_expiration' => 'date',
         'amount' => 'decimal:2',
     ];
 
@@ -37,21 +45,29 @@ class Payment extends Model
         return $this->belongsTo(Enrollment::class);
     }
 
-    /**
-     * Relación con el concepto de pago.
-     * Renombrado de 'concept' a 'paymentConcept' para coincidir con tu código Livewire.
-     */
     public function paymentConcept()
     {
         return $this->belongsTo(PaymentConcept::class, 'payment_concept_id');
     }
 
-    /**
-     * Relación con el usuario (quien registró o procesó el pago, si aplica).
-     * Agregado porque tu código intenta hacer ->with('user').
-     */
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Genera la URL oficial de consulta para el código QR
+     */
+    public function getDgiiQrUrlAttribute()
+    {
+        // RNC del Emisor (CENTU) - Debe venir de config
+        $rncEmisor = '101000000'; 
+        
+        // Si no hay NCF o código de seguridad, no se puede generar un QR válido de e-CF
+        if (!$this->ncf || !$this->security_code) {
+            return null;
+        }
+
+        return "https://ecf.dgii.gov.do/consultas?rnc={$rncEmisor}&encf={$this->ncf}&monto={$this->amount}&codigoseguridad={$this->security_code}";
     }
 }
