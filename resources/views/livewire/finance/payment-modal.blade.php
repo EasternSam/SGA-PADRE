@@ -34,7 +34,7 @@
                 class="relative w-full max-w-6xl h-[90vh] bg-white rounded-2xl shadow-2xl text-left flex flex-col overflow-hidden ring-1 ring-black/5"
             >
                 
-                {{-- HEADER (Barra Superior) --}}
+                {{-- HEADER --}}
                 <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0 z-20">
                     <div class="flex items-center gap-3">
                         <div class="bg-indigo-600 p-2 rounded-lg text-white shadow-sm shadow-indigo-200">
@@ -54,16 +54,13 @@
                     </button>
                 </div>
 
-                {{-- CONTENIDO DIVIDIDO (Grid Layout) --}}
-                <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12">
+                {{-- CONTENIDO --}}
+                <div class="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
                     
-                    {{-- 
-                        COLUMNA 1: SELECCIÓN DE ESTUDIANTE (4 Columnas)
-                        Fondo Gris suave, lista scrollable.
-                    --}}
-                    <div class="lg:col-span-4 bg-gray-50 border-r border-gray-200 flex flex-col h-full overflow-hidden">
+                    {{-- COLUMNA IZQUIERDA: CLIENTE --}}
+                    <div class="w-full lg:w-4/12 bg-gray-50 border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col h-full overflow-hidden">
                         
-                        {{-- Buscador Fijo --}}
+                        {{-- Buscador --}}
                         <div class="p-5 border-b border-gray-200 bg-white shrink-0">
                             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Cliente / Estudiante</label>
                             <div class="relative group">
@@ -75,17 +72,16 @@
                                 <input 
                                     type="text" 
                                     wire:model.live.debounce.300ms="search_query"
-                                    class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
-                                    placeholder="Buscar por nombre, código..."
+                                    class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 disabled:text-gray-500"
+                                    placeholder="Buscar por nombre..."
                                     {{ $student ? 'disabled' : '' }}
                                 >
                             </div>
                         </div>
 
-                        {{-- Lista de Resultados / Estudiante Seleccionado --}}
+                        {{-- Lista Resultados --}}
                         <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
                             @if($student)
-                                {{-- Tarjeta Cliente Seleccionado --}}
                                 <div class="bg-white rounded-xl border-2 border-indigo-100 p-5 shadow-sm relative overflow-hidden group animate-fade-in-up">
                                     <button wire:click="clearStudent" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 p-1.5 hover:bg-red-50 rounded-lg transition-all" title="Cambiar cliente">
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
@@ -101,17 +97,6 @@
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 mt-1 border border-indigo-100">
                                             {{ $student->student_code ?? 'Nuevo' }}
                                         </span>
-                                    </div>
-                                    
-                                    <div class="mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm">
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-500">Email:</span>
-                                            <span class="text-gray-900 font-medium truncate max-w-[140px]">{{ $student->email }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-500">Móvil:</span>
-                                            <span class="text-gray-900 font-medium">{{ $student->mobile_phone ?? '-' }}</span>
-                                        </div>
                                     </div>
                                 </div>
                             @elseif(count($student_results) > 0)
@@ -129,196 +114,168 @@
                                 @endforeach
                             @else
                                 <div class="h-64 flex flex-col items-center justify-center text-gray-400 opacity-60">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16 mb-2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                                    </svg>
                                     <p class="text-sm font-medium">Busque un cliente</p>
                                 </div>
                             @endif
                         </div>
                     </div>
 
-                    {{-- 
-                        COLUMNA 2: DETALLES DE PAGO (8 Columnas)
-                        Fondo Blanco, scroll propio para el cuerpo, footer fijo.
-                    --}}
-                    <div class="lg:col-span-8 bg-white flex flex-col h-full overflow-hidden relative">
+                    {{-- COLUMNA DERECHA: PAGO --}}
+                    <div class="w-full lg:w-8/12 bg-white flex flex-col relative h-full overflow-hidden">
                         
-                        {{-- Overlay de Bloqueo si no hay estudiante --}}
-                        <div 
-                            x-show="!$wire.student_id" 
-                            x-transition.opacity.duration.300ms
-                            class="absolute inset-0 bg-white/80 z-30 flex flex-col items-center justify-center backdrop-blur-[2px]"
-                        >
+                        {{-- Overlay Bloqueo --}}
+                        <div x-show="!$wire.student_id" x-transition.opacity.duration.300ms class="absolute inset-0 bg-white/80 z-30 flex flex-col items-center justify-center backdrop-blur-[2px]">
                             <div class="text-center p-8 max-w-sm bg-white rounded-2xl shadow-xl border border-gray-100">
-                                <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-indigo-50 text-indigo-500 mb-4">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                                    </svg>
-                                </div>
                                 <h3 class="text-lg font-bold text-gray-900">Seleccione un Cliente</h3>
-                                <p class="text-sm text-gray-500 mt-2">Utilice el buscador de la izquierda para seleccionar al estudiante.</p>
+                                <p class="text-sm text-gray-500 mt-2">Utilice el buscador para comenzar.</p>
                             </div>
                         </div>
 
-                        {{-- Cuerpo del Formulario --}}
+                        {{-- Cuerpo Scrollable --}}
                         <div class="flex-1 overflow-y-auto p-6 lg:p-8 space-y-8 custom-scrollbar">
                             
-                            {{-- Mensaje de Error --}}
-                            @error('general') 
-                                <div class="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-3 animate-shake">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                                    </svg>
-                                    <span class="font-medium">{{ $message }}</span>
-                                </div>
-                            @enderror
-
-                            {{-- 1. Selector de Deuda (Alert Box) --}}
-                            @if($studentEnrollments && $studentEnrollments->count() > 0)
-                                <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 shadow-sm">
-                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                        <div class="flex items-center gap-3 text-amber-900">
-                                            <div class="p-2 bg-amber-100 rounded-lg shrink-0">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <h5 class="text-sm font-bold">Pagos Pendientes</h5>
-                                                <p class="text-xs text-amber-700">El estudiante tiene deudas registradas.</p>
-                                            </div>
-                                        </div>
-                                        <div class="w-full sm:w-auto min-w-[250px]">
-                                            <select 
-                                                wire:model.live="enrollment_id" 
-                                                class="w-full bg-white border-amber-300 text-gray-900 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block p-2.5 shadow-sm cursor-pointer"
+                            {{-- SECCIÓN A: CUENTAS POR COBRAR --}}
+                            @if($pendingDebts->count() > 0)
+                                <div>
+                                    <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                                        Cuentas por Cobrar
+                                        <span class="bg-red-100 text-red-700 px-1.5 rounded-md text-[10px]">{{ $pendingDebts->count() }}</span>
+                                    </h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        @foreach($pendingDebts as $debt)
+                                            <button 
+                                                type="button"
+                                                wire:click="selectDebt('{{ $debt['type'] }}', {{ $debt['id'] }})"
+                                                class="flex items-center justify-between p-3 rounded-xl border text-left transition-all group {{ ($payment_id_to_update == $debt['id'] || $enrollment_id == $debt['id']) ? 'bg-indigo-50 border-indigo-500 shadow-md ring-1 ring-indigo-500' : 'bg-white border-gray-200 hover:border-indigo-300 hover:shadow-sm' }}"
                                             >
-                                                <option value="">-- Pagar Nueva Transacción --</option>
-                                                @foreach($studentEnrollments as $enrollment)
-                                                    <option value="{{ $enrollment->id }}">
-                                                        {{ $enrollment->courseSchedule->module->name }} (RD$ {{ number_format($enrollment->courseSchedule->module->price ?? 0, 2) }})
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        </div>
+                                                <div>
+                                                    <p class="font-bold text-sm text-gray-900 group-hover:text-indigo-700">{{ Str::limit($debt['concept'], 35) }}</p>
+                                                    <p class="text-xs text-gray-500">{{ $debt['date']->format('d/m/Y') }}</p>
+                                                </div>
+                                                <div class="text-right">
+                                                    <p class="font-bold text-gray-900">RD$ {{ number_format($debt['amount'], 2) }}</p>
+                                                    <span class="text-[10px] font-medium text-red-600 uppercase">Pendiente</span>
+                                                </div>
+                                            </button>
+                                        @endforeach
                                     </div>
                                 </div>
+                                <hr class="border-gray-100">
                             @endif
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {{-- SECCIÓN B: FORMULARIO DE TRANSACCIÓN --}}
+                            <div>
+                                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-4">Detalles de la Transacción</h4>
                                 
-                                {{-- Concepto --}}
-                                <div class="md:col-span-2">
-                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Concepto de la Transacción</label>
-                                    <select 
-                                        wire:model.live="payment_concept_id" 
-                                        class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-3 shadow-sm transition-colors disabled:bg-gray-50 disabled:text-gray-400"
-                                        {{ $isConceptDisabled ? 'disabled' : '' }}
-                                    >
-                                        <option value="">Seleccione un concepto...</option>
-                                        @foreach($payment_concepts as $concept)
-                                            <option value="{{ $concept->id }}">{{ $concept->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    @error('payment_concept_id') <p class="mt-1 text-xs text-red-500 font-bold">{{ $message }}</p> @enderror
-                                </div>
-
-                                {{-- Monto --}}
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Monto Total</label>
-                                    <div class="relative rounded-md shadow-sm">
-                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <span class="text-gray-500 sm:text-lg font-bold">$</span>
-                                        </div>
-                                        <input 
-                                            type="number" 
-                                            wire:model.live="amount" 
-                                            step="0.01" 
-                                            class="pl-8 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-xl font-bold py-3 text-gray-900 disabled:bg-gray-50 disabled:text-gray-500" 
-                                            placeholder="0.00"
-                                            {{ $isAmountDisabled ? 'readonly' : '' }}
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {{-- Concepto --}}
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Concepto</label>
+                                        <select 
+                                            wire:model.live="payment_concept_id" 
+                                            class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-3 shadow-sm transition-colors disabled:bg-gray-50 disabled:text-gray-400"
+                                            {{ $isConceptDisabled ? 'disabled' : '' }}
                                         >
-                                    </div>
-                                    @error('amount') <p class="mt-1 text-xs text-red-500 font-bold">{{ $message }}</p> @enderror
-                                </div>
-
-                                {{-- Estado --}}
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Acción a Realizar</label>
-                                    <div class="relative">
-                                        <select wire:model.live="status" class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-3 pl-10 shadow-sm appearance-none">
-                                            <option value="Completado">Cobrar Ahora (Recibo)</option>
-                                            <option value="Pendiente">Generar Deuda (Factura)</option>
+                                            <option value="">Seleccione concepto...</option>
+                                            @foreach($payment_concepts as $concept)
+                                                <option value="{{ $concept->id }}">{{ $concept->name }}</option>
+                                            @endforeach
                                         </select>
-                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
-                                            <svg x-show="$wire.status === 'Completado'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-green-600"><path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clip-rule="evenodd" /></svg>
-                                            <svg x-show="$wire.status === 'Pendiente'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-amber-500" style="display:none;"><path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 0 0 0-1.5h-3.75V6Z" clip-rule="evenodd" /></svg>
-                                        </div>
+                                        @error('payment_concept_id') <p class="mt-1 text-xs text-red-500 font-bold">{{ $message }}</p> @enderror
                                     </div>
-                                </div>
-                            </div>
 
-                            {{-- 3. MÉTODO DE PAGO (Condicional) --}}
-                            <div x-show="$wire.status === 'Completado'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="pt-6 border-t border-gray-100">
-                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Método de Pago</label>
-                                
-                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                                    @foreach(['Efectivo', 'Transferencia', 'Tarjeta', 'Otro'] as $method)
-                                        <button 
-                                            type="button"
-                                            wire:click="$set('gateway', '{{ $method }}')"
-                                            class="group relative flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all {{ $gateway === $method ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50' }}"
-                                        >
-                                            <span class="text-sm font-bold">{{ $method }}</span>
-                                            @if($gateway === $method)
-                                                <div class="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white rounded-full p-0.5">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3 h-3"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" /></svg>
-                                                </div>
-                                            @endif
-                                        </button>
-                                    @endforeach
-                                </div>
+                                    {{-- Monto --}}
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Monto (DOP)</label>
+                                        <div class="relative rounded-md shadow-sm">
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <span class="text-gray-500 sm:text-lg font-bold">$</span>
+                                            </div>
+                                            <input 
+                                                type="number" 
+                                                wire:model.live="amount" 
+                                                step="0.01" 
+                                                class="pl-8 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-xl font-bold py-3 text-gray-900 disabled:bg-gray-50 disabled:text-gray-500" 
+                                                placeholder="0.00"
+                                                {{ $isAmountDisabled ? 'readonly' : '' }}
+                                            >
+                                        </div>
+                                        @error('amount') <p class="mt-1 text-xs text-red-500 font-bold">{{ $message }}</p> @enderror
+                                    </div>
 
-                                {{-- Panel Dinámico --}}
-                                <div class="bg-gray-50 rounded-xl p-5 border border-gray-200 shadow-inner">
-                                    {{-- Efectivo --}}
-                                    <div x-show="$wire.gateway === 'Efectivo'" class="flex flex-col sm:flex-row gap-6 items-center">
-                                        <div class="w-full sm:w-1/2">
-                                            <label class="block text-xs font-bold text-gray-500 mb-1">Dinero Recibido</label>
-                                            <div class="relative">
-                                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
-                                                <input type="number" wire:model.live="cash_received" class="w-full pl-6 pr-3 py-2.5 border border-gray-300 rounded-lg text-lg font-bold text-gray-900 focus:ring-green-500 focus:border-green-500" placeholder="0.00">
+                                    {{-- Acción --}}
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Acción</label>
+                                        <div class="relative">
+                                            <select wire:model.live="status" class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-3 pl-10 shadow-sm appearance-none cursor-pointer">
+                                                <option value="Completado">Cobrar Ahora (Ingreso)</option>
+                                                <option value="Pendiente">Generar Deuda (Crédito)</option>
+                                            </select>
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <svg x-show="$wire.status === 'Completado'" class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                                <svg x-show="$wire.status === 'Pendiente'" class="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
                                             </div>
                                         </div>
-                                        <div class="w-full sm:w-1/2 bg-white rounded-lg p-3 border border-gray-200 text-center shadow-sm">
-                                            <span class="block text-xs font-bold text-gray-400 uppercase tracking-wider">Devuelta / Cambio</span>
-                                            <span class="block text-2xl font-black {{ $change_amount < 0 ? 'text-red-500' : 'text-green-600' }}">
-                                                ${{ number_format($change_amount, 2) }}
-                                            </span>
-                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- SECCIÓN C: MÉTODO DE PAGO (SOLO SI ES COBRO INMEDIATO) --}}
+                                <div x-show="$wire.status === 'Completado'" x-transition class="mt-6 pt-6 border-t border-gray-100">
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Método de Pago</label>
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                                        @foreach(['Efectivo', 'Transferencia', 'Tarjeta', 'Otro'] as $method)
+                                            <button 
+                                                type="button"
+                                                wire:click="$set('gateway', '{{ $method }}')"
+                                                class="group relative flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all {{ $gateway === $method ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50' }}"
+                                            >
+                                                <span class="text-sm font-bold">{{ $method }}</span>
+                                                @if($gateway === $method)
+                                                    <div class="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white rounded-full p-0.5">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3 h-3"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" /></svg>
+                                                    </div>
+                                                @endif
+                                            </button>
+                                        @endforeach
                                     </div>
 
-                                    {{-- Referencia --}}
-                                    <div x-show="$wire.gateway !== 'Efectivo'" style="display: none;">
-                                        <label class="block text-xs font-bold text-gray-500 mb-1">Referencia / No. Autorización</label>
-                                        <input type="text" wire:model="transaction_id" class="w-full border border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 py-2.5 px-3 shadow-sm" placeholder="Ej: REF-12345678">
-                                        @error('transaction_id') <p class="mt-1 text-xs text-red-500 font-bold">{{ $message }}</p> @enderror
+                                    {{-- Panel Dinámico (Cambio o Referencia) --}}
+                                    <div class="bg-gray-50 rounded-xl p-5 border border-gray-200 shadow-inner">
+                                        <div x-show="$wire.gateway === 'Efectivo'" class="flex flex-col sm:flex-row gap-6 items-center">
+                                            <div class="w-full sm:w-1/2">
+                                                <label class="block text-xs font-bold text-gray-500 mb-1">Dinero Recibido</label>
+                                                <div class="relative">
+                                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                                                    <input type="number" wire:model.live="cash_received" class="w-full pl-6 pr-3 py-2.5 border border-gray-300 rounded-lg text-lg font-bold text-gray-900 focus:ring-green-500 focus:border-green-500" placeholder="0.00">
+                                                </div>
+                                            </div>
+                                            <div class="w-full sm:w-1/2 bg-white rounded-lg p-3 border border-gray-200 text-center shadow-sm">
+                                                <span class="block text-xs font-bold text-gray-400 uppercase tracking-wider">Devuelta</span>
+                                                <span class="block text-2xl font-black {{ $change_amount < 0 ? 'text-red-500' : 'text-emerald-600' }}">
+                                                    ${{ number_format($change_amount, 2) }}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div x-show="$wire.gateway !== 'Efectivo'" style="display: none;">
+                                            <label class="block text-xs font-bold text-gray-500 mb-1">Referencia / No. Autorización</label>
+                                            <input type="text" wire:model="transaction_id" class="w-full border border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 py-2.5 px-3 shadow-sm" placeholder="Ej: REF-12345678">
+                                            @error('transaction_id') <p class="mt-1 text-xs text-red-500 font-bold">{{ $message }}</p> @enderror
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-
                         </div>
 
-                        {{-- FOOTER (Sticky Bottom) --}}
+                        {{-- FOOTER FIJO --}}
                         <div class="px-6 py-5 bg-white border-t border-gray-200 flex justify-end gap-3 shrink-0 z-20">
-                            <button wire:click="closeModal" class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200">
+                            <button wire:click="closeModal" class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none">
                                 Cancelar
                             </button>
                             <button 
                                 wire:click="savePayment" 
                                 wire:loading.attr="disabled"
-                                class="px-8 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all transform active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                class="px-8 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all transform active:scale-95 focus:outline-none flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <span wire:loading.remove>
                                     {{ $status === 'Pendiente' ? 'Generar Deuda' : 'Procesar Cobro' }}

@@ -42,8 +42,11 @@ class PaymentModal extends Component
     // Propiedades de vinculación
     public $enrollment_id = null; 
     public $payment_id_to_update = null; 
-    public Collection $studentEnrollments; 
+    
+    // Colecciones de datos
     public Collection $payment_concepts;
+    public Collection $pendingDebts; // Nueva colección unificada para la vista
+
     public bool $isAmountDisabled = false;
     public bool $isConceptDisabled = false; 
 
@@ -52,15 +55,20 @@ class PaymentModal extends Component
         return [
             'student_id' => 'required|exists:students,id',
             'payment_concept_id' => [
-                Rule::requiredIf(empty($this->enrollment_id)),
+                Rule::requiredIf(empty($this->enrollment_id) && empty($this->payment_id_to_update)),
                 'nullable',
                 'exists:payment_concepts,id'
             ],
             'enrollment_id' => 'nullable|exists:enrollments,id',
             'amount' => 'required|numeric|min:0.01',
-            'gateway' => 'required|string|max:100',
+            // El gateway solo es requerido si el pago se completa ahora
+            'gateway' => [
+                Rule::requiredIf($this->status === 'Completado'),
+                'string',
+                'max:100'
+            ],
             'status' => 'required|string|max:50',
-            // La referencia es requerida si NO es efectivo y el estado es completado
+            // La referencia es requerida si es un pago completado NO en efectivo
             'transaction_id' => [
                 'nullable',
                 'string',
@@ -71,7 +79,7 @@ class PaymentModal extends Component
                     $this->gateway !== 'Otro'
                 )
             ],
-            // Validar que el efectivo cubra el monto solo si se está cobrando ahora
+            // Validar efectivo si es pago completado en efectivo
             'cash_received' => [
                 'nullable',
                 'numeric',
@@ -110,15 +118,16 @@ class PaymentModal extends Component
         if ($enrollment && $enrollment->student) {
             $this->selectStudent($enrollment->student->id);
             $this->enrollment_id = $enrollmentId; 
-            $this->updatedEnrollmentId($enrollmentId); 
+            // Cargar datos de la deuda
+            $this->selectDebt('enrollment', $enrollmentId);
             $this->show = true;
         }
     }
 
     public function mount(?Student $student = null)
     {
-        $this->studentEnrollments = collect();
         $this->payment_concepts = collect();
+        $this->pendingDebts = collect();
 
         if ($student && $student->exists) {
             $this->selectStudent($student->id);
@@ -137,7 +146,7 @@ class PaymentModal extends Component
 
         $this->student_results = Student::query()
             ->where(DB::raw("CONCAT(first_name, ' ', last_name)"), 'like', '%' . $this->search_query . '%')
-            ->orWhere('student_code', 'like', '%' . $this->search_query . '%') // Usar student_code en lugar de id_number
+            ->orWhere('student_code', 'like', '%' . $this->search_query . '%')
             ->orWhere('email', 'like', '%' . $this->search_query . '%')
             ->limit(5)
             ->get();
@@ -160,9 +169,9 @@ class PaymentModal extends Component
     {
         $this->student = null;
         $this->student_id = null;
-        $this->studentEnrollments = collect();
+        $this->pendingDebts = collect();
         $this->show_search = true;
-        $this->reset(['amount', 'enrollment_id', 'payment_concept_id', 'cash_received', 'change_amount']);
+        $this->resetForm();
     }
 
     public function loadInitialData()
@@ -170,68 +179,107 @@ class PaymentModal extends Component
         try {
             $this->payment_concepts = PaymentConcept::orderBy('name')->get();
         } catch (\Exception $e) {
-            Log::error("Error conceptos: " . $e->getMessage());
             $this->payment_concepts = collect();
         }
 
         if ($this->student_id) {
-            try {
-                $this->studentEnrollments = Enrollment::where('student_id', $this->student_id)
-                    ->where('status', 'Pendiente')
-                    ->with([
-                        'courseSchedule.module', 
-                        'payment'
-                    ])
-                    ->get();
-            } catch (\Exception $e) {
-                Log::error("Error inscripciones: " . $e->getMessage());
-                $this->studentEnrollments = collect();
-            }
+            $this->loadPendingDebts();
         }
     }
 
-    public function updatedEnrollmentId($value)
+    public function loadPendingDebts()
     {
-        $this->resetErrorBag();
-        $this->payment_id_to_update = null;
+        $this->pendingDebts = collect();
 
-        if (!empty($value)) {
-            $selectedEnrollment = $this->studentEnrollments->firstWhere('id', (int)$value);
+        // 1. Obtener Pagos ya registrados como "Pendiente" (Deudas explícitas)
+        $payments = Payment::where('student_id', $this->student_id)
+            ->where('status', 'Pendiente')
+            ->with('paymentConcept', 'enrollment.courseSchedule.module')
+            ->get();
 
-            if ($selectedEnrollment && $selectedEnrollment->payment) {
-                $pendingPayment = $selectedEnrollment->payment;
-                $this->amount = $pendingPayment->amount;
-                $this->payment_concept_id = $pendingPayment->payment_concept_id; 
-                $this->payment_id_to_update = $pendingPayment->id; 
-                $this->isAmountDisabled = true; 
-                $this->isConceptDisabled = true; 
-                // Si ya existe pago pendiente, asumimos que ahora se quiere completar
-                $this->status = 'Completado'; 
-            } else if ($selectedEnrollment) { 
-                $this->amount = $selectedEnrollment->courseSchedule->module->price ?? 0.00;
-                $this->payment_concept_id = $selectedEnrollment->courseSchedule->module->payment_concept_id ?? null;
-                $this->payment_id_to_update = null;
-                $this->isAmountDisabled = true;
-                $this->isConceptDisabled = true;
-                $this->status = 'Completado';
-            } else {
-                $this->resetPaymentFields();
+        foreach ($payments as $p) {
+            $conceptName = $p->paymentConcept->name ?? $p->description ?? 'Deuda General';
+            if ($p->enrollment) {
+                $conceptName .= ' - ' . ($p->enrollment->courseSchedule->module->name ?? '');
             }
-        } else {
-            $this->resetPaymentFields();
+
+            $this->pendingDebts->push([
+                'type' => 'payment',
+                'id' => $p->id,
+                'concept' => $conceptName,
+                'amount' => $p->amount,
+                'date' => $p->created_at,
+                'is_enrollment' => false
+            ]);
         }
+
+        // 2. Obtener Inscripciones "Pendiente" que NO tienen pago asociado aún (Deuda implícita)
+        $enrollments = Enrollment::where('student_id', $this->student_id)
+            ->where('status', 'Pendiente')
+            ->doesntHave('payment') // Solo las que no tienen un pago ya creado
+            ->with('courseSchedule.module.course')
+            ->get();
+
+        foreach ($enrollments as $e) {
+            $this->pendingDebts->push([
+                'type' => 'enrollment',
+                'id' => $e->id,
+                'concept' => 'Inscripción: ' . ($e->courseSchedule->module->course->name ?? 'Curso') . ' - ' . ($e->courseSchedule->module->name ?? ''),
+                'amount' => $e->courseSchedule->module->price ?? 0.00,
+                'date' => $e->created_at,
+                'is_enrollment' => true
+            ]);
+        }
+    }
+
+    /**
+     * Método para seleccionar una deuda de la lista y rellenar el formulario
+     */
+    public function selectDebt($type, $id)
+    {
+        $this->resetPaymentFields();
+        $this->resetErrorBag();
+
+        if ($type === 'payment') {
+            $payment = Payment::find($id);
+            if ($payment) {
+                $this->payment_id_to_update = $payment->id;
+                $this->amount = $payment->amount;
+                $this->payment_concept_id = $payment->payment_concept_id;
+                $this->enrollment_id = $payment->enrollment_id;
+                
+                $this->isAmountDisabled = true; // Bloquear monto al pagar deuda existente
+                $this->isConceptDisabled = true;
+                $this->status = 'Completado'; // Asumimos que quiere pagar
+            }
+        } elseif ($type === 'enrollment') {
+            $enrollment = Enrollment::with('courseSchedule.module')->find($id);
+            if ($enrollment) {
+                $this->enrollment_id = $enrollment->id;
+                $this->amount = $enrollment->courseSchedule->module->price ?? 0.00;
+                // Intentar buscar el concepto "Inscripción" o similar, o dejar nulo
+                $this->payment_concept_id = null; // El usuario puede seleccionar el concepto si no está definido
+                
+                $this->isAmountDisabled = true;
+                $this->status = 'Completado';
+            }
+        }
+        
         $this->calculateChange();
     }
 
     private function resetPaymentFields()
     {
-        $this->reset(['amount', 'payment_concept_id', 'isAmountDisabled', 'isConceptDisabled', 'payment_id_to_update']);
+        $this->reset(['amount', 'payment_concept_id', 'isAmountDisabled', 'isConceptDisabled', 'payment_id_to_update', 'enrollment_id', 'transaction_id']);
         $this->amount = 0.00;
+        $this->gateway = 'Efectivo';
+        $this->status = 'Completado';
     }
 
     public function updatedPaymentConceptId($value)
     {
         if (!$this->isConceptDisabled) {
+             // Si cambia concepto manualmente, limpiamos vinculaciones automáticas
              $this->enrollment_id = null;
              $this->payment_id_to_update = null;
         }
@@ -240,23 +288,9 @@ class PaymentModal extends Component
 
         if (!empty($value)) {
             $selectedConcept = $this->payment_concepts->firstWhere('id', (int)$value);
-
-            // Verificar si el concepto tiene monto fijo (adaptar según tu modelo real)
             if ($selectedConcept && isset($selectedConcept->amount) && $selectedConcept->amount > 0) {
                 $this->amount = $selectedConcept->amount;
-                // Opcional: Deshabilitar si es estricto
-                // $this->isAmountDisabled = true;
-            } else {
-                if (!$this->enrollment_id) {
-                     $this->amount = 0.00;
-                     $this->isAmountDisabled = false;
-                }
             }
-        } else {
-             if (!$this->enrollment_id) {
-                 $this->amount = 0.00;
-                 $this->isAmountDisabled = false;
-             }
         }
         $this->calculateChange();
     }
@@ -264,6 +298,11 @@ class PaymentModal extends Component
     // --- CÁLCULO DE CAMBIO (POS) ---
     public function updatedAmount() { $this->calculateChange(); }
     public function updatedCashReceived() { $this->calculateChange(); }
+    public function updatedStatus() 
+    { 
+        // Si cambia a Pendiente, limpiamos método de pago visualmente (aunque backend lo maneja)
+        $this->resetErrorBag(); 
+    }
 
     private function calculateChange()
     {
@@ -278,14 +317,18 @@ class PaymentModal extends Component
 
     public function savePayment(MatriculaService $matriculaService)
     {
+        // Si es deuda pendiente, ponemos gateway por defecto para pasar validación
+        if ($this->status === 'Pendiente') {
+            $this->gateway = 'Crédito'; 
+        }
+
         $this->validate();
         
         $isNewStudent = !$this->student->student_code;
 
         try {
             $payment = DB::transaction(function () use ($matriculaService, $isNewStudent) {
-                $payment = null;
-
+                
                 $data = [
                     'payment_concept_id' => $this->payment_concept_id,
                     'amount' => $this->amount,
@@ -296,35 +339,36 @@ class PaymentModal extends Component
                     'user_id' => Auth::id(),
                 ];
 
+                $payment = null;
+
                 if ($this->payment_id_to_update) {
+                    // Actualizar deuda existente (Pagarla)
                     $payment = Payment::find($this->payment_id_to_update);
                     if ($payment) {
                         $payment->update($data);
-                    } else {
-                        throw new \Exception("Error: No se encontró el pago pendiente para actualizar.");
                     }
                 } else {
+                    // Crear nuevo registro (Cobro directo o Nueva Deuda)
                     $data['student_id'] = $this->student_id;
                     $data['currency'] = 'DOP';
-                    // Si es deuda pendiente, ponemos vencimiento a 30 días por defecto
                     if ($this->status === 'Pendiente') {
                         $data['due_date'] = now()->addDays(30);
                     }
                     $payment = Payment::create($data);
                 }
                 
-                $payment->refresh();
-                
-                // Procesar efectos secundarios solo si se completa
-                if ($payment->status == 'Completado') {
+                // Efectos secundarios solo si se COMPLETA el pago
+                if ($payment && $payment->status == 'Completado') {
+                    
+                    // Matrícula automática
                     if ($isNewStudent && $payment->paymentConcept && stripos($payment->paymentConcept->name, 'Inscripción') !== false) {
-                        Log::info("Generando matrícula para nuevo estudiante.");
                         $matriculaService->generarMatricula($payment);
-                    } else {
-                        if ($payment->enrollment) {
-                            $payment->enrollment->status = 'Cursando';
-                            $payment->enrollment->save();
-                        }
+                    } 
+                    
+                    // Activar inscripción
+                    if ($payment->enrollment) {
+                        $payment->enrollment->status = 'Cursando';
+                        $payment->enrollment->save();
                     }
                 }
                 
@@ -333,7 +377,11 @@ class PaymentModal extends Component
 
             $msg = ($this->status === 'Pendiente') 
                 ? 'Deuda registrada correctamente en la cuenta del estudiante.' 
-                : 'Pago registrado exitosamente. ' . ($this->gateway === 'Efectivo' ? "Devuelta: RD$ " . number_format($this->change_amount, 2) : '');
+                : 'Pago procesado exitosamente.';
+
+            if ($this->status === 'Completado' && $this->gateway === 'Efectivo') {
+                $msg .= " Devuelta: RD$ " . number_format($this->change_amount, 2);
+            }
 
             session()->flash('message', $msg);
             
@@ -343,7 +391,7 @@ class PaymentModal extends Component
 
         } catch (\Exception $e) {
             Log::error("Error al guardar el pago: " . $e->getMessage());
-            $this->addError('general', 'Error al procesar el pago: ' . $e->getMessage());
+            $this->addError('general', 'Error al procesar: ' . $e->getMessage());
         }
     }
 
