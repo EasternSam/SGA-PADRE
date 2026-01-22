@@ -45,20 +45,7 @@
                     {{ __('Administración') }}
                 </p>
                 
-                {{-- NUEVO BOTÓN: REGISTRAR COBRO RÁPIDO --}}
-                {{-- CORRECCIÓN: Usamos onclick con Livewire.dispatch en lugar de @click de Alpine --}}
-                <button 
-                    onclick="Livewire.dispatch('openPaymentModal')"
-                    class="w-full flex items-center pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-white hover:text-white hover:bg-white/10 hover:border-white focus:outline-none focus:text-white focus:bg-white/10 focus:border-white transition duration-150 ease-in-out group"
-                >
-                    <div class="mr-3 p-1 bg-green-500 rounded-md text-white shadow-sm group-hover:bg-green-400 transition-colors">
-                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                        </svg>
-                    </div>
-                    <span class="font-bold text-green-100 group-hover:text-white">{{ __('Registrar Cobro') }}</span>
-                </button>
-                {{-- FIN NUEVO BOTÓN --}}
+                {{-- BOTÓN "REGISTRAR COBRO" ELIMINADO DE AQUÍ --}}
 
                 <x-responsive-nav-link :href="route('admin.students.index')"
                     :active="request()->routeIs(['admin.students.index', 'admin.students.profile'])"
@@ -137,60 +124,6 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
                     <span>{{ __('Diplomas') }}</span>
-                </x-responsive-nav-link>
-
-            </div>
-        @endrole
-
-        <!-- Sección Profesor -->
-        @role('Profesor')
-            <div class="pt-4 space-y-1">
-                <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-blue-200/80">
-                    {{ __('Portal Docente') }}
-                </p>
-                
-                <x-responsive-nav-link :href="route('teacher.dashboard')"
-                    :active="request()->routeIs(['teacher.dashboard', 'teacher.attendance', 'teacher.grades'])"
-                    wire:navigate>
-                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                        stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125M3.375 19.5h1.5v-4.875c0-.621.504-1.125 1.125-1.125h1.5c.621 0 1.125.504 1.125 1.125v4.875m0 0a1.125 1.125 0 0 0 1.125-1.125m1.125 1.125h1.5v-4.875c0-.621.504-1.125 1.125-1.125h1.5c.621 0 1.125.504 1.125 1.125v4.875M4.5 19.5v-4.875c0-.621.504-1.125 1.125-1.125h1.5c.621 0 1.125.504 1.125 1.125v4.875M19.5 19.5v-4.875c0-.621-.504-1.125-1.125-1.125h-1.5c-.621 0-1.125.504-1.125 1.125v4.875m-7.5 0v-4.875c0-.621.504-1.125 1.125-1.125h1.5c.621 0 1.125.504 1.125 1.125v4.875" />
-                    </svg>
-                    <span>{{ __('Mis Secciones') }}</span>
-                </x-responsive-nav-link>
-            </div>
-        @endrole
-
-        <!-- Sección Estudiante -->
-        @role('Estudiante')
-            <div class="pt-4 space-y-1">
-                <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-blue-200/80">
-                    {{ __('Portal Estudiante') }}
-                </p>
-                
-                <x-responsive-nav-link :href="route('student.dashboard')" :active="request()->routeIs('student.dashboard')"
-                    wire:navigate>
-                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                        stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                    </svg>
-                    <span>{{ __('Mi Expediente') }}</span>
-                </x-responsive-nav-link>
-
-                <x-responsive-nav-link :href="route('student.requests')" :active="request()->routeIs('student.requests')" wire:navigate>
-                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375c.621 0 1.125.504 1.125 1.125v.375M10.125 2.25v3.375c0 .621.504 1.125 1.125 1.125h3.375M9 15l2.25 2.25L15 15m-6 6h6" />
-                    </svg>
-                    <span>{{ __('Solicitudes') }}</span>
-                </x-responsive-nav-link>
-
-                <x-responsive-nav-link :href="route('student.payments')" :active="request()->routeIs('student.payments')" wire:navigate>
-                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
-                    </svg>
-                    <span>{{ __('Mis Finanzas') }}</span>
                 </x-responsive-nav-link>
 
             </div>
