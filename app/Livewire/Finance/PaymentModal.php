@@ -17,11 +17,11 @@ use Illuminate\Support\Facades\DB;
 
 class PaymentModal extends Component
 {
-    // --- PROPIEDADES DE ESTUDIANTE Y BÚSQUEDA (NUEVO) ---
-    public ?Student $student = null; // Ahora es opcional al inicio
+    // --- PROPIEDADES DE ESTUDIANTE Y BÚSQUEDA ---
+    public ?Student $student = null;
     public $search_query = '';
     public $student_results = [];
-    public $show_search = true; // Controla si mostramos la barra de búsqueda
+    public $show_search = true;
 
     public $show = false;
 
@@ -33,9 +33,9 @@ class PaymentModal extends Component
     public $status = 'Completado';
     public $gateway = 'Efectivo';
     public $transaction_id = null; 
-    public $notes = null; // Agregado para observaciones
+    public $notes = null;
 
-    // --- POS: EFECTIVO Y CAMBIO (NUEVO) ---
+    // --- POS: EFECTIVO Y CAMBIO ---
     public $cash_received = 0.00;
     public $change_amount = 0.00;
 
@@ -60,19 +60,23 @@ class PaymentModal extends Component
             'amount' => 'required|numeric|min:0.01',
             'gateway' => 'required|string|max:100',
             'status' => 'required|string|max:50',
-            // La referencia es requerida si NO es efectivo
+            // La referencia es requerida si NO es efectivo y el estado es completado
             'transaction_id' => [
                 'nullable',
                 'string',
                 'max:255',
-                Rule::requiredIf($this->gateway !== 'Efectivo' && $this->gateway !== 'Otro')
+                Rule::requiredIf(fn() => 
+                    $this->status === 'Completado' && 
+                    $this->gateway !== 'Efectivo' && 
+                    $this->gateway !== 'Otro'
+                )
             ],
-            // Validar que el efectivo cubra el monto
+            // Validar que el efectivo cubra el monto solo si se está cobrando ahora
             'cash_received' => [
                 'nullable',
                 'numeric',
                 function ($attribute, $value, $fail) {
-                    if ($this->gateway === 'Efectivo' && $value < $this->amount) {
+                    if ($this->status === 'Completado' && $this->gateway === 'Efectivo' && $value < $this->amount) {
                         $fail('El efectivo recibido es menor al monto a pagar.');
                     }
                 },
@@ -84,14 +88,13 @@ class PaymentModal extends Component
         'student_id.required' => 'Debe seleccionar un estudiante.',
         'payment_concept_id.required' => 'Debe seleccionar un concepto de pago.',
         'amount.required' => 'El monto no puede estar vacío.',
-        'transaction_id.required_if' => 'El número de referencia es obligatorio para este método de pago.',
+        'transaction_id.required_if' => 'El número de referencia es obligatorio para pagos completados con este método.',
     ];
 
     #[On('openPaymentModal')]
     public function openModal()
     {
         $this->resetForm();
-        // No cargamos initial data aquí si no hay estudiante seleccionado aún
         if ($this->student) {
             $this->loadInitialData();
         }
@@ -102,23 +105,16 @@ class PaymentModal extends Component
     public function openForEnrollment($enrollmentId)
     {
         $this->resetForm();
-        
-        // Buscar la inscripción para obtener el estudiante automáticamente
         $enrollment = Enrollment::with('student')->find($enrollmentId);
         
         if ($enrollment && $enrollment->student) {
-            $this->selectStudent($enrollment->student->id); // Esto carga al estudiante y sus datos
-            
-            // Asignar el ID de la inscripción
+            $this->selectStudent($enrollment->student->id);
             $this->enrollment_id = $enrollmentId; 
-            // Forzar la lógica de auto-rellenado
             $this->updatedEnrollmentId($enrollmentId); 
-            
             $this->show = true;
         }
     }
 
-    // Modificado: Student ahora es opcional en el mount
     public function mount(?Student $student = null)
     {
         $this->studentEnrollments = collect();
@@ -127,13 +123,11 @@ class PaymentModal extends Component
         if ($student && $student->exists) {
             $this->selectStudent($student->id);
         } else {
-            // Cargar conceptos aunque no haya estudiante, para el dropdown
             $this->payment_concepts = PaymentConcept::orderBy('name')->get();
         }
     }
 
-    // --- LÓGICA DE BÚSQUEDA (POS) ---
-
+    // --- LÓGICA DE BÚSQUEDA ---
     public function updatedSearchQuery()
     {
         if (strlen($this->search_query) < 2) {
@@ -143,7 +137,7 @@ class PaymentModal extends Component
 
         $this->student_results = Student::query()
             ->where(DB::raw("CONCAT(first_name, ' ', last_name)"), 'like', '%' . $this->search_query . '%')
-            ->orWhere('id_number', 'like', '%' . $this->search_query . '%') // Asumiendo matrícula o DNI
+            ->orWhere('student_code', 'like', '%' . $this->search_query . '%') // Usar student_code en lugar de id_number
             ->orWhere('email', 'like', '%' . $this->search_query . '%')
             ->limit(5)
             ->get();
@@ -157,8 +151,8 @@ class PaymentModal extends Component
             $this->student_id = $this->student->id;
             $this->search_query = ''; 
             $this->student_results = [];
-            $this->show_search = false; // Ocultar búsqueda para mostrar info del estudiante
-            $this->loadInitialData(); // Cargar inscripciones del estudiante seleccionado
+            $this->show_search = false; 
+            $this->loadInitialData(); 
         }
     }
 
@@ -171,8 +165,6 @@ class PaymentModal extends Component
         $this->reset(['amount', 'enrollment_id', 'payment_concept_id', 'cash_received', 'change_amount']);
     }
 
-    // --- FIN LÓGICA BÚSQUEDA ---
-    
     public function loadInitialData()
     {
         try {
@@ -213,19 +205,22 @@ class PaymentModal extends Component
                 $this->payment_id_to_update = $pendingPayment->id; 
                 $this->isAmountDisabled = true; 
                 $this->isConceptDisabled = true; 
+                // Si ya existe pago pendiente, asumimos que ahora se quiere completar
+                $this->status = 'Completado'; 
             } else if ($selectedEnrollment) { 
                 $this->amount = $selectedEnrollment->courseSchedule->module->price ?? 0.00;
                 $this->payment_concept_id = $selectedEnrollment->courseSchedule->module->payment_concept_id ?? null;
                 $this->payment_id_to_update = null;
                 $this->isAmountDisabled = true;
                 $this->isConceptDisabled = true;
+                $this->status = 'Completado';
             } else {
                 $this->resetPaymentFields();
             }
         } else {
             $this->resetPaymentFields();
         }
-        $this->calculateChange(); // Recalcular cambio si cambia el monto
+        $this->calculateChange();
     }
 
     private function resetPaymentFields()
@@ -246,11 +241,11 @@ class PaymentModal extends Component
         if (!empty($value)) {
             $selectedConcept = $this->payment_concepts->firstWhere('id', (int)$value);
 
-            if ($selectedConcept && $selectedConcept->is_fixed_amount) { // Asumiendo campo is_fixed_amount
-                $this->amount = $selectedConcept->default_amount ?? 0; // Asumiendo campo default_amount
-                 // Si tu modelo PaymentConcept no tiene estos campos, usa amount o price
-                 // $this->amount = $selectedConcept->amount; 
-                $this->isAmountDisabled = true;
+            // Verificar si el concepto tiene monto fijo (adaptar según tu modelo real)
+            if ($selectedConcept && isset($selectedConcept->amount) && $selectedConcept->amount > 0) {
+                $this->amount = $selectedConcept->amount;
+                // Opcional: Deshabilitar si es estricto
+                // $this->isAmountDisabled = true;
             } else {
                 if (!$this->enrollment_id) {
                      $this->amount = 0.00;
@@ -272,13 +267,12 @@ class PaymentModal extends Component
 
     private function calculateChange()
     {
-        if ($this->gateway === 'Efectivo') {
+        if ($this->gateway === 'Efectivo' && $this->status === 'Completado') {
             $received = floatval($this->cash_received);
             $amount = floatval($this->amount);
             $this->change_amount = ($received >= $amount) ? ($received - $amount) : 0;
         } else {
             $this->change_amount = 0;
-            $this->cash_received = 0;
         }
     }
 
@@ -300,8 +294,6 @@ class PaymentModal extends Component
                     'transaction_id' => $this->transaction_id,
                     'enrollment_id' => $this->enrollment_id,
                     'user_id' => Auth::id(),
-                    // Si tienes campo 'notes' o 'comments' en DB:
-                    // 'notes' => $this->notes, 
                 ];
 
                 if ($this->payment_id_to_update) {
@@ -314,16 +306,18 @@ class PaymentModal extends Component
                 } else {
                     $data['student_id'] = $this->student_id;
                     $data['currency'] = 'DOP';
+                    // Si es deuda pendiente, ponemos vencimiento a 30 días por defecto
+                    if ($this->status === 'Pendiente') {
+                        $data['due_date'] = now()->addDays(30);
+                    }
                     $payment = Payment::create($data);
                 }
                 
                 $payment->refresh();
-                $payment->load('student.user', 'enrollment.courseSchedule.module');
-
+                
+                // Procesar efectos secundarios solo si se completa
                 if ($payment->status == 'Completado') {
-                    Log::info("Pago {$payment->id} completado.");
-
-                    if ($isNewStudent) {
+                    if ($isNewStudent && $payment->paymentConcept && stripos($payment->paymentConcept->name, 'Inscripción') !== false) {
                         Log::info("Generando matrícula para nuevo estudiante.");
                         $matriculaService->generarMatricula($payment);
                     } else {
@@ -337,7 +331,11 @@ class PaymentModal extends Component
                 return $payment;
             });
 
-            session()->flash('message', 'Pago registrado exitosamente. ' . ($this->gateway === 'Efectivo' ? "Devuelta: RD$ " . number_format($this->change_amount, 2) : ''));
+            $msg = ($this->status === 'Pendiente') 
+                ? 'Deuda registrada correctamente en la cuenta del estudiante.' 
+                : 'Pago registrado exitosamente. ' . ($this->gateway === 'Efectivo' ? "Devuelta: RD$ " . number_format($this->change_amount, 2) : '');
+
+            session()->flash('message', $msg);
             
             $this->closeModal(); 
             $this->dispatch('paymentAdded'); 
@@ -353,32 +351,20 @@ class PaymentModal extends Component
     {
         $this->show = false;
         $this->resetForm();
-        // Si quieres que al cerrar se olvide al estudiante seleccionado (estilo POS), descomenta:
-        // $this->clearStudent(); 
     }
 
     private function resetForm()
     {
         $this->reset([
-            'payment_id', 
-            'payment_concept_id', 
-            'amount', 
-            'gateway', 
-            'status', 
-            'transaction_id',
-            'enrollment_id',
-            'payment_id_to_update',
-            'isAmountDisabled',
-            'isConceptDisabled',
-            'cash_received',
-            'change_amount',
-            'notes'
+            'payment_id', 'payment_concept_id', 'amount', 'gateway', 'status', 
+            'transaction_id', 'enrollment_id', 'payment_id_to_update', 
+            'isAmountDisabled', 'isConceptDisabled', 'cash_received', 
+            'change_amount', 'notes'
         ]);
 
         $this->amount = 0.00;
         $this->gateway = 'Efectivo';
         $this->status = 'Completado';
         $this->resetErrorBag();
-        // No reseteamos student_id aquí para permitir pagos consecutivos al mismo alumno
     }
 }
