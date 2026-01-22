@@ -46,8 +46,9 @@
                 </p>
                 
                 {{-- NUEVO BOTÓN: REGISTRAR COBRO RÁPIDO --}}
+                {{-- CORRECCIÓN: Usamos onclick con Livewire.dispatch en lugar de @click de Alpine --}}
                 <button 
-                    @click="Livewire.dispatch('openPaymentModal')"
+                    onclick="Livewire.dispatch('openPaymentModal')"
                     class="w-full flex items-center pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-white hover:text-white hover:bg-white/10 hover:border-white focus:outline-none focus:text-white focus:bg-white/10 focus:border-white transition duration-150 ease-in-out group"
                 >
                     <div class="mr-3 p-1 bg-green-500 rounded-md text-white shadow-sm group-hover:bg-green-400 transition-colors">
@@ -98,7 +99,7 @@
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
                     <span>{{ __('Finanzas') }}</span>
                 </x-responsive-nav-link>
