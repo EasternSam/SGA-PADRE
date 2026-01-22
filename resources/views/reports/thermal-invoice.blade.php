@@ -31,6 +31,7 @@
         .separator { border-bottom: 1px dashed #000; margin: 6px 0; }
         .separator-solid { border-bottom: 1px solid #000; margin: 6px 0; }
         
+        /* Título del tipo de comprobante */
         .ncf-title {
             text-align: center;
             font-weight: bold;
@@ -64,9 +65,9 @@
         <img src="{{ asset('centuu.png') }}" alt="LOGO" class="logo-img">
         <div class="company-name">CENTRO DE TECNOLOGÍA UNIVERSAL</div>
         <div class="info">
-            <strong>RNC: 1-01-00000-0</strong><br>
-            Calle Principal #123, Hato Mayor<br>
-            Tel: (809) 555-5555
+            <strong>RNC: 101-14245-6</strong><br>
+            Av. Doctor Delgado #103 Gazcue, Distrito Nacional, RD<br>
+            Tel: (809) 221-3222
         </div>
     </div>
 
