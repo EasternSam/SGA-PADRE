@@ -147,14 +147,19 @@
                                 <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 ml-1">{{ $dayName }}</h3>
                                 <div class="space-y-3">
                                     @foreach($slots as $slot)
+                                        @php
+                                            // Formateo de hora a 12 horas
+                                            $startTime = \Carbon\Carbon::parse($slot['start_real'])->format('g:i A');
+                                            $endTime = \Carbon\Carbon::parse($slot['end_real'])->format('g:i A');
+                                        @endphp
                                         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col sm:flex-row gap-4 hover:shadow-md transition-shadow relative overflow-hidden">
                                             <!-- Banda de color lateral -->
                                             <div class="absolute left-0 top-0 bottom-0 w-1.5 {{ str_replace(['bg-', 'text-', 'border-'], ['bg-', '', ''], $slot['color']) }}"></div>
                                             
                                             <!-- Hora -->
                                             <div class="flex-shrink-0 min-w-[100px] flex flex-col justify-center border-r border-gray-100 pr-4 sm:mr-0 mr-4">
-                                                <span class="text-lg font-bold text-gray-900 font-mono">{{ $slot['start_real'] }}</span>
-                                                <span class="text-xs text-gray-500 font-medium">{{ $slot['end_real'] }}</span>
+                                                <span class="text-lg font-bold text-gray-900 font-mono">{{ $startTime }}</span>
+                                                <span class="text-xs text-gray-500 font-medium">{{ $endTime }}</span>
                                                 <span class="text-[10px] text-gray-400 mt-1 uppercase tracking-wide">Horario</span>
                                             </div>
 
