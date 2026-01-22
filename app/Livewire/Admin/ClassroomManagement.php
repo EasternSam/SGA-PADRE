@@ -13,7 +13,6 @@ class ClassroomManagement extends Component
 {
     public $selectedClassroom = null;
     public $showingScheduleModal = false;
-    public $weekSchedules = []; // Lista lineal para el sidebar del modal
     
     // Estructura para el calendario visual
     public $calendarGrid = []; 
@@ -34,8 +33,13 @@ class ClassroomManagement extends Component
 
     public function render()
     {
-        // Cargamos todos los edificios y aulas
-        $buildings = Building::with('classrooms')->get();
+        // Cargamos edificios con aulas y sus horarios ACTIVOS (futuros o presentes)
+        // Y filtramos explícitamente deleted_at null por seguridad
+        $buildings = Building::with(['classrooms.schedules' => function($q) {
+            $q->whereNull('deleted_at') // <--- FILTRO DE SEGURIDAD
+              ->where('end_date', '>=', now())
+              ->with(['module.course', 'teacher']);
+        }])->get();
 
         return view('livewire.admin.classroom-management', [
             'buildings' => $buildings
@@ -44,24 +48,15 @@ class ClassroomManagement extends Component
 
     public function showSchedule($classroomId)
     {
-        // CORRECCIÓN 1: Usar whereDate para incluir cursos que terminan hoy
         $this->selectedClassroom = Classroom::with(['schedules' => function($q) {
-            $q->whereDate('end_date', '>=', now()->startOfDay()) 
-              ->orderBy('start_time')
+            $q->whereNull('deleted_at') // <--- FILTRO DE SEGURIDAD
+              ->whereDate('end_date', '>=', now()->startOfDay())
               ->with(['module.course', 'teacher']);
         }, 'building'])->find($classroomId);
 
-        // Preparamos la lista lineal para la vista (panel derecho o inferior del modal)
-        if ($this->selectedClassroom) {
-            $this->weekSchedules = $this->selectedClassroom->schedules;
-            $this->generateCalendarGrid();
-        } else {
-            $this->weekSchedules = [];
-            $this->calendarGrid = [];
-        }
+        $this->generateCalendarGrid();
 
         $this->showingScheduleModal = true;
-        // Importante: Disparar evento para que Alpine abra el modal visualmente
         $this->dispatch('open-modal', 'schedule-view-modal');
     }
 
@@ -69,13 +64,12 @@ class ClassroomManagement extends Component
     {
         $this->showingScheduleModal = false;
         $this->selectedClassroom = null;
-        $this->weekSchedules = [];
         $this->calendarGrid = [];
         $this->dispatch('close-modal', 'schedule-view-modal');
     }
 
     /**
-     * Construye una matriz [Hora][Día] = Info del Curso para el calendario visual
+     * Construye una matriz [Hora][Día] = Info del Curso
      */
     private function generateCalendarGrid()
     {
@@ -87,6 +81,9 @@ class ClassroomManagement extends Component
 
         foreach ($this->selectedClassroom->schedules as $schedule) {
             
+            // Doble verificación por si acaso
+            if ($schedule->trashed()) continue;
+
             if (!$schedule->start_time || !$schedule->end_time) continue;
 
             try {
@@ -96,28 +93,19 @@ class ClassroomManagement extends Component
                 continue;
             }
             
-            // Recorrer los días que toca este curso
             if (is_array($schedule->days_of_week)) {
                 foreach ($schedule->days_of_week as $dayRaw) {
                     
-                    // CORRECCIÓN 2: Normalización robusta de UTF-8 para días con tilde (Miércoles, Sábado)
                     $day = mb_convert_case($dayRaw, MB_CASE_TITLE, "UTF-8");
 
-                    // Rellenar slots de hora
                     $tempStart = $start->copy();
                     
-                    // Seguridad para evitar bucles infinitos
                     if ($tempStart >= $end) continue;
 
                     while ($tempStart < $end) {
-                        // Estandarizamos la llave de hora a "HH:00" para la grilla
-                        // Esto agrupa los cursos que empiezan ej: 14:15 en el bloque de las 14:00
                         $hourKey = $tempStart->format('H') . ':00'; 
                         
-                        // Solo procesamos si la hora está dentro de nuestro rango visual
                         if (in_array($hourKey, $this->timeSlots)) {
-                            
-                            // Si es la primera hora del bloque O la celda está vacía
                             if (!isset($this->calendarGrid[$hourKey][$day])) {
                                 
                                 $duration = $start->diffInHours($end);
@@ -134,10 +122,6 @@ class ClassroomManagement extends Component
                                 ];
                             }
                         }
-                        
-                        // Avanzamos 1 hora para marcar el siguiente bloque si es necesario
-                        // (Nota: En este enfoque simple usando rowspan, el while podría optimizarse, 
-                        // pero lo dejamos así para asegurar que recorra el tiempo correctamente).
                         $tempStart->addHour();
                     }
                 }

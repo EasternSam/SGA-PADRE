@@ -3,28 +3,21 @@
 namespace App\Services;
 
 use App\Models\CourseSchedule;
-use App\Models\Classroom;
 use Carbon\Carbon;
 
 class ClassroomService
 {
     /**
      * Verifica si un aula está disponible para un horario específico.
-     * * @param int $classroomId
-     * @param array $days Días de la semana ['Lunes', 'Miércoles']
-     * @param string $startTime 'HH:MM'
-     * @param string $endTime 'HH:MM'
-     * @param string $startDate 'Y-m-d'
-     * @param string $endDate 'Y-m-d'
-     * @param int|null $excludeScheduleId ID a excluir (para ediciones)
-     * @return bool|string True si está libre, String con el error si está ocupada.
      */
     public function checkAvailability($classroomId, $days, $startTime, $endTime, $startDate, $endDate, $excludeScheduleId = null)
     {
         if (empty($days) || !$classroomId) return true;
 
         // Buscar conflictos
-        $conflicts = CourseSchedule::where('classroom_id', $classroomId)
+        $conflicts = CourseSchedule::query()
+            ->whereNull('deleted_at') // <--- FORZAR FILTRO DE ELIMINADOS
+            ->where('classroom_id', $classroomId)
             ->where(function ($query) use ($startDate, $endDate) {
                 // Que las fechas del curso se solapen
                 $query->where('start_date', '<=', $endDate)
@@ -38,12 +31,10 @@ class ClassroomService
             ->when($excludeScheduleId, function ($q) use ($excludeScheduleId) {
                 $q->where('id', '!=', $excludeScheduleId);
             })
-            ->with('module.course') // Para mostrar info del conflicto
+            ->with('module.course') 
             ->get();
 
-        // Filtrar por días de la semana (JSON array filter no siempre es eficiente en SQL puro para arrays, lo hacemos en PHP para precisión)
         foreach ($conflicts as $conflict) {
-            // Intersección de días: Si tienen días en común, hay choque
             $commonDays = array_intersect($days, $conflict->days_of_week ?? []);
             
             if (!empty($commonDays)) {
@@ -53,6 +44,6 @@ class ClassroomService
             }
         }
 
-        return true; // Disponible
+        return true; 
     }
 }

@@ -25,9 +25,10 @@ class Classroom extends Model
     public function isOccupiedNow()
     {
         $now = now();
-        $currentDay = ucfirst($now->locale('es')->dayName); // Lunes, Martes...
+        $currentDay = ucfirst($now->locale('es')->dayName); 
         
         return $this->schedules()
+            ->whereNull('deleted_at') // <--- FORZAR FILTRO
             ->where('start_date', '<=', $now)
             ->where('end_date', '>=', $now)
             ->whereJsonContains('days_of_week', $currentDay)
