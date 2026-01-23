@@ -25,6 +25,12 @@
     <style>
         [x-cloak] { display: none !important; }
     </style>
+
+    <!-- SCRIPT DE CARDNET (TOKENIZACIÓN) -->
+    <!-- Se carga dinámicamente usando la Public Key configurada -->
+    <script type="text/javascript" 
+            src="{{ config('services.cardnet.base_uri') }}/Scripts/PWCheckout.js?key={{ config('services.cardnet.public_key') }}">
+    </script>
 </head>
 
 <body class="h-full font-sans antialiased text-slate-600">
@@ -57,7 +63,7 @@
                                 <p class="mt-1 text-sm text-gray-500">{{ session('success') }}</p>
                             </div>
                             <div class="ml-4 flex flex-shrink-0">
-                                <button @click="show = false" class="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none">
+                                <button @click="show = false" class="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-50 focus:outline-none">
                                     <span class="sr-only">Cerrar</span>
                                     <i class="fas fa-times"></i>
                                 </button>
@@ -84,7 +90,7 @@
                                 <p class="mt-1 text-sm text-gray-500">{{ session('error') }}</p>
                             </div>
                             <div class="ml-4 flex flex-shrink-0">
-                                <button @click="show = false" class="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-500">
+                                <button @click="show = false" class="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-50">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>

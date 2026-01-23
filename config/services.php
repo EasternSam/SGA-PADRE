@@ -36,18 +36,27 @@ return [
     ],
 
     // ====================================================================
-    // NUEVA CONFIGURACIÓN PARA LA API DE WORDPRESS (PUNTO 3)
+    // NUEVA CONFIGURACIÓN PARA LA API DE WORDPRESS
     // ====================================================================
     'wordpress' => [
-        // La URL base de tu API de WP. Ej: https://tudominio.com/wp-json/
         'base_uri' => env('WP_API_BASE_URI'),
-        
-        // La clave secreta que pusiste en WP (Ajustes > SGA Settings > API Key)
-        // Esta es la clave que WP espera en el header 'X-SGA-Signature'
         'secret' => env('WP_API_SECRET'),
     ],
+    
     // ====================================================================
-    // FIN DE NUEVA CONFIGURACIÓN
+    // CONFIGURACIÓN DE CARDNET (TOKENIZACIÓN)
+    // ====================================================================
+    'cardnet' => [
+        // URL base de la API (Lab o Prod)
+        'base_uri' => env('CARDNET_BASE_URI', 'https://lab.cardnet.com.do/servicios/tokens/v1'),
+        
+        // Llaves proporcionadas por Cardnet (ver documentación)
+        'public_key' => env('CARDNET_PUBLIC_KEY', 'J_eHXPYlDo9wlFpFXjgalm_I56ONV7HQ'), // Key para el script JS
+        'private_key' => env('CARDNET_PRIVATE_KEY', '9kYH2uY5zoTD-WBMEoc0KNRQYrC7crPRJ7zPegg3suXguw_8L-rZDQ'), // Key para API Server-to-Server
+        
+        // Configuración visual del Lightbox
+        'image_url' => env('CARDNET_IMAGE_URL', 'https://www.cardnet.com.do/capp/images/logo_nuevo_x_2.png'),
+    ],
     // ====================================================================
 
 ];

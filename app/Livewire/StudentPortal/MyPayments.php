@@ -23,8 +23,8 @@ class MyPayments extends Component
     
     // --- Modal de Pago ---
     public $showPaymentModal = false;
-    public $selectedPaymentId; // <-- Nuevo: ID específico del pago a procesar
-    public $selectedEnrollment; // Información de contexto
+    public $selectedPaymentId; // ID del pago (deuda) seleccionado
+    public $selectedEnrollment;
     public $amountToPay = 0;
     public $paymentMethod = 'card'; 
     
@@ -39,17 +39,12 @@ class MyPayments extends Component
 
     protected $rules = [
         'paymentMethod' => 'required|in:card,transfer',
-        'cardName' => 'required_if:paymentMethod,card',
-        'cardNumber' => 'required_if:paymentMethod,card|min:16|max:19',
-        'cardExpiry' => 'required_if:paymentMethod,card',
-        'cardCvc' => 'required_if:paymentMethod,card|min:3|max:4',
+        // 'cardName' => 'required_if:paymentMethod,card', // Cardnet maneja esto en su modal
         'transferReference' => 'required_if:paymentMethod,transfer',
     ];
 
     protected $messages = [
         'required_if' => 'Este campo es obligatorio.',
-        'cardNumber.min' => 'Número de tarjeta inválido.',
-        'cardCvc.min' => 'CVC inválido.',
     ];
 
     public function mount()
@@ -57,18 +52,14 @@ class MyPayments extends Component
         $this->student = Student::where('user_id', Auth::id())->first();
     }
 
-    /**
-     * Abre el modal para pagar un PAGO específico (no solo una inscripción).
-     */
     public function openPaymentModal($paymentId)
     {
         $this->resetValidation();
         $this->reset(['cardName', 'cardNumber', 'cardExpiry', 'cardCvc', 'transferReference', 'paymentMethod']);
-        $this->paymentMethod = 'card';
+        $this->paymentMethod = 'card'; // Default a tarjeta para Cardnet
 
         $this->selectedPaymentId = $paymentId;
         
-        // Buscar el pago específico
         $payment = Payment::with('enrollment.courseSchedule.module')->find($paymentId);
         
         if (!$payment) {
@@ -87,48 +78,84 @@ class MyPayments extends Component
         $this->showPaymentModal = false;
     }
 
-    public function processPayment(MatriculaService $matriculaService)
+    /**
+     * Inicia el proceso de pago.
+     * Si es Cardnet, dispara el evento JS. Si es Transferencia, procesa directamente.
+     */
+    public function initiatePayment(MatriculaService $matriculaService)
     {
-        $this->validate();
+        // Validaciones básicas (solo referencia si es transferencia)
+        $this->validate([
+            'paymentMethod' => 'required|in:card,transfer',
+            'transferReference' => 'required_if:paymentMethod,transfer',
+        ]);
 
+        if ($this->paymentMethod === 'card') {
+            // Preparar datos para Cardnet y disparar JS
+            $this->dispatch('start-cardnet-payment', [
+                'amount' => $this->amountToPay,
+                'orderId' => $this->selectedPaymentId, // Usamos el ID del pago como referencia
+                'description' => 'Pago Matricula/Curso', // Puedes personalizar esto
+                'studentName' => $this->student->full_name,
+                'studentEmail' => Auth::user()->email,
+                'formId' => 'cardnet-form' // ID del form oculto en la vista
+            ]);
+            
+            // No cerramos el modal ni procesamos nada más hasta que Cardnet responda
+        } else {
+            // Proceso normal para Transferencia
+            $this->processPayment($matriculaService, 'Transferencia Bancaria', $this->transferReference, 'Pendiente');
+        }
+    }
+
+    /**
+     * Método llamado desde JS cuando Cardnet devuelve el token exitosamente.
+     */
+    public function processCardnetPayment($token, MatriculaService $matriculaService)
+    {
+        // AQUÍ IRÍA LA LLAMADA AL BACKEND DE CARDNET PARA CONFIRMAR EL PAGO USANDO EL TOKEN
+        // Por ahora simularemos que si hay token, es exitoso.
+        // En producción: $cardnetService->processPayment($token, $amount, $orderId);
+
+        if ($token) {
+            $this->processPayment($matriculaService, 'Cardnet (Tarjeta)', $token, 'Completado');
+        } else {
+            $this->addError('general', 'Error al procesar con Cardnet. Token no recibido.');
+        }
+    }
+
+    /**
+     * Lógica centralizada de procesamiento de pago
+     */
+    private function processPayment(MatriculaService $matriculaService, $gateway, $transactionId, $status)
+    {
         if (!$this->student || !$this->selectedPaymentId) return;
 
         try {
-            DB::transaction(function () use ($matriculaService) {
+            DB::transaction(function () use ($matriculaService, $gateway, $transactionId, $status) {
                 
-                $status = ($this->paymentMethod === 'card') ? 'Completado' : 'Pendiente';
-                $gateway = ($this->paymentMethod === 'card') ? 'Tarjeta Online' : 'Transferencia Bancaria';
-                
-                $reference = ($this->paymentMethod === 'card') 
-                    ? 'TX-' . strtoupper(uniqid()) 
-                    : $this->transferReference;
-
-                // Buscar el pago real por ID
                 $payment = Payment::find($this->selectedPaymentId);
 
                 if ($payment) {
-                    // Actualizar el pago existente
                     $payment->update([
                         'status' => $status,
                         'gateway' => $gateway,
-                        'transaction_id' => $reference,
+                        'transaction_id' => $transactionId,
                         'user_id' => Auth::id(),
                     ]);
 
                     if ($status === 'Completado') {
-                        // Si es inscripción inicial, generar matrícula
-                        if (!$this->student->student_code && $payment->paymentConcept && $payment->paymentConcept->name === 'Inscripción') {
+                        // Lógica de matrícula y activación
+                        if (!$this->student->student_code && $payment->paymentConcept && stripos($payment->paymentConcept->name, 'Inscripción') !== false) {
                             $matriculaService->generarMatricula($payment);
                             $this->student->refresh();
                         }
 
-                        // Activar inscripción si estaba pendiente
                         $enrollment = $payment->enrollment;
                         if ($enrollment && $enrollment->status === 'Pendiente') {
                             $enrollment->status = 'Cursando';
                             $enrollment->save();
                         }
-
                         session()->flash('message', '¡Pago realizado con éxito!');
                     } else {
                         session()->flash('message', 'Pago reportado. Pendiente de validación.');
@@ -160,16 +187,12 @@ class MyPayments extends Component
             ]);
         }
 
-        // --- CORRECCIÓN CLAVE: Buscar PAGOS pendientes, no Inscripciones ---
-        // Esto traerá tanto la inscripción inicial pendiente como las mensualidades vencidas
         $pendingDebts = Payment::where('student_id', $this->student->id)
             ->whereIn('status', ['Pendiente', 'pendiente'])
             ->with(['enrollment.courseSchedule.module.course', 'enrollment.courseSchedule.teacher'])
-            ->orderBy('due_date', 'asc') // Ordenar por fecha de vencimiento (más urgente primero)
+            ->orderBy('due_date', 'asc')
             ->get();
 
-        // Historial (excluyendo los pendientes que mostramos arriba para no duplicar visualmente si se desea, 
-        // pero generalmente el historial muestra todo o solo lo pasado. Aquí mostramos todo ordenado por fecha)
         $paymentHistory = Payment::where('student_id', $this->student->id)
             ->with(['paymentConcept', 'enrollment.courseSchedule.module'])
             ->orderBy('created_at', 'desc')

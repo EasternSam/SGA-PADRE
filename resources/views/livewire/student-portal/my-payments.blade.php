@@ -1,10 +1,6 @@
 <div class="min-h-screen bg-gray-50/50 pb-12">
 
-    {{-- 
-        =================================================================
-        ENCABEZADO (HEADER)
-        ================================================================= 
-    --}}
+    {{-- HEADER --}}
     <x-slot name="header">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -25,17 +21,11 @@
     {{-- CONTENEDOR PRINCIPAL --}}
     <div class="mx-auto w-full max-w-[98%] px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
 
-        {{-- Alertas (Estilo Toast Minimalista) --}}
+        {{-- Alertas --}}
         @if (session()->has('message'))
             <div x-data="{ show: true }" 
                  x-show="show" 
                  x-init="setTimeout(() => show = false, 5000)"
-                 x-transition:enter="transition ease-out duration-300"
-                 x-transition:enter-start="opacity-0 translate-y-2"
-                 x-transition:enter-end="opacity-100 translate-y-0"
-                 x-transition:leave="transition ease-in duration-200"
-                 x-transition:leave-start="opacity-100 translate-y-0"
-                 x-transition:leave-end="opacity-0 translate-y-2" 
                  class="fixed bottom-6 right-6 z-50">
                 <div class="bg-gray-900 text-white rounded-lg px-4 py-3 shadow-xl flex items-center gap-3 min-w-[300px]">
                     <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -67,9 +57,7 @@
             @if($pendingDebts->count() > 0)
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     @foreach($pendingDebts as $debt)
-                        {{-- Card Estilo Shopify Rediseñada --}}
                         <div class="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col h-full overflow-hidden">
-                            {{-- Header de la Card --}}
                             <div class="p-6 border-b border-gray-50 bg-gray-50/30 flex justify-between items-start">
                                 <div>
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 mb-3">
@@ -87,7 +75,6 @@
                                 </div>
                             </div>
 
-                            {{-- Cuerpo de la Card --}}
                             <div class="p-6 flex-1 space-y-4">
                                 <div class="grid grid-cols-2 gap-4 text-sm">
                                     <div>
@@ -103,7 +90,6 @@
                                 </div>
                             </div>
 
-                            {{-- Footer / Acción --}}
                             <div class="p-6 pt-0 mt-auto">
                                 <div class="flex items-center justify-between gap-4 pt-4 border-t border-gray-50">
                                     <div>
@@ -124,7 +110,6 @@
                     @endforeach
                 </div>
             @else
-                {{-- Empty State Clean --}}
                 <div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
                     <div class="mx-auto h-12 w-12 text-gray-400 mb-3 flex items-center justify-center rounded-full bg-white border border-gray-200 shadow-sm">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -304,41 +289,18 @@
 
                                 {{-- Formularios --}}
                                 <div class="mt-6">
+                                    {{-- FORMULARIO OCULTO PARA CARDNET --}}
+                                    <form id="cardnet-form" style="display: none;">
+                                        <input type="hidden" name="PWToken" id="PWToken" />
+                                    </form>
+
                                     @if($paymentMethod === 'card')
                                         <div class="space-y-4 animate-fade-in-up" wire:key="card-form">
-                                            <div>
-                                                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1.5">Nombre en la tarjeta</label>
-                                                <input type="text" wire:model="cardName" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5 transition-shadow" placeholder="Como aparece en el plástico">
-                                                @error('cardName') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                                            </div>
-                                            
-                                            <div>
-                                                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1.5">Número de tarjeta</label>
-                                                <div class="relative">
-                                                    <input type="text" wire:model="cardNumber" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm pl-10 py-2.5 font-mono" placeholder="0000 0000 0000 0000">
-                                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                        <svg class="h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><path d="M2 10h20v7a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-7zm20-2V6a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2h20z"/></svg>
-                                                    </div>
-                                                </div>
-                                                @error('cardNumber') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                                            </div>
-
-                                            <div class="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1.5">Expira</label>
-                                                    <input type="text" wire:model="cardExpiry" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5 text-center font-mono" placeholder="MM/YY">
-                                                    @error('cardExpiry') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                                                </div>
-                                                <div>
-                                                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1.5">CVC</label>
-                                                    <input type="text" wire:model="cardCvc" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5 text-center font-mono" placeholder="123">
-                                                    @error('cardCvc') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                                                </div>
-                                            </div>
-
-                                            <div class="pt-2 flex items-center justify-center gap-2 text-xs text-gray-400">
-                                                <svg class="w-3 h-3 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                                                Pagos procesados de forma segura.
+                                            <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4 flex gap-3">
+                                                <svg class="w-5 h-5 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                <p class="text-sm text-indigo-800">
+                                                    Al hacer clic en "Pagar Ahora", se abrirá una ventana segura de Cardnet para ingresar los datos de su tarjeta.
+                                                </p>
                                             </div>
                                         </div>
                                     @else
@@ -396,14 +358,15 @@
                                 </button>
                                 <button 
                                     type="button" 
-                                    wire:click="processPayment"
+                                    {{-- CAMBIO: Usamos initiatePayment que decide si llama a Cardnet o no --}}
+                                    wire:click="initiatePayment"
                                     wire:loading.attr="disabled"
                                     class="inline-flex justify-center rounded-lg border border-transparent bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto min-w-[120px]"
                                 >
-                                    <span wire:loading.remove wire:target="processPayment">
+                                    <span wire:loading.remove wire:target="initiatePayment">
                                         Pagar RD$ {{ number_format($amountToPay, 2) }}
                                     </span>
-                                    <span wire:loading wire:target="processPayment" class="flex items-center gap-2">
+                                    <span wire:loading wire:target="initiatePayment" class="flex items-center gap-2">
                                         <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -476,4 +439,46 @@
         </div>
 
     </div>
+
+    {{-- SCRIPT DE CARDNET (Manejador de Eventos) --}}
+    <script>
+        document.addEventListener('livewire:init', () => {
+            // Escuchar el evento de PHP para iniciar Cardnet
+            Livewire.on('start-cardnet-payment', (event) => {
+                const data = event[0]; // Argumentos llegan en array
+                
+                // Configurar PWCheckout
+                if (typeof PWCheckout !== 'undefined') {
+                    PWCheckout.SetProperties({
+                        "name": "Pago de Matrícula",
+                        "email": data.studentEmail,
+                        "image": "{{ config('services.cardnet.image_url') }}",
+                        "button_label": "Pagar #monto#",
+                        "description": data.description,
+                        "currency": "DOP",
+                        "amount": data.amount,
+                        "lang": "ESP",
+                        "form_id": data.formId, // ID del form oculto
+                        "checkout_card": 1,
+                        "autoSubmit": "false",
+                        "empty": "false"
+                    });
+                    
+                    // Definir callback global
+                    window.OnTokenReceived = function(token) {
+                        // Enviar token al componente Livewire
+                        @this.call('processCardnetPayment', token);
+                    };
+
+                    // Vincular evento
+                    PWCheckout.Bind("tokenCreated", window.OnTokenReceived);
+
+                    // Abrir Lightbox
+                    PWCheckout.OpenLightbox();
+                } else {
+                    alert('Error: El servicio de pagos no está disponible en este momento.');
+                }
+            });
+        });
+    </script>
 </div>
