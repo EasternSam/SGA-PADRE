@@ -54,28 +54,35 @@ Route::get('/', function () {
 // 1. Ruta de Respuesta (Éxito/Fallo) - Acepta POST y GET
 Route::any('/cardnet/response', function (Request $request, EcfService $ecfService, MatriculaService $matriculaService) {
     
-    // DEBUG: Verificar qué llega exactamente
-    Log::info('Cardnet Debug: Retorno recibido en /cardnet/response', $request->all());
+    // DEBUG EXTENDIDO: Capturar TODO lo que llega
+    Log::channel('single')->info('Cardnet DEBUG FULL: Retorno recibido en /cardnet/response', [
+        'method' => $request->method(),
+        'all_inputs' => $request->all(),
+        'headers' => $request->headers->all(), // Ver headers puede dar pistas
+        'ip' => $request->ip()
+    ]);
 
     $orderId = $request->input('OrdenId') ?? $request->input('OrdenID');
     $responseCode = $request->input('ResponseCode');
     $authCode = $request->input('AuthorizationCode');
     $txId = $request->input('TransactionId');
     
-    // NUEVO: Capturar mensaje de respuesta del banco si existe
-    $responseMessage = $request->input('ResponseMessage') ?? $request->input('ResponseMsg') ?? 'Transacción declinada sin mensaje específico';
+    // Capturar mensaje de respuesta, intentando varios campos posibles
+    $responseMessage = $request->input('ResponseMessage') 
+                    ?? $request->input('ResponseMsg') 
+                    ?? $request->input('message')
+                    ?? 'Transacción declinada sin mensaje específico';
 
     // 1. Buscar el pago asociado
     $payment = Payment::find($orderId);
 
     if (!$payment) {
         Log::error('Cardnet Error: Pago no encontrado ID: ' . $orderId);
+        // Si no hay pago, redirigir a una página genérica o login
         return redirect('/')->with('error', 'Error crítico: Pago no encontrado o sesión expirada.');
     }
 
     // 2. AUTO-LOGIN DE EMERGENCIA
-    // Si la sesión se perdió al volver del banco (Auth::check() es false), 
-    // forzamos el login usando el ID del usuario dueño del pago.
     if (!Auth::check() && $payment->user_id) {
         Log::warning("Cardnet Debug: Sesión perdida detectada. Restaurando usuario ID {$payment->user_id}...");
         Auth::loginUsingId($payment->user_id);
@@ -118,17 +125,21 @@ Route::any('/cardnet/response', function (Request $request, EcfService $ecfServi
         if ($user && $user->hasRole('Estudiante')) {
             return redirect()->route('student.payments')->with('message', '¡Pago realizado con éxito! Código: ' . $authCode);
         } else {
+            // Si por alguna razón no es estudiante (ej. admin probando), ir al dashboard
             return redirect('/dashboard')->with('message', 'Pago procesado correctamente.');
         }
 
     } else {
-        // RECHAZADO - AHORA CON MENSAJE ESPECÍFICO
+        // RECHAZADO
+        $logMessage = "Cardnet Rechazo [{$responseCode}]: {$responseMessage}";
+        if ($txId) $logMessage .= " | Ref: {$txId}";
+
         $payment->update([
             'status' => 'Rechazado',
-            'notes' => "Cardnet Rechazo [{$responseCode}]: {$responseMessage}",
+            'notes' => $logMessage,
         ]);
         
-        Log::warning("Cardnet Rechazo: Orden {$orderId} - Código {$responseCode} - Msg: {$responseMessage}");
+        Log::warning("Cardnet Rechazo Log: " . $logMessage);
 
         return redirect()->route('student.payments')->with('error', "El pago fue rechazado por el banco. Razón: {$responseMessage} (Código: {$responseCode})");
     }
