@@ -7,51 +7,90 @@ use Illuminate\Support\Facades\Log;
 
 class CardnetService
 {
-    protected $baseUrl;
+    protected $environment;
     protected $privateKey;
+    protected $apiUrl;
 
     public function __construct()
     {
-        $this->baseUrl = config('services.cardnet.api_base_uri');
+        $this->environment = config('services.cardnet.environment', 'sandbox');
         $this->privateKey = config('services.cardnet.private_key');
+
+        // URLs basadas en la lógica de SGA Wordpress
+        if ($this->environment === 'production') {
+            $this->apiUrl = 'https://servicios.cardnet.com.do/servicios/tokens/v1/api/Purchase';
+        } else {
+            $this->apiUrl = 'https://lab.cardnet.com.do/servicios/tokens/v1/api/Purchase';
+        }
     }
 
     /**
-     * Realiza un cargo a una tarjeta tokenizada.
-     * @param string $token El token devuelto por el Lightbox (PaymentProfileID)
-     * @param float $amount El monto a cobrar
-     * @param string $invoiceId ID de referencia de la factura/pago interno
-     * @return array Respuesta de la API
+     * Realiza un cargo a una tarjeta usando el Token generado por el frontend.
+     * Replica la lógica de _process_cardnet_purchase de Wordpress.
+     *
+     * @param string $token El token devuelto por el JS (TokenId)
+     * @param float $amount El monto a cobrar (en decimales, ej: 100.00)
+     * @param string $orderNumber Número de orden único
+     * @return array Respuesta estandarizada
      */
-    public function purchase($token, $amount, $invoiceId)
+    public function purchase($token, $amount, $orderNumber)
     {
-        // Nota: La URL es api_base_uri/api/Purchase
-        $url = "{$this->baseUrl}/api/Purchase";
-        
+        // Cardnet espera el monto en CENTAVOS (Integer)
+        // Ej: 100.00 DOP -> 10000
+        $amountInCents = intval(floatval($amount) * 100);
+
         $payload = [
-            "PaymentProfileID" => $token,
-            "Amount" => $amount, // En formato normal, la API suele manejarlo
-            "DataDo" => [
-                "Invoice" => (string)$invoiceId,
-                // "Tax" => "0" 
-            ],
-            "Description" => "Pago Matricula/Curso #{$invoiceId}"
+            'TrxToken' => $token,
+            'Order'    => (string)$orderNumber,
+            'Amount'   => $amountInCents,
+            'Currency' => 'DOP',
+            'Capture'  => true,
+            'DataDo'   => [
+                'Invoice' => (string)$orderNumber,
+            ]
         ];
+
+        Log::info("Cardnet Request: Orden #{$orderNumber}", ['payload' => $payload, 'url' => $this->apiUrl]);
 
         try {
             $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-                // Autenticación Basic con la Private Key como usuario (sin password)
-                'Authorization' => 'Basic ' . base64_encode($this->privateKey . ':') 
-            ])->post($url, $payload);
+                'Content-Type'  => 'application/json',
+                // Autenticación Basic con la Private Key como usuario (el password se deja vacío con :)
+                'Authorization' => 'Basic ' . base64_encode($this->privateKey . ':')
+            ])
+            ->timeout(45)
+            ->post($this->apiUrl, $payload);
 
-            Log::info('Cardnet Purchase Response', ['status' => $response->status(), 'body' => $response->json()]);
+            $body = $response->json();
+            
+            Log::info("Cardnet Response: Orden #{$orderNumber}", ['status' => $response->status(), 'body' => $body]);
 
-            return $response->json();
+            // Verificar éxito según estructura de Cardnet
+            // En WP: $response_body['Transaction']['TransactionStatusId'] === 1
+            $isSuccessful = isset($body['Transaction']['TransactionStatusId']) && $body['Transaction']['TransactionStatusId'] === 1;
+
+            if ($isSuccessful) {
+                return [
+                    'success'            => true,
+                    'authorization_code' => $body['Transaction']['ApprovalCode'] ?? 'N/A',
+                    'response_code'      => '00',
+                    'message'            => $body['Transaction']['Steps'][0]['ResponseMessage'] ?? 'Aprobada',
+                    'transaction_id'     => $body['Transaction']['TransactionId'] ?? null, // ID interno de Cardnet
+                ];
+            } else {
+                return [
+                    'success'       => false,
+                    'response_code' => $body['Transaction']['Steps'][0]['ResponseCode'] ?? '99',
+                    'message'       => $body['Transaction']['Steps'][0]['ResponseMessage'] ?? 'Rechazada por el banco',
+                ];
+            }
 
         } catch (\Exception $e) {
-            Log::error('Cardnet Purchase Error: ' . $e->getMessage());
-            return ['response-code' => 'ERROR', 'response-message' => $e->getMessage()];
+            Log::error('Cardnet Exception: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Error de comunicación con la pasarela: ' . $e->getMessage()
+            ];
         }
     }
 }

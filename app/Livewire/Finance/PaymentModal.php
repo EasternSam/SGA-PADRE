@@ -8,7 +8,8 @@ use App\Models\PaymentConcept;
 use App\Models\Payment;
 use App\Models\Enrollment;
 use App\Services\MatriculaService;
-use App\Services\EcfService; // <-- IMPORTAR SERVICIO
+use App\Services\EcfService;
+use App\Services\CardnetService; // <-- Importar servicio
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
@@ -18,7 +19,6 @@ use Illuminate\Support\Facades\DB;
 
 class PaymentModal extends Component
 {
-    // ... (Propiedades sin cambios) ...
     public ?Student $student = null;
     public $search_query = '';
     public $student_results = [];
@@ -41,7 +41,6 @@ class PaymentModal extends Component
     public bool $isAmountDisabled = false;
     public bool $isConceptDisabled = false; 
 
-    // ... (rules, messages y listeners se mantienen igual) ...
     protected function rules()
     {
         return [
@@ -66,7 +65,8 @@ class PaymentModal extends Component
                 Rule::requiredIf(fn() => 
                     $this->status === 'Completado' && 
                     $this->gateway !== 'Efectivo' && 
-                    $this->gateway !== 'Otro'
+                    $this->gateway !== 'Otro' &&
+                    $this->gateway !== 'Tarjeta' // Tarjeta se llena auto
                 )
             ],
             'cash_received' => [
@@ -282,6 +282,18 @@ class PaymentModal extends Component
         $this->resetErrorBag(); 
     }
 
+    // Se dispara cuando cambiamos a Tarjeta para iniciar el JS
+    public function updatedGateway($value)
+    {
+        if ($value === 'Tarjeta' && $this->amount > 0 && $this->student) {
+            $this->dispatch('start-cardnet-payment', [
+                'amount' => $this->amount,
+                'studentEmail' => $this->student->email,
+                'description' => 'Pago SGA-PADRE'
+            ]);
+        }
+    }
+
     private function calculateChange()
     {
         if ($this->gateway === 'Efectivo' && $this->status === 'Completado') {
@@ -293,15 +305,58 @@ class PaymentModal extends Component
         }
     }
 
-    // --- AQUÍ ESTÁ EL CAMBIO PRINCIPAL ---
-    public function savePayment(MatriculaService $matriculaService, EcfService $ecfService) // <-- Inyección
+    /**
+     * Procesa el pago con tarjeta usando el Token recibido del JS.
+     * Este método es llamado desde el Frontend via @this.call()
+     */
+    public function processCardnetPayment($token, MatriculaService $matriculaService, EcfService $ecfService, CardnetService $cardnetService)
     {
+        $this->validate();
+
+        // Orden temporal para enviar a Cardnet
+        $orderNumber = 'SGA-' . now()->timestamp . '-' . Auth::id();
+
+        // 1. Procesar cobro en Cardnet
+        $response = $cardnetService->purchase($token, $this->amount, $orderNumber);
+
+        if (!$response['success']) {
+            $this->addError('general', 'Error en Cardnet: ' . $response['message']);
+            $this->dispatch('cardnet-error', message: $response['message']); // Opcional para alertas JS
+            return;
+        }
+
+        // 2. Si es exitoso, asignar datos de transacción
+        $this->transaction_id = $response['authorization_code']; // Código de aprobación
+        $this->notes = "Cardnet Ref: " . $response['transaction_id'] . " | Msg: " . $response['message'];
+        
+        // 3. Guardar en base de datos (reutilizamos lógica interna)
+        $this->finalizePayment($matriculaService, $ecfService);
+    }
+
+    public function savePayment(MatriculaService $matriculaService, EcfService $ecfService)
+    {
+        if ($this->gateway === 'Tarjeta') {
+            // Si el usuario da clic en "Procesar" pero es Tarjeta, validamos que ya se haya cobrado (transaction_id lleno)
+            // O simplemente retornamos porque el cobro lo maneja el evento processCardnetPayment
+            if (empty($this->transaction_id)) {
+                $this->addError('general', 'Complete el pago en el formulario de tarjeta arriba.');
+                return;
+            }
+        }
+
         if ($this->status === 'Pendiente') {
             $this->gateway = 'Crédito'; 
         }
 
         $this->validate();
-        
+        $this->finalizePayment($matriculaService, $ecfService);
+    }
+
+    /**
+     * Lógica común de guardado en BD
+     */
+    private function finalizePayment($matriculaService, $ecfService)
+    {
         $isNewStudent = !$this->student->student_code;
 
         try {
@@ -315,6 +370,7 @@ class PaymentModal extends Component
                     'transaction_id' => $this->transaction_id,
                     'enrollment_id' => $this->enrollment_id,
                     'user_id' => Auth::id(),
+                    'notes' => $this->notes, // Guardar notas de Cardnet si existen
                 ];
 
                 $payment = null;
