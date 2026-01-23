@@ -472,6 +472,10 @@
                          console.warn('Advertencia: Usando fallback PWCheckout.Iframe.OpenLightbox');
                          // Reasignamos para que el flujo continúe
                          PWCheckout.OpenLightbox = PWCheckout.Iframe.OpenLightbox;
+                     } else if (typeof PWCheckout.iframe !== 'undefined' && typeof PWCheckout.iframe.OpenLightbox === 'function') {
+                         // Fallback minúsculas
+                         console.warn('Advertencia: Usando fallback PWCheckout.iframe.OpenLightbox');
+                         PWCheckout.OpenLightbox = PWCheckout.iframe.OpenLightbox;
                      } else {
                          console.groupEnd();
                          alert('Error técnico: Método de apertura del Lightbox no encontrado.');

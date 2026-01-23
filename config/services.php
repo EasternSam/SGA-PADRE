@@ -36,7 +36,7 @@ return [
     ],
 
     // ====================================================================
-    // NUEVA CONFIGURACIÓN PARA LA API DE WORDPRESS
+    // CONFIGURACIÓN PARA LA API DE WORDPRESS
     // ====================================================================
     'wordpress' => [
         'base_uri' => env('WP_API_BASE_URI'),
@@ -47,8 +47,9 @@ return [
     // CONFIGURACIÓN DE CARDNET (TOKENIZACIÓN)
     // ====================================================================
     'cardnet' => [
-        // URL base correcta según documentación (sin /api/...)
-        'base_uri' => env('CARDNET_BASE_URI', 'https://lab.cardnet.com.do/servicios/tokens/v1'),
+        // CORRECCIÓN IMPORTANTE: Usamos la URL directa del proveedor tecnológico (Seglan)
+        // para evitar el error de "origen no permitido" en el script JS de pruebas.
+        'base_uri' => env('CARDNET_BASE_URI', 'https://tr-tsp-test.gtp-seglan.com/tr-tsp-mw-cardnet/v1'),
         
         // Llaves proporcionadas por Cardnet
         'public_key' => env('CARDNET_PUBLIC_KEY', 'J_eHXPYlDo9wlFpFXjgalm_I56ONV7HQ'), 
