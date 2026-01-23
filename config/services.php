@@ -40,7 +40,7 @@ return [
         'merchant_id'     => env('CARDNET_MERCHANT_ID', '349000000'), 
         'terminal_id'     => env('CARDNET_TERMINAL_ID'),
         'currency'        => '214', // 214 = Peso Dominicano
-        'url_sandbox'     => 'https://lab.cardnet.com.do/authorize', 
+        'url_sandbox'     => 'https://labservicios.cardnet.com.do/authorize', 
         'url_production'  => 'https://payments.cardnet.com.do/authorize',
     ],
 
