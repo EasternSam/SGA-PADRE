@@ -8,6 +8,7 @@ use App\Models\Enrollment;
 use App\Models\Payment;
 use App\Models\PaymentConcept;
 use App\Services\MatriculaService;
+use App\Services\CardnetService; // Importar Servicio
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -23,8 +24,8 @@ class MyPayments extends Component
     
     // --- Modal de Pago ---
     public $showPaymentModal = false;
-    public $selectedPaymentId; 
-    public $selectedEnrollment; 
+    public $selectedPaymentId; // ID del pago (deuda) seleccionado
+    public $selectedEnrollment;
     public $amountToPay = 0;
     public $paymentMethod = 'card'; 
     
@@ -39,6 +40,7 @@ class MyPayments extends Component
 
     protected $rules = [
         'paymentMethod' => 'required|in:card,transfer',
+        // 'cardName' => 'required_if:paymentMethod,card', // Cardnet maneja esto en su modal
         'transferReference' => 'required_if:paymentMethod,transfer',
     ];
 
@@ -55,7 +57,7 @@ class MyPayments extends Component
     {
         $this->resetValidation();
         $this->reset(['cardName', 'cardNumber', 'cardExpiry', 'cardCvc', 'transferReference', 'paymentMethod']);
-        $this->paymentMethod = 'card'; 
+        $this->paymentMethod = 'card'; // Default a tarjeta para Cardnet
 
         $this->selectedPaymentId = $paymentId;
         
@@ -79,50 +81,30 @@ class MyPayments extends Component
 
     /**
      * Inicia el proceso de pago.
+     * Si es Cardnet, dispara el evento JS. Si es Transferencia, procesa directamente.
      */
     public function initiatePayment(MatriculaService $matriculaService)
     {
-        // --- DEBUG LOGS ---
-        Log::info('>>> INICIO INITIATE PAYMENT <<<');
-        Log::info('User ID: ' . Auth::id());
-        Log::info('Método de Pago: ' . $this->paymentMethod);
-        Log::info('Monto: ' . $this->amountToPay);
-
-        // Validaciones básicas
+        // Validaciones básicas (solo referencia si es transferencia)
         $this->validate([
             'paymentMethod' => 'required|in:card,transfer',
             'transferReference' => 'required_if:paymentMethod,transfer',
         ]);
 
         if ($this->paymentMethod === 'card') {
-            Log::info('Flujo: Tarjeta Online (Cardnet)');
-
-            // Verificar datos críticos
-            if (!$this->student) {
-                Log::error('ERROR CRÍTICO: No se encontró estudiante asociado al usuario.');
-                $this->addError('general', 'Error de perfil de estudiante.');
-                return;
-            }
-
-            // Preparar payload
-            $payload = [
+            // Preparar datos para Cardnet y disparar JS
+            $this->dispatch('start-cardnet-payment', [
                 'amount' => $this->amountToPay,
-                'orderId' => $this->selectedPaymentId, 
-                'description' => 'Pago #' . $this->selectedPaymentId, 
+                'orderId' => $this->selectedPaymentId, // Usamos el ID del pago como referencia
+                'description' => 'Pago Matricula/Curso', // Puedes personalizar esto
                 'studentName' => $this->student->full_name,
                 'studentEmail' => Auth::user()->email,
-                'formId' => 'cardnet-form' 
-            ];
-
-            Log::info('Payload preparado para Cardnet:', $payload);
+                'formId' => 'cardnet-form' // ID del form oculto en la vista
+            ]);
             
-            // Disparar evento
-            $this->dispatch('start-cardnet-payment', $payload);
-            
-            Log::info('Evento start-cardnet-payment DISPARADO correctamente.');
-            
+            // No cerramos el modal ni procesamos nada más hasta que Cardnet responda
         } else {
-            Log::info('Flujo: Transferencia Bancaria');
+            // Proceso normal para Transferencia
             $this->processPayment($matriculaService, 'Transferencia Bancaria', $this->transferReference, 'Pendiente');
         }
     }
@@ -130,15 +112,22 @@ class MyPayments extends Component
     /**
      * Método llamado desde JS cuando Cardnet devuelve el token exitosamente.
      */
-    public function processCardnetPayment($token, MatriculaService $matriculaService)
+    public function processCardnetPayment($token, MatriculaService $matriculaService, CardnetService $cardnetService)
     {
-        Log::info('>>> CALLBACK CARDNET RECIBIDO EN BACKEND <<<');
-        Log::info('Token recibido: ' . ($token ? $token : 'NULO'));
-
         if ($token) {
-            $this->processPayment($matriculaService, 'Cardnet (Tarjeta)', $token, 'Completado');
+            // Realizar cobro en servidor con CardnetService
+            $response = $cardnetService->purchase($token, $this->amountToPay, $this->selectedPaymentId);
+
+            // Verificar respuesta de Cardnet (Ajusta según la estructura real de su respuesta)
+            // Generalmente verificamos 'response-code' == '00' o similar
+            if (isset($response['response-code']) && $response['response-code'] === '00') {
+                $transactionId = $response['authorization-code'] ?? $token; // Usar código de auth o token
+                $this->processPayment($matriculaService, 'Cardnet (Tarjeta)', $transactionId, 'Completado');
+            } else {
+                 $msg = $response['response-message'] ?? 'Pago rechazado.';
+                 $this->addError('general', 'Error Cardnet: ' . $msg);
+            }
         } else {
-            Log::error('Error: Token vacío recibido desde JS.');
             $this->addError('general', 'Error al procesar con Cardnet. Token no recibido.');
         }
     }
@@ -164,6 +153,7 @@ class MyPayments extends Component
                     ]);
 
                     if ($status === 'Completado') {
+                        // Lógica de matrícula y activación
                         if (!$this->student->student_code && $payment->paymentConcept && stripos($payment->paymentConcept->name, 'Inscripción') !== false) {
                             $matriculaService->generarMatricula($payment);
                             $this->student->refresh();
@@ -174,9 +164,7 @@ class MyPayments extends Component
                             $enrollment->status = 'Cursando';
                             $enrollment->save();
                         }
-
                         session()->flash('message', '¡Pago realizado con éxito!');
-                        Log::info('Pago completado y registrado en DB. ID: ' . $payment->id);
                     } else {
                         session()->flash('message', 'Pago reportado. Pendiente de validación.');
                     }
@@ -187,7 +175,7 @@ class MyPayments extends Component
             $this->reset('selectedPaymentId');
 
         } catch (\Exception $e) {
-            Log::error('Error pago estudiante DB: ' . $e->getMessage());
+            Log::error('Error pago estudiante: ' . $e->getMessage());
             $this->addError('general', 'Error procesando el pago. Intente más tarde.');
         }
     }
