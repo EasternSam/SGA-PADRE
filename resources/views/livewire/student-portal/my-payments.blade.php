@@ -445,14 +445,43 @@
             // Escuchar el evento de PHP para iniciar Cardnet
             Livewire.on('start-cardnet-payment', (data) => {
                 // Verificar si 'data' es un array (Livewire 3) o un objeto directo
-                // Si es un array (Livewire 3 a veces envuelve los parámetros), accedemos al primer elemento
                 const payload = Array.isArray(data) ? data[0] : data;
 
+                // DIAGNÓSTICO EN CONSOLA
+                console.group('Cardnet Debug Start');
                 console.log('Evento start-cardnet-payment recibido', data);
-                console.log('Payload procesado:', payload);
+                console.log('Payload:', payload);
+
+                // Verificamos si PWCheckout está definido
+                if (typeof PWCheckout === 'undefined') {
+                    console.error('ERROR CRÍTICO: PWCheckout is undefined. El script de Cardnet no se cargó.');
+                    console.groupEnd();
+                    alert('Error de configuración: La pasarela de pagos no está disponible. (Script no cargado)');
+                    return;
+                }
+
+                console.log('Objeto PWCheckout disponible:', PWCheckout);
                 
-                // Configurar PWCheckout
-                if (typeof PWCheckout !== 'undefined') {
+                // Inspeccionar las funciones disponibles
+                if (typeof PWCheckout.OpenLightbox !== 'function') {
+                     console.error('ERROR: PWCheckout.OpenLightbox no es una función.');
+                     console.log('Propiedades disponibles en PWCheckout:', Object.keys(PWCheckout));
+                     
+                     // Intento de fallback (algunas versiones usan Iframe.OpenLightbox)
+                     if (typeof PWCheckout.Iframe !== 'undefined' && typeof PWCheckout.Iframe.OpenLightbox === 'function') {
+                         console.warn('Advertencia: Usando fallback PWCheckout.Iframe.OpenLightbox');
+                         // Reasignamos para que el flujo continúe
+                         PWCheckout.OpenLightbox = PWCheckout.Iframe.OpenLightbox;
+                     } else {
+                         console.groupEnd();
+                         alert('Error técnico: Método de apertura del Lightbox no encontrado.');
+                         return;
+                     }
+                }
+
+                try {
+                    // 1. Configurar Propiedades
+                    console.log('Configurando propiedades...');
                     PWCheckout.SetProperties({
                         "name": "Pago de Matrícula",
                         "email": payload.studentEmail,
@@ -468,22 +497,28 @@
                         "empty": "false"
                     });
                     
-                    // Definir callback global
+                    // 2. Definir Callback
+                    console.log('Vinculando callback...');
                     window.OnTokenReceived = function(token) {
                         console.log('Token recibido de Cardnet:', token);
                         // Enviar token al componente Livewire
                         @this.call('processCardnetPayment', token);
                     };
 
-                    // Vincular evento
+                    // 3. Vincular Evento
                     PWCheckout.Bind("tokenCreated", window.OnTokenReceived);
 
-                    // Abrir Lightbox
+                    // 4. Abrir Lightbox
+                    console.log('Abriendo Lightbox...');
                     PWCheckout.OpenLightbox();
-                } else {
-                    console.error('PWCheckout no está definido. El script de Cardnet no se cargó.');
-                    alert('Error técnico: No se pudo cargar la pasarela de pagos.');
+                    console.log('Lightbox abierto (teóricamente).');
+
+                } catch (e) {
+                    console.error('Excepción al iniciar Cardnet:', e);
+                    alert('Ocurrió un error al intentar abrir la pasarela de pagos: ' + e.message);
                 }
+
+                console.groupEnd();
             });
         });
     </script>

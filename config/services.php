@@ -47,12 +47,12 @@ return [
     // CONFIGURACIÓN DE CARDNET (TOKENIZACIÓN)
     // ====================================================================
     'cardnet' => [
-        // URL base de la API (Lab o Prod)
+        // URL base correcta según documentación (sin /api/...)
         'base_uri' => env('CARDNET_BASE_URI', 'https://lab.cardnet.com.do/servicios/tokens/v1'),
         
-        // Llaves proporcionadas por Cardnet (ver documentación)
-        'public_key' => env('CARDNET_PUBLIC_KEY', 'J_eHXPYlDo9wlFpFXjgalm_I56ONV7HQ'), // Key para el script JS
-        'private_key' => env('CARDNET_PRIVATE_KEY', '9kYH2uY5zoTD-WBMEoc0KNRQYrC7crPRJ7zPegg3suXguw_8L-rZDQ'), // Key para API Server-to-Server
+        // Llaves proporcionadas por Cardnet
+        'public_key' => env('CARDNET_PUBLIC_KEY', 'J_eHXPYlDo9wlFpFXjgalm_I56ONV7HQ'), 
+        'private_key' => env('CARDNET_PRIVATE_KEY', '9kYH2uY5zoTD-WBMEoc0KNRQYrC7crPRJ7zPegg3suXguw_8L-rZDQ'), 
         
         // Configuración visual del Lightbox
         'image_url' => env('CARDNET_IMAGE_URL', 'https://www.cardnet.com.do/capp/images/logo_nuevo_x_2.png'),

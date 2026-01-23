@@ -27,7 +27,7 @@
     </style>
 
     <!-- SCRIPT DE CARDNET (TOKENIZACIÓN) -->
-    <!-- Se carga dinámicamente usando la Public Key configurada -->
+    <!-- Se carga dinámicamente usando la URL base y Public Key configurada -->
     <script type="text/javascript" 
             src="{{ config('services.cardnet.base_uri') }}/Scripts/PWCheckout.js?key={{ config('services.cardnet.public_key') }}">
     </script>
