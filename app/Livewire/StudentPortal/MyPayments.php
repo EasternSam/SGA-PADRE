@@ -8,10 +8,11 @@ use App\Models\Enrollment;
 use App\Models\Payment;
 use App\Models\PaymentConcept;
 use App\Services\MatriculaService;
-use App\Services\CardnetService; // Importar Servicio
+use App\Services\CardnetRedirectionService; // Usamos el servicio de redirección
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Request;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 
@@ -29,18 +30,18 @@ class MyPayments extends Component
     public $amountToPay = 0;
     public $paymentMethod = 'card'; 
     
-    // Campos Tarjeta
-    public $cardName;
-    public $cardNumber;
-    public $cardExpiry;
-    public $cardCvc;
+    // Campos Tarjeta (Ya no se usan directamente, pero se mantienen para lógica visual si aplica)
+    // Cardnet maneja los datos sensibles en su página.
 
     // Campos Transferencia
     public $transferReference;
 
+    // Campos para formulario Cardnet
+    public $cardnetUrl = '';
+    public $cardnetFields = [];
+
     protected $rules = [
         'paymentMethod' => 'required|in:card,transfer',
-        // 'cardName' => 'required_if:paymentMethod,card', // Cardnet maneja esto en su modal
         'transferReference' => 'required_if:paymentMethod,transfer',
     ];
 
@@ -56,8 +57,8 @@ class MyPayments extends Component
     public function openPaymentModal($paymentId)
     {
         $this->resetValidation();
-        $this->reset(['cardName', 'cardNumber', 'cardExpiry', 'cardCvc', 'transferReference', 'paymentMethod']);
-        $this->paymentMethod = 'card'; // Default a tarjeta para Cardnet
+        $this->reset(['transferReference', 'paymentMethod', 'cardnetUrl', 'cardnetFields']);
+        $this->paymentMethod = 'card'; 
 
         $this->selectedPaymentId = $paymentId;
         
@@ -81,61 +82,52 @@ class MyPayments extends Component
 
     /**
      * Inicia el proceso de pago.
-     * Si es Cardnet, dispara el evento JS. Si es Transferencia, procesa directamente.
      */
-    public function initiatePayment(MatriculaService $matriculaService)
+    public function initiatePayment(MatriculaService $matriculaService, CardnetRedirectionService $cardnetService)
     {
-        // Validaciones básicas (solo referencia si es transferencia)
-        $this->validate([
-            'paymentMethod' => 'required|in:card,transfer',
-            'transferReference' => 'required_if:paymentMethod,transfer',
-        ]);
+        $this->validate();
 
+        // 1. PAGO CON TARJETA (Redirección a Cardnet)
         if ($this->paymentMethod === 'card') {
-            // Preparar datos para Cardnet y disparar JS
-            $this->dispatch('start-cardnet-payment', [
-                'amount' => $this->amountToPay,
-                'orderId' => $this->selectedPaymentId, // Usamos el ID del pago como referencia
-                'description' => 'Pago Matricula/Curso', // Puedes personalizar esto
-                'studentName' => $this->student->full_name,
-                'studentEmail' => Auth::user()->email,
-                'formId' => 'cardnet-form' // ID del form oculto en la vista
-            ]);
-            
-            // No cerramos el modal ni procesamos nada más hasta que Cardnet responda
-        } else {
-            // Proceso normal para Transferencia
-            $this->processPayment($matriculaService, 'Transferencia Bancaria', $this->transferReference, 'Pendiente');
-        }
-    }
+            try {
+                $payment = Payment::find($this->selectedPaymentId);
+                
+                if (!$payment) {
+                    $this->addError('general', 'Error: Pago no encontrado.');
+                    return;
+                }
 
-    /**
-     * Método llamado desde JS cuando Cardnet devuelve el token exitosamente.
-     */
-    public function processCardnetPayment($token, MatriculaService $matriculaService, CardnetService $cardnetService)
-    {
-        if ($token) {
-            // Realizar cobro en servidor con CardnetService
-            $response = $cardnetService->purchase($token, $this->amountToPay, $this->selectedPaymentId);
+                // Actualizar estado a pendiente y agregar nota
+                $payment->update([
+                    'gateway' => 'Tarjeta',
+                    'status' => 'Pendiente', 
+                    'notes' => 'Redirigiendo a Cardnet...',
+                ]);
 
-            // Verificar respuesta de Cardnet (Ajusta según la estructura real de su respuesta)
-            // Generalmente verificamos 'response-code' == '00' o similar
-            if (isset($response['response-code']) && $response['response-code'] === '00') {
-                $transactionId = $response['authorization-code'] ?? $token; // Usar código de auth o token
-                $this->processPayment($matriculaService, 'Cardnet (Tarjeta)', $transactionId, 'Completado');
-            } else {
-                 $msg = $response['response-message'] ?? 'Pago rechazado.';
-                 $this->addError('general', 'Error Cardnet: ' . $msg);
+                // Preparar formulario POST
+                $formInfo = $cardnetService->prepareFormData($payment->amount, $payment->id, Request::ip());
+                
+                $this->cardnetUrl = $formInfo['url'];
+                $this->cardnetFields = $formInfo['fields'];
+
+                // Disparar evento al frontend para enviar formulario
+                $this->dispatch('submit-cardnet-form');
+                
+            } catch (\Exception $e) {
+                Log::error("Error iniciando Cardnet estudiante: " . $e->getMessage());
+                $this->addError('general', 'Error al conectar con la pasarela de pagos.');
             }
-        } else {
-            $this->addError('general', 'Error al procesar con Cardnet. Token no recibido.');
+        } 
+        // 2. PAGO CON TRANSFERENCIA
+        else {
+            $this->processManualPayment($matriculaService, 'Transferencia Bancaria', $this->transferReference, 'Pendiente');
         }
     }
 
     /**
-     * Lógica centralizada de procesamiento de pago
+     * Procesa pagos manuales (Transferencia)
      */
-    private function processPayment(MatriculaService $matriculaService, $gateway, $transactionId, $status)
+    private function processManualPayment(MatriculaService $matriculaService, $gateway, $transactionId, $status)
     {
         if (!$this->student || !$this->selectedPaymentId) return;
 
@@ -152,21 +144,11 @@ class MyPayments extends Component
                         'user_id' => Auth::id(),
                     ]);
 
+                    // Si fuera completado directo (ej: si hubiera un método instantáneo que no sea tarjeta)
                     if ($status === 'Completado') {
-                        // Lógica de matrícula y activación
-                        if (!$this->student->student_code && $payment->paymentConcept && stripos($payment->paymentConcept->name, 'Inscripción') !== false) {
-                            $matriculaService->generarMatricula($payment);
-                            $this->student->refresh();
-                        }
-
-                        $enrollment = $payment->enrollment;
-                        if ($enrollment && $enrollment->status === 'Pendiente') {
-                            $enrollment->status = 'Cursando';
-                            $enrollment->save();
-                        }
-                        session()->flash('message', '¡Pago realizado con éxito!');
+                       // Lógica de activación (normalmente transferencia requiere validación manual admin)
                     } else {
-                        session()->flash('message', 'Pago reportado. Pendiente de validación.');
+                        session()->flash('message', 'Pago reportado exitosamente. Pendiente de validación por administración.');
                     }
                 }
             });
@@ -175,7 +157,7 @@ class MyPayments extends Component
             $this->reset('selectedPaymentId');
 
         } catch (\Exception $e) {
-            Log::error('Error pago estudiante: ' . $e->getMessage());
+            Log::error('Error pago estudiante manual: ' . $e->getMessage());
             $this->addError('general', 'Error procesando el pago. Intente más tarde.');
         }
     }
