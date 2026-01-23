@@ -12,29 +12,25 @@ use Illuminate\Support\Facades\Auth;
 use App\Livewire\Admin\DatabaseImport; 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-// Importamos componentes existentes
 use App\Livewire\Admin\CertificateEditor;
 use App\Livewire\Admin\CertificateTemplatesIndex;
 use App\Livewire\Admin\ClassroomManagement;
-// Importamos el componente financiero
 use App\Livewire\Admin\FinanceDashboard;
-
 use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
 use App\Livewire\StudentPortal\CourseDetail as StudentPortalCourseDetail;
 use App\Livewire\StudentPortal\Requests as StudentPortalRequests;
 use App\Livewire\StudentPortal\MyPayments as StudentPortalPayments; 
-
 use App\Livewire\TeacherPortal\Dashboard as TeacherPortalDashboard;
 use App\Livewire\TeacherPortal\Grades as TeacherPortalGrades;
 use App\Livewire\TeacherPortal\Attendance as TeacherPortalAttendance;
-
 use App\Livewire\Admin\RequestsManagement;
 use Illuminate\Support\Facades\URL; 
 use Illuminate\Http\Request;
 use App\Services\EcfService;
 use App\Services\MatriculaService;
 use App\Models\Payment;
-use Illuminate\Support\Facades\Log; // Asegúrate de importar Log
+use Illuminate\Support\Facades\Log;
+use App\Models\User; // Importante para debug
 
 /*
 |--------------------------------------------------------------------------
@@ -46,51 +42,53 @@ Route::get('/', function () {
     return view('auth.login');
 });
 
-// --- RUTAS DE CALLBACK CARDNET (Públicas y sin CSRF) ---
+// ==============================================================================
+// RUTAS DE CARDNET (DEFINIDAS EXPLÍCITAMENTE COMO PÚBLICAS)
+// ==============================================================================
 
-// 1. Ruta de Respuesta (Éxito/Fallo) - Acepta POST y GET
 Route::any('/cardnet/response', function (Request $request, EcfService $ecfService, MatriculaService $matriculaService) {
     
-    // DEBUG: Ver qué llega exactamente de Cardnet
-    Log::info('Cardnet DEBUG: Datos recibidos en Response', $request->all());
-
-    // 1. Recuperar IDs clave
-    // Cardnet a veces usa "OrdenID" y a veces "OrdenId", verificamos ambos
     $orderId = $request->input('OrdenId') ?? $request->input('OrdenID');
     $responseCode = $request->input('ResponseCode');
-    $authCode = $request->input('AuthorizationCode');
-    $txId = $request->input('TransactionId') ?? $request->input('TransactionID');
+    
+    Log::info('Cardnet Debug: Retorno recibido', $request->all());
 
-    if (!$orderId) {
-        Log::error('Cardnet Error: No llegó OrdenId en la respuesta.');
-        return redirect('/')->with('error', 'Error crítico: La pasarela no devolvió el número de orden.');
-    }
-
-    // 2. Buscar el pago
+    // 1. Buscar Pago
     $payment = Payment::find($orderId);
+
     if (!$payment) {
-        Log::error("Cardnet Error: Pago ID {$orderId} no encontrado en BD.");
-        return redirect('/')->with('error', 'Error: Referencia de pago no encontrada en el sistema.');
+        Log::error('Cardnet Debug: Pago no encontrado ID: ' . $orderId);
+        return redirect('/')->with('error', 'Pago no encontrado.');
     }
 
-    // 3. AUTO-LOGIN: Recuperar sesión si se perdió
-    if (!Auth::check()) {
-        if ($payment->user_id) {
-            Log::warning("Cardnet DEBUG: Sesión perdida. Restaurando usuario ID {$payment->user_id}...");
-            Auth::loginUsingId($payment->user_id);
-            Log::info("Cardnet DEBUG: Usuario {$payment->user_id} logueado exitosamente.");
+    // 2. RECUPERACIÓN DE SESIÓN / AUTO-LOGIN
+    // Verificamos quién es el dueño del pago para loguearlo
+    if (!Auth::check() && $payment->user_id) {
+        $user = User::find($payment->user_id);
+        
+        if ($user) {
+            Log::info("Cardnet Debug: Restaurando sesión para Usuario ID {$user->id}. Roles: " . $user->getRoleNames());
+            
+            // Forzar login
+            Auth::login($user, true); 
+            
+            // Verificar si el login funcionó
+            if (Auth::check()) {
+                Log::info("Cardnet Debug: Login exitoso. Usuario actual: " . Auth::id());
+            } else {
+                Log::error("Cardnet Debug: Falló el Auth::login.");
+            }
         } else {
-            Log::error("Cardnet Error: El pago {$payment->id} no tiene user_id asociado. No se puede restaurar sesión.");
+            Log::error("Cardnet Debug: Usuario ID {$payment->user_id} no existe en BD.");
         }
     }
 
-    // 4. Procesar Resultado
+    // 3. Procesar Transacción
     if ($responseCode === '00') {
-        // APROBADO
         $payment->update([
             'status' => 'Completado',
-            'transaction_id' => $authCode,
-            'notes' => "Cardnet Aprobado | Auth: {$authCode} | Ref: {$txId}",
+            'transaction_id' => $request->input('AuthorizationCode'),
+            'notes' => "Aprobado Cardnet | Ref: " . $request->input('TransactionId'),
         ]);
 
         try {
@@ -105,53 +103,60 @@ Route::any('/cardnet/response', function (Request $request, EcfService $ecfServi
             if ($student && !$student->student_code && $payment->paymentConcept && stripos($payment->paymentConcept->name, 'Inscripción') !== false) {
                 $matriculaService->generarMatricula($payment);
             }
-
         } catch (\Exception $e) {
-            Log::error("Error post-pago Cardnet: " . $e->getMessage());
+            Log::error("Cardnet Debug: Error post-proceso: " . $e->getMessage());
         }
 
-        return redirect()->route('student.payments')->with('message', '¡Pago procesado correctamente! Código: ' . $authCode);
+        // Determinar redirección basada en roles
+        $user = Auth::user();
+        if ($user && $user->hasRole('Estudiante')) {
+            return redirect()->route('student.payments')->with('message', 'Pago realizado con éxito.');
+        } elseif ($user && $user->hasRole('Admin')) {
+            return redirect()->route('admin.dashboard')->with('message', 'Pago registrado (Admin).');
+        } else {
+             // Fallback si no tiene rol o es otro
+            return redirect('/dashboard')->with('message', 'Pago procesado.');
+        }
 
     } else {
-        // RECHAZADO
-        $payment->update([
-            'status' => 'Rechazado',
-            'notes' => "Cardnet Rechazo Código: {$responseCode} - " . ($request->input('ResponseMessage') ?? ''),
-        ]);
-
-        return redirect()->route('student.payments')->with('error', 'Transacción rechazada por el banco. Código: ' . $responseCode);
+        $payment->update(['status' => 'Rechazado', 'notes' => "Rechazo: {$responseCode}"]);
+        
+        // Redirigir aunque sea error
+        $user = Auth::user();
+        $route = ($user && $user->hasRole('Estudiante')) ? 'student.payments' : 'dashboard';
+        return redirect()->route($route)->with('error', 'Pago rechazado por el banco.');
     }
-})->name('cardnet.response')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]); 
 
-// 2. Ruta de Cancelación (NUEVA: Para evitar error 405)
+})->name('cardnet.response')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
+
 Route::any('/cardnet/cancel', function (Request $request) {
-    Log::info('Cardnet DEBUG: Cancelación detectada', $request->all());
+    Log::info('Cardnet Debug: Cancelación', $request->all());
     
     $orderId = $request->input('OrdenId') ?? $request->input('OrdenID');
     
     if ($orderId) {
         $payment = Payment::find($orderId);
-        if ($payment) {
-            // Restaurar sesión si es necesario
-            if (!Auth::check() && $payment->user_id) {
-                Auth::loginUsingId($payment->user_id);
-            }
-
-            if ($payment->status === 'Pendiente') {
-                $payment->update(['status' => 'Cancelado', 'notes' => 'Usuario canceló en la pasarela.']);
-            }
+        // Intentar recuperar sesión para redirigir bien
+        if (!Auth::check() && $payment && $payment->user_id) {
+            Auth::loginUsingId($payment->user_id);
+        }
+        
+        if ($payment && $payment->status === 'Pendiente') {
+            $payment->update(['status' => 'Cancelado']);
         }
     }
-    
-    // Si no pudimos recuperar sesión, ir al login, si no, a pagos
-    if (Auth::check()) {
-        return redirect()->route('student.payments')->with('error', 'Operación cancelada por el usuario.');
-    } else {
-        return redirect('/')->with('error', 'Operación cancelada. Por favor inicie sesión nuevamente.');
-    }
+
+    $user = Auth::user();
+    $route = ($user && $user->hasRole('Estudiante')) ? 'student.payments' : 'dashboard';
+    return redirect()->route($route)->with('error', 'Operación cancelada.');
 
 })->name('cardnet.cancel')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
+
+// ==============================================================================
+// RUTAS DE APLICACIÓN
+// ==============================================================================
 
 // --- RUTA PÚBLICA DE VALIDACIÓN DE CERTIFICADOS (QR) ---
 Route::get('/certificates/verify/{student}/{course}', [CertificatePdfController::class, 'verify'])
