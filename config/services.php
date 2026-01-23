@@ -6,12 +6,6 @@ return [
     |--------------------------------------------------------------------------
     | Third Party Services
     |--------------------------------------------------------------------------
-    |
-    | This file is for storing the credentials for third party services such
-    | as Mailgun, Postmark, AWS and more. This file provides the de facto
-    | location for this type of information, allowing packages to have
-    | a conventional file to locate the various service credentials.
-    |
     */
 
     'postmark' => [
@@ -35,18 +29,19 @@ return [
         ],
     ],
 
-    // Wordpress API
     'wordpress' => [
         'base_uri' => env('WP_API_BASE_URI'),
         'secret' => env('WP_API_SECRET'),
     ],
 
-    // INTEGRACIÓN CARDNET (CORREGIDA)
+    // --- CONFIGURACIÓN CARDNET (REDIRECCIÓN) ---
     'cardnet' => [
-        'environment' => env('CARDNET_ENV', 'sandbox'), // sandbox o production
-        'public_key'  => env('CARDNET_PUBLIC_KEY'),
-        'private_key' => env('CARDNET_PRIVATE_KEY'),
-        'image_url'   => env('CARDNET_IMAGE_URL', 'https://centu.edu.do/wp-content/uploads/2021/08/logo-centu.png'),
+        'environment'     => env('CARDNET_ENV', 'sandbox'), // sandbox | production
+        'merchant_id'     => env('CARDNET_MERCHANT_ID', '349000000'), 
+        'terminal_id'     => env('CARDNET_TERMINAL_ID'),
+        'currency'        => '214', // 214 = Peso Dominicano
+        'url_sandbox'     => 'https://lab.cardnet.com.do/authorize', 
+        'url_production'  => 'https://payments.cardnet.com.do/authorize',
     ],
 
 ];
