@@ -4,51 +4,6 @@
     x-cloak
     class="relative z-50"
 >
-    {{-- Lógica de Configuración de Cardnet (PHP Directo para evitar fallos de caché) --}}
-    @php
-        // 1. Obtener credenciales (con fallback directo a env para asegurar lectura)
-        $cardnetEnv = config('services.cardnet.environment', env('CARDNET_ENV', 'sandbox'));
-        $cardnetKey = config('services.cardnet.public_key', env('CARDNET_PUBLIC_KEY', ''));
-        
-        // 2. Definir URL Base (Dominio)
-        $domain = ($cardnetEnv === 'production') 
-            ? 'https://servicios.cardnet.com.do'
-            : 'https://lab.cardnet.com.do';
-
-        // 3. Construir URL Completa del Script (Ruta estricta según documentación)
-        // IMPORTANTE: La ruta DEBE ser absoluta incluyendo https://...
-        $scriptSrc = "{$domain}/servicios/tokens/v1/Scripts/PWCheckout.js?key={$cardnetKey}";
-    @endphp
-
-    {{-- Inyección del Script --}}
-    @if(!empty($cardnetKey))
-        <script>
-            document.addEventListener('livewire:init', () => {
-                const src = "{!! $scriptSrc !!}";
-                
-                // Evitar cargar el script si ya existe
-                if (!document.querySelector(`script[src^="${src.split('?')[0]}"]`)) {
-                    console.log('🔄 Cargando Cardnet desde servidor remoto:', src);
-                    
-                    const script = document.createElement('script');
-                    script.src = src;
-                    script.type = 'text/javascript';
-                    script.async = true;
-                    
-                    script.onload = () => console.log('✅ Cardnet PWCheckout.js cargado correctamente.');
-                    script.onerror = (e) => {
-                        console.error('❌ Error cargando script de Cardnet. URL intentada:', src, e);
-                        alert('Error de conexión con la pasarela de pagos. Por favor refresque la página.');
-                    };
-                    
-                    document.head.appendChild(script);
-                }
-            });
-        </script>
-    @else
-        <script>console.warn('⚠️ Cardnet: No se encontró la llave pública (CARDNET_PUBLIC_KEY).');</script>
-    @endif
-
     {{-- BACKDROP --}}
     <div 
         x-show="show"
@@ -325,11 +280,8 @@
                                         {{-- 2. Tarjeta (Cardnet) --}}
                                         <div x-show="$wire.gateway === 'Tarjeta'">
                                             {{-- CONTENEDOR PARA EL IFRAME DE CARDNET --}}
-                                            <div id="cardnet-container" wire:ignore class="w-full min-h-[300px] bg-white rounded-lg border border-gray-300 flex items-center justify-center p-4">
-                                                <div class="text-center text-gray-400 text-sm">
-                                                    <p class="mb-2">Seleccione un concepto y monto para cargar el datáfono virtual.</p>
-                                                    <div wire:loading wire:target="gateway" class="text-indigo-600">Conectando con Cardnet...</div>
-                                                </div>
+                                            <div id="cardnet-container" class="w-full min-h-[300px] bg-white rounded-lg border border-gray-300 flex items-center justify-center">
+                                                <span class="text-gray-400 text-sm">El formulario de pago seguro cargará aquí...</span>
                                             </div>
                                             
                                             {{-- FORMULARIO OCULTO PARA CARDNET --}}
@@ -361,6 +313,7 @@
                                 wire:click="savePayment" 
                                 wire:loading.attr="disabled"
                                 class="px-8 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all transform active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                {{-- Si es tarjeta, deshabilitamos el botón hasta que se procese el iframe, o lo usamos para trigger inicial --}}
                                 {{ $gateway === 'Tarjeta' ? 'disabled' : '' }}
                                 x-text="$wire.gateway === 'Tarjeta' ? 'Complete el pago arriba' : ($wire.status === 'Pendiente' ? 'Generar Deuda' : 'Procesar Cobro')"
                             >
@@ -377,7 +330,7 @@
         </div>
     </div>
 
-    {{-- SCRIPT DE INTERACCIÓN CARDNET --}}
+    {{-- SCRIPT DE CARDNET CORREGIDO --}}
     <script>
         document.addEventListener('livewire:init', () => {
             
@@ -386,72 +339,48 @@
                 const payload = Array.isArray(data) ? data[0] : data;
                 console.log('Iniciando Cardnet Custom Iframe...', payload);
 
-                // Esperar a que PWCheckout esté disponible
-                let attempts = 0;
-                const checkInterval = setInterval(() => {
-                    attempts++;
-                    if (typeof PWCheckout !== 'undefined') {
-                        clearInterval(checkInterval);
-                        initCardnet(payload);
-                    } else if (attempts > 50) { // 5 segundos
-                        clearInterval(checkInterval);
-                        alert('Error: La librería de Cardnet no se cargó. Verifique su conexión y la configuración de claves.');
-                        console.error('Timeout esperando PWCheckout.js');
-                    }
-                }, 100);
-            });
-
-            function initCardnet(payload) {
-                try {
-                    // Configurar
-                    PWCheckout.SetProperties({
-                        "name": "Pago de Matrícula",
-                        "email": payload.studentEmail,
-                        "image": "{{ config('services.cardnet.image_url') }}",
-                        "button_label": "Pagar #monto#",
-                        "description": payload.description,
-                        "currency": "DOP",
-                        "amount": payload.amount, // El JS maneja decimales usualmente
-                        "lang": "ESP",
-                        "form_id": "cardnet-form", 
-                        "checkout_card": 1,
-                        "autoSubmit": "false", // Importante false para manejar nosotros el token
-                        "empty": "false"
-                    });
-
-                    // Callback
-                    PWCheckout.Bind("tokenCreated", function(token) {
-                        console.log('Token Cardnet recibido:', token);
-                        
-                        // Normalizar token (puede ser objeto o string)
-                        let finalToken = null;
-                        if (typeof token === 'object' && token.TokenId) {
-                            finalToken = token.TokenId;
-                        } else if (typeof token === 'string') {
-                            finalToken = token;
-                        }
-
-                        if(finalToken) {
-                            @this.call('processCardnetPayment', finalToken);
-                        } else {
-                            alert('Error al procesar la tarjeta. No se recibió el token.');
-                        }
-                    });
-
-                    // Renderizar en el DIV específico usando Custom Iframe
-                    if (typeof PWCheckout.OpenIframeCustom === 'function') {
-                        document.getElementById('cardnet-container').innerHTML = ''; 
-                        PWCheckout.OpenIframeCustom("cardnet-container");
-                    } else if (typeof PWCheckout.iframe !== 'undefined' && typeof PWCheckout.iframe.OpenIframeCustom === 'function') {
-                        document.getElementById('cardnet-container').innerHTML = ''; 
-                        PWCheckout.iframe.OpenIframeCustom("cardnet-container");
-                    } else {
-                        console.error('Método OpenIframeCustom no encontrado en PWCheckout.');
-                    }
-                } catch (e) {
-                    console.error("Error iniciando Cardnet:", e);
+                if (typeof PWCheckout === 'undefined') {
+                    console.error('PWCheckout no cargado.');
+                    alert('Error: La pasarela de pagos no está disponible. Verifique la configuración.');
+                    return;
                 }
-            }
+
+                // Configurar
+                PWCheckout.SetProperties({
+                    "name": "Pago de Matrícula",
+                    "email": payload.studentEmail,
+                    "image": "{{ config('services.cardnet.image_url') }}",
+                    "button_label": "Pagar #monto#",
+                    "description": payload.description,
+                    "currency": "DOP",
+                    "amount": payload.amount,
+                    "lang": "ESP",
+                    "form_id": "cardnet-form", 
+                    "checkout_card": 1,
+                    "autoSubmit": "false", // Importante false para manejar nosotros el token
+                    "empty": "false"
+                });
+
+                // Callback
+                window.OnTokenReceived = function(token) {
+                    console.log('Token recibido:', token);
+                    @this.call('processCardnetPayment', token);
+                };
+
+                PWCheckout.Bind("tokenCreated", window.OnTokenReceived);
+
+                // Renderizar en el DIV específico usando Custom Iframe
+                if (typeof PWCheckout.OpenIframeCustom === 'function') {
+                    document.getElementById('cardnet-container').innerHTML = ''; 
+                    PWCheckout.OpenIframeCustom("cardnet-container");
+                } else if (typeof PWCheckout.iframe !== 'undefined' && typeof PWCheckout.iframe.OpenIframeCustom === 'function') {
+                    document.getElementById('cardnet-container').innerHTML = ''; 
+                    PWCheckout.iframe.OpenIframeCustom("cardnet-container");
+                } else {
+                    console.error('Método OpenIframeCustom no encontrado en PWCheckout.');
+                    alert('Error técnico: No se pudo cargar el formulario de tarjeta.');
+                }
+            });
 
             // Manejar impresión de tickets
             Livewire.on('printTicket', (event) => {
@@ -462,11 +391,6 @@
                         printWindow.focus();
                     }
                 }
-            });
-            
-            // Alertas
-            Livewire.on('cardnet-error', (event) => {
-                alert('Error en el pago: ' + event.message);
             });
         });
     </script>

@@ -9,14 +9,13 @@ use App\Models\Payment;
 use App\Models\Enrollment;
 use App\Services\MatriculaService;
 use App\Services\EcfService;
-use App\Services\CardnetRedirectionService; // <-- Nuevo servicio
+// Se elimina CardnetService ya que admin no usa pasarela
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\On;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Request;
 
 class PaymentModal extends Component
 {
@@ -42,10 +41,6 @@ class PaymentModal extends Component
     public bool $isAmountDisabled = false;
     public bool $isConceptDisabled = false; 
 
-    // Propiedades para el formulario Cardnet
-    public $cardnetUrl = '';
-    public $cardnetFields = [];
-
     protected function rules()
     {
         return [
@@ -70,8 +65,7 @@ class PaymentModal extends Component
                 Rule::requiredIf(fn() => 
                     $this->status === 'Completado' && 
                     $this->gateway !== 'Efectivo' && 
-                    $this->gateway !== 'Otro' &&
-                    $this->gateway !== 'Tarjeta'
+                    $this->gateway !== 'Otro'
                 )
             ],
             'cash_received' => [
@@ -256,7 +250,7 @@ class PaymentModal extends Component
 
     private function resetPaymentFields()
     {
-        $this->reset(['amount', 'payment_concept_id', 'isAmountDisabled', 'isConceptDisabled', 'payment_id_to_update', 'enrollment_id', 'transaction_id', 'cardnetUrl', 'cardnetFields']);
+        $this->reset(['amount', 'payment_concept_id', 'isAmountDisabled', 'isConceptDisabled', 'payment_id_to_update', 'enrollment_id', 'transaction_id']);
         $this->amount = 0.00;
         $this->gateway = 'Efectivo';
         $this->status = 'Completado';
@@ -298,62 +292,14 @@ class PaymentModal extends Component
         }
     }
 
-    // --- LÓGICA PRINCIPAL MODIFICADA ---
-    public function savePayment(MatriculaService $matriculaService, EcfService $ecfService, CardnetRedirectionService $cardnetService)
+    public function savePayment(MatriculaService $matriculaService, EcfService $ecfService)
     {
-        $this->validate();
-
-        // 1. Manejo de Redirección Cardnet (Tarjeta)
-        if ($this->gateway === 'Tarjeta' && $this->status === 'Completado') {
-            try {
-                // Creamos el registro de pago en estado 'Pendiente'
-                $data = [
-                    'student_id' => $this->student_id,
-                    'payment_concept_id' => $this->payment_concept_id,
-                    'amount' => $this->amount,
-                    'gateway' => 'Tarjeta',
-                    'status' => 'Pendiente', // Pendiente hasta que vuelva de Cardnet
-                    'enrollment_id' => $this->enrollment_id,
-                    'user_id' => Auth::id(),
-                    'currency' => 'DOP',
-                    'notes' => 'Iniciando redirección a Cardnet...',
-                ];
-
-                $payment = null;
-
-                if ($this->payment_id_to_update) {
-                    $payment = Payment::find($this->payment_id_to_update);
-                    if ($payment) {
-                        $payment->update($data);
-                    }
-                } else {
-                    $payment = Payment::create($data);
-                }
-
-                if ($payment) {
-                    // Preparamos el formulario oculto
-                    $formInfo = $cardnetService->prepareFormData($this->amount, $payment->id, Request::ip());
-                    
-                    $this->cardnetUrl = $formInfo['url'];
-                    $this->cardnetFields = $formInfo['fields'];
-
-                    // Emitimos evento para que el frontend envíe el formulario
-                    $this->dispatch('submit-cardnet-form');
-                    return;
-                }
-
-            } catch (\Exception $e) {
-                Log::error("Error iniciando Cardnet: " . $e->getMessage());
-                $this->addError('general', 'Error al iniciar pasarela: ' . $e->getMessage());
-                return;
-            }
-        }
-
-        // 2. Lógica normal (Efectivo/Crédito)
         if ($this->status === 'Pendiente') {
             $this->gateway = 'Crédito'; 
         }
 
+        $this->validate();
+        
         $isNewStudent = !$this->student->student_code;
 
         try {
@@ -385,13 +331,18 @@ class PaymentModal extends Component
                     $payment = Payment::create($data);
                 }
                 
+                // Efectos secundarios solo si se COMPLETA
                 if ($payment && $payment->status == 'Completado') {
+                    
+                    // 1. Emitir e-CF (Factura Electrónica)
                     $ecfService->emitirComprobante($payment);
 
+                    // 2. Matrícula
                     if ($isNewStudent && $payment->paymentConcept && stripos($payment->paymentConcept->name, 'Inscripción') !== false) {
                         $matriculaService->generarMatricula($payment);
                     } 
                     
+                    // 3. Activar inscripción
                     if ($payment->enrollment) {
                         $payment->enrollment->status = 'Cursando';
                         $payment->enrollment->save();
@@ -415,6 +366,7 @@ class PaymentModal extends Component
             $this->dispatch('paymentAdded'); 
             $this->dispatch('$refresh');
             
+            // Abrir ticket automáticamente si es completado
             if ($payment && $payment->status === 'Completado') {
                 $this->dispatch('printTicket', url: route('finance.ticket', $payment->id));
             }
@@ -437,7 +389,7 @@ class PaymentModal extends Component
             'payment_id', 'payment_concept_id', 'amount', 'gateway', 'status', 
             'transaction_id', 'enrollment_id', 'payment_id_to_update', 
             'isAmountDisabled', 'isConceptDisabled', 'cash_received', 
-            'change_amount', 'notes', 'cardnetUrl', 'cardnetFields'
+            'change_amount', 'notes'
         ]);
 
         $this->amount = 0.00;
