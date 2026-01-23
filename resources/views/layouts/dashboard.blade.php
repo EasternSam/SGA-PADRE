@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
 
-    {{-- Font Awesome (Carga diferida para no bloquear renderizado) --}}
+    {{-- Font Awesome --}}
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
 
@@ -34,23 +34,16 @@
 </head>
 
 <body class="h-full font-sans antialiased text-slate-600">
-
-    <!-- 1. Barra de Carga Global (Livewire) - Optimizada -->
+    <!-- Barra de Carga Global -->
     <div wire:loading.delay class="fixed top-0 left-0 w-full h-1 z-[60] bg-indigo-100" style="pointer-events: none;">
         <div class="h-full bg-indigo-600 animate-progress-indeterminate"></div>
     </div>
 
-    <!-- 2. Sistema de Notificaciones Toast -->
+    <!-- Notificaciones Toast -->
     <div aria-live="assertive" class="pointer-events-none fixed inset-0 z-50 flex items-end px-4 py-6 sm:items-start sm:p-6" style="pointer-events: none;">
         <div class="flex w-full flex-col items-center space-y-4 sm:items-end">
             @if (session()->has('success'))
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
-                     x-transition:enter="transform ease-out duration-300 transition"
-                     x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
-                     x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
-                     x-transition:leave="transition ease-in duration-100"
-                     x-transition:leave-start="opacity-100"
-                     x-transition:leave-end="opacity-0"
                      class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5"
                      style="pointer-events: auto;">
                     <div class="p-4">
@@ -75,9 +68,6 @@
 
             @if (session()->has('error'))
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
-                     x-transition:enter="transform ease-out duration-300 transition"
-                     x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
-                     x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
                      class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-red-500 ring-opacity-50 border-l-4 border-red-500"
                      style="pointer-events: auto;">
                     <div class="p-4">
@@ -104,19 +94,13 @@
     <!-- Layout Wrapper -->
     <div x-data="{ open: false }" 
          @keydown.window.escape="open = false" 
-         class="h-full flex overflow-hidden bg-gray-50"> <!-- Fondo optimizado -->
+         class="h-full flex overflow-hidden bg-gray-50">
 
-        <!-- Navigation Sidebar -->
         @include('layouts.navigation')
 
-        <!-- Main Content Area -->
         <div class="flex-1 flex flex-col min-w-0 lg:pl-64 transition-all duration-300 ease-in-out">
-
-            <!-- 3. Top bar "Glassmorphism" -->
             <header class="sticky top-0 z-20 flex flex-col bg-white/90 backdrop-blur-md border-b border-gray-200/60 shadow-sm supports-[backdrop-filter]:bg-white/60" style="padding-top: 16px; padding-bottom: 16px;">
                 <div class="flex flex-1 items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
-                    
-                    <!-- Left: Hamburger & Page Title / Breadcrumb -->
                     <div class="flex items-center gap-4">
                         <button @click.stop="open = !open" type="button"
                             class="-m-2.5 p-2.5 text-gray-500 lg:hidden hover:text-indigo-600 transition-colors rounded-md hover:bg-gray-100">
@@ -125,7 +109,6 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                             </svg>
                         </button>
-
                         <div class="flex flex-col">
                             @if (isset($header))
                                 <h1 class="text-lg font-bold leading-6 text-gray-900 sm:text-xl truncate tracking-tight">
@@ -134,22 +117,12 @@
                             @endif
                         </div>
                     </div>
-
-                    <!-- Center: 4. COMPONENTE DE BÚSQUEDA GLOBAL -->
                     <div class="hidden md:flex flex-1 max-w-md px-8 justify-center">
                         <livewire:global-search lazy />
                     </div>
-
-                    <!-- Right: Actions -->
                     <div class="flex items-center gap-x-4 lg:gap-x-6">
-                        
-                        <!-- 5. Notifications Dropdown (FUNCIONALIDAD NUEVA) -->
                         <livewire:notifications-dropdown lazy />
-
-                        <!-- Separator -->
                         <div class="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200" aria-hidden="true"></div>
-
-                        <!-- User Menu -->
                         <div class="relative">
                             <x-dropdown align="right" width="48">
                                 <x-slot name="trigger">
@@ -173,14 +146,10 @@
                                     <div class="px-4 py-3 border-b border-gray-100">
                                         <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Mi Cuenta</p>
                                     </div>
-
                                     <x-dropdown-link :href="route('profile.edit')" wire:navigate class="flex items-center gap-2"> 
                                         <i class="fas fa-user-circle text-gray-400"></i> {{ __('Mi Perfil') }}
                                     </x-dropdown-link>
-
                                     <div class="border-t border-gray-100 my-1"></div>
-
-                                    <!-- Authentication -->
                                     <form method="POST" action="{{ route('logout') }}">
                                         @csrf
                                         <x-dropdown-link :href="route('logout')"
@@ -192,14 +161,11 @@
                                 </x-slot>
                             </x-dropdown>
                         </div>
-
                     </div>
                 </div>
             </header>
 
-            <!-- Page Content (Scrollable) -->
             <main class="flex-1 overflow-y-auto focus:outline-none scroll-smooth">
-                <!-- Content Container -->
                 <div class="min-h-full pb-6">
                     <div class="max-w-full mx-auto px-0">
                         {{ $slot }}
@@ -207,7 +173,6 @@
                 </div>
             </main>
 
-            <!-- 6. Integrated Footer (Fixed Bottom) -->
             <footer class="bg-white border-t border-gray-200 flex-shrink-0 z-10">
                 <div class="mx-auto max-w-7xl px-6 py-4 md:flex md:items-center md:justify-between lg:px-8">
                     <div class="flex justify-center space-x-6 md:order-2">
@@ -230,8 +195,6 @@
         </div>
     </div>
 
-    <!-- Livewire Scripts -->
     @livewireScripts
 </body>
-
 </html>
