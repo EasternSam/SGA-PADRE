@@ -35,13 +35,13 @@ return [
         ],
     ],
 
-    // Configuración de Wordpress API (para migración/sincronización)
+    // Wordpress API
     'wordpress' => [
         'base_uri' => env('WP_API_BASE_URI'),
         'secret' => env('WP_API_SECRET'),
     ],
 
-    // INTEGRACIÓN CARDNET (Basado en SGA Wordpress)
+    // INTEGRACIÓN CARDNET (CORREGIDA)
     'cardnet' => [
         'environment' => env('CARDNET_ENV', 'sandbox'), // sandbox o production
         'public_key'  => env('CARDNET_PUBLIC_KEY'),
