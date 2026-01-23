@@ -54,7 +54,7 @@
                     </button>
                 </div>
 
-                {{-- CONTENIDO DIVIDIDO --}}
+                {{-- CONTENIDO --}}
                 <div class="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
                     
                     {{-- COLUMNA IZQUIERDA: CLIENTE --}}
@@ -303,13 +303,13 @@
                             
                             {{-- Botón de Acción --}}
                             <button 
-                                wire:click="initiatePayment" 
+                                wire:click="savePayment" 
                                 wire:loading.attr="disabled"
                                 class="px-8 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all transform active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                {{-- Si es tarjeta, deshabilitamos el botón hasta que se procese el iframe, o lo usamos para trigger inicial --}}
-                                {{ $gateway === 'Tarjeta' ? 'disabled' : '' }}
-                                x-text="$wire.gateway === 'Tarjeta' ? 'Complete el pago arriba' : ($wire.status === 'Pendiente' ? 'Generar Deuda' : 'Procesar Cobro')"
                             >
+                                <span wire:loading.remove>
+                                    {{ $status === 'Pendiente' ? 'Generar Deuda' : 'Procesar Cobro' }}
+                                </span>
                                 <span wire:loading class="flex items-center gap-2">
                                     <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                     Procesando...
@@ -327,25 +327,14 @@
     <script>
         document.addEventListener('livewire:init', () => {
             
-            // Función para inicializar Cardnet cuando se seleccione tarjeta
-            Livewire.hook('morph.updated', ({ component, el }) => {
-                // Verificar si el gateway es 'Tarjeta' y si el contenedor existe
-                // Como Livewire actualiza el DOM, necesitamos reinicializar o detectar el cambio
-                // Una mejor estrategia es usar un watcher de Alpine o disparar un evento desde PHP al cambiar gateway
-            });
-
-            // Escuchar evento para iniciar Cardnet (Disparado al seleccionar Tarjeta o al abrir modal con Tarjeta)
-            // Para simplificar, lo dispararemos cuando el usuario seleccione "Tarjeta" y "Pagar" no es el flujo normal
-            // Con OpenIframeCustom, debemos llamar a OpenIframeCustom tan pronto el div esté visible.
-            
-            // Vamos a usar un watcher en el componente PHP para disparar un evento JS cuando gateway cambia a 'card'
-            
+            // Escuchar evento para iniciar Cardnet
             Livewire.on('start-cardnet-payment', (data) => {
                 const payload = Array.isArray(data) ? data[0] : data;
                 console.log('Iniciando Cardnet Custom Iframe...', payload);
 
                 if (typeof PWCheckout === 'undefined') {
                     console.error('PWCheckout no cargado.');
+                    alert('Error: La pasarela de pagos no está disponible. Verifique la configuración.');
                     return;
                 }
 
@@ -359,9 +348,9 @@
                     "currency": "DOP",
                     "amount": payload.amount,
                     "lang": "ESP",
-                    "form_id": "cardnet-form", // Debe coincidir con el ID del form oculto
+                    "form_id": "cardnet-form", 
                     "checkout_card": 1,
-                    "autoSubmit": "false", // Importante false para manejar nosotros el token
+                    "autoSubmit": "false", 
                     "empty": "false"
                 });
 
@@ -373,17 +362,27 @@
 
                 PWCheckout.Bind("tokenCreated", window.OnTokenReceived);
 
-                // Renderizar en el DIV específico
-                // Verificamos si existe la función Custom
+                // Renderizar en el DIV específico usando Custom Iframe
                 if (typeof PWCheckout.OpenIframeCustom === 'function') {
-                    // Limpiar contenedor por si acaso
                     document.getElementById('cardnet-container').innerHTML = ''; 
                     PWCheckout.OpenIframeCustom("cardnet-container");
                 } else if (typeof PWCheckout.iframe !== 'undefined' && typeof PWCheckout.iframe.OpenIframeCustom === 'function') {
                     document.getElementById('cardnet-container').innerHTML = ''; 
                     PWCheckout.iframe.OpenIframeCustom("cardnet-container");
                 } else {
-                    alert('Error: Función OpenIframeCustom no disponible.');
+                    console.error('Método OpenIframeCustom no encontrado en PWCheckout.');
+                    alert('Error técnico: No se pudo cargar el formulario de tarjeta.');
+                }
+            });
+
+            // Manejar impresión de tickets
+            Livewire.on('printTicket', (event) => {
+                const url = event.url;
+                if (url) {
+                    const printWindow = window.open(url, 'Ticket', 'width=400,height=600');
+                    if (printWindow) {
+                        printWindow.focus();
+                    }
                 }
             });
         });

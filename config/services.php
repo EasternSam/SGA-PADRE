@@ -47,7 +47,8 @@ return [
     // CONFIGURACIÓN DE CARDNET (TOKENIZACIÓN)
     // ====================================================================
     'cardnet' => [
-        // CORRECCIÓN: URL exacta solicitada por el error de la consola
+        // CORRECCIÓN CRÍTICA: URL exacta del proveedor tecnológico (Seglan)
+        // Esta URL evita el error de "origen no permitido" del script JS.
         'base_uri' => env('CARDNET_BASE_URI', 'https://tr-tsp-test.gtp-seglan.com/tr-tsp-mw-cardnet/v1'),
         
         // Llaves proporcionadas por Cardnet
