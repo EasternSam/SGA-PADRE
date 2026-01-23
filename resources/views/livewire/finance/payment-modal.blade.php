@@ -4,48 +4,49 @@
     x-cloak
     class="relative z-50"
 >
-    {{-- Scripts de Cardnet Dinámicos --}}
+    {{-- Lógica de Configuración de Cardnet (PHP Directo para evitar fallos de caché) --}}
     @php
-        // Obtener configuración
-        $cardnetEnv = config('services.cardnet.environment', 'sandbox');
-        $cardnetPublicKey = config('services.cardnet.public_key');
+        // 1. Obtener credenciales (con fallback directo a env para asegurar lectura)
+        $cardnetEnv = config('services.cardnet.environment', env('CARDNET_ENV', 'sandbox'));
+        $cardnetKey = config('services.cardnet.public_key', env('CARDNET_PUBLIC_KEY', ''));
         
-        // Definir URL base explícita basada en documentación oficial
-        if ($cardnetEnv === 'production') {
-            $scriptBase = 'https://servicios.cardnet.com.do/servicios/tokens/v1/Scripts/PWCheckout.js';
-        } else {
-            $scriptBase = 'https://lab.cardnet.com.do/servicios/tokens/v1/Scripts/PWCheckout.js';
-        }
+        // 2. Definir URL Base (Dominio)
+        $domain = ($cardnetEnv === 'production') 
+            ? 'https://servicios.cardnet.com.do'
+            : 'https://lab.cardnet.com.do';
 
-        // Construir URL final solo si hay llave pública
-        $cardnetUrl = !empty($cardnetPublicKey) ? "{$scriptBase}?key={$cardnetPublicKey}" : "";
+        // 3. Construir URL Completa del Script (Ruta estricta según documentación)
+        // IMPORTANTE: La ruta DEBE ser absoluta incluyendo https://...
+        $scriptSrc = "{$domain}/servicios/tokens/v1/Scripts/PWCheckout.js?key={$cardnetKey}";
     @endphp
-    
-    {{-- Inyección del Script de Cardnet --}}
-    @if(!empty($cardnetUrl))
+
+    {{-- Inyección del Script --}}
+    @if(!empty($cardnetKey))
         <script>
             document.addEventListener('livewire:init', () => {
-                const src = "{!! $cardnetUrl !!}";
+                const src = "{!! $scriptSrc !!}";
                 
-                // Evitar duplicados revisando si ya existe un script con esa base
-                const exists = document.querySelector(`script[src^="${src.split('?')[0]}"]`);
-                
-                if (!exists) {
-                    console.log('Cargando Cardnet desde:', src);
+                // Evitar cargar el script si ya existe
+                if (!document.querySelector(`script[src^="${src.split('?')[0]}"]`)) {
+                    console.log('🔄 Cargando Cardnet desde servidor remoto:', src);
+                    
                     const script = document.createElement('script');
                     script.src = src;
                     script.type = 'text/javascript';
                     script.async = true;
                     
-                    script.onload = () => console.log('✅ Cardnet PWCheckout cargado correctamente.');
-                    script.onerror = (e) => console.error('❌ Error cargando Cardnet. Verifique su conexión o llave pública.', e);
+                    script.onload = () => console.log('✅ Cardnet PWCheckout.js cargado correctamente.');
+                    script.onerror = (e) => {
+                        console.error('❌ Error cargando script de Cardnet. URL intentada:', src, e);
+                        alert('Error de conexión con la pasarela de pagos. Por favor refresque la página.');
+                    };
                     
                     document.head.appendChild(script);
                 }
             });
         </script>
     @else
-        <script>console.warn('⚠️ Cardnet: Faltan credenciales (CARDNET_PUBLIC_KEY) en el .env');</script>
+        <script>console.warn('⚠️ Cardnet: No se encontró la llave pública (CARDNET_PUBLIC_KEY).');</script>
     @endif
 
     {{-- BACKDROP --}}
@@ -82,7 +83,6 @@
                 <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0 z-20">
                     <div class="flex items-center gap-3">
                         <div class="bg-indigo-600 p-2 rounded-lg text-white shadow-sm shadow-indigo-200">
-                            {{-- Icono SVG --}}
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" />
                             </svg>
