@@ -418,16 +418,12 @@
 
     </div>
 
-    {{-- FORMULARIO OCULTO DE CARDNET (REDIRECCIÓN) --}}
-    @if($paymentMethod === 'card' && !empty($cardnetUrl))
-        <form id="cardnet-form" action="{{ $cardnetUrl }}" method="POST" style="display:none;">
-            @foreach($cardnetFields as $key => $value)
-                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
-            @endforeach
-        </form>
-    @endif
+    {{-- FORMULARIO OCULTO PARA REDIRECCIÓN POST A CARDNET --}}
+    <form id="cardnet-form" method="POST" style="display:none;">
+        {{-- Los inputs se generarán dinámicamente --}}
+    </form>
 
-    {{-- SCRIPTS --}}
+    {{-- Scripts --}}
     <script>
         document.addEventListener('livewire:init', () => {
             // Imprimir Ticket
@@ -442,18 +438,33 @@
             });
 
             // Auto-submit del formulario Cardnet
-            Livewire.on('submit-cardnet-form', () => {
-                // Pequeño delay para asegurar que el DOM se actualizó con la URL y campos
-                setTimeout(() => {
-                    const form = document.getElementById('cardnet-form');
-                    if (form && form.action) {
-                        console.log('Redirigiendo a Cardnet...', form.action);
-                        form.submit();
-                    } else {
-                        console.error('No se encontró el formulario de Cardnet o la URL de acción.');
-                        alert('Error técnico al conectar con la pasarela. Por favor intente nuevamente.');
-                    }
-                }, 100);
+            Livewire.on('submit-cardnet-form', (event) => {
+                const data = event.form; 
+            
+                if (!data || !data.url) {
+                    alert('Error: Datos de pasarela incompletos.');
+                    return;
+                }
+
+                const form = document.getElementById('cardnet-form');
+                form.action = data.url;
+                form.innerHTML = ''; // Limpiar previos
+
+                // Crear inputs ocultos dinámicamente
+                for (const [key, value] of Object.entries(data.fields)) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = key;
+                    input.value = value;
+                    form.appendChild(input);
+                }
+
+                console.log('🔄 Redirigiendo a Cardnet...', form.action);
+                form.submit();
+            });
+
+            Livewire.on('open-pdf-modal', (event) => {
+                window.open(event.url, '_blank');
             });
         });
     </script>

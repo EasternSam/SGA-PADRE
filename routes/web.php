@@ -50,7 +50,6 @@ Route::get('/', function () {
 // 1. Ruta de Respuesta (Éxito/Fallo)
 Route::any('/cardnet/response', function (Request $request, EcfService $ecfService, MatriculaService $matriculaService) {
     
-    // Obtener parámetros
     $responseCode = $request->input('ResponseCode');
     $orderId = $request->input('OrdenId');
     $authCode = $request->input('AuthorizationCode');
@@ -102,19 +101,18 @@ Route::any('/cardnet/response', function (Request $request, EcfService $ecfServi
     }
 })->name('cardnet.response')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]); 
 
-// 2. Ruta de Cancelación (Cuando el usuario le da a "Cancelar" en Cardnet)
+// 2. Ruta de Cancelación (NUEVA: Para evitar error 405)
 Route::any('/cardnet/cancel', function (Request $request) {
-    // Cardnet envía POST al cancelar, por eso fallaba antes
     $orderId = $request->input('OrdenId');
     
     if ($orderId) {
         $payment = Payment::find($orderId);
         if ($payment && $payment->status === 'Pendiente') {
-            $payment->update(['status' => 'Cancelado', 'notes' => 'Cancelado por el usuario en pasarela.']);
+            $payment->update(['status' => 'Cancelado', 'notes' => 'Usuario canceló en la pasarela.']);
         }
     }
     
-    return redirect()->route('student.payments')->with('error', 'Operación cancelada por el usuario.');
+    return redirect()->route('student.payments')->with('error', 'Operación cancelada.');
 })->name('cardnet.cancel')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 

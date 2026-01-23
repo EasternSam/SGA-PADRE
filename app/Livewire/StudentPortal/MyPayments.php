@@ -25,20 +25,14 @@ class MyPayments extends Component
     
     // --- Modal de Pago ---
     public $showPaymentModal = false;
-    public $selectedPaymentId; // ID del pago (deuda) seleccionado
+    public $selectedPaymentId; 
     public $selectedEnrollment;
     public $amountToPay = 0;
     public $paymentMethod = 'card'; 
-    
-    // Campos Tarjeta (Ya no se usan directamente, pero se mantienen para lógica visual si aplica)
-    // Cardnet maneja los datos sensibles en su página.
-
-    // Campos Transferencia
     public $transferReference;
 
-    // Campos para formulario Cardnet
-    public $cardnetUrl = '';
-    public $cardnetFields = [];
+    // No necesitamos propiedades públicas para Cardnet aquí, 
+    // los datos se pasarán directamente al JS por seguridad y velocidad.
 
     protected $rules = [
         'paymentMethod' => 'required|in:card,transfer',
@@ -57,7 +51,7 @@ class MyPayments extends Component
     public function openPaymentModal($paymentId)
     {
         $this->resetValidation();
-        $this->reset(['transferReference', 'paymentMethod', 'cardnetUrl', 'cardnetFields']);
+        $this->reset(['transferReference', 'paymentMethod']);
         $this->paymentMethod = 'card'; 
 
         $this->selectedPaymentId = $paymentId;
@@ -71,7 +65,6 @@ class MyPayments extends Component
 
         $this->selectedEnrollment = $payment->enrollment;
         $this->amountToPay = $payment->amount;
-
         $this->showPaymentModal = true;
     }
 
@@ -104,14 +97,16 @@ class MyPayments extends Component
                     'notes' => 'Redirigiendo a Cardnet...',
                 ]);
 
-                // Preparar formulario POST
+                // Generar datos del formulario
                 $formInfo = $cardnetService->prepareFormData($payment->amount, $payment->id, Request::ip());
                 
-                $this->cardnetUrl = $formInfo['url'];
-                $this->cardnetFields = $formInfo['fields'];
+                // Validación de seguridad antes de enviar
+                if (empty($formInfo['url'])) {
+                    throw new \Exception('La URL de la pasarela no se generó correctamente.');
+                }
 
-                // Disparar evento al frontend para enviar formulario
-                $this->dispatch('submit-cardnet-form');
+                // Disparar evento al frontend CON LOS DATOS para evitar el error 405
+                $this->dispatch('submit-cardnet-form', form: $formInfo);
                 
             } catch (\Exception $e) {
                 Log::error("Error iniciando Cardnet estudiante: " . $e->getMessage());
@@ -124,9 +119,6 @@ class MyPayments extends Component
         }
     }
 
-    /**
-     * Procesa pagos manuales (Transferencia)
-     */
     private function processManualPayment(MatriculaService $matriculaService, $gateway, $transactionId, $status)
     {
         if (!$this->student || !$this->selectedPaymentId) return;
@@ -143,13 +135,8 @@ class MyPayments extends Component
                         'transaction_id' => $transactionId,
                         'user_id' => Auth::id(),
                     ]);
-
-                    // Si fuera completado directo (ej: si hubiera un método instantáneo que no sea tarjeta)
-                    if ($status === 'Completado') {
-                       // Lógica de activación (normalmente transferencia requiere validación manual admin)
-                    } else {
-                        session()->flash('message', 'Pago reportado exitosamente. Pendiente de validación por administración.');
-                    }
+                    
+                    session()->flash('message', 'Pago reportado exitosamente. Pendiente de validación.');
                 }
             });
 
@@ -157,7 +144,7 @@ class MyPayments extends Component
             $this->reset('selectedPaymentId');
 
         } catch (\Exception $e) {
-            Log::error('Error pago estudiante manual: ' . $e->getMessage());
+            Log::error('Error pago manual estudiante: ' . $e->getMessage());
             $this->addError('general', 'Error procesando el pago. Intente más tarde.');
         }
     }
@@ -179,7 +166,7 @@ class MyPayments extends Component
 
         $pendingDebts = Payment::where('student_id', $this->student->id)
             ->whereIn('status', ['Pendiente', 'pendiente'])
-            ->with(['enrollment.courseSchedule.module.course', 'enrollment.courseSchedule.teacher'])
+            ->with(['enrollment.courseSchedule.module.course', 'enrollment.courseSchedule.teacher', 'paymentConcept'])
             ->orderBy('due_date', 'asc')
             ->get();
 
