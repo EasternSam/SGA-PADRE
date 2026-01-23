@@ -20,7 +20,7 @@ class CardnetService
         if ($this->environment === 'production') {
             $this->apiUrl = 'https://servicios.cardnet.com.do/servicios/tokens/v1/api/Purchase';
         } else {
-            $this->apiUrl = 'https://lab.cardnet.com.do/servicios/tokens/v1/api/Purchase';
+            $this->apiUrl = 'https://labservicios.cardnet.com.do/servicios/tokens/v1/api/Purchase';
         }
     }
 
