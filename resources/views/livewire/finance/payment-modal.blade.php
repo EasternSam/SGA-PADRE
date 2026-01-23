@@ -6,21 +6,47 @@
 >
     {{-- Scripts de Cardnet Dinámicos --}}
     @php
+        // Obtener configuración
         $cardnetEnv = config('services.cardnet.environment', 'sandbox');
         $cardnetPublicKey = config('services.cardnet.public_key');
-        $cardnetUrl = $cardnetEnv === 'production' 
-            ? "https://servicios.cardnet.com.do/servicios/tokens/v1/Scripts/PWCheckout.js?key={$cardnetPublicKey}"
-            : "https://lab.cardnet.com.do/servicios/tokens/v1/Scripts/PWCheckout.js?key={$cardnetPublicKey}";
+        
+        // Definir URL base explícita basada en documentación oficial
+        if ($cardnetEnv === 'production') {
+            $scriptBase = 'https://servicios.cardnet.com.do/servicios/tokens/v1/Scripts/PWCheckout.js';
+        } else {
+            $scriptBase = 'https://lab.cardnet.com.do/servicios/tokens/v1/Scripts/PWCheckout.js';
+        }
+
+        // Construir URL final solo si hay llave pública
+        $cardnetUrl = !empty($cardnetPublicKey) ? "{$scriptBase}?key={$cardnetPublicKey}" : "";
     @endphp
     
-    {{-- Cargar script solo si no está cargado --}}
-    <script>
-        if (!document.querySelector('script[src="{{ $cardnetUrl }}"]')) {
-            var script = document.createElement('script');
-            script.src = "{{ $cardnetUrl }}";
-            document.head.appendChild(script);
-        }
-    </script>
+    {{-- Inyección del Script de Cardnet --}}
+    @if(!empty($cardnetUrl))
+        <script>
+            document.addEventListener('livewire:init', () => {
+                const src = "{!! $cardnetUrl !!}";
+                
+                // Evitar duplicados revisando si ya existe un script con esa base
+                const exists = document.querySelector(`script[src^="${src.split('?')[0]}"]`);
+                
+                if (!exists) {
+                    console.log('Cargando Cardnet desde:', src);
+                    const script = document.createElement('script');
+                    script.src = src;
+                    script.type = 'text/javascript';
+                    script.async = true;
+                    
+                    script.onload = () => console.log('✅ Cardnet PWCheckout cargado correctamente.');
+                    script.onerror = (e) => console.error('❌ Error cargando Cardnet. Verifique su conexión o llave pública.', e);
+                    
+                    document.head.appendChild(script);
+                }
+            });
+        </script>
+    @else
+        <script>console.warn('⚠️ Cardnet: Faltan credenciales (CARDNET_PUBLIC_KEY) en el .env');</script>
+    @endif
 
     {{-- BACKDROP --}}
     <div 
@@ -56,6 +82,7 @@
                 <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0 z-20">
                     <div class="flex items-center gap-3">
                         <div class="bg-indigo-600 p-2 rounded-lg text-white shadow-sm shadow-indigo-200">
+                            {{-- Icono SVG --}}
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" />
                             </svg>
@@ -350,7 +377,7 @@
         </div>
     </div>
 
-    {{-- SCRIPT DE CARDNET --}}
+    {{-- SCRIPT DE INTERACCIÓN CARDNET --}}
     <script>
         document.addEventListener('livewire:init', () => {
             
@@ -360,15 +387,18 @@
                 console.log('Iniciando Cardnet Custom Iframe...', payload);
 
                 // Esperar a que PWCheckout esté disponible
+                let attempts = 0;
                 const checkInterval = setInterval(() => {
+                    attempts++;
                     if (typeof PWCheckout !== 'undefined') {
                         clearInterval(checkInterval);
                         initCardnet(payload);
+                    } else if (attempts > 50) { // 5 segundos
+                        clearInterval(checkInterval);
+                        alert('Error: La librería de Cardnet no se cargó. Verifique su conexión y la configuración de claves.');
+                        console.error('Timeout esperando PWCheckout.js');
                     }
                 }, 100);
-
-                // Timeout de seguridad de 5 segundos
-                setTimeout(() => clearInterval(checkInterval), 5000);
             });
 
             function initCardnet(payload) {
@@ -381,7 +411,7 @@
                         "button_label": "Pagar #monto#",
                         "description": payload.description,
                         "currency": "DOP",
-                        "amount": payload.amount, // El JS maneja decimales usualmente, el backend convierte a centavos
+                        "amount": payload.amount, // El JS maneja decimales usualmente
                         "lang": "ESP",
                         "form_id": "cardnet-form", 
                         "checkout_card": 1,
@@ -393,7 +423,7 @@
                     PWCheckout.Bind("tokenCreated", function(token) {
                         console.log('Token Cardnet recibido:', token);
                         
-                        // En algunas versiones, token es un string, en otras un objeto {TokenId: "..."}
+                        // Normalizar token (puede ser objeto o string)
                         let finalToken = null;
                         if (typeof token === 'object' && token.TokenId) {
                             finalToken = token.TokenId;

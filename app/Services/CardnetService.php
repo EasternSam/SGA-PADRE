@@ -39,7 +39,8 @@ class CardnetService
         }
 
         // Cardnet espera el monto en CENTAVOS (Integer)
-        $amountInCents = intval(floatval($amount) * 100);
+        // Usamos round para evitar errores de punto flotante antes de intval
+        $amountInCents = intval(round(floatval($amount) * 100));
 
         $payload = [
             'TrxToken' => $token,
