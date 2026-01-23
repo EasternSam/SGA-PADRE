@@ -266,9 +266,9 @@
                                             <input type="radio" wire:model.live="paymentMethod" value="card" class="peer sr-only">
                                             <div class="p-4 rounded-xl border border-gray-200 hover:border-gray-300 peer-checked:border-gray-900 peer-checked:ring-1 peer-checked:ring-gray-900 transition-all bg-white flex flex-col items-center gap-2 h-full">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-500 peer-checked:text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 00-3-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                                                 </svg>
-                                                <span class="text-sm font-medium text-gray-600 peer-checked:text-gray-900">Tarjeta Online</span>
+                                                <span class="text-sm font-medium text-gray-600 peer-checked:text-gray-900">Tarjeta</span>
                                             </div>
                                             <div class="absolute top-2 right-2 w-2 h-2 rounded-full bg-gray-900 opacity-0 peer-checked:opacity-100 transition-opacity"></div>
                                         </label>
@@ -296,7 +296,7 @@
 
                                     @if($paymentMethod === 'card')
                                         <div class="space-y-4 animate-fade-in-up" wire:key="card-form">
-                                            {{-- Contenedor para el iframe de Cardnet (OpenIframeCustom) --}}
+                                            {{-- Contenedor para el iframe de Cardnet (OpenIframeNormal) --}}
                                             <div id="cardnet-container" class="w-full min-h-[350px] bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
                                                  <div class="text-center p-4 text-gray-500">
                                                      <svg class="animate-spin h-8 w-8 mx-auto mb-2 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -364,25 +364,6 @@
                                         </span>
                                     </button>
                                 @endif
-                                
-                                {{-- Nota: Si es tarjeta, el botón de pago lo maneja el iframe de Cardnet o se dispara automáticamente al cargar el modal --}}
-                                {{-- Opcional: Botón para iniciar carga de Cardnet si no carga auto --}}
-                                @if($paymentMethod === 'card')
-                                     <button 
-                                        type="button" 
-                                        wire:click="initiatePayment"
-                                        wire:loading.attr="disabled"
-                                        class="inline-flex justify-center rounded-lg border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 transition-colors w-full sm:w-auto min-w-[120px]"
-                                    >
-                                        <span wire:loading.remove wire:target="initiatePayment">
-                                            Cargar Formulario de Pago
-                                        </span>
-                                        <span wire:loading wire:target="initiatePayment" class="flex items-center gap-2">
-                                            <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                            Cargando...
-                                        </span>
-                                    </button>
-                                @endif
                             </div>
                         </div>
                     </div>
@@ -390,8 +371,62 @@
             </div>
         @endif
         
-        {{-- MODAL VISOR PDF (Sin cambios) --}}
-        <!-- ... -->
+        {{-- MODAL VISOR PDF --}}
+        <div
+            x-data="{ show: false, pdfUrl: '' }"
+            @open-pdf-modal.window="
+                pdfUrl = $event.detail.url;
+                show = true;
+            "
+            x-show="show"
+            x-on:keydown.escape.window="show = false; pdfUrl = ''"
+            class="fixed inset-0 z-50 overflow-y-auto"
+            aria-labelledby="modal-title"
+            role="dialog"
+            aria-modal="true"
+            style="display: none;"
+        >
+            <div class="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 transition-opacity bg-gray-900/75 backdrop-blur-sm" @click="show = false; pdfUrl = ''" aria-hidden="true"></div>
+
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                
+                <div
+                    x-show="show"
+                    x-transition:enter="ease-out duration-300"
+                    x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                    x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                    x-transition:leave="ease-in duration-200"
+                    x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                    x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                    class="inline-block w-full max-w-6xl p-4 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-2xl"
+                >
+                    <div class="flex justify-between items-center pb-3 border-b border-gray-100">
+                        <h3 class="text-lg font-bold leading-6 text-gray-900" id="modal-title">
+                            Reporte Financiero
+                        </h3>
+                        <button @click="show = false; pdfUrl = ''" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-50 transition-colors">
+                            <span class="sr-only">Cerrar</span>
+                            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="mt-4 bg-gray-100 rounded-lg overflow-hidden" style="width: 100%; height: 75vh;">
+                        <iframe :src="pdfUrl" frameborder="0" width="100%" height="100%">
+                            Tu navegador no soporta iframes.
+                        </iframe>
+                    </div>
+
+                    <div class="flex justify-end pt-4 mt-4 border-t border-gray-100">
+                        <button @click="show = false; pdfUrl = ''" type="button" class="ml-3 inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     </div>
 
@@ -434,18 +469,29 @@
 
                 PWCheckout.Bind("tokenCreated", window.OnTokenReceived);
 
-                // Renderizar en el DIV específico usando Custom Iframe
-                if (typeof PWCheckout.OpenIframeCustom === 'function') {
+                // Renderizar en el DIV específico usando OpenIframeNormal
+                if (typeof PWCheckout.OpenIframeNormal === 'function') {
                     // Limpiar contenedor
                     document.getElementById('cardnet-container').innerHTML = ''; 
-                    PWCheckout.OpenIframeCustom("cardnet-container");
-                } else if (typeof PWCheckout.iframe !== 'undefined' && typeof PWCheckout.iframe.OpenIframeCustom === 'function') {
-                    // Fallback para otras versiones
+                    PWCheckout.OpenIframeNormal("cardnet-container");
+                } else if (typeof PWCheckout.iframe !== 'undefined' && typeof PWCheckout.iframe.OpenIframeNormal === 'function') {
+                     // Fallback para versiones alternativas
                     document.getElementById('cardnet-container').innerHTML = ''; 
-                    PWCheckout.iframe.OpenIframeCustom("cardnet-container");
+                    PWCheckout.iframe.OpenIframeNormal("cardnet-container");
                 } else {
-                    console.error('Método OpenIframeCustom no encontrado en PWCheckout.');
+                    console.error('Método OpenIframeNormal no encontrado en PWCheckout.');
                     alert('Error técnico: No se pudo cargar el formulario de tarjeta.');
+                }
+            });
+
+            // Manejar impresión de tickets
+            Livewire.on('printTicket', (event) => {
+                const url = event.url;
+                if (url) {
+                    const printWindow = window.open(url, 'Ticket', 'width=400,height=600');
+                    if (printWindow) {
+                        printWindow.focus();
+                    }
                 }
             });
         });
