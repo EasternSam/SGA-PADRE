@@ -54,7 +54,7 @@
                     </button>
                 </div>
 
-                {{-- CONTENIDO --}}
+                {{-- CONTENIDO DIVIDIDO --}}
                 <div class="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
                     
                     {{-- COLUMNA IZQUIERDA: CLIENTE --}}
@@ -303,13 +303,13 @@
                             
                             {{-- Botón de Acción --}}
                             <button 
-                                wire:click="savePayment" 
+                                wire:click="initiatePayment" 
                                 wire:loading.attr="disabled"
                                 class="px-8 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all transform active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                {{-- Si es tarjeta, deshabilitamos el botón hasta que se procese el iframe, o lo usamos para trigger inicial --}}
+                                {{ $gateway === 'Tarjeta' ? 'disabled' : '' }}
+                                x-text="$wire.gateway === 'Tarjeta' ? 'Complete el pago arriba' : ($wire.status === 'Pendiente' ? 'Generar Deuda' : 'Procesar Cobro')"
                             >
-                                <span wire:loading.remove>
-                                    {{ $status === 'Pendiente' ? 'Generar Deuda' : 'Procesar Cobro' }}
-                                </span>
                                 <span wire:loading class="flex items-center gap-2">
                                     <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                     Procesando...
@@ -321,9 +321,9 @@
                 </div>
             </div>
         </div>
-    </div>
+    @endif
 
-    {{-- SCRIPT DE CARDNET CORREGIDO --}}
+    {{-- Script de Cardnet y Ticket --}}
     <script>
         document.addEventListener('livewire:init', () => {
             
@@ -334,7 +334,6 @@
 
                 if (typeof PWCheckout === 'undefined') {
                     console.error('PWCheckout no cargado.');
-                    alert('Error: La pasarela de pagos no está disponible. Verifique la configuración.');
                     return;
                 }
 
@@ -350,7 +349,7 @@
                     "lang": "ESP",
                     "form_id": "cardnet-form", 
                     "checkout_card": 1,
-                    "autoSubmit": "false", 
+                    "autoSubmit": "false", // Importante false para manejar nosotros el token
                     "empty": "false"
                 });
 
@@ -370,8 +369,7 @@
                     document.getElementById('cardnet-container').innerHTML = ''; 
                     PWCheckout.iframe.OpenIframeCustom("cardnet-container");
                 } else {
-                    console.error('Método OpenIframeCustom no encontrado en PWCheckout.');
-                    alert('Error técnico: No se pudo cargar el formulario de tarjeta.');
+                    alert('Error: Función OpenIframeCustom no disponible.');
                 }
             });
 

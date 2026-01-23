@@ -35,28 +35,20 @@ return [
         ],
     ],
 
-    // ====================================================================
-    // CONFIGURACIÓN PARA LA API DE WORDPRESS
-    // ====================================================================
     'wordpress' => [
         'base_uri' => env('WP_API_BASE_URI'),
         'secret' => env('WP_API_SECRET'),
     ],
     
-    // ====================================================================
-    // CONFIGURACIÓN DE CARDNET (TOKENIZACIÓN)
-    // ====================================================================
+    // --- Configuración de Cardnet ---
     'cardnet' => [
-        // CORRECCIÓN CRÍTICA: URL exacta del proveedor tecnológico (Seglan)
-        // Esta URL evita el error de "origen no permitido" del script JS.
-        'base_uri' => env('CARDNET_BASE_URI', 'https://tr-tsp-test.gtp-seglan.com/tr-tsp-mw-cardnet/v1'),
-        
-        // Llaves proporcionadas por Cardnet
+        // URL base para el script JS (según error de consola)
+        'js_base_uri' => 'https://tr-tsp-test.gtp-seglan.com/tr-tsp-mw-cardnet/v1',
+        // URL base para la API (Purchase)
+        'api_base_uri' => env('CARDNET_API_BASE_URI', 'https://lab.cardnet.com.do/servicios/tokens/v1'),
         'public_key' => env('CARDNET_PUBLIC_KEY', 'J_eHXPYlDo9wlFpFXjgalm_I56ONV7HQ'), 
         'private_key' => env('CARDNET_PRIVATE_KEY', '9kYH2uY5zoTD-WBMEoc0KNRQYrC7crPRJ7zPegg3suXguw_8L-rZDQ'), 
-        
         'image_url' => env('CARDNET_IMAGE_URL', 'https://www.cardnet.com.do/capp/images/logo_nuevo_x_2.png'),
     ],
-    // ====================================================================
 
 ];

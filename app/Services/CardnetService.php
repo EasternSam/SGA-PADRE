@@ -12,31 +12,28 @@ class CardnetService
 
     public function __construct()
     {
-        $this->baseUrl = config('services.cardnet.base_uri');
+        $this->baseUrl = config('services.cardnet.api_base_uri');
         $this->privateKey = config('services.cardnet.private_key');
     }
 
     /**
      * Realiza un cargo a una tarjeta tokenizada.
-     * * @param string $token El token devuelto por el Lightbox (PaymentProfileID)
+     * @param string $token El token devuelto por el Lightbox (PaymentProfileID)
      * @param float $amount El monto a cobrar
      * @param string $invoiceId ID de referencia de la factura/pago interno
-     * @return array Resupuesta de la API
+     * @return array Respuesta de la API
      */
     public function purchase($token, $amount, $invoiceId)
     {
+        // Nota: La URL es api_base_uri/api/Purchase
         $url = "{$this->baseUrl}/api/Purchase";
-        
-        // El monto debe enviarse sin separadores de miles y con 2 decimales si aplica, 
-        // pero la documentación de tokens suele pedirlo limpio. 
-        // En algunos endpoints de Cardnet es string, en otros number. Probaremos standard.
         
         $payload = [
             "PaymentProfileID" => $token,
-            "Amount" => $amount,
+            "Amount" => $amount, // En formato normal, la API suele manejarlo
             "DataDo" => [
                 "Invoice" => (string)$invoiceId,
-                // "Tax" => "0" // Opcional
+                // "Tax" => "0" 
             ],
             "Description" => "Pago Matricula/Curso #{$invoiceId}"
         ];
@@ -44,7 +41,7 @@ class CardnetService
         try {
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
-                // Autenticación Basic con la Private Key como usuario (sin password o password vacio)
+                // Autenticación Basic con la Private Key como usuario (sin password)
                 'Authorization' => 'Basic ' . base64_encode($this->privateKey . ':') 
             ])->post($url, $payload);
 
