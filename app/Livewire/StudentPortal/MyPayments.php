@@ -82,9 +82,10 @@ class MyPayments extends Component
      */
     public function initiatePayment(MatriculaService $matriculaService)
     {
-        Log::info('--- INICIO DEBUG PAGO ---');
-        Log::info('Usuario intentando pagar: ' . Auth::id());
-        Log::info('Método seleccionado: ' . $this->paymentMethod);
+        // --- DEBUG LOGS ---
+        Log::info('>>> INICIO INITIATE PAYMENT <<<');
+        Log::info('User ID: ' . Auth::id());
+        Log::info('Método de Pago: ' . $this->paymentMethod);
         Log::info('Monto: ' . $this->amountToPay);
 
         // Validaciones básicas
@@ -94,11 +95,11 @@ class MyPayments extends Component
         ]);
 
         if ($this->paymentMethod === 'card') {
-            Log::info('Flujo Tarjeta detectado.');
+            Log::info('Flujo: Tarjeta Online (Cardnet)');
 
             // Verificar datos críticos
             if (!$this->student) {
-                Log::error('ERROR: No se encontró estudiante asociado al usuario.');
+                Log::error('ERROR CRÍTICO: No se encontró estudiante asociado al usuario.');
                 $this->addError('general', 'Error de perfil de estudiante.');
                 return;
             }
@@ -116,13 +117,12 @@ class MyPayments extends Component
             Log::info('Payload preparado para Cardnet:', $payload);
             
             // Disparar evento
-            // NOTA: Enviamos el array directamente. En la vista manejaremos si llega anidado o no.
             $this->dispatch('start-cardnet-payment', $payload);
             
-            Log::info('Evento start-cardnet-payment DISPARADO desde PHP.');
+            Log::info('Evento start-cardnet-payment DISPARADO correctamente.');
             
         } else {
-            Log::info('Flujo Transferencia detectado.');
+            Log::info('Flujo: Transferencia Bancaria');
             $this->processPayment($matriculaService, 'Transferencia Bancaria', $this->transferReference, 'Pendiente');
         }
     }
@@ -132,8 +132,8 @@ class MyPayments extends Component
      */
     public function processCardnetPayment($token, MatriculaService $matriculaService)
     {
-        Log::info('--- CALLBACK CARDNET RECIBIDO ---');
-        Log::info('Token recibido: ' . $token);
+        Log::info('>>> CALLBACK CARDNET RECIBIDO EN BACKEND <<<');
+        Log::info('Token recibido: ' . ($token ? $token : 'NULO'));
 
         if ($token) {
             $this->processPayment($matriculaService, 'Cardnet (Tarjeta)', $token, 'Completado');
@@ -176,6 +176,7 @@ class MyPayments extends Component
                         }
 
                         session()->flash('message', '¡Pago realizado con éxito!');
+                        Log::info('Pago completado y registrado en DB. ID: ' . $payment->id);
                     } else {
                         session()->flash('message', 'Pago reportado. Pendiente de validación.');
                     }
