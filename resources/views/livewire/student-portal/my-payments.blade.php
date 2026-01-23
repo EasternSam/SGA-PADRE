@@ -439,7 +439,7 @@
 
             // Auto-submit del formulario Cardnet
             Livewire.on('submit-cardnet-form', (event) => {
-                const data = event.form; 
+                const data = event.data;
             
                 if (!data || !data.url) {
                     alert('Error: Datos de pasarela incompletos.');

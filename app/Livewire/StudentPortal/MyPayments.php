@@ -6,9 +6,8 @@ use Livewire\Component;
 use App\Models\Student;
 use App\Models\Enrollment;
 use App\Models\Payment;
-use App\Models\PaymentConcept;
 use App\Services\MatriculaService;
-use App\Services\CardnetRedirectionService; // Usamos el servicio de redirección
+use App\Services\CardnetRedirectionService; // Servicio Corregido
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -30,9 +29,6 @@ class MyPayments extends Component
     public $amountToPay = 0;
     public $paymentMethod = 'card'; 
     public $transferReference;
-
-    // No necesitamos propiedades públicas para Cardnet aquí, 
-    // los datos se pasarán directamente al JS por seguridad y velocidad.
 
     protected $rules = [
         'paymentMethod' => 'required|in:card,transfer',
@@ -90,7 +86,7 @@ class MyPayments extends Component
                     return;
                 }
 
-                // Actualizar estado a pendiente y agregar nota
+                // Guardar estado pendiente
                 $payment->update([
                     'gateway' => 'Tarjeta',
                     'status' => 'Pendiente', 
@@ -100,13 +96,9 @@ class MyPayments extends Component
                 // Generar datos del formulario
                 $formInfo = $cardnetService->prepareFormData($payment->amount, $payment->id, Request::ip());
                 
-                // Validación de seguridad antes de enviar
-                if (empty($formInfo['url'])) {
-                    throw new \Exception('La URL de la pasarela no se generó correctamente.');
-                }
-
-                // Disparar evento al frontend CON LOS DATOS para evitar el error 405
-                $this->dispatch('submit-cardnet-form', form: $formInfo);
+                // Enviar datos AL NAVEGADOR para que construya y envíe el form
+                // Esto evita problemas de sincronización de Livewire
+                $this->dispatch('submit-cardnet-form', data: $formInfo);
                 
             } catch (\Exception $e) {
                 Log::error("Error iniciando Cardnet estudiante: " . $e->getMessage());
@@ -125,9 +117,7 @@ class MyPayments extends Component
 
         try {
             DB::transaction(function () use ($matriculaService, $gateway, $transactionId, $status) {
-                
                 $payment = Payment::find($this->selectedPaymentId);
-
                 if ($payment) {
                     $payment->update([
                         'status' => $status,
@@ -135,14 +125,12 @@ class MyPayments extends Component
                         'transaction_id' => $transactionId,
                         'user_id' => Auth::id(),
                     ]);
-                    
                     session()->flash('message', 'Pago reportado exitosamente. Pendiente de validación.');
                 }
             });
 
             $this->closeModal();
             $this->reset('selectedPaymentId');
-
         } catch (\Exception $e) {
             Log::error('Error pago manual estudiante: ' . $e->getMessage());
             $this->addError('general', 'Error procesando el pago. Intente más tarde.');

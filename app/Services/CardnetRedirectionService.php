@@ -10,43 +10,44 @@ class CardnetRedirectionService
     protected $terminalId;
     protected $currency;
     protected $url;
+    protected $environment;
 
     public function __construct()
     {
-        // Usamos valores por defecto seguros si la configuración falla
-        $this->merchantId = config('services.cardnet.merchant_id', env('CARDNET_MERCHANT_ID', ''));
-        $this->terminalId = config('services.cardnet.terminal_id', env('CARDNET_TERMINAL_ID', ''));
-        $this->currency = config('services.cardnet.currency', '214');
+        $this->merchantId = config('services.cardnet.merchant_id');
+        $this->terminalId = config('services.cardnet.terminal_id');
+        $this->currency = config('services.cardnet.currency', '214'); // 214 = DOP
+        $this->environment = config('services.cardnet.environment', 'sandbox');
         
-        $environment = config('services.cardnet.environment', env('CARDNET_ENV', 'sandbox'));
+        // URLs CORREGIDAS SEGÚN DOCUMENTACIÓN "INTEGRACIÓN CON PANTALLA (POST)"
+        $urlSandbox = 'https://labservicios.cardnet.com.do/authorize'; 
+        $urlProduction = 'https://ecommerce.cardnet.com.do/authorize';
         
-        // URLs oficiales por defecto (Respaldo)
-        $urlSandbox = 'https://lab.cardnet.com.do/authorize';
-        $urlProduction = 'https://payments.cardnet.com.do/authorize';
-        
-        // Priorizar config, sino usar respaldo
-        if ($environment === 'production') {
-            $this->url = config('services.cardnet.url_production', $urlProduction);
-        } else {
-            $this->url = config('services.cardnet.url_sandbox', $urlSandbox);
-        }
+        $this->url = $this->environment === 'production' 
+            ? config('services.cardnet.url_production', $urlProduction) 
+            : config('services.cardnet.url_sandbox', $urlSandbox);
     }
 
+    /**
+     * Prepara los datos para el formulario POST de redirección.
+     */
     public function prepareFormData($amount, $orderId, $ipAddress = '127.0.0.1')
     {
-        // Asegurar formato 00.00
+        // Cardnet requiere el monto en formato estándar (ej: 100.00)
         $formattedAmount = number_format($amount, 2, '.', '');
+
+        // Generar TransactionId único (timestamp)
         $transactionId = time();
 
         $data = [
-            'TransactionType' => '0200',
+            'TransactionType' => '0200', // Autorización Financiera
             'CurrencyCode'    => $this->currency,
-            'AcquirerId'      => '349',
-            'MerchantType'    => '5311',
+            'AcquirerId'      => '349', // Fijo para Cardnet
+            'MerchantType'    => '5311', // Código de categoría (Educación)
             'MerchantNumber'  => $this->merchantId,
             'TerminalId'      => $this->terminalId,
-            'ReturnUrl'       => route('cardnet.response'), // Ruta de Éxito/Fallo
-            'CancelUrl'       => route('cardnet.cancel'),   // Ruta de Cancelación (POST)
+            'ReturnUrl'       => route('cardnet.response'), // Ruta de retorno
+            'CancelUrl'       => route('cardnet.cancel'), // Ruta de cancelación
             'PageLanguage'    => 'ES',
             'OrdenId'         => $orderId,
             'TransactionId'   => $transactionId,
@@ -56,10 +57,7 @@ class CardnetRedirectionService
             'IpAddress'       => $ipAddress,
         ];
 
-        // Validación de seguridad: Log si falta configuración crítica
-        if (empty($this->merchantId) || empty($this->terminalId)) {
-            Log::error("Cardnet Error: MerchantID o TerminalID están vacíos.");
-        }
+        Log::info("Generando redirección Cardnet: URL {$this->url} | Orden {$orderId}");
 
         return [
             'url' => $this->url,
