@@ -19,7 +19,10 @@ class CardnetRedirectionService
         $this->currency = config('services.cardnet.currency', '214'); // 214 = DOP
         $this->environment = config('services.cardnet.environment', 'sandbox');
         
-        // URLs CORREGIDAS SEGÚN DOCUMENTACIÓN "INTEGRACIÓN CON PANTALLA (POST)"
+        // --- URLs CORREGIDAS SEGÚN DOCUMENTACIÓN OFICIAL ---
+        // Desarrollo: labservicios.cardnet.com.do
+        // Producción: ecommerce.cardnet.com.do
+        
         $urlSandbox = 'https://labservicios.cardnet.com.do/authorize'; 
         $urlProduction = 'https://ecommerce.cardnet.com.do/authorize';
         
@@ -33,21 +36,21 @@ class CardnetRedirectionService
      */
     public function prepareFormData($amount, $orderId, $ipAddress = '127.0.0.1')
     {
-        // Cardnet requiere el monto en formato estándar (ej: 100.00)
+        // Formato estándar (ej: 100.00)
         $formattedAmount = number_format($amount, 2, '.', '');
-
-        // Generar TransactionId único (timestamp)
-        $transactionId = time();
+        
+        // ID único para esta transacción
+        $transactionId = time(); 
 
         $data = [
-            'TransactionType' => '0200', // Autorización Financiera
+            'TransactionType' => '0200',
             'CurrencyCode'    => $this->currency,
-            'AcquirerId'      => '349', // Fijo para Cardnet
-            'MerchantType'    => '5311', // Código de categoría (Educación)
+            'AcquirerId'      => '349',
+            'MerchantType'    => '5311',
             'MerchantNumber'  => $this->merchantId,
             'TerminalId'      => $this->terminalId,
-            'ReturnUrl'       => route('cardnet.response'), // Ruta de retorno
-            'CancelUrl'       => route('cardnet.cancel'), // Ruta de cancelación
+            'ReturnUrl'       => route('cardnet.response'), // Asegúrate que esta ruta exista en web.php
+            'CancelUrl'       => route('cardnet.cancel'),   // Asegúrate que esta ruta exista en web.php
             'PageLanguage'    => 'ES',
             'OrdenId'         => $orderId,
             'TransactionId'   => $transactionId,
@@ -56,8 +59,8 @@ class CardnetRedirectionService
             'Tip'             => '0.00',
             'IpAddress'       => $ipAddress,
         ];
-
-        Log::info("Generando redirección Cardnet: URL {$this->url} | Orden {$orderId}");
+        
+        Log::info("Cardnet: Generando redirección a {$this->url} para Orden #{$orderId}");
 
         return [
             'url' => $this->url,

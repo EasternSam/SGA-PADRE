@@ -7,7 +7,7 @@ use App\Models\Student;
 use App\Models\Enrollment;
 use App\Models\Payment;
 use App\Services\MatriculaService;
-use App\Services\CardnetRedirectionService; // Servicio Corregido
+use App\Services\CardnetRedirectionService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -21,8 +21,6 @@ class MyPayments extends Component
     use WithPagination;
 
     public $student;
-    
-    // --- Modal de Pago ---
     public $showPaymentModal = false;
     public $selectedPaymentId; 
     public $selectedEnrollment;
@@ -51,7 +49,6 @@ class MyPayments extends Component
         $this->paymentMethod = 'card'; 
 
         $this->selectedPaymentId = $paymentId;
-        
         $payment = Payment::with('enrollment.courseSchedule.module')->find($paymentId);
         
         if (!$payment) {
@@ -69,14 +66,11 @@ class MyPayments extends Component
         $this->showPaymentModal = false;
     }
 
-    /**
-     * Inicia el proceso de pago.
-     */
     public function initiatePayment(MatriculaService $matriculaService, CardnetRedirectionService $cardnetService)
     {
         $this->validate();
 
-        // 1. PAGO CON TARJETA (Redirección a Cardnet)
+        // CASO 1: TARJETA (Redirección)
         if ($this->paymentMethod === 'card') {
             try {
                 $payment = Payment::find($this->selectedPaymentId);
@@ -86,26 +80,26 @@ class MyPayments extends Component
                     return;
                 }
 
-                // Guardar estado pendiente
+                // 1. Marcar pago como pendiente y en proceso
                 $payment->update([
                     'gateway' => 'Tarjeta',
                     'status' => 'Pendiente', 
                     'notes' => 'Redirigiendo a Cardnet...',
                 ]);
 
-                // Generar datos del formulario
+                // 2. Obtener datos del formulario desde el servicio
                 $formInfo = $cardnetService->prepareFormData($payment->amount, $payment->id, Request::ip());
                 
-                // Enviar datos AL NAVEGADOR para que construya y envíe el form
-                // Esto evita problemas de sincronización de Livewire
+                // 3. Emitir evento al navegador para que construya y envíe el form
+                // Usamos 'data' para pasar el array completo
                 $this->dispatch('submit-cardnet-form', data: $formInfo);
                 
             } catch (\Exception $e) {
-                Log::error("Error iniciando Cardnet estudiante: " . $e->getMessage());
-                $this->addError('general', 'Error al conectar con la pasarela de pagos.');
+                Log::error("Error iniciando Cardnet: " . $e->getMessage());
+                $this->addError('general', 'Error al conectar con la pasarela.');
             }
         } 
-        // 2. PAGO CON TRANSFERENCIA
+        // CASO 2: TRANSFERENCIA
         else {
             $this->processManualPayment($matriculaService, 'Transferencia Bancaria', $this->transferReference, 'Pendiente');
         }
@@ -128,11 +122,9 @@ class MyPayments extends Component
                     session()->flash('message', 'Pago reportado exitosamente. Pendiente de validación.');
                 }
             });
-
             $this->closeModal();
             $this->reset('selectedPaymentId');
         } catch (\Exception $e) {
-            Log::error('Error pago manual estudiante: ' . $e->getMessage());
             $this->addError('general', 'Error procesando el pago. Intente más tarde.');
         }
     }
@@ -146,15 +138,12 @@ class MyPayments extends Component
     public function render()
     {
         if (!$this->student) {
-            return view('livewire.student-portal.my-payments', [
-                'pendingDebts' => collect(),
-                'paymentHistory' => collect()
-            ]);
+            return view('livewire.student-portal.my-payments', ['pendingDebts' => collect(), 'paymentHistory' => collect()]);
         }
 
         $pendingDebts = Payment::where('student_id', $this->student->id)
             ->whereIn('status', ['Pendiente', 'pendiente'])
-            ->with(['enrollment.courseSchedule.module.course', 'enrollment.courseSchedule.teacher', 'paymentConcept'])
+            ->with(['enrollment.courseSchedule.module.course', 'paymentConcept'])
             ->orderBy('due_date', 'asc')
             ->get();
 
