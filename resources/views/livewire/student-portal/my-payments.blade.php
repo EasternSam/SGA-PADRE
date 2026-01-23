@@ -358,7 +358,6 @@
                                 </button>
                                 <button 
                                     type="button" 
-                                    {{-- CAMBIO: Usamos initiatePayment que decide si llama a Cardnet o no --}}
                                     wire:click="initiatePayment"
                                     wire:loading.attr="disabled"
                                     class="inline-flex justify-center rounded-lg border border-transparent bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto min-w-[120px]"
@@ -444,21 +443,26 @@
     <script>
         document.addEventListener('livewire:init', () => {
             // Escuchar el evento de PHP para iniciar Cardnet
-            Livewire.on('start-cardnet-payment', (event) => {
-                const data = event[0]; // Argumentos llegan en array
+            Livewire.on('start-cardnet-payment', (data) => {
+                // Verificar si 'data' es un array (Livewire 3) o un objeto directo
+                // Si es un array (Livewire 3 a veces envuelve los parámetros), accedemos al primer elemento
+                const payload = Array.isArray(data) ? data[0] : data;
+
+                console.log('Evento start-cardnet-payment recibido', data);
+                console.log('Payload procesado:', payload);
                 
                 // Configurar PWCheckout
                 if (typeof PWCheckout !== 'undefined') {
                     PWCheckout.SetProperties({
                         "name": "Pago de Matrícula",
-                        "email": data.studentEmail,
+                        "email": payload.studentEmail,
                         "image": "{{ config('services.cardnet.image_url') }}",
                         "button_label": "Pagar #monto#",
-                        "description": data.description,
+                        "description": payload.description,
                         "currency": "DOP",
-                        "amount": data.amount,
+                        "amount": payload.amount,
                         "lang": "ESP",
-                        "form_id": data.formId, // ID del form oculto
+                        "form_id": payload.formId, // ID del form oculto
                         "checkout_card": 1,
                         "autoSubmit": "false",
                         "empty": "false"
@@ -466,6 +470,7 @@
                     
                     // Definir callback global
                     window.OnTokenReceived = function(token) {
+                        console.log('Token recibido de Cardnet:', token);
                         // Enviar token al componente Livewire
                         @this.call('processCardnetPayment', token);
                     };
@@ -476,7 +481,8 @@
                     // Abrir Lightbox
                     PWCheckout.OpenLightbox();
                 } else {
-                    alert('Error: El servicio de pagos no está disponible en este momento.');
+                    console.error('PWCheckout no está definido. El script de Cardnet no se cargó.');
+                    alert('Error técnico: No se pudo cargar la pasarela de pagos.');
                 }
             });
         });
