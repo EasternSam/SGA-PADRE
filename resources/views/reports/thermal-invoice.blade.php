@@ -72,7 +72,7 @@
 
     <div class="separator-solid"></div>
 
-    <!-- TÍTULO DINÁMICO (Verificamos columna ncf_type '31' o '32') -->
+    <!-- TÍTULO DINÁMICO -->
     <div class="ncf-title">
         @if($payment->ncf)
             {{-- Si ya tiene NCF asignado --}}
@@ -82,8 +82,8 @@
                 FACTURA DE CONSUMO
             @endif
         @else
-            {{-- Si no tiene NCF pero se solicitó (Pago pendiente o provisional) --}}
-            @if($payment->ncf_type == '31')
+            {{-- Si no tiene NCF (Provisional) verificamos la intención del cliente (rnc_client o ncf_type) --}}
+            @if($payment->ncf_type == '31' || !empty($payment->rnc_client))
                 SOLICITUD CRÉDITO FISCAL
             @else
                 RECIBO DE INGRESO
@@ -125,7 +125,7 @@
     <!-- DATOS DEL CLIENTE -->
     <div class="info">
         @if(!empty($payment->company_name))
-            {{-- Si se guardó Razón Social --}}
+            {{-- Si existe Razón Social guardada en el pago --}}
             <div class="kv-row">
                 <span class="kv-label">RAZÓN SOCIAL:</span>
                 <span class="kv-value">{{ strtoupper($payment->company_name) }}</span>
@@ -224,6 +224,9 @@
             @endif
         @else
             <p style="margin-top:10px; border:1px solid #000; padding:2px;">COMPROBANTE VÁLIDO PARA FINES LEGALES</p>
+            @if(isset($payment->ncf_type_requested) && $payment->ncf_type_requested == 'B01')
+                <p style="font-size: 8px; margin-top:2px;">(SOLICITUD DE CRÉDITO FISCAL EN PROCESO)</p>
+            @endif
         @endif
 
         <p style="margin-top:10px">¡Gracias por preferirnos!</p>

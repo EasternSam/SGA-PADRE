@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Payment;
 use App\Models\NcfSequence;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class EcfService
 {
@@ -13,18 +14,29 @@ class EcfService
      */
     public function emitirComprobante(Payment $payment)
     {
-        // 1. Determinar el tipo de comprobante necesario
-        // Si el estudiante tiene RNC válido, es Crédito Fiscal (31), si no, Consumo (32).
-        $tipo = $this->determinarTipoComprobante($payment->student);
+        // 1. Determinar el tipo de comprobante
+        // CORRECCIÓN: Priorizar la selección del modal (rnc_client en el pago)
+        // Si el pago tiene un RNC de cliente específico, es Crédito Fiscal (31)
+        if (!empty($payment->rnc_client)) {
+            $tipo = '31'; 
+        } 
+        // Si ya tiene un tipo definido en base de datos (por el modal), lo respetamos
+        elseif (!empty($payment->ncf_type)) {
+            $tipo = $payment->ncf_type;
+        }
+        // Si no, usamos la lógica por defecto del estudiante
+        else {
+            $tipo = $this->determinarTipoComprobante($payment->student);
+        }
 
-        // 2. Buscar la secuencia activa
+        // 2. Buscar la secuencia activa para ese tipo
         $secuencia = NcfSequence::where('type_code', $tipo)
             ->where('is_active', true)
             ->whereDate('expiration_date', '>=', now())
             ->first();
 
         if (!$secuencia) {
-            // Manejo de error si no hay secuencia disponible (podrías lanzar excepción o loguear)
+            Log::error("ECF: No hay secuencia disponible para el tipo {$tipo}");
             return; 
         }
 
@@ -32,28 +44,29 @@ class EcfService
         $ncf = $secuencia->getNextNcf();
 
         if (!$ncf) {
-            // Secuencia agotada
+            Log::error("ECF: Secuencia agotada para el tipo {$tipo}");
             return;
         }
 
-        // 4. Generar Código de Seguridad (En producción real, esto viene de firmar el XML)
-        // Simulamos 6 caracteres alfanuméricos como lo pide la DGII para el QR
+        // 4. Generar Código de Seguridad (Simulado 6 chars)
         $securityCode = strtoupper(Str::random(6));
 
         // 5. Actualizar el pago
         $payment->update([
             'ncf' => $ncf,
-            'ncf_type' => $tipo,
+            'ncf_type' => $tipo, // Guardamos el tipo correcto (31 o 32)
             'ncf_expiration' => $secuencia->expiration_date,
             'security_code' => $securityCode,
-            'dgii_status' => 'generated' // Marcamos como generado internamente
+            'dgii_status' => 'generated'
         ]);
+        
+        Log::info("ECF: Comprobante {$ncf} ({$tipo}) asignado al pago {$payment->id}");
     }
 
     private function determinarTipoComprobante($student)
     {
-        // Lógica: Si tiene RNC (generalmente 9 u 11 dígitos), es B31/E31
-        if (!empty($student->rnc) && (strlen($student->rnc) == 9 || strlen($student->rnc) == 11)) {
+        // Lógica fallback: Si el perfil del estudiante tiene RNC
+        if ($student && !empty($student->rnc) && (strlen($student->rnc) == 9 || strlen($student->rnc) == 11)) {
             return '31'; // e-CF Crédito Fiscal
         }
 
