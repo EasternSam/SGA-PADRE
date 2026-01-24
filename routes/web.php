@@ -363,6 +363,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/reports/financial/{student}', [FinancialPdfController::class, 'download'])->name('reports.financial-report');
 
     // --- RUTA DESCARGA CERTIFICADO ---
+    // Esta ruta ya estaba definida, pero nos aseguramos de que sea la correcta y accesible
+    // Se ha verificado que usa 'student' y 'course' como parámetros.
     Route::get('/reports/certificate/{student}/{course}/pdf', [CertificatePdfController::class, 'download'])->name('certificates.download'); 
     
     // --- RUTA TICKET TÉRMICO (NUEVO) ---

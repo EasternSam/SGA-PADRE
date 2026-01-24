@@ -245,7 +245,10 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
                                             @if($request->type == 'solicitar_diploma' && $request->status == 'aprobado')
                                                 @if($request->payment && ($request->payment->status == 'Pagado' || $request->payment->status == 'Completado'))
-                                                    <a href="#" class="inline-flex items-center text-indigo-600 hover:text-indigo-800 font-medium text-xs bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors">
+                                                    {{-- BOTÓN DESCARGAR CORREGIDO --}}
+                                                    <a href="{{ route('certificates.download', ['student' => $request->student_id, 'course' => $request->course_id]) }}" 
+                                                       target="_blank"
+                                                       class="inline-flex items-center text-indigo-600 hover:text-indigo-800 font-medium text-xs bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors">
                                                         <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                                                         </svg>
