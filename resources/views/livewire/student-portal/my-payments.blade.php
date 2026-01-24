@@ -1,11 +1,12 @@
 <div class="min-h-screen bg-gray-50/50 pb-12">
 
+    {{-- HEADER --}}
     <x-slot name="header">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight text-gray-900">Finanzas</h1>
                 <p class="mt-1 text-sm text-gray-500">
-                    Gestiona tus pagos y descarga comprobantes.
+                    Gestiona tus pagos, visualiza deudas pendientes y descarga tus comprobantes.
                 </p>
             </div>
             <div class="flex items-center gap-3">
@@ -17,7 +18,9 @@
         </div>
     </x-slot>
 
+    {{-- CONTENEDOR PRINCIPAL --}}
     <div class="mx-auto w-full max-w-[98%] px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
+
         {{-- Alertas --}}
         @if (session()->has('message'))
             <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" class="fixed bottom-6 right-6 z-50">
@@ -84,7 +87,7 @@
             @endif
         </section>
 
-        {{-- SECCIÓN 2: HISTORIAL (Igual) --}}
+        {{-- SECCIÓN 2: HISTORIAL --}}
         <section>
             <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
                 <div class="border-b border-gray-100 px-6 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
