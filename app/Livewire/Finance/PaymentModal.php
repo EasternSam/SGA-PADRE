@@ -136,7 +136,7 @@ class PaymentModal extends Component
         $this->student_results = Student::query()
             ->where(DB::raw("CONCAT(first_name, ' ', last_name)"), 'like', '%' . $this->search_query . '%')
             ->orWhere('student_code', 'like', '%' . $this->search_query . '%')
-            ->orWhere('email', 'like', '%' . $this->search_query . '%')
+            ->orWhere('email', 'like', '%' . $this->search . '%')
             ->limit(5)
             ->get();
     }
@@ -355,21 +355,24 @@ class PaymentModal extends Component
                 return $payment;
             });
 
-            // LOGICA DE ENVIO DE CORREO DESPUES DE TRANSACCION EXITOSA
-            if ($payment && $payment->status === 'Completado' && $this->student && $this->student->email) {
-                try {
-                    // Cargar relaciones necesarias para la vista PDF
-                    $payment->load('student', 'paymentConcept', 'enrollment.courseSchedule.module');
-                    
-                    // Generar PDF en memoria usando la vista del ticket
-                    $pdfContent = Pdf::loadView('reports.thermal-invoice', ['payment' => $payment])->output();
-                    
-                    // Enviar correo
-                    Mail::to($this->student->email)->send(new PaymentReceiptMail($payment, $pdfContent));
-                    
-                } catch (\Exception $e) {
-                    Log::error("Error enviando recibo de pago por correo: " . $e->getMessage());
-                    // No detenemos el flujo si falla el correo, pero lo registramos
+            // LOGICA DE ENVIO DE CORREO DESPUES DE TRANSACCION (Modificada para incluir Pendientes)
+            if ($payment && $this->student && $this->student->email) {
+                // Notificar si es Completado O Pendiente
+                if ($payment->status === 'Completado' || $payment->status === 'Pendiente') {
+                    try {
+                        // Cargar relaciones necesarias para la vista PDF
+                        $payment->load('student', 'paymentConcept', 'enrollment.courseSchedule.module');
+                        
+                        // Generar PDF en memoria usando la vista del ticket
+                        $pdfContent = Pdf::loadView('reports.thermal-invoice', ['payment' => $payment])->output();
+                        
+                        // Enviar correo (SIN COLA)
+                        Mail::to($this->student->email)->send(new PaymentReceiptMail($payment, $pdfContent));
+                        
+                    } catch (\Exception $e) {
+                        Log::error("Error enviando recibo/deuda por correo: " . $e->getMessage());
+                        // No detenemos el flujo si falla el correo
+                    }
                 }
             }
 

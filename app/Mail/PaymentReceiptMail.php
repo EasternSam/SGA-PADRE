@@ -4,14 +4,13 @@ namespace App\Mail;
 
 use App\Models\Payment;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailable; // Se elimina ShouldQueue
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class PaymentReceiptMail extends Mailable implements ShouldQueue
+class PaymentReceiptMail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -32,8 +31,13 @@ class PaymentReceiptMail extends Mailable implements ShouldQueue
      */
     public function envelope(): Envelope
     {
+        // Cambiar asunto dinámicamente según estado
+        $subject = ($this->payment->status === 'Pendiente') 
+            ? 'Aviso de Deuda Pendiente - SGA' 
+            : 'Comprobante de Pago - SGA';
+
         return new Envelope(
-            subject: 'Comprobante de Pago - SGA',
+            subject: $subject,
         );
     }
 
@@ -49,13 +53,13 @@ class PaymentReceiptMail extends Mailable implements ShouldQueue
 
     /**
      * Get the attachments for the message.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
      */
     public function attachments(): array
     {
+        $filename = ($this->payment->status === 'Pendiente') ? 'Detalle_Deuda_' : 'Recibo_Pago_';
+
         return [
-            Attachment::fromData(fn () => $this->pdfContent, 'Recibo_Pago_' . $this->payment->id . '.pdf')
+            Attachment::fromData(fn () => $this->pdfContent, $filename . $this->payment->id . '.pdf')
                 ->withMime('application/pdf'),
         ];
     }

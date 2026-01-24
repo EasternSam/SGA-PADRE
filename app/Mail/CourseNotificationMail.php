@@ -4,13 +4,12 @@ namespace App\Mail;
 
 use App\Models\CourseSchedule;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailable; // Se elimina ShouldQueue
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class CourseNotificationMail extends Mailable implements ShouldQueue
+class CourseNotificationMail extends Mailable
 {
     use Queueable, SerializesModels;
 
