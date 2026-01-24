@@ -95,7 +95,7 @@
     <div class="info">
         @if($payment->ncf)
             <div class="kv-row">
-                <span class="kv-label">NCF:</span>
+                <span class="kv-label">e-NCF:</span>
                 <span class="kv-value">{{ $payment->ncf }}</span>
             </div>
             @if($payment->ncf_expiration)
@@ -125,26 +125,40 @@
 
     <!-- DATOS DEL CLIENTE -->
     <div class="info">
-        {{-- Si solicitó comprobante fiscal (B01), mostramos Razón Social --}}
         @if(!empty($payment->company_name))
+            {{-- CASO 1: Crédito Fiscal (Muestra Empresa + Estudiante) --}}
             <div class="kv-row">
                 <span class="kv-label">RAZÓN SOCIAL:</span>
                 <span class="kv-value">{{ strtoupper($payment->company_name) }}</span>
             </div>
+            <div class="kv-row">
+                <span class="kv-label">RNC:</span>
+                <span class="kv-value">{{ $payment->rnc_client }}</span>
+            </div>
+            
+            {{-- Separador sutil para distinguir empresa de estudiante --}}
+            <div style="margin: 3px 0; border-bottom: 1px dotted #ccc;"></div>
+
+            <div class="kv-row">
+                <span class="kv-label">ESTUDIANTE:</span>
+                <span class="kv-value">{{ strtoupper($payment->student->full_name) }}</span>
+            </div>
+            <div class="kv-row">
+                <span class="kv-label">MATRÍCULA:</span>
+                <span class="kv-value">{{ $payment->student->student_code ?? 'Nuevo Ingreso' }}</span>
+            </div>
+
         @else
+            {{-- CASO 2: Consumo Final (Solo Estudiante) --}}
             <div class="kv-row">
                 <span class="kv-label">CLIENTE:</span>
                 <span class="kv-value">{{ strtoupper($payment->student->full_name) }}</span>
             </div>
+            <div class="kv-row">
+                <span class="kv-label">MATRÍCULA:</span>
+                <span class="kv-value">{{ $payment->student->student_code ?? 'Nuevo Ingreso' }}</span>
+            </div>
         @endif
-
-        {{-- Mostrar RNC si existe, sino Cédula/Matrícula --}}
-        <div class="kv-row">
-            <span class="kv-label">{{ !empty($payment->rnc_client) ? 'RNC:' : 'MATRÍCULA:' }}</span>
-            <span class="kv-value">
-                {{ !empty($payment->rnc_client) ? $payment->rnc_client : ($payment->student->student_code ?? 'Nuevo Ingreso') }}
-            </span>
-        </div>
     </div>
 
     <div class="separator-solid"></div>
