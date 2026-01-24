@@ -87,6 +87,13 @@
             @else
                 FACTURA DE CONSUMO
             @endif
+        @elseif(isset($payment->ncf_type_requested))
+            {{-- Si no hay NCF generado aún pero se solicitó --}}
+            @if($payment->ncf_type_requested == 'B01')
+                SOLICITUD CRÉDITO FISCAL
+            @else
+                RECIBO DE INGRESO (CONSUMO)
+            @endif
         @else
             RECIBO DE INGRESO
         @endif
@@ -95,7 +102,7 @@
     <div class="info">
         @if($payment->ncf)
             <div class="kv-row">
-                <span class="kv-label">NCF:</span>
+                <span class="kv-label">e-NCF:</span>
                 <span class="kv-value">{{ $payment->ncf }}</span>
             </div>
             @if($payment->ncf_expiration)
@@ -125,7 +132,7 @@
 
     <!-- DATOS DEL CLIENTE -->
     <div class="info">
-        {{-- Si solicitó comprobante fiscal (B01), mostramos Razón Social --}}
+        {{-- Lógica mejorada para mostrar Razón Social si existe, o el nombre del estudiante --}}
         @if(!empty($payment->company_name))
             <div class="kv-row">
                 <span class="kv-label">RAZÓN SOCIAL:</span>
@@ -138,12 +145,15 @@
             </div>
         @endif
 
-        {{-- Mostrar RNC si existe, sino Cédula/Matrícula --}}
+        {{-- Lógica mejorada para RNC o Cédula --}}
         <div class="kv-row">
-            <span class="kv-label">{{ !empty($payment->rnc_client) ? 'RNC:' : 'MATRÍCULA:' }}</span>
-            <span class="kv-value">
-                {{ !empty($payment->rnc_client) ? $payment->rnc_client : ($payment->student->student_code ?? 'Nuevo Ingreso') }}
-            </span>
+            @if(!empty($payment->rnc_client))
+                <span class="kv-label">RNC:</span>
+                <span class="kv-value">{{ $payment->rnc_client }}</span>
+            @else
+                <span class="kv-label">MATRÍCULA/ID:</span>
+                <span class="kv-value">{{ $payment->student->student_code ?? 'Nuevo Ingreso' }}</span>
+            @endif
         </div>
     </div>
 
@@ -229,6 +239,9 @@
         @else
             <!-- Mensaje si no es e-CF aún -->
             <p style="margin-top:10px; border:1px solid #000; padding:2px;">COMPROBANTE VÁLIDO PARA FINES LEGALES</p>
+            @if(isset($payment->ncf_type_requested) && $payment->ncf_type_requested == 'B01')
+                <p style="font-size: 8px; margin-top:2px;">(NCF B01 PENDIENTE DE ASIGNACIÓN)</p>
+            @endif
         @endif
 
         <p style="margin-top:10px">¡Gracias por preferirnos!</p>
