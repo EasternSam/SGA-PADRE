@@ -63,8 +63,18 @@
 
     <!-- ENCABEZADO FISCAL -->
     <div class="header">
-        @if(file_exists(public_path('centuu.png')))
-            <img src="{{ asset('centuu.png') }}" alt="LOGO" class="logo-img">
+        @php
+            $logoPath = public_path('centuu.png');
+            $logoData = '';
+            if (file_exists($logoPath)) {
+                $type = pathinfo($logoPath, PATHINFO_EXTENSION);
+                $data = file_get_contents($logoPath);
+                $logoData = 'data:image/' . $type . ';base64,' . base64_encode($data);
+            }
+        @endphp
+
+        @if($logoData)
+            <img src="{{ $logoData }}" alt="LOGO" class="logo-img">
         @else
             <div style="font-size: 20px; font-weight: bold;">CENTU</div>
         @endif
@@ -234,8 +244,23 @@
     <div class="footer">
         @if(!empty($payment->dgii_qr_url))
             <div class="qr-code">
-                <!-- QR Oficial de DGII si existe (e-CF) -->
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data={{ urlencode($payment->dgii_qr_url) }}" alt="QR e-CF" class="qr-img">
+                <!-- QR Oficial de DGII convertido a Base64 -->
+                @php
+                    // Usamos la API de QR Server para generar la imagen, luego la obtenemos y codificamos
+                    $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=" . urlencode($payment->dgii_qr_url);
+                    try {
+                        $qrContent = file_get_contents($qrUrl);
+                        $qrBase64 = 'data:image/png;base64,' . base64_encode($qrContent);
+                    } catch (\Exception $e) {
+                        $qrBase64 = null; // Fallback si falla la API externa
+                    }
+                @endphp
+
+                @if($qrBase64)
+                    <img src="{{ $qrBase64 }}" alt="QR e-CF" class="qr-img">
+                @else
+                    <p style="font-size:8px;">[QR no disponible en vista previa]</p>
+                @endif
             </div>
             @if(!empty($payment->security_code))
                 <p><strong>CÓDIGO SEGURIDAD:</strong> {{ $payment->security_code }}</p>
