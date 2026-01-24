@@ -18,7 +18,7 @@ use App\Livewire\Admin\CertificateTemplatesIndex;
 use App\Livewire\Admin\ClassroomManagement;
 // Importamos el componente financiero
 use App\Livewire\Admin\FinanceDashboard;
-// Importamos el probador de correos (NUEVO)
+// Importamos el probador de correos
 use App\Livewire\Admin\EmailTester;
 
 use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
@@ -38,6 +38,11 @@ use App\Services\MatriculaService;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Log; // Importante para el debug
 use App\Models\User; // Importante para la recuperación de sesión
+
+// === IMPORTACIONES NECESARIAS PARA ENVIAR CORREOS EN CARDNET ===
+use Illuminate\Support\Facades\Mail;
+use App\Mail\PaymentReceiptMail;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 /*
 |--------------------------------------------------------------------------
@@ -111,6 +116,27 @@ Route::any('/cardnet/response', function (Request $request, EcfService $ecfServi
             if ($student && !$student->student_code && $payment->paymentConcept && stripos($payment->paymentConcept->name, 'Inscripción') !== false) {
                 $matriculaService->generarMatricula($payment);
             }
+
+            // --- NUEVO: ENVIAR CORREO DE RECIBO AL ESTUDIANTE ---
+            if ($student && $student->email) {
+                try {
+                    // Cargar relaciones necesarias para el PDF
+                    $payment->load('student', 'paymentConcept', 'enrollment.courseSchedule.module');
+                    
+                    // Generar PDF y convertir a Base64
+                    $pdfOutput = Pdf::loadView('reports.thermal-invoice', ['payment' => $payment])->output();
+                    $pdfBase64 = base64_encode($pdfOutput);
+                    
+                    // Enviar correo
+                    Mail::to($student->email)->send(new PaymentReceiptMail($payment, $pdfBase64));
+                    
+                    Log::info("Cardnet: Correo de recibo enviado a {$student->email}");
+                } catch (\Exception $e) {
+                    Log::error("Cardnet Error enviando correo: " . $e->getMessage());
+                }
+            }
+            // -----------------------------------------------------
+
         } catch (\Exception $e) {
             Log::error("Cardnet Error post-proceso: " . $e->getMessage());
         }
