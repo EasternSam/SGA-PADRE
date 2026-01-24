@@ -12,7 +12,8 @@ use App\Models\PaymentConcept;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\RequestApprovedMail; // Importar Mailable
+use App\Mail\RequestApprovedMail;
+use App\Mail\PaymentReceiptMail; // Importar para enviar aviso de deuda
 use Livewire\Attributes\Layout;
 
 #[Layout('layouts.dashboard')]
@@ -78,6 +79,8 @@ class RequestsManagement extends Component
             if ($newStatus === 'aprobado' && $oldStatus !== 'aprobado') {
                 if ($this->selectedRequest->student && $this->selectedRequest->student->email) {
                     try {
+                        // Recargar para obtener el payment_id si se creó
+                        $this->selectedRequest->refresh();
                         Mail::to($this->selectedRequest->student->email)->send(new RequestApprovedMail($this->selectedRequest));
                     } catch (\Exception $e) {
                         Log::error("Error enviando correo de aprobación de solicitud: " . $e->getMessage());
@@ -130,13 +133,11 @@ class RequestsManagement extends Component
             return;
         }
 
-        // 2. Obtener la inscripción usando whereHas para navegar por las relaciones
-        // Enrollment -> CourseSchedule -> Module -> Course
+        // 2. Obtener la inscripción
         $enrollment = Enrollment::where('student_id', $request->student_id)
             ->whereHas('courseSchedule.module', function ($q) use ($request) {
                 $q->where('course_id', $request->course_id);
             })
-            // Buscamos cualquier estado válido que indique que cursó la materia
             ->whereIn('status', ['Completado', 'completado', 'Aprobado', 'aprobado', 'Cursando', 'cursando']) 
             ->latest()
             ->first();
@@ -160,14 +161,14 @@ class RequestsManagement extends Component
         // 4. Crear el Pago Pendiente
         $payment = Payment::create([
             'student_id' => $request->student_id,
-            'enrollment_id' => $enrollment ? $enrollment->id : null, // Ahora sí debería encontrarse
+            'enrollment_id' => $enrollment ? $enrollment->id : null,
             'payment_concept_id' => $concept->id,
             'amount' => $monto,
             'currency' => 'DOP',
             'status' => 'Pendiente',
             'gateway' => 'Sistema', 
             'due_date' => now()->addDays(7), 
-            'description' => "Diploma - $nombreCurso", // Descripción clara para que se vea en el admin
+            'description' => "Diploma - $nombreCurso",
         ]);
 
         // 5. Vincular el pago a la solicitud
@@ -175,6 +176,16 @@ class RequestsManagement extends Component
         $request->save(); 
 
         Log::info("Cobro de diploma generado (Pago ID: {$payment->id}) para solicitud #{$request->id}");
+
+        // NUEVO: Enviar también el correo de DEUDA explícito
+        if ($request->student && $request->student->email) {
+            try {
+                // Enviamos cadena vacía como PDF content porque al ser Pendiente no se usa.
+                Mail::to($request->student->email)->send(new PaymentReceiptMail($payment, ''));
+            } catch (\Exception $e) {
+                Log::error("Error enviando notificación de deuda diploma: " . $e->getMessage());
+            }
+        }
     }
 
     public function render()
