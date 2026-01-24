@@ -20,13 +20,21 @@ class Payment extends Model
         'gateway',
         'transaction_id',
         'due_date',
-        // --- Campos e-CF ---
+        'notes', // Asegurar que notes también sea fillable
+        
+        // --- Campos e-CF (Facturación Electrónica) ---
         'ncf',
         'ncf_type',
         'security_code',
         'ncf_expiration',
         'dgii_track_id',
-        'dgii_status'
+        'dgii_status',
+        
+        // --- Campos NCF Cliente (NUEVOS) ---
+        // Necesarios para guardar la solicitud del estudiante
+        'rnc_client',   
+        'company_name',
+        'ncf_type_requested' // Opcional si decides usar una columna separada para lo solicitado vs lo emitido
     ];
 
     protected $casts = [

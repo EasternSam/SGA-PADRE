@@ -30,6 +30,8 @@
         .info { font-size: 10px; line-height: 1.3; }
         .separator { border-bottom: 1px dashed #000; margin: 6px 0; }
         .separator-solid { border-bottom: 1px solid #000; margin: 6px 0; }
+        
+        /* Título del tipo de comprobante */
         .ncf-title {
             text-align: center;
             font-weight: bold;
@@ -38,16 +40,20 @@
             margin-bottom: 4px;
             text-transform: uppercase;
         }
+
         .kv-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
         .kv-label { font-weight: bold; }
         .kv-value { text-align: right; max-width: 60%; word-wrap: break-word; }
+
         .details-table { width: 100%; border-collapse: collapse; margin: 5px 0; }
         .details-table th { text-align: left; border-bottom: 1px solid #000; font-size: 10px; padding: 2px 0; }
         .details-table td { padding: 4px 0; font-size: 10px; vertical-align: top; }
         .col-desc { width: 65%; }
         .col-price { width: 35%; text-align: right; }
+        
         .totals-area { margin-top: 5px; }
         .total-row { font-weight: bold; font-size: 14px; margin-top: 5px; border-top: 1px solid #000; padding-top: 5px; }
+        
         .footer { text-align: center; margin-top: 15px; font-size: 9px; line-height: 1.4; }
         .qr-code { text-align: center; margin-top: 10px; margin-bottom: 5px; }
         .qr-img { width: 90px; height: 90px; }
@@ -55,13 +61,14 @@
 </head>
 <body onload="window.print()">
 
-    <!-- ENCABEZADO -->
+    <!-- ENCABEZADO FISCAL -->
     <div class="header">
         @if(file_exists(public_path('centuu.png')))
             <img src="{{ asset('centuu.png') }}" alt="LOGO" class="logo-img">
         @else
             <div style="font-size: 20px; font-weight: bold;">CENTU</div>
         @endif
+        
         <div class="company-name">CENTRO DE TECNOLOGÍA UNIVERSAL</div>
         <div class="info">
             <strong>RNC: 101-14245-6</strong><br>
@@ -72,22 +79,16 @@
 
     <div class="separator-solid"></div>
 
-    <!-- TÍTULO DINÁMICO -->
+    <!-- TÍTULO DINÁMICO SEGÚN NCF -->
     <div class="ncf-title">
         @if($payment->ncf)
-            {{-- Si ya tiene NCF asignado --}}
-            @if($payment->ncf_type == '31')
+            @if($payment->ncf_type == '31' || (isset($payment->ncf_type_requested) && $payment->ncf_type_requested == 'B01'))
                 FACTURA DE CRÉDITO FISCAL
             @else
                 FACTURA DE CONSUMO
             @endif
         @else
-            {{-- Si no tiene NCF (Provisional) verificamos la intención del cliente (rnc_client o ncf_type) --}}
-            @if($payment->ncf_type == '31' || !empty($payment->rnc_client))
-                SOLICITUD CRÉDITO FISCAL
-            @else
-                RECIBO DE INGRESO
-            @endif
+            RECIBO DE INGRESO
         @endif
     </div>
 
@@ -124,24 +125,24 @@
 
     <!-- DATOS DEL CLIENTE -->
     <div class="info">
+        {{-- Si solicitó comprobante fiscal (B01), mostramos Razón Social --}}
         @if(!empty($payment->company_name))
-            {{-- Si existe Razón Social guardada en el pago --}}
             <div class="kv-row">
                 <span class="kv-label">RAZÓN SOCIAL:</span>
                 <span class="kv-value">{{ strtoupper($payment->company_name) }}</span>
             </div>
         @else
-            {{-- Consumidor Final / Estudiante --}}
             <div class="kv-row">
                 <span class="kv-label">CLIENTE:</span>
                 <span class="kv-value">{{ strtoupper($payment->student->full_name) }}</span>
             </div>
         @endif
 
+        {{-- Mostrar RNC si existe, sino Cédula/Matrícula --}}
         <div class="kv-row">
             <span class="kv-label">{{ !empty($payment->rnc_client) ? 'RNC:' : 'MATRÍCULA:' }}</span>
             <span class="kv-value">
-                {{ !empty($payment->rnc_client) ? $payment->rnc_client : ($payment->student->student_code ?? 'N/A') }}
+                {{ !empty($payment->rnc_client) ? $payment->rnc_client : ($payment->student->student_code ?? 'Nuevo Ingreso') }}
             </span>
         </div>
     </div>
@@ -192,6 +193,7 @@
             <span class="kv-value">{{ strtoupper($payment->gateway) }}</span>
         </div>
         
+        {{-- Si es tarjeta, mostrar autorización --}}
         @if($payment->gateway === 'Tarjeta' || str_contains(strtolower($payment->gateway), 'cardnet'))
             @if($payment->transaction_id)
                 <div class="kv-row">
@@ -201,6 +203,7 @@
             @endif
         @endif
 
+        {{-- Si es efectivo y hay devuelta --}}
         @if($payment->gateway === 'Efectivo' && isset($payment->cash_received) && $payment->cash_received > 0)
             <div class="kv-row">
                 <span class="kv-label">RECIBIDO:</span>
@@ -213,25 +216,25 @@
         @endif
     </div>
 
-    <!-- PIE -->
+    <!-- PIE DE PÁGINA Y QR -->
     <div class="footer">
         @if(!empty($payment->dgii_qr_url))
             <div class="qr-code">
+                <!-- QR Oficial de DGII si existe (e-CF) -->
                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data={{ urlencode($payment->dgii_qr_url) }}" alt="QR e-CF" class="qr-img">
             </div>
             @if(!empty($payment->security_code))
                 <p><strong>CÓDIGO SEGURIDAD:</strong> {{ $payment->security_code }}</p>
             @endif
         @else
+            <!-- Mensaje si no es e-CF aún -->
             <p style="margin-top:10px; border:1px solid #000; padding:2px;">COMPROBANTE VÁLIDO PARA FINES LEGALES</p>
-            @if(isset($payment->ncf_type_requested) && $payment->ncf_type_requested == 'B01')
-                <p style="font-size: 8px; margin-top:2px;">(SOLICITUD DE CRÉDITO FISCAL EN PROCESO)</p>
-            @endif
         @endif
 
         <p style="margin-top:10px">¡Gracias por preferirnos!</p>
         <p style="margin-top: 5px; font-size: 8px;">Copia Cliente</p>
         <div style="font-size: 8px; margin-top: 5px;">Generado: {{ now()->format('d/m/Y h:i A') }}</div>
     </div>
+
 </body>
 </html>
