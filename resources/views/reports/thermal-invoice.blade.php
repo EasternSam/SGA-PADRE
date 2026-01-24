@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>e-CF #{{ $payment->id }} - CENTU</title>
+    <title>Recibo #{{ $payment->id }} - CENTU</title>
     <style>
         @media print {
             @page { margin: 0; size: 80mm auto; }
@@ -56,13 +56,19 @@
         
         .footer { text-align: center; margin-top: 15px; font-size: 9px; line-height: 1.4; }
         .qr-code { text-align: center; margin-top: 10px; margin-bottom: 5px; }
+        .qr-img { width: 90px; height: 90px; }
     </style>
 </head>
 <body onload="window.print()">
 
     <!-- ENCABEZADO FISCAL -->
     <div class="header">
-        <img src="{{ asset('centuu.png') }}" alt="LOGO" class="logo-img">
+        @if(file_exists(public_path('centuu.png')))
+            <img src="{{ asset('centuu.png') }}" alt="LOGO" class="logo-img">
+        @else
+            <div style="font-size: 20px; font-weight: bold;">CENTU</div>
+        @endif
+        
         <div class="company-name">CENTRO DE TECNOLOGÍA UNIVERSAL</div>
         <div class="info">
             <strong>RNC: 101-14245-6</strong><br>
@@ -73,25 +79,31 @@
 
     <div class="separator-solid"></div>
 
-    <!-- DATOS DEL COMPROBANTE -->
+    <!-- TÍTULO DINÁMICO SEGÚN NCF -->
     <div class="ncf-title">
         @if($payment->ncf)
-            FACTURA DE {{ $payment->ncf_type == '31' ? 'CRÉDITO FISCAL' : 'CONSUMO' }} ELECTRÓNICA
+            @if($payment->ncf_type == '31' || (isset($payment->ncf_type_requested) && $payment->ncf_type_requested == 'B01'))
+                FACTURA DE CRÉDITO FISCAL
+            @else
+                FACTURA DE CONSUMO
+            @endif
         @else
-            RECIBO DE INGRESO (NO VÁLIDO PARA CRÉDITO FISCAL)
+            RECIBO DE INGRESO
         @endif
     </div>
 
     <div class="info">
         @if($payment->ncf)
             <div class="kv-row">
-                <span class="kv-label">e-NCF:</span>
+                <span class="kv-label">NCF:</span>
                 <span class="kv-value">{{ $payment->ncf }}</span>
             </div>
-            <div class="kv-row">
-                <span class="kv-label">VENCIMIENTO:</span>
-                <span class="kv-value">{{ $payment->ncf_expiration ? $payment->ncf_expiration->format('d/m/Y') : 'N/A' }}</span>
-            </div>
+            @if($payment->ncf_expiration)
+                <div class="kv-row">
+                    <span class="kv-label">VENCIMIENTO:</span>
+                    <span class="kv-value">{{ \Carbon\Carbon::parse($payment->ncf_expiration)->format('d/m/Y') }}</span>
+                </div>
+            @endif
         @else
             <div class="kv-row">
                 <span class="kv-label">ID INTERNO:</span>
@@ -113,13 +125,25 @@
 
     <!-- DATOS DEL CLIENTE -->
     <div class="info">
+        {{-- Si solicitó comprobante fiscal (B01), mostramos Razón Social --}}
+        @if(!empty($payment->company_name))
+            <div class="kv-row">
+                <span class="kv-label">RAZÓN SOCIAL:</span>
+                <span class="kv-value">{{ strtoupper($payment->company_name) }}</span>
+            </div>
+        @else
+            <div class="kv-row">
+                <span class="kv-label">CLIENTE:</span>
+                <span class="kv-value">{{ strtoupper($payment->student->full_name) }}</span>
+            </div>
+        @endif
+
+        {{-- Mostrar RNC si existe, sino Cédula/Matrícula --}}
         <div class="kv-row">
-            <span class="kv-label">RAZÓN SOCIAL:</span>
-            <span class="kv-value">{{ strtoupper($payment->student->full_name) }}</span>
-        </div>
-        <div class="kv-row">
-            <span class="kv-label">RNC/CÉDULA:</span>
-            <span class="kv-value">{{ $payment->student->rnc ?? $payment->student->student_code ?? '000-0000000-0' }}</span>
+            <span class="kv-label">{{ !empty($payment->rnc_client) ? 'RNC:' : 'MATRÍCULA:' }}</span>
+            <span class="kv-value">
+                {{ !empty($payment->rnc_client) ? $payment->rnc_client : ($payment->student->student_code ?? 'Nuevo Ingreso') }}
+            </span>
         </div>
     </div>
 
@@ -136,11 +160,14 @@
         <tbody>
             <tr>
                 <td class="col-desc">
-                    <strong>{{ strtoupper($payment->paymentConcept->name ?? 'SERVICIOS') }}</strong>
-                    @if($payment->enrollment)
+                    <strong>{{ strtoupper($payment->paymentConcept->name ?? 'SERVICIOS EDUCATIVOS') }}</strong>
+                    @if($payment->enrollment && $payment->enrollment->courseSchedule)
                         <br>
                         <span style="font-size: 9px; color: #333;">
-                            {{ $payment->enrollment->courseSchedule->module->course->name ?? '' }}
+                            {{ $payment->enrollment->courseSchedule->module->name ?? '' }}
+                            @if($payment->enrollment->courseSchedule->section_name)
+                                ({{ $payment->enrollment->courseSchedule->section_name }})
+                            @endif
                         </span>
                     @endif
                 </td>
@@ -165,7 +192,19 @@
             <span class="kv-label">FORMA DE PAGO:</span>
             <span class="kv-value">{{ strtoupper($payment->gateway) }}</span>
         </div>
-        @if($payment->gateway === 'Efectivo' && isset($payment->cash_received))
+        
+        {{-- Si es tarjeta, mostrar autorización --}}
+        @if($payment->gateway === 'Tarjeta' || str_contains(strtolower($payment->gateway), 'cardnet'))
+            @if($payment->transaction_id)
+                <div class="kv-row">
+                    <span class="kv-label">AUTORIZACIÓN:</span>
+                    <span class="kv-value">{{ $payment->transaction_id }}</span>
+                </div>
+            @endif
+        @endif
+
+        {{-- Si es efectivo y hay devuelta --}}
+        @if($payment->gateway === 'Efectivo' && isset($payment->cash_received) && $payment->cash_received > 0)
             <div class="kv-row">
                 <span class="kv-label">RECIBIDO:</span>
                 <span class="kv-value">{{ number_format($payment->cash_received, 2) }}</span>
@@ -179,18 +218,22 @@
 
     <!-- PIE DE PÁGINA Y QR -->
     <div class="footer">
-        @if($payment->dgii_qr_url)
+        @if(!empty($payment->dgii_qr_url))
             <div class="qr-code">
-                <!-- Generación de QR usando API pública (Para producción usar biblioteca local como simple-qrcode) -->
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data={{ urlencode($payment->dgii_qr_url) }}" alt="QR e-CF" width="90">
+                <!-- QR Oficial de DGII si existe (e-CF) -->
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data={{ urlencode($payment->dgii_qr_url) }}" alt="QR e-CF" class="qr-img">
             </div>
-            <p><strong>CÓDIGO SEGURIDAD:</strong> {{ $payment->security_code }}</p>
+            @if(!empty($payment->security_code))
+                <p><strong>CÓDIGO SEGURIDAD:</strong> {{ $payment->security_code }}</p>
+            @endif
         @else
-            <p style="margin-top:10px; border:1px solid #000; padding:2px;">COMPROBANTE PROVISIONAL</p>
+            <!-- Mensaje si no es e-CF aún -->
+            <p style="margin-top:10px; border:1px solid #000; padding:2px;">COMPROBANTE VÁLIDO PARA FINES LEGALES</p>
         @endif
 
         <p style="margin-top:10px">¡Gracias por preferirnos!</p>
         <p style="margin-top: 5px; font-size: 8px;">Copia Cliente</p>
+        <div style="font-size: 8px; margin-top: 5px;">Generado: {{ now()->format('d/m/Y h:i A') }}</div>
     </div>
 
 </body>
