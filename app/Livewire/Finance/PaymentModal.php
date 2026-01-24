@@ -16,6 +16,9 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\On;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\PaymentReceiptMail;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PaymentModal extends Component
 {
@@ -351,6 +354,24 @@ class PaymentModal extends Component
                 
                 return $payment;
             });
+
+            // LOGICA DE ENVIO DE CORREO DESPUES DE TRANSACCION EXITOSA
+            if ($payment && $payment->status === 'Completado' && $this->student && $this->student->email) {
+                try {
+                    // Cargar relaciones necesarias para la vista PDF
+                    $payment->load('student', 'paymentConcept', 'enrollment.courseSchedule.module');
+                    
+                    // Generar PDF en memoria usando la vista del ticket
+                    $pdfContent = Pdf::loadView('reports.thermal-invoice', ['payment' => $payment])->output();
+                    
+                    // Enviar correo
+                    Mail::to($this->student->email)->send(new PaymentReceiptMail($payment, $pdfContent));
+                    
+                } catch (\Exception $e) {
+                    Log::error("Error enviando recibo de pago por correo: " . $e->getMessage());
+                    // No detenemos el flujo si falla el correo, pero lo registramos
+                }
+            }
 
             $msg = ($this->status === 'Pendiente') 
                 ? 'Deuda registrada correctamente en la cuenta del estudiante.' 

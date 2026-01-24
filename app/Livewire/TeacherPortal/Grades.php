@@ -8,6 +8,9 @@ use App\Models\Enrollment;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+use App\Mail\GradePostedMail; // Importar Mailable
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 
@@ -70,20 +73,43 @@ class Grades extends Component
         $this->validate();
 
         try {
+            // Recolectar estudiantes a notificar fuera de la transacción para no bloquear
+            $enrollmentsToNotify = [];
+
             // Usar una transacción para asegurar que todas las notas se guarden
-            // o ninguna lo haga si ocurre un error.
-            DB::transaction(function () {
+            DB::transaction(function () use (&$enrollmentsToNotify) {
                 foreach ($this->grades as $enrollmentId => $grade) {
-                    $enrollment = Enrollment::find($enrollmentId);
+                    $enrollment = Enrollment::with('student', 'courseSchedule.module')->find($enrollmentId);
                     
                     // Asegurarse de que la inscripción pertenece a esta sección
                     if ($enrollment && $enrollment->course_schedule_id === $this->section->id) {
-                        $enrollment->update([
-                            'final_grade' => $grade ? round($grade, 2) : null // Redondear y guardar (o null si está vacío)
+                        
+                        // Llenar el modelo con el nuevo valor
+                        $enrollment->fill([
+                            'final_grade' => $grade ? round($grade, 2) : null
                         ]);
+
+                        // Verificar si la nota ha cambiado y no es nula para notificar
+                        // Nota: isDirty() debe verificarse antes de save()
+                        if ($enrollment->isDirty('final_grade') && !is_null($enrollment->final_grade)) {
+                            $enrollmentsToNotify[] = $enrollment;
+                        }
+
+                        $enrollment->save();
                     }
                 }
             });
+
+            // Enviar correos
+            foreach ($enrollmentsToNotify as $enrollment) {
+                if ($enrollment->student && $enrollment->student->email) {
+                    try {
+                        Mail::to($enrollment->student->email)->send(new GradePostedMail($enrollment));
+                    } catch (\Exception $e) {
+                        Log::error("Error enviando notificación de nota al estudiante {$enrollment->student->id}: " . $e->getMessage());
+                    }
+                }
+            }
 
             session()->flash('message', 'Calificaciones guardadas exitosamente.');
             

@@ -11,6 +11,8 @@ use App\Models\Payment;
 use App\Models\PaymentConcept;  
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\RequestApprovedMail; // Importar Mailable
 use Livewire\Attributes\Layout;
 
 #[Layout('layouts.dashboard')]
@@ -71,6 +73,17 @@ class RequestsManagement extends Component
             }
 
             DB::commit();
+            
+            // NUEVO: Enviar Correo de Aprobación
+            if ($newStatus === 'aprobado' && $oldStatus !== 'aprobado') {
+                if ($this->selectedRequest->student && $this->selectedRequest->student->email) {
+                    try {
+                        Mail::to($this->selectedRequest->student->email)->send(new RequestApprovedMail($this->selectedRequest));
+                    } catch (\Exception $e) {
+                        Log::error("Error enviando correo de aprobación de solicitud: " . $e->getMessage());
+                    }
+                }
+            }
             
             // Refrescamos la solicitud para mostrar los cambios en el modal
             $this->selectedRequest->refresh();

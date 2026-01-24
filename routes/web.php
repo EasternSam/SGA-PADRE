@@ -18,6 +18,8 @@ use App\Livewire\Admin\CertificateTemplatesIndex;
 use App\Livewire\Admin\ClassroomManagement;
 // Importamos el componente financiero
 use App\Livewire\Admin\FinanceDashboard;
+// Importamos el probador de correos (NUEVO)
+use App\Livewire\Admin\EmailTester;
 
 use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
 use App\Livewire\StudentPortal\CourseDetail as StudentPortalCourseDetail;
@@ -299,6 +301,9 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
 
     // --- GESTIÓN DE AULAS ---
     Route::get('/classrooms', ClassroomManagement::class)->name('admin.classrooms.index');
+
+    // --- PROBADOR DE CORREOS (NUEVO) ---
+    Route::get('/email-tester', EmailTester::class)->name('admin.email-tester');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
 });
