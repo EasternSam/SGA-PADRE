@@ -15,7 +15,7 @@ class PaymentReceiptMail extends Mailable
     use Queueable, SerializesModels;
 
     public $payment;
-    protected $pdfContent;
+    protected $pdfContent; // Contiene Base64 String
 
     /**
      * Create a new message instance.
@@ -58,8 +58,9 @@ class PaymentReceiptMail extends Mailable
     {
         $filename = ($this->payment->status === 'Pendiente') ? 'Detalle_Deuda_' : 'Recibo_Pago_';
 
+        // Decodificamos el Base64 aquí mismo para recuperar el binario
         return [
-            Attachment::fromData(fn () => $this->pdfContent, $filename . $this->payment->id . '.pdf')
+            Attachment::fromData(fn () => base64_decode($this->pdfContent), $filename . $this->payment->id . '.pdf')
                 ->withMime('application/pdf'),
         ];
     }

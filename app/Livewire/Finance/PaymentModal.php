@@ -136,7 +136,7 @@ class PaymentModal extends Component
         $this->student_results = Student::query()
             ->where(DB::raw("CONCAT(first_name, ' ', last_name)"), 'like', '%' . $this->search_query . '%')
             ->orWhere('student_code', 'like', '%' . $this->search_query . '%')
-            ->orWhere('email', 'like', '%' . $this->search . '%')
+            ->orWhere('email', 'like', '%' . $this->search_query . '%')
             ->limit(5)
             ->get();
     }
@@ -355,7 +355,7 @@ class PaymentModal extends Component
                 return $payment;
             });
 
-            // LOGICA DE ENVIO DE CORREO DESPUES DE TRANSACCION (Modificada para incluir Pendientes)
+            // LOGICA DE ENVIO DE CORREO DESPUES DE TRANSACCION (Modificada para incluir Pendientes y Base64)
             if ($payment && $this->student && $this->student->email) {
                 // Notificar si es Completado O Pendiente
                 if ($payment->status === 'Completado' || $payment->status === 'Pendiente') {
@@ -363,15 +363,15 @@ class PaymentModal extends Component
                         // Cargar relaciones necesarias para la vista PDF
                         $payment->load('student', 'paymentConcept', 'enrollment.courseSchedule.module');
                         
-                        // Generar PDF en memoria usando la vista del ticket
-                        $pdfContent = Pdf::loadView('reports.thermal-invoice', ['payment' => $payment])->output();
+                        // Generar PDF y convertir a BASE64 para evitar errores de UTF-8
+                        $pdfOutput = Pdf::loadView('reports.thermal-invoice', ['payment' => $payment])->output();
+                        $pdfBase64 = base64_encode($pdfOutput);
                         
-                        // Enviar correo (SIN COLA)
-                        Mail::to($this->student->email)->send(new PaymentReceiptMail($payment, $pdfContent));
+                        // Enviar correo (SIN COLA) usando el base64
+                        Mail::to($this->student->email)->send(new PaymentReceiptMail($payment, $pdfBase64));
                         
                     } catch (\Exception $e) {
                         Log::error("Error enviando recibo/deuda por correo: " . $e->getMessage());
-                        // No detenemos el flujo si falla el correo
                     }
                 }
             }
