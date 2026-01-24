@@ -3,13 +3,14 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Contracts\Queue\ShouldQueue; // Se mantiene la importación pero no la usaremos en la clase
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class CustomSystemMail extends Mailable implements ShouldQueue
+// NOTA: He quitado "implements ShouldQueue" para que el envío sea inmediato y podamos ver errores.
+class CustomSystemMail extends Mailable 
 {
     use Queueable, SerializesModels;
 
