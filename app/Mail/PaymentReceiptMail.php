@@ -56,7 +56,12 @@ class PaymentReceiptMail extends Mailable
      */
     public function attachments(): array
     {
-        $filename = ($this->payment->status === 'Pendiente') ? 'Detalle_Deuda_' : 'Recibo_Pago_';
+        // Modificación: Si es una deuda (Pendiente), no se adjunta el recibo.
+        if ($this->payment->status === 'Pendiente') {
+            return [];
+        }
+
+        $filename = 'Recibo_Pago_';
 
         // Decodificamos el Base64 aquí mismo para recuperar el binario
         return [
