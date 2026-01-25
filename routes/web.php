@@ -299,6 +299,12 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
     Route::get('/students/profile/{student}', \App\Livewire\StudentProfile\Index::class)->name('admin.students.profile');
     Route::get('/courses', \App\Livewire\Courses\Index::class)->name('admin.courses.index');
     
+
+    // --- NUEVA RUTA: GESTIÓN DE USUARIOS ---
+    Route::get('/users', UsersIndex::class)->name('admin.users.index');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
+    
     // --- GESTIÓN FINANCIERA ---
     // Dashboard General de Finanzas
     Route::get('/finance/dashboard', FinanceDashboard::class)->name('admin.finance.dashboard');
