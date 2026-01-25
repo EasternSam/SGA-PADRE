@@ -51,34 +51,50 @@ class EmailTester extends Component
 
     public function mount()
     {
-        // Optimización: Cargar secciones solo con los campos necesarios y eager loading
-        // Limitamos a las últimas 100 secciones activas para evitar sobrecarga inicial
-        // Si necesitas más, podríamos implementar un buscador dinámico
-        $this->availableSections = CourseSchedule::with(['module.course'])
-            ->whereHas('enrollments') 
-            ->latest()
-            ->take(100) 
-            ->get()
-            ->map(function($schedule) {
-                return [
-                    'id' => $schedule->id,
-                    'name' => ($schedule->module->course->name ?? 'Curso') . ' - ' . ($schedule->module->name ?? 'Módulo') . ' (' . $schedule->section_name . ')'
-                ];
-            })
-            ->toArray(); // Convertir a array para evitar serialización pesada de modelos
+        // Optimización CRÍTICA: No cargamos datos pesados al iniciar.
+        // Las secciones se cargarán bajo demanda cuando el usuario seleccione esa opción.
+        $this->availableSections = [];
     }
 
-    // Calcular destinatarios cada vez que cambian los filtros
+    // Hook que se ejecuta cuando una propiedad cambia
     public function updated($propertyName)
     {
+        // Si selecciona "Sección", cargamos la lista en ese momento
+        if ($propertyName === 'audience' && $this->audience === 'section') {
+            $this->loadSections();
+        }
+
         if (in_array($propertyName, ['audience', 'sectionId', 'emailTo'])) {
             $this->calculateRecipients();
         }
     }
 
+    public function loadSections()
+    {
+        // Evitar recargar si ya tenemos datos
+        if (!empty($this->availableSections)) return;
+
+        try {
+            $this->availableSections = CourseSchedule::with(['module.course'])
+                ->whereHas('enrollments') 
+                ->latest()
+                ->take(100) 
+                ->get()
+                ->map(function($schedule) {
+                    return [
+                        'id' => $schedule->id,
+                        'name' => ($schedule->module->course->name ?? 'Curso') . ' - ' . ($schedule->module->name ?? 'Módulo') . ' (' . $schedule->section_name . ')'
+                    ];
+                })
+                ->toArray();
+        } catch (\Exception $e) {
+            $this->addDebug("Error cargando secciones: " . $e->getMessage());
+        }
+    }
+
     public function calculateRecipients()
     {
-        // Optimización: Usar count() directo en DB en lugar de traer modelos
+        // Optimización: Usar count() directo en DB
         switch ($this->audience) {
             case 'individual':
                 $this->recipientCount = !empty($this->emailTo) ? 1 : 0;
@@ -110,13 +126,12 @@ class EmailTester extends Component
     {
         $this->validate();
         $this->debugLog = []; 
-        $this->addDebug("Iniciando proceso de envío masivo...");
+        $this->addDebug("Iniciando proceso de envío...");
 
         $emailsSent = 0;
         $emailsFailed = 0;
 
         try {
-            // 1. Obtener lista de correos (Optimizada para solo traer emails)
             $recipients = $this->getRecipientsEmails();
 
             if (empty($recipients)) {
@@ -127,20 +142,22 @@ class EmailTester extends Component
             $count = count($recipients);
             $this->addDebug("Destinatarios encontrados: " . $count);
 
-            // 2. Iterar y enviar
+            // Límite de seguridad para envío síncrono
+            if ($count > 50) {
+                $this->addDebug("⚠️ IMPORTANTE: Estás enviando muchos correos de forma síncrona. Esto podría tardar.");
+            }
+
             foreach ($recipients as $email) {
                 try {
                     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                        continue; // Saltar silenciosamente inválidos
+                        continue; 
                     }
 
-                    // Enviar
                     Mail::to($email)->send(new CustomSystemMail($this->subject, $this->messageBody));
                     $emailsSent++;
 
                 } catch (\Exception $e) {
                     $emailsFailed++;
-                    // Solo loguear errores graves para no saturar la consola visual
                     if($emailsFailed <= 5) { 
                         $this->addDebug("❌ Fallo al enviar a ($email): " . $e->getMessage());
                     }
@@ -151,7 +168,6 @@ class EmailTester extends Component
                 $this->addDebug("... y " . ($emailsFailed - 5) . " fallos más.");
             }
 
-            // 3. Resultado final
             if ($emailsSent > 0) {
                 $this->addDebug("✅ Proceso finalizado. Enviados: $emailsSent. Fallidos: $emailsFailed.");
                 session()->flash('success', "Se enviaron $emailsSent correos correctamente.");
@@ -170,7 +186,6 @@ class EmailTester extends Component
 
     private function getRecipientsEmails()
     {
-        // Optimización: Pluck directo desde la base de datos para no hidratar modelos
         switch ($this->audience) {
             case 'individual':
                 return [$this->emailTo];
