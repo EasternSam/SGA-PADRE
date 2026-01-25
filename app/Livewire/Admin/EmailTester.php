@@ -130,16 +130,12 @@ class EmailTester extends Component
         $this->addDebug("⏳ Procesando en segundo plano...");
     }
 
-    /**
-     * Paso 2: Procesar un pequeño lote.
-     */
     public function processBatch()
     {
-        // FIX CRÍTICO: Cerrar sesión inmediatamente para liberar el archivo de base de datos
-        // Esto permite que otras peticiones (y la UI) sigan funcionando mientras esto corre.
+        // Force session close to release database lock
         if (session()->isStarted()) {
             session()->save(); 
-            // session_write_close(); // Alternativa nativa si save() no libera suficiente
+            // session_write_close(); // Native PHP alternative
         }
 
         if (!$this->isProcessing || !$this->batchId) return;
@@ -151,8 +147,8 @@ class EmailTester extends Component
             return;
         }
 
-        // Procesar lote pequeño (5 emails)
-        $batchSize = 5; 
+        // REDUCED BATCH SIZE TO 3 FOR STABILITY
+        $batchSize = 3; 
         $currentBatch = array_slice($allRecipients, $this->sentCount, $batchSize);
 
         if (empty($currentBatch)) {
@@ -184,7 +180,6 @@ class EmailTester extends Component
         $this->progress = 100;
         $this->addDebug("✅ ¡Proceso completado! Se procesaron {$this->sentCount} envíos.");
         
-        // Reabrimos sesión si es necesario para flashear, aunque Livewire maneja estado
         session()->flash('success', "Envío masivo finalizado correctamente.");
         
         Cache::forget($this->batchId);
