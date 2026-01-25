@@ -32,7 +32,8 @@
                             {{ __('Personal') }}
                         </x-nav-link>
 
-                        <x-nav-link :href="route('admin.requests.index')" :active="request()->routeIs('admin.requests.*')">
+                        <!-- CORRECCIÓN DE RUTA AQUÍ: admin.requests en lugar de admin.requests.index -->
+                        <x-nav-link :href="route('admin.requests')" :active="request()->routeIs('admin.requests.*')">
                             {{ __('Solicitudes') }}
                         </x-nav-link>
                         <x-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
@@ -119,35 +120,11 @@
                 <x-responsive-nav-link :href="route('admin.students.index')" :active="request()->routeIs('admin.students.*')">
                     {{ __('Estudiantes') }}
                 </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admin.courses.index')" :active="request()->routeIs('admin.courses.*')">
-                    {{ __('Cursos') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admin.teachers.index')" :active="request()->routeIs('admin.teachers.*')">
-                    {{ __('Profesores') }}
-                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
                     {{ __('Personal') }}
                 </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admin.requests.index')" :active="request()->routeIs('admin.requests.*')">
-                    {{ __('Solicitudes') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
-                    {{ __('Reportes') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admin.finance.dashboard')" :active="request()->routeIs('admin.finance.*')">
-                    {{ __('Finanzas') }}
-                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.email-tester')" :active="request()->routeIs('admin.email-tester')">
                     {{ __('Enviar Correos') }}
-                </x-responsive-nav-link>
-            @endrole
-
-            @role('Estudiante')
-                <x-responsive-nav-link :href="route('student.payments')" :active="request()->routeIs('student.payments')">
-                    {{ __('Mis Pagos') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('student.requests')" :active="request()->routeIs('student.requests')">
-                    {{ __('Mis Solicitudes') }}
                 </x-responsive-nav-link>
             @endrole
         </div>

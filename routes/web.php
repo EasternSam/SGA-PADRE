@@ -20,8 +20,6 @@ use App\Livewire\Admin\ClassroomManagement;
 use App\Livewire\Admin\FinanceDashboard;
 // Importamos el probador de correos
 use App\Livewire\Admin\EmailTester;
-// Importamos gestión de usuarios (NUEVO) - Usaremos FQCN abajo para evitar alias conflictivos
-// use App\Livewire\Admin\Users\Index as UsersIndex; 
 
 use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
 use App\Livewire\StudentPortal\CourseDetail as StudentPortalCourseDetail;
