@@ -55,11 +55,14 @@ class EmailTester extends Component
 
     public function mount()
     {
+        // 1. Optimización: Iniciar vacío.
+        // No cargamos nada al entrar para que el renderizado sea instantáneo.
         $this->availableSections = [];
     }
 
     public function updated($propertyName)
     {
+        // 2. Carga bajo demanda solo si es necesario
         if ($propertyName === 'audience' && $this->audience === 'section') {
             $this->loadSections();
         }
@@ -72,33 +75,49 @@ class EmailTester extends Component
     public function loadSections()
     {
         if (!empty($this->availableSections)) return;
+
         try {
-            $this->availableSections = CourseSchedule::with(['module.course'])
-                ->whereHas('enrollments') 
+            // 3. Consulta Ultraligera: Seleccionar solo columnas necesarias y limitar resultados.
+            // Esto evita hidratar modelos pesados completos.
+            $this->availableSections = CourseSchedule::query()
+                ->select('id', 'module_id', 'section_name') // Solo lo vital
+                ->with(['module:id,course_id,name', 'module.course:id,name']) // Eager loading optimizado
+                ->whereHas('enrollments') // Solo secciones con alumnos
                 ->latest()
-                ->take(100) 
+                ->limit(50) // Límite estricto para evitar bloqueo por memoria
                 ->get()
                 ->map(function($schedule) {
+                    $course = $schedule->module->course->name ?? 'Curso';
+                    $module = $schedule->module->name ?? 'Módulo';
                     return [
                         'id' => $schedule->id,
-                        'name' => ($schedule->module->course->name ?? 'Curso') . ' - ' . ($schedule->module->name ?? 'Módulo') . ' (' . $schedule->section_name . ')'
+                        'name' => "{$course} - {$module} ({$schedule->section_name})"
                     ];
                 })
                 ->toArray();
-        } catch (\Exception $e) { }
+        } catch (\Exception $e) { 
+            // Fallo silencioso para no romper la UI
+        }
     }
 
     public function calculateRecipients()
     {
+        // 4. Optimización de Conteo: Usar consultas directas sin cargar modelos
         switch ($this->audience) {
             case 'individual':
                 $this->recipientCount = !empty($this->emailTo) ? 1 : 0;
                 break;
             case 'section':
-                $this->recipientCount = $this->sectionId ? \App\Models\Enrollment::where('course_schedule_id', $this->sectionId)->whereIn('status', ['Cursando', 'Activo'])->count() : 0;
+                $this->recipientCount = $this->sectionId 
+                    ? \App\Models\Enrollment::where('course_schedule_id', $this->sectionId)
+                        ->whereIn('status', ['Cursando', 'Activo'])
+                        ->count() 
+                    : 0;
                 break;
             case 'debt':
-                $this->recipientCount = Payment::where('status', 'Pendiente')->distinct('student_id')->count('student_id');
+                $this->recipientCount = Payment::where('status', 'Pendiente')
+                    ->distinct('student_id')
+                    ->count('student_id');
                 break;
             case 'all':
                 $this->recipientCount = Student::whereNotNull('email')->count();
@@ -123,20 +142,19 @@ class EmailTester extends Component
         $this->sentCount = 0;
         $this->progress = 0;
         
+        // Guardamos en caché por 30 mins
         Cache::put($this->batchId, $recipients, 1800);
 
         $this->isProcessing = true;
         $this->addDebug("🚀 Iniciando envío a {$this->totalToSend} destinatarios.");
-        $this->addDebug("⏳ Procesando en segundo plano...");
     }
 
     public function processBatch()
     {
-        // Force session close to release database lock
-        if (session()->isStarted()) {
-            session()->save(); 
-            // session_write_close(); // Native PHP alternative
-        }
+        // 5. FIX CRÍTICO SQLITE: Liberar el bloqueo de sesión INMEDIATAMENTE.
+        // Esto permite que el resto del sistema (navegación, otras pestañas) funcione
+        // mientras este script sigue ejecutándose en el servidor.
+        session_write_close();
 
         if (!$this->isProcessing || !$this->batchId) return;
 
@@ -147,7 +165,7 @@ class EmailTester extends Component
             return;
         }
 
-        // REDUCED BATCH SIZE TO 3 FOR STABILITY
+        // Procesar lote pequeño (3 emails) para no saturar SMTP ni timeout
         $batchSize = 3; 
         $currentBatch = array_slice($allRecipients, $this->sentCount, $batchSize);
 
@@ -162,7 +180,7 @@ class EmailTester extends Component
                     Mail::to($email)->send(new CustomSystemMail($this->subject, $this->messageBody));
                 }
             } catch (\Exception $e) {
-                // Loguear solo errores críticos si es necesario
+                // Logueo mínimo
             }
         }
 
@@ -178,23 +196,24 @@ class EmailTester extends Component
     {
         $this->isProcessing = false;
         $this->progress = 100;
-        $this->addDebug("✅ ¡Proceso completado! Se procesaron {$this->sentCount} envíos.");
-        
-        session()->flash('success', "Envío masivo finalizado correctamente.");
+        $this->addDebug("✅ Completado. {$this->sentCount} envíos procesados.");
         
         Cache::forget($this->batchId);
         $this->reset(['subject', 'messageBody']);
+        
+        // Requerimos re-abrir sesión solo para flash message final si es necesario, 
+        // pero en este contexto basta con limpiar variables.
     }
 
     public function stopProcessing($msg = "Proceso detenido.")
     {
         $this->isProcessing = false;
         $this->addDebug("🛑 $msg");
-        session()->flash('error', $msg);
     }
 
     private function getRecipientsEmails()
     {
+        // 6. Extracción Optimizada (Pluck) para no cargar memoria
         switch ($this->audience) {
             case 'individual':
                 return [$this->emailTo];
@@ -213,7 +232,8 @@ class EmailTester extends Component
                     ->pluck('students.email')
                     ->toArray();
             case 'all':
-                return Student::whereNotNull('email')->pluck('email')->toArray();
+                // Límite de seguridad para "Todos" en hosting compartido
+                return Student::whereNotNull('email')->take(500)->pluck('email')->toArray();
             default:
                 return [];
         }
