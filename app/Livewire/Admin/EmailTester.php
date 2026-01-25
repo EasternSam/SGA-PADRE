@@ -97,6 +97,7 @@ class EmailTester extends Component
                 ->toArray();
         } catch (\Exception $e) { 
             // Fallo silencioso para no romper la UI
+            Log::error("EmailTester: Error al cargar secciones: " . $e->getMessage());
         }
     }
 
@@ -130,10 +131,13 @@ class EmailTester extends Component
         $this->validate();
         $this->debugLog = [];
         
+        Log::info("EmailTester: Iniciando startSending(). Audiencia: " . $this->audience);
+        
         $recipients = $this->getRecipientsEmails();
 
         if (empty($recipients)) {
             $this->addDebug("⚠️ No hay destinatarios válidos.");
+            Log::warning("EmailTester: No se encontraron destinatarios.");
             return;
         }
 
@@ -141,6 +145,8 @@ class EmailTester extends Component
         $this->totalToSend = count($recipients);
         $this->sentCount = 0;
         $this->progress = 0;
+        
+        Log::info("EmailTester: Batch ID: {$this->batchId}, Total a enviar: {$this->totalToSend}");
         
         // Guardamos en caché por 30 mins
         Cache::put($this->batchId, $recipients, 1800);
@@ -151,16 +157,22 @@ class EmailTester extends Component
 
     public function processBatch()
     {
+        Log::info("EmailTester: processBatch ejecutándose. BatchID: " . ($this->batchId ?? 'N/A'));
+        
         // 5. FIX CRÍTICO SQLITE: Liberar el bloqueo de sesión INMEDIATAMENTE.
         // Esto permite que el resto del sistema (navegación, otras pestañas) funcione
         // mientras este script sigue ejecutándose en el servidor.
         session_write_close();
 
-        if (!$this->isProcessing || !$this->batchId) return;
+        if (!$this->isProcessing || !$this->batchId) {
+             Log::info("EmailTester: Proceso detenido o sin ID.");
+             return;
+        }
 
         $allRecipients = Cache::get($this->batchId);
 
         if (!$allRecipients) {
+            Log::error("EmailTester: Cache expirado para Batch ID: {$this->batchId}");
             $this->stopProcessing("Error: La lista de envío expiró.");
             return;
         }
@@ -170,22 +182,31 @@ class EmailTester extends Component
         $currentBatch = array_slice($allRecipients, $this->sentCount, $batchSize);
 
         if (empty($currentBatch)) {
+            Log::info("EmailTester: Lote vacío, finalizando.");
             $this->finishProcessing();
             return;
         }
+        
+        Log::info("EmailTester: Procesando lote de " . count($currentBatch) . " correos. Inicio índice: " . $this->sentCount);
 
         foreach ($currentBatch as $email) {
             try {
                 if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    Log::info("EmailTester: Enviando correo a: " . $email);
                     Mail::to($email)->send(new CustomSystemMail($this->subject, $this->messageBody));
+                } else {
+                    Log::warning("EmailTester: Correo inválido omitido: " . $email);
                 }
             } catch (\Exception $e) {
                 // Logueo mínimo
+                Log::error("EmailTester: Fallo al enviar a {$email}: " . $e->getMessage());
             }
         }
 
         $this->sentCount += count($currentBatch);
         $this->progress = ($this->totalToSend > 0) ? round(($this->sentCount / $this->totalToSend) * 100) : 100;
+        
+        Log::info("EmailTester: Progreso actualizado: {$this->sentCount}/{$this->totalToSend} ({$this->progress}%)");
 
         if ($this->sentCount >= $this->totalToSend) {
             $this->finishProcessing();
@@ -198,6 +219,8 @@ class EmailTester extends Component
         $this->progress = 100;
         $this->addDebug("✅ Completado. {$this->sentCount} envíos procesados.");
         
+        Log::info("EmailTester: Proceso finalizado exitosamente.");
+        
         Cache::forget($this->batchId);
         $this->reset(['subject', 'messageBody']);
         
@@ -209,6 +232,7 @@ class EmailTester extends Component
     {
         $this->isProcessing = false;
         $this->addDebug("🛑 $msg");
+        Log::warning("EmailTester: Proceso detenido manualmente o por error: $msg");
     }
 
     private function getRecipientsEmails()
