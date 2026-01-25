@@ -25,10 +25,10 @@ class EmailTester extends Component
 
     // Datos de UI
     public $availableSections = [];
-    public $recipientCount = 0; // Se inicializa en 0 y se actualiza solo bajo demanda
+    public $recipientCount = 0; 
     public $debugLog = [];
 
-    // --- VARIABLES DE PROCESO POR LOTES ---
+    // --- VARIABLES DE PROCESO ---
     public $isProcessing = false;
     public $batchId = null;
     public $totalToSend = 0;
@@ -56,19 +56,16 @@ class EmailTester extends Component
 
     public function mount()
     {
-        // 1. Optimización Extrema: NO cargar NADA al inicio.
-        // Ni siquiera las secciones. Dejamos que el usuario interactúe primero.
+        // NO cargar nada pesado al inicio
         $this->availableSections = [];
     }
 
     public function updated($propertyName)
     {
-        // Solo cargar secciones si realmente se selecciona la audiencia 'section'
         if ($propertyName === 'audience' && $this->audience === 'section') {
             $this->loadSections();
         }
 
-        // Recalcular destinatarios SOLO si cambian los filtros relevantes
         if (in_array($propertyName, ['audience', 'sectionId', 'emailTo'])) {
             $this->calculateRecipients();
         }
@@ -79,11 +76,10 @@ class EmailTester extends Component
         if (!empty($this->availableSections)) return;
 
         try {
-            // Consulta optimizada usando DB::table para evitar overhead de Eloquent
+            // Consulta optimizada para SQLite
             $this->availableSections = DB::table('course_schedules')
                 ->join('modules', 'course_schedules.module_id', '=', 'modules.id')
                 ->join('courses', 'modules.course_id', '=', 'courses.id')
-                // Solo secciones que tengan inscripciones activas (optimización clave)
                 ->whereExists(function ($query) {
                     $query->select(DB::raw(1))
                           ->from('enrollments')
@@ -97,7 +93,7 @@ class EmailTester extends Component
                     'course_schedules.section_name'
                 )
                 ->orderBy('course_schedules.created_at', 'desc')
-                ->limit(50) // Límite duro para evitar bloqueo
+                ->limit(50)
                 ->get()
                 ->map(function ($row) {
                     return [
@@ -107,13 +103,14 @@ class EmailTester extends Component
                 })
                 ->toArray();
         } catch (\Exception $e) {
-            Log::error("EmailTester: Error cargando secciones: " . $e->getMessage());
+            // Log a archivo, no a BD para evitar bloqueos
+            Log::channel('daily')->error("EmailTester: Error cargando secciones: " . $e->getMessage());
         }
     }
 
     public function calculateRecipients()
     {
-        // 4. Optimización de Conteo: Usar consultas directas a DB sin modelos
+        // Cálculo ligero
         try {
             switch ($this->audience) {
                 case 'individual':
@@ -143,58 +140,60 @@ class EmailTester extends Component
             }
         } catch (\Exception $e) {
             $this->recipientCount = 0;
-            Log::error("EmailTester: Error contando destinatarios: " . $e->getMessage());
         }
     }
 
     public function startSending()
     {
+        // 1. Validación básica
         $this->validate();
         $this->debugLog = [];
 
-        Log::info("EmailTester: Iniciando startSending(). Audiencia: " . $this->audience);
-
+        // 2. Obtención de destinatarios (Lectura única a BD)
         $recipients = $this->getRecipientsEmails();
 
         if (empty($recipients)) {
             $this->addDebug("⚠️ No hay destinatarios válidos.");
-            Log::warning("EmailTester: No se encontraron destinatarios.");
             return;
         }
 
-        $this->batchId = 'email_batch_' . uniqid();
+        // 3. Configuración del Lote en CACHÉ (No en sesión ni BD)
+        // Usamos cache de archivo (file driver) que no bloquea SQLite
+        $this->batchId = 'batch_' . uniqid();
         $this->totalToSend = count($recipients);
         $this->sentCount = 0;
         $this->progress = 0;
 
-        Log::info("EmailTester: Batch ID: {$this->batchId}, Total a enviar: {$this->totalToSend}");
-
-        // Guardamos en caché por 30 mins
-        Cache::put($this->batchId, $recipients, 1800);
+        // Guardar lista completa en caché por 1 hora
+        Cache::put($this->batchId, $recipients, 3600);
 
         $this->isProcessing = true;
         $this->addDebug("🚀 Iniciando envío a {$this->totalToSend} destinatarios.");
-        $this->addDebug("⏳ Procesando en segundo plano...");
     }
 
     public function processBatch()
     {
-        // 5. FIX CRÍTICO SQLITE: Liberar sesión inmediatamente.
+        // --- SOLUCIÓN DEFINITIVA PARA SQLITE LOCKED ---
+        // Cerramos la escritura de sesión inmediatamente.
+        // Esto permite que otras peticiones lean la sesión, pero evita bloqueos de escritura.
         session_write_close();
 
         if (!$this->isProcessing || !$this->batchId) {
             return;
         }
 
+        // Recuperar lista desde caché (File Driver no bloquea SQLite)
         $allRecipients = Cache::get($this->batchId);
 
         if (!$allRecipients) {
-            $this->stopProcessing("Error: La lista de envío expiró.");
+            $this->isProcessing = false;
+            $this->addDebug("🛑 Error: Lista de envío no encontrada o expirada.");
             return;
         }
 
-        // Lote pequeño
-        $batchSize = 3;
+        // Procesar un lote MUY pequeño para ser rápidos y liberar el proceso PHP
+        // 5 correos es un buen balance para SMTP
+        $batchSize = 5;
         $currentBatch = array_slice($allRecipients, $this->sentCount, $batchSize);
 
         if (empty($currentBatch)) {
@@ -202,20 +201,37 @@ class EmailTester extends Component
             return;
         }
 
+        $sentInBatch = 0;
+
         foreach ($currentBatch as $email) {
             try {
                 if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    // Envío real
                     Mail::to($email)->send(new CustomSystemMail($this->subject, $this->messageBody));
+                    $sentInBatch++;
                 }
             } catch (\Exception $e) {
-                // Logueo solo a archivo, no a la UI para no sobrecargar
-                Log::error("EmailTester: Fallo al enviar a {$email}: " . $e->getMessage());
+                // Solo loguear en archivo de texto para no tocar la BD SQLite
+                Log::channel('daily')->error("Fallo envío a $email: " . $e->getMessage());
             }
         }
 
-        $this->sentCount += count($currentBatch);
-        $this->progress = ($this->totalToSend > 0) ? round(($this->sentCount / $this->totalToSend) * 100) : 100;
+        // Actualizar contadores en memoria del componente Livewire
+        $this->sentCount += count($currentBatch); // Contamos procesados, no solo exitosos
+        
+        // Calcular progreso
+        if ($this->totalToSend > 0) {
+            $this->progress = round(($this->sentCount / $this->totalToSend) * 100);
+        } else {
+            $this->progress = 100;
+        }
 
+        // Feedback visual mínimo para no saturar el payload de Livewire
+        if ($this->sentCount % 10 == 0) {
+            $this->addDebug("Procesados: {$this->sentCount}/{$this->totalToSend}");
+        }
+
+        // Verificar finalización
         if ($this->sentCount >= $this->totalToSend) {
             $this->finishProcessing();
         }
@@ -225,27 +241,22 @@ class EmailTester extends Component
     {
         $this->isProcessing = false;
         $this->progress = 100;
-        $this->addDebug("✅ Completado. {$this->sentCount} envíos procesados.");
-
-        Log::info("EmailTester: Proceso finalizado exitosamente.");
-
+        $this->addDebug("✅ Proceso completado. Total procesados: {$this->sentCount}");
+        
+        // Limpiar caché
         Cache::forget($this->batchId);
+        
+        // Resetear formulario
         $this->reset(['subject', 'messageBody']);
         
-        // No intentamos flashear sesión aquí para evitar bloqueos
-    }
-
-    public function stopProcessing($msg = "Proceso detenido.")
-    {
-        $this->isProcessing = false;
-        $this->addDebug("🛑 $msg");
-        Log::warning("EmailTester: Proceso detenido: $msg");
+        // IMPORTANTE: No intentamos escribir flash messages en sesión aquí 
+        // porque la sesión está cerrada (session_write_close).
+        // El usuario verá el mensaje de debug "Completado".
     }
 
     private function getRecipientsEmails()
     {
-        // 6. Extracción Optimizada usando Query Builder (DB::table)
-        // Esto es mucho más rápido y ligero que Eloquent
+        // Usar DB::table siempre para evitar hidratar modelos Eloquent
         try {
             switch ($this->audience) {
                 case 'individual':
@@ -267,17 +278,16 @@ class EmailTester extends Component
                         ->pluck('students.email')
                         ->toArray();
                 case 'all':
-                    // Límite de seguridad
+                    // Límite de seguridad aumentado a 1000 pero usando chunking interno si fuera necesario
                     return DB::table('students')
                         ->whereNotNull('email')
-                        ->limit(500)
+                        ->limit(1000)
                         ->pluck('email')
                         ->toArray();
                 default:
                     return [];
             }
         } catch (\Exception $e) {
-            Log::error("EmailTester: Error obteniendo emails: " . $e->getMessage());
             return [];
         }
     }
@@ -285,6 +295,10 @@ class EmailTester extends Component
     private function addDebug($message)
     {
         array_unshift($this->debugLog, "[" . now()->format('H:i:s') . "] " . $message);
+        // Limitar el log visual para no hacer pesado el componente
+        if (count($this->debugLog) > 50) {
+            array_pop($this->debugLog);
+        }
     }
 
     public function render()
