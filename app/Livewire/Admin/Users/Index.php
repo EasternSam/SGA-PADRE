@@ -36,13 +36,19 @@ class Index extends Component
 
     public function render()
     {
+        // CORRECCIÓN: Filtrar para EXCLUIR estudiantes y agrupar la búsqueda
         $users = User::with('roles')
-            ->where('name', 'like', '%' . $this->search . '%')
-            ->orWhere('email', 'like', '%' . $this->search . '%')
+            ->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'Estudiante');
+            })
+            ->where(function ($q) {
+                $q->where('name', 'like', '%' . $this->search . '%')
+                  ->orWhere('email', 'like', '%' . $this->search . '%');
+            })
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
-        // Obtener todos los roles excepto 'Estudiante' (se gestionan en otro lado)
+        // Obtener todos los roles excepto 'Estudiante' para el select del modal
         $roles = Role::where('name', '!=', 'Estudiante')->get();
 
         return view('livewire.admin.users.index', [
