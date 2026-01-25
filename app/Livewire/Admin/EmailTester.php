@@ -56,8 +56,24 @@ class EmailTester extends Component
 
     public function mount()
     {
+        // INTENTO DE SOLUCIÓN AL ERROR "DATABASE IS LOCKED"
+        // Configuramos SQLite para que espere hasta 30 segundos antes de fallar por bloqueo.
+        // Esto ayuda a que la escritura de sesión al finalizar el request tenga tiempo de completarse.
+        $this->configureSqliteTimeout();
+
         // NO cargar nada pesado al inicio
         $this->availableSections = [];
+    }
+
+    protected function configureSqliteTimeout()
+    {
+        try {
+            if (DB::connection()->getDriverName() === 'sqlite') {
+                DB::connection()->statement('PRAGMA busy_timeout = 30000;');
+            }
+        } catch (\Exception $e) {
+            // Continuar silenciosamente si no se puede configurar
+        }
     }
 
     public function updated($propertyName)
@@ -157,15 +173,15 @@ class EmailTester extends Component
             return;
         }
 
-        // 3. Configuración del Lote en CACHÉ (No en sesión ni BD)
-        // Usamos cache de archivo (file driver) que no bloquea SQLite
+        // 3. Configuración del Lote en CACHÉ (Forzando driver 'file')
+        // Es CRÍTICO usar 'file' aquí si el cache default es 'database' para evitar bloqueos
         $this->batchId = 'batch_' . uniqid();
         $this->totalToSend = count($recipients);
         $this->sentCount = 0;
         $this->progress = 0;
 
-        // Guardar lista completa en caché por 1 hora
-        Cache::put($this->batchId, $recipients, 3600);
+        // Guardar lista completa en caché de archivo por 1 hora
+        Cache::store('file')->put($this->batchId, $recipients, 3600);
 
         $this->isProcessing = true;
         $this->addDebug("🚀 Iniciando envío a {$this->totalToSend} destinatarios.");
@@ -176,14 +192,16 @@ class EmailTester extends Component
         // --- SOLUCIÓN DEFINITIVA PARA SQLITE LOCKED ---
         // Cerramos la escritura de sesión inmediatamente.
         // Esto permite que otras peticiones lean la sesión, pero evita bloqueos de escritura.
-        session_write_close();
+        if (session()->isStarted()) {
+            session_write_close();
+        }
 
         if (!$this->isProcessing || !$this->batchId) {
             return;
         }
 
-        // Recuperar lista desde caché (File Driver no bloquea SQLite)
-        $allRecipients = Cache::get($this->batchId);
+        // Recuperar lista desde caché (File Driver explícito)
+        $allRecipients = Cache::store('file')->get($this->batchId);
 
         if (!$allRecipients) {
             $this->isProcessing = false;
@@ -243,8 +261,8 @@ class EmailTester extends Component
         $this->progress = 100;
         $this->addDebug("✅ Proceso completado. Total procesados: {$this->sentCount}");
         
-        // Limpiar caché
-        Cache::forget($this->batchId);
+        // Limpiar caché (File driver)
+        Cache::store('file')->forget($this->batchId);
         
         // Resetear formulario
         $this->reset(['subject', 'messageBody']);
@@ -256,7 +274,7 @@ class EmailTester extends Component
 
     private function getRecipientsEmails()
     {
-        // Usar DB::table siempre para evitar hidratar modelos Eloquent
+        // Usar DB::table siempre para evitar hidratar modelos Eloquent y reducir overhead
         try {
             switch ($this->audience) {
                 case 'individual':
