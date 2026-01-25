@@ -4,7 +4,7 @@ namespace App\Livewire\Admin;
 
 use Livewire\Component;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use App\Mail\CustomSystemMail;
 use App\Models\CourseSchedule; 
@@ -19,16 +19,20 @@ class EmailTester extends Component
     public $audience = 'individual'; 
     public $emailTo;                 
     public $sectionId;               
-    
     public $subject;
     public $messageBody;
     
-    // Datos para la vista
+    // Datos de UI
     public $availableSections = [];
     public $recipientCount = 0;
-    
-    // Log de consola visual
     public $debugLog = [];
+
+    // --- VARIABLES DE PROCESO POR LOTES ---
+    public $isProcessing = false;     // ¿Está enviando?
+    public $batchId = null;           // ID único del proceso actual
+    public $totalToSend = 0;          // Total a enviar
+    public $sentCount = 0;            // Enviados hasta ahora
+    public $progress = 0;             // Porcentaje (0-100)
 
     protected function rules()
     {
@@ -51,15 +55,11 @@ class EmailTester extends Component
 
     public function mount()
     {
-        // Optimización CRÍTICA: No cargamos datos pesados al iniciar.
-        // Las secciones se cargarán bajo demanda cuando el usuario seleccione esa opción.
         $this->availableSections = [];
     }
 
-    // Hook que se ejecuta cuando una propiedad cambia
     public function updated($propertyName)
     {
-        // Si selecciona "Sección", cargamos la lista en ese momento
         if ($propertyName === 'audience' && $this->audience === 'section') {
             $this->loadSections();
         }
@@ -71,9 +71,7 @@ class EmailTester extends Component
 
     public function loadSections()
     {
-        // Evitar recargar si ya tenemos datos
         if (!empty($this->availableSections)) return;
-
         try {
             $this->availableSections = CourseSchedule::with(['module.course'])
                 ->whereHas('enrollments') 
@@ -87,113 +85,118 @@ class EmailTester extends Component
                     ];
                 })
                 ->toArray();
-        } catch (\Exception $e) {
-            $this->addDebug("Error cargando secciones: " . $e->getMessage());
-        }
+        } catch (\Exception $e) { }
     }
 
     public function calculateRecipients()
     {
-        // Optimización: Usar count() directo en DB
         switch ($this->audience) {
             case 'individual':
                 $this->recipientCount = !empty($this->emailTo) ? 1 : 0;
                 break;
-            
             case 'section':
-                if ($this->sectionId) {
-                    $this->recipientCount = \App\Models\Enrollment::where('course_schedule_id', $this->sectionId)
-                        ->whereIn('status', ['Cursando', 'Activo'])
-                        ->count();
-                } else {
-                    $this->recipientCount = 0;
-                }
+                $this->recipientCount = $this->sectionId ? \App\Models\Enrollment::where('course_schedule_id', $this->sectionId)->whereIn('status', ['Cursando', 'Activo'])->count() : 0;
                 break;
-
             case 'debt':
-                $this->recipientCount = Payment::where('status', 'Pendiente')
-                    ->distinct('student_id')
-                    ->count('student_id');
+                $this->recipientCount = Payment::where('status', 'Pendiente')->distinct('student_id')->count('student_id');
                 break;
-
             case 'all':
                 $this->recipientCount = Student::whereNotNull('email')->count();
                 break;
         }
     }
 
-    public function sendEmail()
+    /**
+     * Paso 1: Iniciar el proceso.
+     * Calcula los destinatarios y guarda la lista en Caché para procesarla poco a poco.
+     */
+    public function startSending()
     {
         $this->validate();
-        $this->debugLog = []; 
-        $this->addDebug("Iniciando proceso de envío...");
+        $this->debugLog = [];
+        
+        // 1. Obtener correos
+        $recipients = $this->getRecipientsEmails();
 
-        // FIX: Cerrar sesión para liberar el lock de SQLite durante el proceso largo
-        if (session()->isStarted()) {
-            session()->save();
+        if (empty($recipients)) {
+            $this->addDebug("⚠️ No hay destinatarios válidos.");
+            return;
         }
 
-        $emailsSent = 0;
-        $emailsFailed = 0;
+        // 2. Configurar lote
+        $this->batchId = 'email_batch_' . uniqid();
+        $this->totalToSend = count($recipients);
+        $this->sentCount = 0;
+        $this->progress = 0;
+        
+        // Guardamos la lista en caché por 30 mins para no sobrecargar la memoria del componente
+        Cache::put($this->batchId, $recipients, 1800);
 
-        try {
-            $recipients = $this->getRecipientsEmails();
+        $this->isProcessing = true;
+        $this->addDebug("🚀 Iniciando envío a {$this->totalToSend} destinatarios.");
+        $this->addDebug("⏳ Procesando en segundo plano...");
+    }
 
-            if (empty($recipients)) {
-                $this->addDebug("⚠️ No se encontraron destinatarios válidos.");
-                return;
-            }
+    /**
+     * Paso 2: Procesar un pequeño lote (Ej: 5 correos).
+     * Esto se llama repetidamente desde la vista con wire:poll mientras isProcessing es true.
+     */
+    public function processBatch()
+    {
+        if (!$this->isProcessing || !$this->batchId) return;
 
-            $count = count($recipients);
-            $this->addDebug("Destinatarios encontrados: " . $count);
+        // Recuperar lista completa
+        $allRecipients = Cache::get($this->batchId);
 
-            // Límite de seguridad para envío síncrono
-            if ($count > 50) {
-                $this->addDebug("⚠️ IMPORTANTE: Estás enviando muchos correos de forma síncrona. Esto podría tardar.");
-            }
+        if (!$allRecipients) {
+            $this->stopProcessing("Error: La lista de envío expiró.");
+            return;
+        }
 
-            foreach ($recipients as $email) {
-                try {
-                    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                        continue; 
-                    }
+        // Tomar el siguiente lote (slicing)
+        $batchSize = 3; // Enviamos de 3 en 3 para ser muy suaves con el servidor
+        $currentBatch = array_slice($allRecipients, $this->sentCount, $batchSize);
 
-                    // Enviar correo
+        if (empty($currentBatch)) {
+            $this->finishProcessing();
+            return;
+        }
+
+        foreach ($currentBatch as $email) {
+            try {
+                if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
                     Mail::to($email)->send(new CustomSystemMail($this->subject, $this->messageBody));
-                    $emailsSent++;
-
-                    // Pequeña pausa para no saturar SMTP si son muchos (opcional)
-                    // usleep(100000); // 0.1s
-
-                } catch (\Exception $e) {
-                    $emailsFailed++;
-                    if($emailsFailed <= 5) { 
-                        $this->addDebug("❌ Fallo al enviar a ($email): " . $e->getMessage());
-                    }
                 }
+            } catch (\Exception $e) {
+                // Fallo silencioso en el log visual para no saturar, o agregar si es crítico
             }
-
-            if ($emailsFailed > 5) {
-                $this->addDebug("... y " . ($emailsFailed - 5) . " fallos más.");
-            }
-
-            if ($emailsSent > 0) {
-                $this->addDebug("✅ Proceso finalizado. Enviados: $emailsSent. Fallidos: $emailsFailed.");
-                
-                // Reabrir sesión para flashear mensaje si es necesario, aunque Livewire maneja su propio estado
-                // En este contexto síncrono, simplemente seteamos la propiedad para el re-render
-                session()->flash('success', "Se enviaron $emailsSent correos correctamente.");
-                $this->reset(['subject', 'messageBody']);
-            } else {
-                $this->addDebug("⚠️ No se pudo enviar ningún correo.");
-                session()->flash('error', 'No se enviaron correos. Revise el log.');
-            }
-
-        } catch (\Exception $e) {
-            $this->addDebug("❌ ERROR CRÍTICO SISTEMA: " . $e->getMessage());
-            Log::error("Error Central Correos: " . $e->getMessage());
-            session()->flash('error', 'Error crítico en el sistema de envíos.');
         }
+
+        // Actualizar contadores
+        $this->sentCount += count($currentBatch);
+        $this->progress = ($this->totalToSend > 0) ? round(($this->sentCount / $this->totalToSend) * 100) : 100;
+
+        // Verificar si terminamos
+        if ($this->sentCount >= $this->totalToSend) {
+            $this->finishProcessing();
+        }
+    }
+
+    public function finishProcessing()
+    {
+        $this->isProcessing = false;
+        $this->progress = 100;
+        $this->addDebug("✅ ¡Proceso completado! Se procesaron {$this->sentCount} envíos.");
+        session()->flash('success', "Envío masivo finalizado correctamente.");
+        Cache::forget($this->batchId); // Limpiar memoria
+        $this->reset(['subject', 'messageBody']);
+    }
+
+    public function stopProcessing($msg = "Proceso detenido.")
+    {
+        $this->isProcessing = false;
+        $this->addDebug("🛑 $msg");
+        session()->flash('error', $msg);
     }
 
     private function getRecipientsEmails()
@@ -201,7 +204,6 @@ class EmailTester extends Component
         switch ($this->audience) {
             case 'individual':
                 return [$this->emailTo];
-            
             case 'section':
                 return \App\Models\Enrollment::where('course_schedule_id', $this->sectionId)
                     ->whereIn('status', ['Cursando', 'Activo'])
@@ -209,7 +211,6 @@ class EmailTester extends Component
                     ->whereNotNull('students.email')
                     ->pluck('students.email')
                     ->toArray();
-
             case 'debt':
                 return Payment::where('status', 'Pendiente')
                     ->join('students', 'payments.student_id', '=', 'students.id')
@@ -217,10 +218,8 @@ class EmailTester extends Component
                     ->distinct()
                     ->pluck('students.email')
                     ->toArray();
-
             case 'all':
                 return Student::whereNotNull('email')->pluck('email')->toArray();
-
             default:
                 return [];
         }
@@ -228,7 +227,8 @@ class EmailTester extends Component
 
     private function addDebug($message)
     {
-        $this->debugLog[] = "[" . now()->format('H:i:s') . "] " . $message;
+        // Agregamos al inicio para ver lo más reciente arriba
+        array_unshift($this->debugLog, "[" . now()->format('H:i:s') . "] " . $message);
     }
 
     public function render()
