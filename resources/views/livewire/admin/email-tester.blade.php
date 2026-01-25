@@ -1,141 +1,79 @@
 <div class="py-12">
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-            
-            {{-- Encabezado --}}
-            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                <div>
-                    <h2 class="text-xl font-bold text-gray-800">Central de Comunicaciones</h2>
-                    <p class="text-sm text-gray-500">Envío de avisos masivos por lotes (sin bloquear el sistema).</p>
-                </div>
-                <div class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
-                    Sistema Batch Activo
-                </div>
-            </div>
-
             <div class="p-6 text-gray-900">
-                
-                {{-- BARRA DE PROGRESO (Solo visible procesando) --}}
-                @if($isProcessing)
-                    {{-- CAMBIO: Polling cada 2 segundos para no saturar SQLite --}}
-                    <div class="mb-8 p-4 bg-indigo-50 border border-indigo-200 rounded-lg animate-pulse" wire:poll.2s="processBatch">
-                        <div class="flex justify-between mb-1">
-                            <span class="text-sm font-medium text-indigo-700">Enviando correos... ({{ $sentCount }}/{{ $totalToSend }})</span>
-                            <span class="text-sm font-medium text-indigo-700">{{ $progress }}%</span>
-                        </div>
-                        <div class="w-full bg-indigo-200 rounded-full h-2.5">
-                            <div class="bg-indigo-600 h-2.5 rounded-full transition-all duration-500" style="width: {{ $progress }}%"></div>
-                        </div>
-                        <p class="text-xs text-indigo-500 mt-2 text-center">Por favor no cierre esta ventana hasta que finalice.</p>
-                    </div>
-                @endif
+                <h2 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Probador de Sistema de Correos (Debug Mode)</h2>
+                <p class="mb-6 text-gray-600">Esta herramienta envía correos de forma <strong>inmediata</strong> (sin cola) para verificar la conexión SMTP.</p>
 
                 <!-- Mensajes Flash -->
                 @if (session()->has('success'))
-                    <div class="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded shadow-sm">
-                        <p class="font-bold">¡Listo!</p>
-                        <p>{{ session('success') }}</p>
+                    <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded relative">
+                        <strong class="font-bold">Proceso Finalizado:</strong>
+                        <span class="block sm:inline">{{ session('success') }}</span>
                     </div>
                 @endif
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    
-                    <!-- Columna Izquierda: Configuración -->
-                    <div class="lg:col-span-2 space-y-6">
-                        <form wire:submit.prevent="startSending" class="space-y-5">
-                            
-                            <!-- Selección de Audiencia -->
-                            <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                                <x-input-label for="audience" :value="__('Destinatario / Audiencia')" class="text-gray-800 font-bold" />
-                                <select wire:model.live="audience" id="audience" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" @disabled($isProcessing)>
-                                    <option value="individual">👤 Prueba Individual</option>
-                                    <option value="section">📚 Sección Académica</option>
-                                    <option value="debt">💰 Deudores (Pagos Pendientes)</option>
-                                    <option value="all">📢 Todos los Estudiantes</option>
-                                </select>
-                                <p class="text-xs text-gray-500 mt-2">
-                                    Alcance estimado: <strong>{{ $recipientCount }} destinatarios</strong>.
-                                </p>
+                @if (session()->has('error'))
+                    <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded relative">
+                        <strong class="font-bold">Error:</strong>
+                        <span class="block sm:inline">{{ session('error') }}</span>
+                    </div>
+                @endif
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Columna Izquierda: Formulario -->
+                    <div>
+                        <form wire:submit.prevent="sendEmail" class="space-y-4">
+                            <!-- Destinatario -->
+                            <div>
+                                <x-input-label for="emailTo" :value="__('Destinatario (Correo Electrónico)')" />
+                                <x-text-input wire:model="emailTo" id="emailTo" class="block mt-1 w-full" type="email" placeholder="ejemplo@correo.com" required />
+                                <x-input-error :messages="$errors->get('emailTo')" class="mt-2" />
                             </div>
 
-                            <!-- Campos Dinámicos -->
-                            @if($audience === 'individual')
-                                <div>
-                                    <x-input-label for="emailTo" :value="__('Correo Destino')" />
-                                    <x-text-input wire:model.live.debounce.500ms="emailTo" id="emailTo" class="block mt-1 w-full" type="email" placeholder="ejemplo@correo.com" @disabled($isProcessing) />
-                                    <x-input-error :messages="$errors->get('emailTo')" class="mt-2" />
-                                </div>
-                            @endif
-
-                            @if($audience === 'section')
-                                <div>
-                                    <x-input-label for="sectionId" :value="__('Seleccionar Sección')" />
-                                    <select wire:model.live="sectionId" id="sectionId" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" @disabled($isProcessing)>
-                                        <option value="">-- Seleccione una sección --</option>
-                                        @foreach($availableSections as $section)
-                                            <option value="{{ $section['id'] }}">{{ $section['name'] }}</option>
-                                        @endforeach
-                                    </select>
-                                    <x-input-error :messages="$errors->get('sectionId')" class="mt-2" />
-                                </div>
-                            @endif
-
-                            <hr class="border-gray-100">
-
-                            <!-- Contenido -->
+                            <!-- Asunto -->
                             <div>
-                                <x-input-label for="subject" :value="__('Asunto')" />
-                                <x-text-input wire:model="subject" id="subject" class="block mt-1 w-full font-semibold" type="text" placeholder="Ej: Aviso Importante" @disabled($isProcessing) />
+                                <x-input-label for="subject" :value="__('Asunto del Correo')" />
+                                <x-text-input wire:model="subject" id="subject" class="block mt-1 w-full" type="text" placeholder="Prueba de conexión..." required />
                                 <x-input-error :messages="$errors->get('subject')" class="mt-2" />
                             </div>
 
+                            <!-- Mensaje -->
                             <div>
-                                <x-input-label for="messageBody" :value="__('Mensaje')" />
-                                <textarea wire:model="messageBody" id="messageBody" rows="6" 
-                                    class="block w-full border-gray-300 rounded-md focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" 
-                                    placeholder="Escriba su mensaje aquí..." @disabled($isProcessing)></textarea>
+                                <x-input-label for="messageBody" :value="__('Cuerpo del Mensaje')" />
+                                <textarea wire:model="messageBody" id="messageBody" rows="4" 
+                                    class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" 
+                                    placeholder="Este es un mensaje de prueba para verificar el servidor SMTP."></textarea>
                                 <x-input-error :messages="$errors->get('messageBody')" class="mt-2" />
                             </div>
 
                             <!-- Botón de Envío -->
-                            <div class="pt-4">
-                                @if($isProcessing)
-                                    <button type="button" disabled class="w-full py-3 px-4 rounded-md shadow-sm text-sm font-medium text-white bg-gray-400 cursor-not-allowed">
-                                        Envío en curso... Espere
-                                    </button>
-                                @else
-                                    <button type="submit" 
-                                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all">
-                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                                        Iniciar Envío Masivo
-                                    </button>
-                                @endif
+                            <div class="flex items-center gap-4 pt-2">
+                                <x-primary-button wire:loading.attr="disabled">
+                                    <span wire:loading.remove wire:target="sendEmail">
+                                        {{ __('Enviar Prueba Síncrona') }}
+                                    </span>
+                                    <span wire:loading wire:target="sendEmail">
+                                        Conectando con SMTP...
+                                    </span>
+                                </x-primary-button>
                             </div>
                         </form>
                     </div>
 
-                    <!-- Columna Derecha: Monitor -->
-                    <div class="lg:col-span-1">
-                        <div class="bg-gray-900 text-green-400 p-4 rounded-xl font-mono text-xs h-[500px] overflow-auto shadow-inner border border-gray-700 flex flex-col">
-                            <div class="border-b border-gray-700 pb-2 mb-2 flex justify-between items-center">
-                                <h3 class="text-white font-bold uppercase tracking-wider">Monitor</h3>
-                                <div class="h-2 w-2 rounded-full {{ $isProcessing ? 'bg-green-500 animate-pulse' : 'bg-gray-500' }}"></div>
-                            </div>
-                            
-                            <div class="flex-1 overflow-y-auto space-y-1 font-mono">
-                                @if(empty($debugLog))
-                                    <p class="opacity-30 italic text-center mt-10">Esperando orden...</p>
-                                @else
-                                    @foreach($debugLog as $log)
-                                        <div class="break-words border-l-2 border-gray-700 pl-2 hover:bg-gray-800 transition-colors">
-                                            {!! $log !!}
-                                        </div>
-                                    @endforeach
-                                @endif
-                            </div>
-                        </div>
+                    <!-- Columna Derecha: Consola de Debug -->
+                    <div class="bg-gray-900 text-green-400 p-4 rounded-md font-mono text-sm h-full overflow-auto shadow-inner border border-gray-700">
+                        <h3 class="text-white font-bold border-b border-gray-700 mb-2 pb-1">Diagnóstico en Tiempo Real</h3>
+                        @if(empty($debugLog))
+                            <p class="opacity-50 italic">Esperando acción...</p>
+                        @else
+                            <ul class="list-none space-y-1">
+                                @foreach($debugLog as $log)
+                                    <li>{!! $log !!}</li>
+                                @endforeach
+                            </ul>
+                        @endif
                     </div>
-
                 </div>
             </div>
         </div>
