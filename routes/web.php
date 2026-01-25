@@ -20,6 +20,8 @@ use App\Livewire\Admin\ClassroomManagement;
 use App\Livewire\Admin\FinanceDashboard;
 // Importamos el probador de correos
 use App\Livewire\Admin\EmailTester;
+// Importamos gestión de usuarios (NUEVO) - Usaremos FQCN abajo para evitar alias conflictivos
+// use App\Livewire\Admin\Users\Index as UsersIndex; 
 
 use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
 use App\Livewire\StudentPortal\CourseDetail as StudentPortalCourseDetail;
@@ -282,6 +284,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         } elseif ($user->hasRole('Profesor')) {
             return redirect()->route('teacher.dashboard');
         }
+        // Si tiene uno de los nuevos roles administrativos, mandarlo al admin dashboard por ahora
+        if ($user->hasAnyRole(['Registro', 'Contabilidad', 'Caja'])) {
+            return redirect()->route('admin.dashboard');
+        }
 
         return redirect()->route('profile.edit');
     })->name('dashboard');
@@ -292,18 +298,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 
-// --- RUTAS DE ADMINISTRADOR ---
-Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
+// --- RUTAS DE ADMINISTRADOR (Y ROLES ESPECIALES) ---
+// Nota: Usamos middleware 'role:Admin|Registro|Contabilidad|Caja' para permitir acceso a la zona admin
+// Luego dentro de los controladores o vistas se restringe qué ven.
+Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('admin')->group(function () {
     Route::get('/dashboard', \App\Livewire\Dashboard\Index::class)->name('admin.dashboard');
     Route::get('/students', \App\Livewire\Students\Index::class)->name('admin.students.index');
     Route::get('/students/profile/{student}', \App\Livewire\StudentProfile\Index::class)->name('admin.students.profile');
     Route::get('/courses', \App\Livewire\Courses\Index::class)->name('admin.courses.index');
-    
-
-    // --- NUEVA RUTA: GESTIÓN DE USUARIOS ---
-    Route::get('/users', UsersIndex::class)->name('admin.users.index');
-
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
     
     // --- GESTIÓN FINANCIERA ---
     // Dashboard General de Finanzas
@@ -336,6 +338,10 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function () {
 
     // --- PROBADOR DE CORREOS (NUEVO) ---
     Route::get('/email-tester', EmailTester::class)->name('admin.email-tester');
+
+    // --- NUEVA RUTA: GESTIÓN DE USUARIOS ---
+    // Usamos el FQCN directamente para asegurar que Laravel lo encuentre
+    Route::get('/users', \App\Livewire\Admin\Users\Index::class)->name('admin.users.index');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
 });
