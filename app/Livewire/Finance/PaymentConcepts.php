@@ -7,32 +7,47 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-#[Layout('app')]
+#[Layout('layouts.dashboard')]
 class PaymentConcepts extends Component
 {
     use WithPagination;
 
     public $search = '';
     public $conceptId = null;
-    public $name, $description, $is_fixed_amount = false, $default_amount = 0;
     
+    // Campos del formulario
+    public $name;
+    public $description;
+    public $is_fixed_amount = false;
+    public $amount = 0.00; // Cambiado de default_amount a amount para coincidir con la BD
+    
+    // Estados de Modales
     public $confirmingDeletion = false;
     public $conceptToDeleteId = null;
+    public $confirmingMassDeletion = false;
 
-    public $confirmingMassDeletion = false; // Nueva propiedad para borrado masivo
+    protected $paginationTheme = 'tailwind';
 
-    protected $rules = [
-        'name' => 'required|string|max:255',
-        'description' => 'nullable|string',
-        'is_fixed_amount' => 'required|boolean',
-        'default_amount' => 'nullable|numeric|min:0'
-    ];
+    protected function rules() 
+    {
+        return [
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:500',
+            'is_fixed_amount' => 'boolean',
+            'amount' => 'nullable|numeric|min:0',
+        ];
+    }
+
+    public function updatedSearch()
+    {
+        $this->resetPage();
+    }
 
     public function render()
     {
-        // Se añade la consulta y se pasa la variable $paymentConcepts a la vista
         $paymentConcepts = PaymentConcept::where('name', 'like', '%' . $this->search . '%')
-            // ->orWhere('description', 'like', '%' . $this->search . '%') // Comentado hasta ejecutar migración
+            ->orWhere('description', 'like', '%' . $this->search . '%')
+            ->orderBy('name')
             ->paginate(10);
             
         return view('livewire.finance.payment-concepts', [
@@ -43,17 +58,7 @@ class PaymentConcepts extends Component
     public function create()
     {
         $this->resetInput();
-        $this->openModal();
-    }
-
-    public function openModal()
-    {
-        $this->dispatch('open-modal', 'concept-modal'); // <-- ¡CORREGIDO!
-    }
-
-    public function closeModal()
-    {
-        $this->dispatch('close'); // <-- ¡CORREGIDO!
+        $this->dispatch('open-modal', 'concept-modal');
     }
 
     private function resetInput()
@@ -62,87 +67,112 @@ class PaymentConcepts extends Component
         $this->name = '';
         $this->description = '';
         $this->is_fixed_amount = false;
-        $this->default_amount = 0;
+        $this->amount = 0.00;
         $this->resetValidation();
+    }
+
+    public function edit($id)
+    {
+        $concept = PaymentConcept::findOrFail($id);
+        
+        $this->conceptId = $id;
+        $this->name = $concept->name;
+        $this->description = $concept->description;
+        
+        // Determinamos si es fijo si el monto es mayor a 0
+        $this->amount = $concept->amount ?? 0.00;
+        $this->is_fixed_amount = ($this->amount > 0);
+
+        $this->resetValidation();
+        $this->dispatch('open-modal', 'concept-modal');
     }
 
     public function store()
     {
         $this->validate();
 
+        // Si no es monto fijo, guardamos 0 o null
+        $finalAmount = $this->is_fixed_amount ? $this->amount : 0;
+
         PaymentConcept::updateOrCreate(
             ['id' => $this->conceptId],
             [
                 'name' => $this->name,
                 'description' => $this->description,
-                'is_fixed_amount' => $this->is_fixed_amount,
-                'default_amount' => $this->is_fixed_amount ? $this->default_amount : null,
+                // Guardamos directamente en 'amount'
+                'amount' => $finalAmount,
+                // 'is_fixed_amount' no suele ser columna en BD, se deduce si amount > 0
+                // pero si tienes la columna, descomenta la siguiente línea:
+                // 'is_fixed_amount' => $this->is_fixed_amount, 
             ]
         );
 
-        session()->flash('message', $this->conceptId ? 'Concepto actualizado.' : 'Concepto creado.');
+        $action = $this->conceptId ? 'actualizado' : 'creado';
+        session()->flash('message', "Concepto $action correctamente.");
 
-        $this->closeModal();
+        $this->dispatch('close-modal', 'concept-modal');
         $this->resetInput();
     }
 
-    public function edit($id)
-    {
-        $concept = PaymentConcept::findOrFail($id);
-        $this->conceptId = $id;
-        $this->name = $concept->name;
-        $this->description = $concept->description;
-        $this->is_fixed_amount = (bool) $concept->is_fixed_amount;
-        $this->default_amount = $concept->default_amount;
-
-        $this->openModal();
-    }
+    // --- LÓGICA DE ELIMINACIÓN ---
 
     public function confirmDeletion($id)
     {
         $this->conceptToDeleteId = $id;
-        $this->confirmingDeletion = true;
+        $this->dispatch('open-modal', 'confirm-deletion-modal');
     }
 
     public function delete()
     {
         try {
-            PaymentConcept::find($this->conceptToDeleteId)->delete();
-            session()->flash('message', 'Concepto eliminado.');
+            $concept = PaymentConcept::find($this->conceptToDeleteId);
+            
+            if ($concept) {
+                // Verificar si tiene pagos asociados para evitar errores de integridad
+                if ($concept->payments()->count() > 0) {
+                    session()->flash('error', 'No se puede eliminar: Este concepto ya tiene historial de pagos asociados.');
+                } else {
+                    $concept->delete();
+                    session()->flash('message', 'Concepto eliminado.');
+                }
+            }
         } catch (\Exception $e) {
-            session()->flash('error', 'No se pudo eliminar el concepto, es posible que esté en uso.');
+            session()->flash('error', 'Error al eliminar: ' . $e->getMessage());
         }
-        $this->confirmingDeletion = false;
+
+        $this->dispatch('close-modal', 'confirm-deletion-modal');
+        $this->conceptToDeleteId = null;
     }
 
     public function confirmMassDeletion()
     {
-        $this->confirmingMassDeletion = true;
-        // DISPATCH para abrir el modal usando el nombre, que es más seguro en este stack
         $this->dispatch('open-modal', 'confirm-mass-deletion');
     }
 
     public function massDelete()
     {
         try {
-            // Eliminar todos los conceptos
-            $count = PaymentConcept::count();
+            // Solo eliminar conceptos que NO tengan pagos asociados para seguridad
+            $count = 0;
+            $concepts = PaymentConcept::withCount('payments')->get();
+            
+            foreach ($concepts as $c) {
+                if ($c->payments_count === 0) {
+                    $c->delete();
+                    $count++;
+                }
+            }
+
             if ($count > 0) {
-                 // Usamos truncate() si es posible para reiniciar IDs, o delete() masivo
-                 // PaymentConcept::truncate(); // Truncate puede fallar por FKs
-                 PaymentConcept::query()->delete();
-                 session()->flash('message', "Se han eliminado todos los conceptos ($count).");
+                session()->flash('message', "Se eliminaron $count conceptos sin uso.");
             } else {
-                 session()->flash('message', 'No hay conceptos para eliminar.');
+                session()->flash('error', 'No se eliminaron conceptos porque todos tienen pagos asociados o no había registros.');
             }
 
         } catch (\Exception $e) {
-            session()->flash('error', 'Error al intentar eliminar masivamente: ' . $e->getMessage());
+            session()->flash('error', 'Error en borrado masivo: ' . $e->getMessage());
         }
         
-        $this->confirmingMassDeletion = false;
-        
-        // Cerrar modal vía evento - Aseguramos que el nombre coincida con el de la vista
         $this->dispatch('close-modal', 'confirm-mass-deletion');
     }
 }

@@ -122,7 +122,7 @@
                             <th class="px-6 py-3">Método</th>
                             <th class="px-6 py-3 text-center">Estado</th>
                             <th class="px-6 py-3 text-right">Monto</th>
-                            <th class="px-6 py-3 text-right">Acciones</th> {{-- Nueva columna --}}
+                            <th class="px-6 py-3 text-right">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
@@ -200,6 +200,14 @@
                     {{ $payments->links() }}
                 </div>
             @endif
+        </div>
+
+        {{-- 4. GESTIÓN DE CONCEPTOS DE PAGO (CRUD INTEGRADO) --}}
+        <div class="pt-8">
+            <h3 class="text-lg font-bold text-gray-900 mb-4 px-1">Configuración de Precios</h3>
+            
+            {{-- Componente de Conceptos --}}
+            <livewire:finance.payment-concepts />
         </div>
 
     </div>
