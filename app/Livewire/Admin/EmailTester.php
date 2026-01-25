@@ -28,11 +28,11 @@ class EmailTester extends Component
     public $debugLog = [];
 
     // --- VARIABLES DE PROCESO POR LOTES ---
-    public $isProcessing = false;     // ¿Está enviando?
-    public $batchId = null;           // ID único del proceso actual
-    public $totalToSend = 0;          // Total a enviar
-    public $sentCount = 0;            // Enviados hasta ahora
-    public $progress = 0;             // Porcentaje (0-100)
+    public $isProcessing = false;     
+    public $batchId = null;           
+    public $totalToSend = 0;          
+    public $sentCount = 0;            
+    public $progress = 0;             
 
     protected function rules()
     {
@@ -106,16 +106,11 @@ class EmailTester extends Component
         }
     }
 
-    /**
-     * Paso 1: Iniciar el proceso.
-     * Calcula los destinatarios y guarda la lista en Caché para procesarla poco a poco.
-     */
     public function startSending()
     {
         $this->validate();
         $this->debugLog = [];
         
-        // 1. Obtener correos
         $recipients = $this->getRecipientsEmails();
 
         if (empty($recipients)) {
@@ -123,13 +118,11 @@ class EmailTester extends Component
             return;
         }
 
-        // 2. Configurar lote
         $this->batchId = 'email_batch_' . uniqid();
         $this->totalToSend = count($recipients);
         $this->sentCount = 0;
         $this->progress = 0;
         
-        // Guardamos la lista en caché por 30 mins para no sobrecargar la memoria del componente
         Cache::put($this->batchId, $recipients, 1800);
 
         $this->isProcessing = true;
@@ -138,14 +131,19 @@ class EmailTester extends Component
     }
 
     /**
-     * Paso 2: Procesar un pequeño lote (Ej: 5 correos).
-     * Esto se llama repetidamente desde la vista con wire:poll mientras isProcessing es true.
+     * Paso 2: Procesar un pequeño lote.
      */
     public function processBatch()
     {
+        // FIX CRÍTICO: Cerrar sesión inmediatamente para liberar el archivo de base de datos
+        // Esto permite que otras peticiones (y la UI) sigan funcionando mientras esto corre.
+        if (session()->isStarted()) {
+            session()->save(); 
+            // session_write_close(); // Alternativa nativa si save() no libera suficiente
+        }
+
         if (!$this->isProcessing || !$this->batchId) return;
 
-        // Recuperar lista completa
         $allRecipients = Cache::get($this->batchId);
 
         if (!$allRecipients) {
@@ -153,8 +151,8 @@ class EmailTester extends Component
             return;
         }
 
-        // Tomar el siguiente lote (slicing)
-        $batchSize = 3; // Enviamos de 3 en 3 para ser muy suaves con el servidor
+        // Procesar lote pequeño (5 emails)
+        $batchSize = 5; 
         $currentBatch = array_slice($allRecipients, $this->sentCount, $batchSize);
 
         if (empty($currentBatch)) {
@@ -168,15 +166,13 @@ class EmailTester extends Component
                     Mail::to($email)->send(new CustomSystemMail($this->subject, $this->messageBody));
                 }
             } catch (\Exception $e) {
-                // Fallo silencioso en el log visual para no saturar, o agregar si es crítico
+                // Loguear solo errores críticos si es necesario
             }
         }
 
-        // Actualizar contadores
         $this->sentCount += count($currentBatch);
         $this->progress = ($this->totalToSend > 0) ? round(($this->sentCount / $this->totalToSend) * 100) : 100;
 
-        // Verificar si terminamos
         if ($this->sentCount >= $this->totalToSend) {
             $this->finishProcessing();
         }
@@ -187,8 +183,11 @@ class EmailTester extends Component
         $this->isProcessing = false;
         $this->progress = 100;
         $this->addDebug("✅ ¡Proceso completado! Se procesaron {$this->sentCount} envíos.");
+        
+        // Reabrimos sesión si es necesario para flashear, aunque Livewire maneja estado
         session()->flash('success', "Envío masivo finalizado correctamente.");
-        Cache::forget($this->batchId); // Limpiar memoria
+        
+        Cache::forget($this->batchId);
         $this->reset(['subject', 'messageBody']);
     }
 
@@ -227,7 +226,6 @@ class EmailTester extends Component
 
     private function addDebug($message)
     {
-        // Agregamos al inicio para ver lo más reciente arriba
         array_unshift($this->debugLog, "[" . now()->format('H:i:s') . "] " . $message);
     }
 
