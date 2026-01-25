@@ -128,6 +128,11 @@ class EmailTester extends Component
         $this->debugLog = []; 
         $this->addDebug("Iniciando proceso de envío...");
 
+        // FIX: Cerrar sesión para liberar el lock de SQLite durante el proceso largo
+        if (session()->isStarted()) {
+            session()->save();
+        }
+
         $emailsSent = 0;
         $emailsFailed = 0;
 
@@ -153,8 +158,12 @@ class EmailTester extends Component
                         continue; 
                     }
 
+                    // Enviar correo
                     Mail::to($email)->send(new CustomSystemMail($this->subject, $this->messageBody));
                     $emailsSent++;
+
+                    // Pequeña pausa para no saturar SMTP si son muchos (opcional)
+                    // usleep(100000); // 0.1s
 
                 } catch (\Exception $e) {
                     $emailsFailed++;
@@ -170,6 +179,9 @@ class EmailTester extends Component
 
             if ($emailsSent > 0) {
                 $this->addDebug("✅ Proceso finalizado. Enviados: $emailsSent. Fallidos: $emailsFailed.");
+                
+                // Reabrir sesión para flashear mensaje si es necesario, aunque Livewire maneja su propio estado
+                // En este contexto síncrono, simplemente seteamos la propiedad para el re-render
                 session()->flash('success', "Se enviaron $emailsSent correos correctamente.");
                 $this->reset(['subject', 'messageBody']);
             } else {
