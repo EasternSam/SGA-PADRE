@@ -6,7 +6,7 @@ use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use App\Models\User;
-use App\Models\Student; // <-- 1. IMPORTAR EL MODELO STUDENT
+use App\Models\Student;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -18,27 +18,31 @@ class RolesAndPermissionsSeeder extends Seeder
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // create permissions
-        // (Podríamos añadir permisos específicos como 'view profile', 'view grades', etc.)
-        // Por ahora, solo creamos los roles.
-
-        // create roles
-        // Usamos firstOrCreate para evitar errores si el seeder se corre múltiples veces
+        // 1. CREAR ROLES (Usamos firstOrCreate para evitar duplicados)
+        
+        // Roles Existentes
         $roleAdmin = Role::firstOrCreate(['name' => 'Admin']);
         $roleProfesor = Role::firstOrCreate(['name' => 'Profesor']);
         $roleEstudiante = Role::firstOrCreate(['name' => 'Estudiante']);
 
-        // Crear usuario Administrador (con firstOrCreate)
+        // --- NUEVOS ROLES POR DEPARTAMENTO ---
+        $roleRegistro = Role::firstOrCreate(['name' => 'Registro']);       // Control Académico
+        $roleContabilidad = Role::firstOrCreate(['name' => 'Contabilidad']); // Reportes Financieros
+        $roleCaja = Role::firstOrCreate(['name' => 'Caja']);               // Cobros diarios
+
+        // 2. CREAR USUARIOS DE PRUEBA (Opcional, para desarrollo)
+
+        // Admin
         $admin = User::firstOrCreate(
             ['email' => 'admin@admin.com'],
             [
-                'name' => 'Admin',
+                'name' => 'Admin General',
                 'password' => bcrypt('password'),
             ]
         );
         $admin->assignRole($roleAdmin);
 
-        // Crear usuario Profesor de prueba (con firstOrCreate)
+        // Profesor
         $profesor = User::firstOrCreate(
             ['email' => 'profesor@profesor.com'],
             [
@@ -48,9 +52,7 @@ class RolesAndPermissionsSeeder extends Seeder
         );
         $profesor->assignRole($roleProfesor);
         
-        // --- SECCIÓN DE ESTUDIANTE CORREGIDA ---
-
-        // 2. Crear usuario Estudiante de prueba (con firstOrCreate)
+        // Estudiante
         $estudiante = User::firstOrCreate(
             ['email' => 'estudiante@estudiante.com'],
             [
@@ -60,26 +62,34 @@ class RolesAndPermissionsSeeder extends Seeder
         );
         $estudiante->assignRole($roleEstudiante);
 
-        // 3. Crear el PERFIL de estudiante y vincularlo al USUARIO
-        // (Usamos la cédula para el firstOrCreate del perfil)
+        // Crear perfil de estudiante vinculado
         Student::firstOrCreate(
             ['cedula' => '000-0000000-0'],
             [
-                'user_id' => $estudiante->id, // <-- VINCULACIÓN
+                'user_id' => $estudiante->id,
                 'first_name' => 'Estudiante',
                 'last_name' => 'Prueba',
                 'email' => $estudiante->email,
-                
-                // --- INICIO DE LA CORRECCIÓN ---
-                // 'phone' => '809-000-0000', // <-- ESTA COLUMNA NO EXISTE
-                'mobile_phone' => '809-000-0000', // <-- ESTA SÍ EXISTE
-                // --- FIN DE LA CORRECCIÓN ---
-
+                'mobile_phone' => '809-000-0000',
                 'birth_date' => '2000-01-01',
                 'gender' => 'Otro',
                 'address' => 'Dirección de prueba',
                 'is_minor' => false,
             ]
         );
+
+        // --- USUARIOS DE PRUEBA PARA NUEVOS ROLES ---
+        
+        $registroUser = User::firstOrCreate(
+            ['email' => 'registro@centu.edu.do'],
+            ['name' => 'Encargado Registro', 'password' => bcrypt('password')]
+        );
+        $registroUser->assignRole($roleRegistro);
+
+        $cajaUser = User::firstOrCreate(
+            ['email' => 'caja@centu.edu.do'],
+            ['name' => 'Cajero Principal', 'password' => bcrypt('password')]
+        );
+        $cajaUser->assignRole($roleCaja);
     }
 }
