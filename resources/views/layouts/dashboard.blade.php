@@ -24,6 +24,18 @@
 
     <style>
         [x-cloak] { display: none !important; }
+        
+        /* Animación personalizada para la barra de progreso indeterminada */
+        @keyframes progress-indeterminate {
+            0% { left: -35%; right: 100%; }
+            60% { left: 100%; right: -90%; }
+            100% { left: 100%; right: -90%; }
+        }
+        .animate-progress-indeterminate {
+            position: relative;
+            animation: progress-indeterminate 2s infinite linear;
+            width: 100%; /* Asegura que ocupe el ancho */
+        }
     </style>
 
     <!-- SCRIPT DE CARDNET (TOKENIZACIÓN) -->
@@ -36,12 +48,23 @@
 <body class="h-full font-sans antialiased text-slate-600">
 
     <!-- 1. Barra de Carga Global (Livewire) - Optimizada -->
-    <div wire:loading.delay class="fixed top-0 left-0 w-full h-1 z-[60] bg-indigo-100" style="pointer-events: none;">
-        <div class="h-full bg-indigo-600 animate-progress-indeterminate"></div>
+    <div wire:loading class="fixed top-0 left-0 w-full h-1 z-[100] bg-indigo-100/50" style="pointer-events: none;">
+        <div class="h-full bg-indigo-600 animate-progress-indeterminate shadow-[0_0_10px_rgba(79,70,229,0.5)]"></div>
     </div>
 
-    <!-- 2. Sistema de Notificaciones Toast -->
-    <div aria-live="assertive" class="pointer-events-none fixed inset-0 z-50 flex items-end px-4 py-6 sm:items-start sm:p-6" style="pointer-events: none;">
+    <!-- 2. Indicador Flotante (Toast) - Aparece si tarda un poco -->
+    <div wire:loading.delay class="fixed bottom-6 right-6 z-[100] pointer-events-none">
+        <div class="bg-white/90 backdrop-blur-sm border border-gray-200 shadow-lg rounded-full px-4 py-2 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <svg class="animate-spin h-4 w-4 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-xs font-semibold text-gray-700">Procesando...</span>
+        </div>
+    </div>
+
+    <!-- 3. Sistema de Notificaciones Toast -->
+    <div aria-live="assertive" class="pointer-events-none fixed inset-0 z-50 flex items-end px-4 py-6 sm:items-start sm:p-6">
         <div class="flex w-full flex-col items-center space-y-4 sm:items-end">
             @if (session()->has('success'))
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
@@ -51,8 +74,7 @@
                      x-transition:leave="transition ease-in duration-100"
                      x-transition:leave-start="opacity-100"
                      x-transition:leave-end="opacity-0"
-                     class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5"
-                     style="pointer-events: auto;">
+                     class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
                     <div class="p-4">
                         <div class="flex items-start">
                             <div class="flex-shrink-0">
@@ -63,7 +85,7 @@
                                 <p class="mt-1 text-sm text-gray-500">{{ session('success') }}</p>
                             </div>
                             <div class="ml-4 flex flex-shrink-0">
-                                <button @click="show = false" class="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-50 focus:outline-none">
+                                <button @click="show = false" class="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none">
                                     <span class="sr-only">Cerrar</span>
                                     <i class="fas fa-times"></i>
                                 </button>
@@ -78,8 +100,7 @@
                      x-transition:enter="transform ease-out duration-300 transition"
                      x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
                      x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
-                     class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-red-500 ring-opacity-50 border-l-4 border-red-500"
-                     style="pointer-events: auto;">
+                     class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-red-500 ring-opacity-50 border-l-4 border-red-500">
                     <div class="p-4">
                         <div class="flex items-start">
                             <div class="flex-shrink-0">
@@ -90,7 +111,7 @@
                                 <p class="mt-1 text-sm text-gray-500">{{ session('error') }}</p>
                             </div>
                             <div class="ml-4 flex flex-shrink-0">
-                                <button @click="show = false" class="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-50">
+                                <button @click="show = false" class="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-500">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>
@@ -104,7 +125,7 @@
     <!-- Layout Wrapper -->
     <div x-data="{ open: false }" 
          @keydown.window.escape="open = false" 
-         class="h-full flex overflow-hidden bg-gray-50"> <!-- Fondo optimizado -->
+         class="h-full flex overflow-hidden bg-gray-50">
 
         <!-- Navigation Sidebar -->
         @include('layouts.navigation')
@@ -112,11 +133,11 @@
         <!-- Main Content Area -->
         <div class="flex-1 flex flex-col min-w-0 lg:pl-64 transition-all duration-300 ease-in-out">
 
-            <!-- 3. Top bar "Glassmorphism" -->
+            <!-- Top bar -->
             <header class="sticky top-0 z-20 flex flex-col bg-white/90 backdrop-blur-md border-b border-gray-200/60 shadow-sm supports-[backdrop-filter]:bg-white/60" style="padding-top: 16px; padding-bottom: 16px;">
                 <div class="flex flex-1 items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
                     
-                    <!-- Left: Hamburger & Page Title / Breadcrumb -->
+                    <!-- Left: Hamburger & Page Title -->
                     <div class="flex items-center gap-4">
                         <button @click.stop="open = !open" type="button"
                             class="-m-2.5 p-2.5 text-gray-500 lg:hidden hover:text-indigo-600 transition-colors rounded-md hover:bg-gray-100">
@@ -135,7 +156,7 @@
                         </div>
                     </div>
 
-                    <!-- Center: 4. COMPONENTE DE BÚSQUEDA GLOBAL -->
+                    <!-- Center: Global Search -->
                     <div class="hidden md:flex flex-1 max-w-md px-8 justify-center">
                         <livewire:global-search lazy />
                     </div>
@@ -143,7 +164,7 @@
                     <!-- Right: Actions -->
                     <div class="flex items-center gap-x-4 lg:gap-x-6">
                         
-                        <!-- 5. Notifications Dropdown (FUNCIONALIDAD NUEVA) -->
+                        <!-- Notifications -->
                         <livewire:notifications-dropdown lazy />
 
                         <!-- Separator -->
@@ -207,23 +228,34 @@
                 </div>
             </main>
 
-            <!-- 6. Integrated Footer (Fixed Bottom) -->
-            <footer class="bg-white border-t border-gray-200 flex-shrink-0 z-10">
-                <div class="mx-auto max-w-7xl px-6 py-4 md:flex md:items-center md:justify-between lg:px-8">
-                    <div class="flex justify-center space-x-6 md:order-2">
-                        <a href="#" class="text-gray-400 hover:text-gray-500 transition-colors">
-                            <span class="sr-only">Soporte</span>
-                            <i class="fas fa-life-ring"></i>
-                        </a>
-                        <a href="#" class="text-gray-400 hover:text-gray-500 transition-colors">
-                            <span class="sr-only">Manual</span>
-                            <i class="fas fa-book"></i>
-                        </a>
-                    </div>
-                    <div class="mt-4 md:order-1 md:mt-0">
-                        <p class="text-center text-xs leading-5 text-gray-500">
-                            &copy; {{ date('Y') }} {{ config('app.name', 'Laravel') }}. Todos los derechos reservados. v1.0.0
+            <!-- 6. Footer Mejorado y Armónico -->
+            <footer class="bg-white border-t border-gray-200 flex-shrink-0 z-10 py-6">
+                <div class="mx-auto max-w-7xl px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                    
+                    {{-- Copyright --}}
+                    <div class="text-center md:text-left order-2 md:order-1">
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            &copy; {{ date('Y') }} <span class="font-medium text-gray-600">{{ config('app.name', 'SGA CENTU') }}</span>. 
+                            Todos los derechos reservados.
                         </p>
+                        <p class="text-[10px] text-gray-300 mt-0.5">Versión 1.0.0</p>
+                    </div>
+
+                    {{-- Enlaces de Soporte --}}
+                    <div class="flex items-center justify-center gap-6 order-1 md:order-2">
+                        <a href="#" class="group flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-indigo-600 transition-colors duration-200">
+                            <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            Soporte
+                        </a>
+                        <span class="text-gray-200 h-3 w-px bg-gray-300"></span>
+                        <a href="#" class="group flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-indigo-600 transition-colors duration-200">
+                            <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                            Manual de Usuario
+                        </a>
                     </div>
                 </div>
             </footer>
