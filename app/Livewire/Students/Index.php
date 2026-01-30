@@ -20,7 +20,7 @@ class Index extends Component
     use WithPagination;
 
     // --- Propiedades del Formulario ---
-    public $student_id;
+    public $student_id; // Variable de control para edición (ID de BD)
     public $first_name = '';
     public $last_name = '';
     public $cedula = '';
@@ -55,6 +55,8 @@ class Index extends Component
     // Propiedad para capturar el ID de edición desde la URL
     #[Url]
     public $editing = null;
+
+    protected $paginationTheme = 'tailwind'; // Asegura paginación con estilos Tailwind
 
     public function mount()
     {
@@ -158,7 +160,7 @@ class Index extends Component
                 $q->where('first_name', 'like', $this->search . '%') // Optimización prefijo
                     ->orWhere('last_name', 'like', $this->search . '%')
                     ->orWhere('cedula', 'like', $this->search . '%') // Optimización prefijo
-                    ->orWhere('student_code', 'like', $this->search . '%')
+                    ->orWhere('student_code', 'like', $this->search . '%') // Búsqueda por Matrícula
                     ->orWhere('email', 'like', $this->search . '%');
             });
         }
@@ -171,6 +173,8 @@ class Index extends Component
 
         return view('livewire.students.index', [
             'students' => $students,
+            // Pasamos explícitamente student_id para la vista (soluciona error Undefined variable)
+            'studentId' => $this->student_id, 
         ]);
     }
 
@@ -281,7 +285,7 @@ class Index extends Component
                     $user = User::create([
                         'name' => $this->first_name . ' ' . $this->last_name,
                         'email' => $this->email,
-                        'password' => Hash::make($this->cedula),
+                        'password' => Hash::make($this->cedula), // Password default es la cédula
                         'access_expires_at' => Carbon::now()->addMonths(3),
                     ]);
 

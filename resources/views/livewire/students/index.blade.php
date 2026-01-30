@@ -88,7 +88,7 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50/50">
                         <tr>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+                            <th scope="col" class="py-4 pl-6 pr-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
                                 Estudiante / Matrícula
                             </th>
                             <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
@@ -358,7 +358,7 @@
                         </div>
 
                         <!-- Seguridad (Solo al editar y si se desea cambiar) -->
-                        @if($studentId)
+                        @if(isset($studentId) && $studentId)
                         <div class="border-t border-gray-100"></div>
                         <div>
                             <h3 class="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -390,7 +390,7 @@
                             Cancelar
                         </button>
                         <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-500 hover:shadow-indigo-300 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all duration-200 active:scale-[0.98]">
-                            {{ $studentId ? 'Actualizar Estudiante' : 'Guardar Estudiante' }}
+                            {{ isset($studentId) && $studentId ? 'Actualizar Estudiante' : 'Guardar Estudiante' }}
                         </button>
                     </div>
                 </form>
