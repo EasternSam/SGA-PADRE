@@ -1,20 +1,25 @@
 <div class="py-12">
     <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Gestión de Aulas y Espacios') }}
-            </h2>
-            <x-primary-button wire:click="openClassroomModal" class="bg-indigo-600 hover:bg-indigo-700">
-                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Nueva Aula
-            </x-primary-button>
-        </div>
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('Gestión de Aulas y Espacios') }}
+        </h2>
     </x-slot>
 
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
         
+        {{-- CONTROLES SUPERIORES (NUEVA UBICACIÓN) --}}
+        <div class="flex justify-between items-center">
+            <div>
+                {{-- Espacio para filtros futuros o título secundario --}}
+            </div>
+            <x-primary-button wire:click="openClassroomModal" class="bg-indigo-600 hover:bg-indigo-700">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Registrar Nueva Aula
+            </x-primary-button>
+        </div>
+
         @if (session()->has('message'))
             <div class="p-4 bg-green-100 border border-green-200 text-green-700 rounded-lg shadow-sm">
                 {{ session('message') }}
@@ -58,7 +63,8 @@
                                 {{-- BOTÓN ELIMINAR (FLOTANTE ARRIBA DERECHA) --}}
                                 <button wire:click="deleteClassroom({{ $classroom->id }})" 
                                         wire:confirm="¿Estás seguro de eliminar el aula {{ $classroom->name }}? Esta acción no se puede deshacer."
-                                        class="absolute top-2 right-2 z-20 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-white rounded-full shadow-sm">
+                                        class="absolute top-2 right-2 z-20 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-white rounded-full shadow-sm"
+                                        title="Eliminar Aula">
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
