@@ -34,7 +34,12 @@ class ClassroomManagement extends Component
     public $classroom_pc_count = 0;
     public $classroom_type = 'Aula';
     public $classroom_building_id = null;
+    public $classroom_has_tv = false; // Nueva propiedad para TV
     public $classroom_is_active = true;
+
+    // Variables para el Modal de Crear Edificio
+    public $showingBuildingModal = false;
+    public $new_building_name = '';
     
     // Inicializamos como array vacío o colección para evitar "Undefined variable"
     public $weekSchedules = []; 
@@ -109,15 +114,50 @@ class ClassroomManagement extends Component
         $this->showingScheduleModal = false;
         $this->showingReservationModal = false;
         $this->showingClassroomModal = false;
+        $this->showingBuildingModal = false;
+        
         $this->selectedClassroom = null;
         $this->weekSchedules = collect(); // Reset a colección vacía
         $this->upcomingReservations = collect();
         $this->calendarGrid = [];
+        
         $this->resetReservationForm();
         $this->resetClassroomForm();
+        $this->resetBuildingForm();
+        
         $this->dispatch('close-modal', 'schedule-view-modal');
         $this->dispatch('close-modal', 'reservation-modal');
         $this->dispatch('close-modal', 'classroom-modal');
+        $this->dispatch('close-modal', 'building-modal');
+    }
+
+    // --- LÓGICA DE EDIFICIOS (CRUD) ---
+
+    public function openBuildingModal()
+    {
+        $this->resetBuildingForm();
+        $this->showingBuildingModal = true;
+        $this->dispatch('open-modal', 'building-modal');
+    }
+
+    public function storeBuilding()
+    {
+        $this->validate([
+            'new_building_name' => 'required|string|max:255|unique:buildings,name',
+        ]);
+
+        Building::create([
+            'name' => $this->new_building_name
+        ]);
+
+        session()->flash('message', 'Edificio registrado correctamente.');
+        $this->closeModal();
+    }
+
+    private function resetBuildingForm()
+    {
+        $this->new_building_name = '';
+        $this->resetErrorBag();
     }
 
     // --- LÓGICA DE AULAS (CRUD) ---
@@ -142,7 +182,14 @@ class ClassroomManagement extends Component
             'classroom_pc_count' => 'required|integer|min:0',
             'classroom_type' => 'required|in:Aula,Laboratorio,Auditorio',
             'classroom_building_id' => 'required|exists:buildings,id',
+            'classroom_has_tv' => 'boolean',
         ]);
+
+        // Procesar equipamiento
+        $equipment = [];
+        if ($this->classroom_has_tv) {
+            $equipment[] = 'TV';
+        }
 
         Classroom::create([
             'name' => $this->classroom_name,
@@ -150,6 +197,7 @@ class ClassroomManagement extends Component
             'pc_count' => $this->classroom_pc_count,
             'type' => $this->classroom_type,
             'building_id' => $this->classroom_building_id,
+            'equipment' => !empty($equipment) ? json_encode($equipment) : null,
             'is_active' => true,
         ]);
 
@@ -178,6 +226,7 @@ class ClassroomManagement extends Component
         $this->classroom_pc_count = 0;
         $this->classroom_type = 'Aula';
         $this->classroom_building_id = null;
+        $this->classroom_has_tv = false;
         $this->resetErrorBag();
     }
 

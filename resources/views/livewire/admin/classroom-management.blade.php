@@ -7,17 +7,26 @@
 
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
         
-        {{-- CONTROLES SUPERIORES (NUEVA UBICACIÓN) --}}
+        {{-- CONTROLES SUPERIORES --}}
         <div class="flex justify-between items-center">
             <div>
-                {{-- Espacio para filtros futuros o título secundario --}}
+                {{-- Espacio para filtros futuros --}}
             </div>
-            <x-primary-button wire:click="openClassroomModal" class="bg-indigo-600 hover:bg-indigo-700">
-                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Registrar Nueva Aula
-            </x-primary-button>
+            <div class="flex gap-2">
+                <x-secondary-button wire:click="openBuildingModal" class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    Nuevo Edificio
+                </x-secondary-button>
+
+                <x-primary-button wire:click="openClassroomModal" class="bg-indigo-600 hover:bg-indigo-700">
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Registrar Nueva Aula
+                </x-primary-button>
+            </div>
         </div>
 
         @if (session()->has('message'))
@@ -42,6 +51,15 @@
                                 // Para mostrar qué lo ocupa
                                 $occupantLabel = $classroom->getCurrentOccupantLabel(); 
                                 $hasSchedules = $classroom->schedules->isNotEmpty() || $classroom->reservations->isNotEmpty();
+                                
+                                // Verificar si tiene TV
+                                $hasTV = false;
+                                if($classroom->equipment) {
+                                    $eq = json_decode($classroom->equipment, true);
+                                    if(is_array($eq) && in_array('TV', $eq)) {
+                                        $hasTV = true;
+                                    }
+                                }
 
                                 if ($isOccupied) {
                                     $statusColor = 'bg-red-50 border-red-200 ring-1 ring-red-200';
@@ -96,6 +114,12 @@
                                             <div class="flex items-center gap-2" title="Computadoras">
                                                 <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                                                 <span>{{ $classroom->pc_count }} PCs</span>
+                                            </div>
+                                        @endif
+                                        @if($hasTV)
+                                            <div class="flex items-center gap-2" title="Equipamiento: TV/Proyector">
+                                                <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                                <span>TV/Proyector</span>
                                             </div>
                                         @endif
                                         @if($classroom->type == 'Laboratorio')
@@ -408,6 +432,13 @@
                     </select>
                     <x-input-error :messages="$errors->get('classroom_type')" class="mt-2" />
                 </div>
+
+                <div class="block mt-4">
+                    <label for="classroom_has_tv" class="inline-flex items-center cursor-pointer">
+                        <input id="classroom_has_tv" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" wire:model="classroom_has_tv">
+                        <span class="ms-2 text-sm text-gray-700">{{ __('Tiene TV / Proyector') }}</span>
+                    </label>
+                </div>
             </div>
 
             <div class="mt-6 flex justify-end gap-3">
@@ -416,6 +447,32 @@
                 </x-secondary-button>
                 <x-primary-button>
                     Guardar Aula
+                </x-primary-button>
+            </div>
+        </form>
+    </x-modal>
+
+    {{-- MODAL DE CREAR EDIFICIO (NUEVO) --}}
+    <x-modal name="building-modal" :show="$showingBuildingModal" maxWidth="sm">
+        <form wire:submit.prevent="storeBuilding" class="p-6">
+            <h2 class="text-lg font-bold text-gray-900 mb-4">
+                Registrar Nuevo Edificio
+            </h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <x-input-label for="new_building_name" :value="__('Nombre del Edificio')" />
+                    <x-text-input id="new_building_name" type="text" class="mt-1 block w-full" wire:model="new_building_name" placeholder="Ej: Edificio C" />
+                    <x-input-error :messages="$errors->get('new_building_name')" class="mt-2" />
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3">
+                <x-secondary-button wire:click="closeModal">
+                    Cancelar
+                </x-secondary-button>
+                <x-primary-button>
+                    Guardar Edificio
                 </x-primary-button>
             </div>
         </form>
