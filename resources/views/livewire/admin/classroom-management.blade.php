@@ -39,18 +39,20 @@
                                 }
                             @endphp
 
-                            <div class="relative group border rounded-xl shadow-sm hover:shadow-md transition-all {{ $statusColor }}">
-                                {{-- AREA CLICKEABLE PRINCIPAL --}}
-                                <button wire:click="showSchedule({{ $classroom->id }})" class="text-left w-full p-4 pb-10">
+                            <div class="relative group border rounded-xl shadow-sm hover:shadow-md transition-all flex flex-col h-full {{ $statusColor }}">
+                                {{-- AREA CLICKEABLE PRINCIPAL (Para ver horario) --}}
+                                <div class="flex-1 p-4 cursor-pointer" wire:click="showSchedule({{ $classroom->id }})">
                                     <div class="flex justify-between items-start mb-3">
-                                        <h4 class="font-bold text-gray-800 text-lg group-hover:text-indigo-600 transition-colors">{{ $classroom->name }}</h4>
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold {{ $statusBadge }}">
+                                        <h4 class="font-bold text-gray-800 text-lg group-hover:text-indigo-600 transition-colors truncate pr-2" title="{{ $classroom->name }}">
+                                            {{ $classroom->name }}
+                                        </h4>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold shrink-0 {{ $statusBadge }}">
                                             {{ $statusText }}
                                         </span>
                                     </div>
 
                                     @if($isOccupied)
-                                        <div class="text-xs text-red-600 font-bold mb-2 truncate">
+                                        <div class="text-xs text-red-600 font-bold mb-2 truncate" title="{{ $occupantLabel }}">
                                             {{ $occupantLabel }}
                                         </div>
                                     @endif
@@ -73,20 +75,20 @@
                                             </div>
                                         @endif
                                     </div>
-                                    
-                                    <div class="absolute bottom-3 left-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <span class="text-indigo-600 text-xs font-bold flex items-center">
-                                            Ver Agenda <svg class="w-3 h-3 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                                        </span>
-                                    </div>
-                                </button>
+                                </div>
 
-                                {{-- BOTÓN RESERVAR (SEPARADO) --}}
-                                <button wire:click.stop="openReservationModal({{ $classroom->id }})" 
-                                        class="absolute bottom-3 right-3 z-10 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-colors flex items-center gap-1">
-                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                    Reservar
-                                </button>
+                                {{-- FOOTER DE LA TARJETA CON BOTONES --}}
+                                <div class="px-4 pb-4 pt-2 mt-auto border-t border-gray-100 bg-gray-50/50 rounded-b-xl flex justify-between items-center">
+                                    <button wire:click="showSchedule({{ $classroom->id }})" class="text-indigo-600 text-xs font-bold flex items-center hover:underline">
+                                        Ver Agenda <svg class="w-3 h-3 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                                    </button>
+
+                                    <button wire:click.stop="openReservationModal({{ $classroom->id }})" 
+                                            class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-colors flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        Reservar
+                                    </button>
+                                </div>
                             </div>
                         @endforeach
                     </div>
