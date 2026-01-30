@@ -25,6 +25,16 @@ class ClassroomManagement extends Component
     public $reservation_date = '';
     public $reservation_start_time = '';
     public $reservation_end_time = '';
+
+    // Variables para el Modal de Crear/Editar Aula
+    public $showingClassroomModal = false;
+    public $classroom_id = null; // Para edición si se requiere en el futuro
+    public $classroom_name = '';
+    public $classroom_capacity = 0;
+    public $classroom_pc_count = 0;
+    public $classroom_type = 'Aula';
+    public $classroom_building_id = null;
+    public $classroom_is_active = true;
     
     // Inicializamos como array vacío o colección para evitar "Undefined variable"
     public $weekSchedules = []; 
@@ -98,13 +108,77 @@ class ClassroomManagement extends Component
     {
         $this->showingScheduleModal = false;
         $this->showingReservationModal = false;
+        $this->showingClassroomModal = false;
         $this->selectedClassroom = null;
         $this->weekSchedules = collect(); // Reset a colección vacía
         $this->upcomingReservations = collect();
         $this->calendarGrid = [];
         $this->resetReservationForm();
+        $this->resetClassroomForm();
         $this->dispatch('close-modal', 'schedule-view-modal');
         $this->dispatch('close-modal', 'reservation-modal');
+        $this->dispatch('close-modal', 'classroom-modal');
+    }
+
+    // --- LÓGICA DE AULAS (CRUD) ---
+
+    public function openClassroomModal()
+    {
+        $this->resetClassroomForm();
+        // Por defecto seleccionamos el primer edificio si no hay uno seleccionado (opcional)
+        $firstBuilding = Building::first();
+        if ($firstBuilding) {
+            $this->classroom_building_id = $firstBuilding->id;
+        }
+        $this->showingClassroomModal = true;
+        $this->dispatch('open-modal', 'classroom-modal');
+    }
+
+    public function storeClassroom()
+    {
+        $this->validate([
+            'classroom_name' => 'required|string|max:255',
+            'classroom_capacity' => 'required|integer|min:1',
+            'classroom_pc_count' => 'required|integer|min:0',
+            'classroom_type' => 'required|in:Aula,Laboratorio,Auditorio',
+            'classroom_building_id' => 'required|exists:buildings,id',
+        ]);
+
+        Classroom::create([
+            'name' => $this->classroom_name,
+            'capacity' => $this->classroom_capacity,
+            'pc_count' => $this->classroom_pc_count,
+            'type' => $this->classroom_type,
+            'building_id' => $this->classroom_building_id,
+            'is_active' => true,
+        ]);
+
+        session()->flash('message', 'Aula creada exitosamente.');
+        $this->closeModal();
+    }
+
+    public function deleteClassroom($id)
+    {
+        $classroom = Classroom::find($id);
+
+        if ($classroom) {
+            // Opcional: Verificar si tiene horarios activos antes de borrar
+            // if ($classroom->schedules()->exists()) { ... error ... }
+
+            $classroom->delete();
+            session()->flash('message', 'Aula eliminada correctamente.');
+        }
+    }
+
+    private function resetClassroomForm()
+    {
+        $this->classroom_id = null;
+        $this->classroom_name = '';
+        $this->classroom_capacity = 0;
+        $this->classroom_pc_count = 0;
+        $this->classroom_type = 'Aula';
+        $this->classroom_building_id = null;
+        $this->resetErrorBag();
     }
 
     // --- LÓGICA DE RESERVAS ---

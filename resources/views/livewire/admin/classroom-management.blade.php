@@ -1,12 +1,26 @@
 <div class="py-12">
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Gestión de Aulas y Espacios') }}
-        </h2>
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                {{ __('Gestión de Aulas y Espacios') }}
+            </h2>
+            <x-primary-button wire:click="openClassroomModal" class="bg-indigo-600 hover:bg-indigo-700">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Nueva Aula
+            </x-primary-button>
+        </div>
     </x-slot>
 
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
         
+        @if (session()->has('message'))
+            <div class="p-4 bg-green-100 border border-green-200 text-green-700 rounded-lg shadow-sm">
+                {{ session('message') }}
+            </div>
+        @endif
+
         {{-- VISTA PRINCIPAL DE TARJETAS --}}
         @foreach($buildings as $building)
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -40,10 +54,20 @@
                             @endphp
 
                             <div class="relative group border rounded-xl shadow-sm hover:shadow-md transition-all flex flex-col h-full {{ $statusColor }}">
+                                
+                                {{-- BOTÓN ELIMINAR (FLOTANTE ARRIBA DERECHA) --}}
+                                <button wire:click="deleteClassroom({{ $classroom->id }})" 
+                                        wire:confirm="¿Estás seguro de eliminar el aula {{ $classroom->name }}? Esta acción no se puede deshacer."
+                                        class="absolute top-2 right-2 z-20 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-white rounded-full shadow-sm">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+
                                 {{-- AREA CLICKEABLE PRINCIPAL (Para ver horario) --}}
                                 <div class="flex-1 p-4 cursor-pointer" wire:click="showSchedule({{ $classroom->id }})">
                                     <div class="flex justify-between items-start mb-3">
-                                        <h4 class="font-bold text-gray-800 text-lg group-hover:text-indigo-600 transition-colors truncate pr-2" title="{{ $classroom->name }}">
+                                        <h4 class="font-bold text-gray-800 text-lg group-hover:text-indigo-600 transition-colors truncate pr-6" title="{{ $classroom->name }}">
                                             {{ $classroom->name }}
                                         </h4>
                                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold shrink-0 {{ $statusBadge }}">
@@ -327,6 +351,65 @@
                 </x-secondary-button>
                 <x-primary-button>
                     Crear Reserva
+                </x-primary-button>
+            </div>
+        </form>
+    </x-modal>
+
+    {{-- MODAL DE CREAR AULA (NUEVO) --}}
+    <x-modal name="classroom-modal" :show="$showingClassroomModal" maxWidth="md">
+        <form wire:submit.prevent="storeClassroom" class="p-6">
+            <h2 class="text-lg font-bold text-gray-900 mb-4">
+                Registrar Nueva Aula
+            </h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <x-input-label for="classroom_name" :value="__('Nombre del Aula')" />
+                    <x-text-input id="classroom_name" type="text" class="mt-1 block w-full" wire:model="classroom_name" placeholder="Ej: Laboratorio 101" />
+                    <x-input-error :messages="$errors->get('classroom_name')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="classroom_building_id" :value="__('Edificio')" />
+                    <select id="classroom_building_id" wire:model="classroom_building_id" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block w-full mt-1">
+                        @foreach($buildings as $b)
+                            <option value="{{ $b->id }}">{{ $b->name }}</option>
+                        @endforeach
+                    </select>
+                    <x-input-error :messages="$errors->get('classroom_building_id')" class="mt-2" />
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <x-input-label for="classroom_capacity" :value="__('Capacidad')" />
+                        <x-text-input id="classroom_capacity" type="number" class="mt-1 block w-full" wire:model="classroom_capacity" min="1" />
+                        <x-input-error :messages="$errors->get('classroom_capacity')" class="mt-2" />
+                    </div>
+                    <div>
+                        <x-input-label for="classroom_pc_count" :value="__('Cantidad PCs')" />
+                        <x-text-input id="classroom_pc_count" type="number" class="mt-1 block w-full" wire:model="classroom_pc_count" min="0" />
+                        <x-input-error :messages="$errors->get('classroom_pc_count')" class="mt-2" />
+                    </div>
+                </div>
+
+                <div>
+                    <x-input-label for="classroom_type" :value="__('Tipo de Espacio')" />
+                    <select id="classroom_type" wire:model="classroom_type" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block w-full mt-1">
+                        <option value="Aula">Aula Normal</option>
+                        <option value="Laboratorio">Laboratorio</option>
+                        <option value="Auditorio">Auditorio</option>
+                    </select>
+                    <x-input-error :messages="$errors->get('classroom_type')" class="mt-2" />
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3">
+                <x-secondary-button wire:click="closeModal">
+                    Cancelar
+                </x-secondary-button>
+                <x-primary-button>
+                    Guardar Aula
                 </x-primary-button>
             </div>
         </form>
