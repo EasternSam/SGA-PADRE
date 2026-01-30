@@ -53,7 +53,7 @@
     </div>
 
     <!-- 2. Indicador Flotante (Toast) - Aparece si tarda un poco -->
-    <div wire:loading.delay class="fixed bottom-6 right-6 z-[100] pointer-events-none">
+    <div wire:loading.delay class="fixed bottom-6 right-6 z-[100] pointer-events-none" style="pointer-events: none;">
         <div class="bg-white/90 backdrop-blur-sm border border-gray-200 shadow-lg rounded-full px-4 py-2 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
             <svg class="animate-spin h-4 w-4 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -64,7 +64,8 @@
     </div>
 
     <!-- 3. Sistema de Notificaciones Toast -->
-    <div aria-live="assertive" class="pointer-events-none fixed inset-0 z-50 flex items-end px-4 py-6 sm:items-start sm:p-6">
+    <!-- Se añade style="pointer-events: none;" explícito para evitar bloqueo de clics -->
+    <div aria-live="assertive" class="pointer-events-none fixed inset-0 z-50 flex items-end px-4 py-6 sm:items-start sm:p-6" style="pointer-events: none;">
         <div class="flex w-full flex-col items-center space-y-4 sm:items-end">
             @if (session()->has('success'))
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
@@ -74,7 +75,8 @@
                      x-transition:leave="transition ease-in duration-100"
                      x-transition:leave-start="opacity-100"
                      x-transition:leave-end="opacity-0"
-                     class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+                     class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5"
+                     style="pointer-events: auto;">
                     <div class="p-4">
                         <div class="flex items-start">
                             <div class="flex-shrink-0">
@@ -100,7 +102,8 @@
                      x-transition:enter="transform ease-out duration-300 transition"
                      x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
                      x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
-                     class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-red-500 ring-opacity-50 border-l-4 border-red-500">
+                     class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-red-500 ring-opacity-50 border-l-4 border-red-500"
+                     style="pointer-events: auto;">
                     <div class="p-4">
                         <div class="flex items-start">
                             <div class="flex-shrink-0">
@@ -228,17 +231,16 @@
                 </div>
             </main>
 
-            <!-- 6. Footer Mejorado y Armónico -->
+            <!-- 6. Footer Mejorado y Ajustado -->
             <footer class="bg-white border-t border-gray-200 flex-shrink-0 z-10 py-6">
                 <div class="mx-auto max-w-7xl px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
                     
-                    {{-- Copyright --}}
-                    <div class="text-center md:text-left order-2 md:order-1">
+                    {{-- Copyright alineado a la izquierda y unificado --}}
+                    <div class="text-left order-2 md:order-1">
                         <p class="text-xs text-gray-400 leading-relaxed">
-                            &copy; {{ date('Y') }} <span class="font-medium text-gray-600">{{ config('app.name', 'SGA CENTU') }}</span>. 
-                            Todos los derechos reservados.
+                            &copy; {{ date('Y') }} <span class="font-medium text-gray-600">SGA CENTU | Academic+</span>. 
+                            Todos los derechos reservados. Versión 1.0.0
                         </p>
-                        <p class="text-[10px] text-gray-300 mt-0.5">Versión 1.0.0</p>
                     </div>
 
                     {{-- Enlaces de Soporte --}}
