@@ -5,12 +5,12 @@ namespace App\Livewire\Admin;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\StudentRequest;
-use App\Models\RequestType; // Importar
-use App\Models\Student;     // Importar
+use App\Models\RequestType;
+use App\Models\Student;
 use App\Models\Enrollment;
 use App\Models\Course;
-use App\Models\Payment;         
-use App\Models\PaymentConcept;  
+use App\Models\Payment;
+use App\Models\PaymentConcept;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -47,7 +47,7 @@ class RequestsManagement extends Component
     public $new_request_type_id = null;
     public $new_course_id = null;
     public $new_details = '';
-    public $availableCourses = []; // Cursos filtrados según requisitos
+    public $availableCourses = [];
 
     protected $paginationTheme = 'tailwind';
 
@@ -58,11 +58,13 @@ class RequestsManagement extends Component
 
     public function viewRequest($requestId)
     {
+        // Cargamos requestType para evitar problemas de N+1 o nulos
         $this->selectedRequest = StudentRequest::with(['student.user', 'course', 'payment.paymentConcept', 'requestType'])->find($requestId);
 
         if ($this->selectedRequest) {
             $this->adminNotes = $this->selectedRequest->admin_notes ?? '';
             $this->showingModal = true;
+            $this->dispatch('open-modal', 'request-modal'); // Forzar apertura
         }
     }
 
@@ -101,7 +103,9 @@ class RequestsManagement extends Component
             
             $this->selectedRequest->refresh();
             session()->flash('success', 'Solicitud actualizada correctamente.');
-            $this->showingModal = false;
+            
+            // Cerramos modal y limpiamos
+            $this->closeModal();
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -113,6 +117,8 @@ class RequestsManagement extends Component
     protected function handleDynamicLogic(StudentRequest $request)
     {
         $type = $request->requestType;
+        
+        // Si no hay tipo configurado (solicitudes viejas), no hacemos nada especial
         if (!$type) return;
 
         // 1. Generación de Cobro (Si el tipo lo requiere)
@@ -170,6 +176,7 @@ class RequestsManagement extends Component
     {
         $this->resetTypeForm();
         $this->showingTypesModal = true;
+        $this->dispatch('open-modal', 'types-modal'); // Forzar apertura
     }
 
     public function editType($id)
@@ -185,6 +192,7 @@ class RequestsManagement extends Component
             $this->type_requires_completed_course = $type->requires_completed_course;
             $this->type_is_active = $type->is_active;
             $this->showingTypesModal = true;
+            $this->dispatch('open-modal', 'types-modal'); // Forzar apertura
         }
     }
 
@@ -220,7 +228,7 @@ class RequestsManagement extends Component
     {
         $type = RequestType::find($id);
         if ($type) {
-            $type->delete(); // Soft delete sería mejor si ya hay solicitudes, pero por ahora delete normal
+            $type->delete();
             session()->flash('success', 'Tipo eliminado.');
         }
     }
@@ -243,6 +251,7 @@ class RequestsManagement extends Component
     {
         $this->resetCreateForm();
         $this->showingCreateModal = true;
+        $this->dispatch('open-modal', 'create-request-modal'); // Forzar apertura
     }
 
     public function updatedNewRequestTypeId()
@@ -257,24 +266,21 @@ class RequestsManagement extends Component
 
         // Filtrar cursos según requisitos
         if ($type->requires_enrolled_course) {
-            // Cursos que el estudiante está cursando actualmente
             $this->availableCourses = Course::whereHas('modules.schedules.enrollments', function($q) {
                 $q->where('student_id', $this->new_student_id)
                   ->where('status', 'Cursando');
             })->get();
         } elseif ($type->requires_completed_course) {
-            // Cursos que el estudiante ya aprobó
             $this->availableCourses = Course::whereHas('modules.schedules.enrollments', function($q) {
                 $q->where('student_id', $this->new_student_id)
                   ->whereIn('status', ['Aprobado', 'Completado']);
             })->get();
         } else {
-            // Si no requiere nada específico, mostrar todos los cursos (o ninguno según lógica de negocio)
             $this->availableCourses = Course::all();
         }
     }
 
-    // Método helper para buscar estudiantes dinámicamente
+    // Helper para buscar estudiantes
     public function getStudentsProperty()
     {
         if (strlen($this->new_student_search) < 2) return [];
@@ -286,8 +292,9 @@ class RequestsManagement extends Component
     public function selectStudent($id)
     {
         $this->new_student_id = $id;
-        $this->new_student_search = Student::find($id)->user->name;
-        $this->updatedNewRequestTypeId(); // Refrescar cursos si ya había tipo seleccionado
+        $st = Student::find($id);
+        $this->new_student_search = $st->user->name ?? 'Estudiante';
+        $this->updatedNewRequestTypeId(); 
     }
 
     public function storeRequest()
@@ -310,12 +317,11 @@ class RequestsManagement extends Component
             'request_type_id' => $this->new_request_type_id,
             'course_id' => $this->new_course_id,
             'details' => $this->new_details,
-            'status' => 'pendiente', // Siempre nace pendiente para revisión
+            'status' => 'pendiente',
         ]);
 
         session()->flash('success', 'Solicitud creada manualmente.');
-        $this->showingCreateModal = false;
-        $this->resetCreateForm();
+        $this->closeModal();
     }
 
     private function resetCreateForm()
@@ -338,6 +344,10 @@ class RequestsManagement extends Component
         $this->reset('adminNotes');
         $this->resetTypeForm();
         $this->resetCreateForm();
+        
+        $this->dispatch('close-modal', 'request-modal');
+        $this->dispatch('close-modal', 'types-modal');
+        $this->dispatch('close-modal', 'create-request-modal');
     }
 
     public function render()
@@ -355,7 +365,6 @@ class RequestsManagement extends Component
             ->latest()
             ->paginate(10);
 
-        // Cargamos los tipos disponibles para el modal de configuración
         $requestTypes = RequestType::all();
 
         return view('livewire.admin.requests-management', [

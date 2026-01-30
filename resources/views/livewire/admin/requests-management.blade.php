@@ -122,7 +122,7 @@
         </div>
     </div>
 
-    <!-- MODAL 1: GESTIONAR SOLICITUD -->
+    <!-- MODAL 1: GESTIONAR SOLICITUD (Solo se renderiza si hay selectedRequest) -->
     @if($showingModal)
         <x-modal name="request-modal" :show="$showingModal" max-width="lg" x-on:close="$wire.closeModal()">
             @if($selectedRequest)
@@ -201,178 +201,182 @@
     @endif
 
     <!-- MODAL 2: CONFIGURAR TIPOS DE SOLICITUD -->
-    <x-modal name="types-modal" :show="$showingTypesModal" max-width="4xl" x-on:close="$wire.closeModal()">
-        <div class="p-6">
-            <h3 class="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Configuración de Tipos de Solicitud</h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Columna Izquierda: Formulario -->
-                <div class="md:col-span-1 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <h4 class="font-bold text-sm text-gray-700 mb-3">{{ $editingTypeId ? 'Editar Tipo' : 'Crear Nuevo Tipo' }}</h4>
-                    <form wire:submit.prevent="saveType" class="space-y-3">
-                        <div>
-                            <x-input-label for="type_name" value="Nombre del Trámite" />
-                            <x-text-input id="type_name" wire:model="type_name" class="w-full h-8 text-sm" />
-                            <x-input-error :messages="$errors->get('type_name')" />
-                        </div>
-                        <div>
-                            <x-input-label for="type_description" value="Descripción" />
-                            <textarea id="type_description" wire:model="type_description" class="w-full border-gray-300 rounded text-sm h-16"></textarea>
-                        </div>
-                        
-                        <!-- Lógica -->
-                        <div class="space-y-2 pt-2 border-t border-gray-200">
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" wire:model.live="type_requires_payment" class="rounded text-indigo-600">
-                                <span class="text-sm font-medium text-gray-700">¿Cobra dinero?</span>
-                            </label>
+    @if($showingTypesModal)
+        <x-modal name="types-modal" :show="$showingTypesModal" max-width="4xl" x-on:close="$wire.closeModal()">
+            <div class="p-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Configuración de Tipos de Solicitud</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Columna Izquierda: Formulario -->
+                    <div class="md:col-span-1 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <h4 class="font-bold text-sm text-gray-700 mb-3">{{ $editingTypeId ? 'Editar Tipo' : 'Crear Nuevo Tipo' }}</h4>
+                        <form wire:submit.prevent="saveType" class="space-y-3">
+                            <div>
+                                <x-input-label for="type_name" value="Nombre del Trámite" />
+                                <x-text-input id="type_name" wire:model="type_name" class="w-full h-8 text-sm" />
+                                <x-input-error :messages="$errors->get('type_name')" />
+                            </div>
+                            <div>
+                                <x-input-label for="type_description" value="Descripción" />
+                                <textarea id="type_description" wire:model="type_description" class="w-full border-gray-300 rounded text-sm h-16"></textarea>
+                            </div>
                             
-                            @if($type_requires_payment)
-                                <div>
-                                    <x-input-label for="type_payment_amount" value="Monto (RD$)" />
-                                    <x-text-input type="number" step="0.01" wire:model="type_payment_amount" class="w-full h-8 text-sm" />
-                                </div>
-                            @endif
+                            <!-- Lógica -->
+                            <div class="space-y-2 pt-2 border-t border-gray-200">
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" wire:model.live="type_requires_payment" class="rounded text-indigo-600">
+                                    <span class="text-sm font-medium text-gray-700">¿Cobra dinero?</span>
+                                </label>
+                                
+                                @if($type_requires_payment)
+                                    <div>
+                                        <x-input-label for="type_payment_amount" value="Monto (RD$)" />
+                                        <x-text-input type="number" step="0.01" wire:model="type_payment_amount" class="w-full h-8 text-sm" />
+                                    </div>
+                                @endif
 
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" wire:model="type_requires_enrolled_course" class="rounded text-indigo-600">
-                                <span class="text-sm text-gray-600">Requiere materia cursando</span>
-                            </label>
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" wire:model="type_requires_completed_course" class="rounded text-indigo-600">
-                                <span class="text-sm text-gray-600">Requiere materia aprobada</span>
-                            </label>
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" wire:model="type_is_active" class="rounded text-green-600">
-                                <span class="text-sm text-gray-600">Activo</span>
-                            </label>
-                        </div>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" wire:model="type_requires_enrolled_course" class="rounded text-indigo-600">
+                                    <span class="text-sm text-gray-600">Requiere materia cursando</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" wire:model="type_requires_completed_course" class="rounded text-indigo-600">
+                                    <span class="text-sm text-gray-600">Requiere materia aprobada</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" wire:model="type_is_active" class="rounded text-green-600">
+                                    <span class="text-sm text-gray-600">Activo</span>
+                                </label>
+                            </div>
 
-                        <div class="pt-2 flex justify-end gap-2">
-                            @if($editingTypeId)
-                                <x-secondary-button wire:click="resetTypeForm" class="text-xs">Cancelar</x-secondary-button>
-                            @endif
-                            <x-primary-button class="text-xs">{{ $editingTypeId ? 'Actualizar' : 'Guardar' }}</x-primary-button>
-                        </div>
-                    </form>
-                </div>
+                            <div class="pt-2 flex justify-end gap-2">
+                                @if($editingTypeId)
+                                    <x-secondary-button wire:click="resetTypeForm" class="text-xs">Cancelar</x-secondary-button>
+                                @endif
+                                <x-primary-button class="text-xs">{{ $editingTypeId ? 'Actualizar' : 'Guardar' }}</x-primary-button>
+                            </div>
+                        </form>
+                    </div>
 
-                <!-- Columna Derecha: Lista -->
-                <div class="md:col-span-2 overflow-y-auto max-h-[500px]">
-                    <table class="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="px-3 py-2 text-left">Nombre</th>
-                                <th class="px-3 py-2 text-left">Reglas</th>
-                                <th class="px-3 py-2 text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200">
-                            @foreach($requestTypes as $type)
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-3 py-2">
-                                        <div class="font-bold {{ $type->is_active ? 'text-gray-800' : 'text-gray-400' }}">{{ $type->name }}</div>
-                                        <div class="text-xs text-gray-500">{{ Str::limit($type->description, 30) }}</div>
-                                    </td>
-                                    <td class="px-3 py-2">
-                                        <div class="flex flex-col gap-1">
-                                            @if($type->requires_payment)
-                                                <span class="text-xs bg-green-100 text-green-800 px-1.5 rounded w-max">Cobro: ${{ $type->payment_amount }}</span>
-                                            @endif
-                                            @if($type->requires_enrolled_course)
-                                                <span class="text-xs bg-blue-100 text-blue-800 px-1.5 rounded w-max">Mat. Cursando</span>
-                                            @endif
-                                            @if($type->requires_completed_course)
-                                                <span class="text-xs bg-purple-100 text-purple-800 px-1.5 rounded w-max">Mat. Aprobada</span>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td class="px-3 py-2 text-right">
-                                        <button wire:click="editType({{ $type->id }})" class="text-indigo-600 hover:underline mr-2">Editar</button>
-                                        <button wire:click="deleteType({{ $type->id }})" class="text-red-600 hover:underline" wire:confirm="¿Eliminar este tipo?">Borrar</button>
-                                    </td>
+                    <!-- Columna Derecha: Lista -->
+                    <div class="md:col-span-2 overflow-y-auto max-h-[500px]">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-3 py-2 text-left">Nombre</th>
+                                    <th class="px-3 py-2 text-left">Reglas</th>
+                                    <th class="px-3 py-2 text-right">Acciones</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                @foreach($requestTypes as $type)
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-3 py-2">
+                                            <div class="font-bold {{ $type->is_active ? 'text-gray-800' : 'text-gray-400' }}">{{ $type->name }}</div>
+                                            <div class="text-xs text-gray-500">{{ Str::limit($type->description, 30) }}</div>
+                                        </td>
+                                        <td class="px-3 py-2">
+                                            <div class="flex flex-col gap-1">
+                                                @if($type->requires_payment)
+                                                    <span class="text-xs bg-green-100 text-green-800 px-1.5 rounded w-max">Cobro: ${{ $type->payment_amount }}</span>
+                                                @endif
+                                                @if($type->requires_enrolled_course)
+                                                    <span class="text-xs bg-blue-100 text-blue-800 px-1.5 rounded w-max">Mat. Cursando</span>
+                                                @endif
+                                                @if($type->requires_completed_course)
+                                                    <span class="text-xs bg-purple-100 text-purple-800 px-1.5 rounded w-max">Mat. Aprobada</span>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td class="px-3 py-2 text-right">
+                                            <button wire:click="editType({{ $type->id }})" class="text-indigo-600 hover:underline mr-2">Editar</button>
+                                            <button wire:click="deleteType({{ $type->id }})" class="text-red-600 hover:underline" wire:confirm="¿Eliminar este tipo?">Borrar</button>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="mt-4 flex justify-end">
+                    <x-secondary-button wire:click="closeModal">Cerrar</x-secondary-button>
                 </div>
             </div>
-            
-            <div class="mt-4 flex justify-end">
-                <x-secondary-button wire:click="closeModal">Cerrar</x-secondary-button>
-            </div>
-        </div>
-    </x-modal>
+        </x-modal>
+    @endif
 
     <!-- MODAL 3: CREAR SOLICITUD MANUAL -->
-    <x-modal name="create-request-modal" :show="$showingCreateModal" max-width="md" x-on:close="$wire.closeModal()">
-        <form wire:submit.prevent="storeRequest" class="p-6">
-            <h2 class="text-lg font-bold text-gray-900 mb-4">Nueva Solicitud Manual</h2>
-            
-            <div class="space-y-4">
-                <!-- Buscador Estudiante -->
-                <div class="relative">
-                    <x-input-label for="new_student_search" value="Buscar Estudiante" />
-                    <x-text-input wire:model.live.debounce.300ms="new_student_search" placeholder="Escribe nombre..." class="w-full" />
-                    
-                    @if(strlen($new_student_search) > 1 && !$new_student_id)
-                        <div class="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-40 overflow-y-auto">
-                            @forelse($this->students as $student)
-                                <div wire:click="selectStudent({{ $student->id }})" class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm">
-                                    {{ $student->user->name }}
-                                </div>
-                            @empty
-                                <div class="px-4 py-2 text-gray-500 text-xs">No encontrado</div>
-                            @endforelse
-                        </div>
-                    @endif
-                    @if($new_student_id)
-                        <div class="mt-1 text-sm text-green-600 font-bold flex justify-between">
-                            <span>Seleccionado: {{ $new_student_search }}</span>
-                            <button type="button" wire:click="$set('new_student_id', null)" class="text-red-500 text-xs underline">Cambiar</button>
-                        </div>
-                    @endif
-                </div>
-
-                <!-- Tipo de Solicitud -->
-                <div>
-                    <x-input-label for="new_request_type_id" value="Tipo de Trámite" />
-                    <select wire:model.live="new_request_type_id" class="w-full border-gray-300 rounded-md shadow-sm">
-                        <option value="">-- Seleccionar --</option>
-                        @foreach($requestTypes as $type)
-                            @if($type->is_active)
-                                <option value="{{ $type->id }}">{{ $type->name }}</option>
-                            @endif
-                        @endforeach
-                    </select>
-                </div>
-
-                <!-- Selector de Curso (Condicional) -->
-                @if(count($availableCourses) > 0 || ($new_request_type_id && RequestType::find($new_request_type_id)->requires_enrolled_course))
-                    <div>
-                        <x-input-label for="new_course_id" value="Curso Relacionado (Requerido)" />
-                        <select wire:model="new_course_id" class="w-full border-gray-300 rounded-md shadow-sm">
-                            <option value="">-- Seleccionar Materia --</option>
-                            @foreach($availableCourses as $course)
-                                <option value="{{ $course->id }}">{{ $course->name }}</option>
-                            @endforeach
-                        </select>
-                        @if(empty($availableCourses))
-                            <p class="text-xs text-red-500 mt-1">El estudiante no cumple con los requisitos de cursos para este trámite.</p>
+    @if($showingCreateModal)
+        <x-modal name="create-request-modal" :show="$showingCreateModal" max-width="md" x-on:close="$wire.closeModal()">
+            <form wire:submit.prevent="storeRequest" class="p-6">
+                <h2 class="text-lg font-bold text-gray-900 mb-4">Nueva Solicitud Manual</h2>
+                
+                <div class="space-y-4">
+                    <!-- Buscador Estudiante -->
+                    <div class="relative">
+                        <x-input-label for="new_student_search" value="Buscar Estudiante" />
+                        <x-text-input wire:model.live.debounce.300ms="new_student_search" placeholder="Escribe nombre..." class="w-full" />
+                        
+                        @if(strlen($new_student_search) > 1 && !$new_student_id)
+                            <div class="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-40 overflow-y-auto">
+                                @forelse($this->students as $student)
+                                    <div wire:click="selectStudent({{ $student->id }})" class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm">
+                                        {{ $student->user->name }}
+                                    </div>
+                                @empty
+                                    <div class="px-4 py-2 text-gray-500 text-xs">No encontrado</div>
+                                @endforelse
+                            </div>
+                        @endif
+                        @if($new_student_id)
+                            <div class="mt-1 text-sm text-green-600 font-bold flex justify-between">
+                                <span>Seleccionado: {{ $new_student_search }}</span>
+                                <button type="button" wire:click="$set('new_student_id', null)" class="text-red-500 text-xs underline">Cambiar</button>
+                            </div>
                         @endif
                     </div>
-                @endif
 
-                <div>
-                    <x-input-label for="new_details" value="Detalles Adicionales" />
-                    <textarea wire:model="new_details" rows="3" class="w-full border-gray-300 rounded-md shadow-sm"></textarea>
+                    <!-- Tipo de Solicitud -->
+                    <div>
+                        <x-input-label for="new_request_type_id" value="Tipo de Trámite" />
+                        <select wire:model.live="new_request_type_id" class="w-full border-gray-300 rounded-md shadow-sm">
+                            <option value="">-- Seleccionar --</option>
+                            @foreach($requestTypes as $type)
+                                @if($type->is_active)
+                                    <option value="{{ $type->id }}">{{ $type->name }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Selector de Curso (Condicional) -->
+                    @if(count($availableCourses) > 0 || ($new_request_type_id && \App\Models\RequestType::find($new_request_type_id)->requires_enrolled_course))
+                        <div>
+                            <x-input-label for="new_course_id" value="Curso Relacionado (Requerido)" />
+                            <select wire:model="new_course_id" class="w-full border-gray-300 rounded-md shadow-sm">
+                                <option value="">-- Seleccionar Materia --</option>
+                                @foreach($availableCourses as $course)
+                                    <option value="{{ $course->id }}">{{ $course->name }}</option>
+                                @endforeach
+                            </select>
+                            @if(empty($availableCourses))
+                                <p class="text-xs text-red-500 mt-1">El estudiante no cumple con los requisitos de cursos para este trámite.</p>
+                            @endif
+                        </div>
+                    @endif
+
+                    <div>
+                        <x-input-label for="new_details" value="Detalles Adicionales" />
+                        <textarea wire:model="new_details" rows="3" class="w-full border-gray-300 rounded-md shadow-sm"></textarea>
+                    </div>
                 </div>
-            </div>
 
-            <div class="mt-6 flex justify-end gap-3">
-                <x-secondary-button wire:click="closeModal">Cancelar</x-secondary-button>
-                <x-primary-button>Crear Solicitud</x-primary-button>
-            </div>
-        </form>
-    </x-modal>
+                <div class="mt-6 flex justify-end gap-3">
+                    <x-secondary-button wire:click="closeModal">Cancelar</x-secondary-button>
+                    <x-primary-button>Crear Solicitud</x-primary-button>
+                </div>
+            </form>
+        </x-modal>
+    @endif
 </div>
