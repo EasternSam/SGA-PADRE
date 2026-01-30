@@ -66,7 +66,7 @@
                 <input 
                     wire:model.live.debounce.500ms="search" 
                     type="text" 
-                    placeholder="Buscar por nombre, apellido, email, cédula..." 
+                    placeholder="Buscar por nombre, apellido, matrícula, email..." 
                     class="block w-full pl-10 pr-10 py-3 border-gray-300 rounded-xl leading-5 bg-gray-50 text-gray-900 placeholder-gray-500 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-150 ease-in-out shadow-sm"
                 >
                 <div wire:loading wire:target="search" class="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -89,7 +89,7 @@
                     <thead class="bg-gray-50/50">
                         <tr>
                             <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
-                                Estudiante
+                                Estudiante / Matrícula
                             </th>
                             <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
                                 Identificación
@@ -116,7 +116,14 @@
                                             <div class="text-sm font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
                                                 {{ $student->first_name }} {{ $student->last_name }}
                                             </div>
-                                            <div class="text-xs text-gray-500">{{ $student->email }}</div>
+                                            <div class="flex flex-col gap-0.5">
+                                                <div class="text-xs text-gray-500">{{ $student->email }}</div>
+                                                @if($student->enrollment_number)
+                                                    <div class="text-xs font-medium text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded w-fit">
+                                                        Mat: {{ $student->enrollment_number }}
+                                                    </div>
+                                                @endif
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
