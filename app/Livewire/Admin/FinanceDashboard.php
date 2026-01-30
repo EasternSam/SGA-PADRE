@@ -9,6 +9,7 @@ use Livewire\WithPagination;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Livewire\Attributes\Layout;
+use Illuminate\Database\Eloquent\Builder;
 
 #[Layout('layouts.dashboard')]
 class FinanceDashboard extends Component
@@ -112,7 +113,7 @@ class FinanceDashboard extends Component
         }
     }
 
-    private function applyDateFilter($query)
+    private function applyDateFilter(Builder $query)
     {
         switch ($this->dateFilter) {
             case 'today':
@@ -141,7 +142,7 @@ class FinanceDashboard extends Component
         $paymentsQuery = Payment::with(['student.user', 'paymentConcept'])
             ->latest();
 
-        // Aplicar Filtros
+        // Aplicar Filtros a la consulta principal de la tabla
         $this->applyDateFilter($paymentsQuery);
 
         if ($this->search) {
