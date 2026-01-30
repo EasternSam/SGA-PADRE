@@ -131,9 +131,27 @@
             <div class="lg:col-span-2 space-y-6">
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div class="border-b border-gray-100 px-6 py-5 flex items-center justify-between">
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-900">Historial de Solicitudes</h3>
-                            <p class="text-sm text-gray-500">Seguimiento de tus trámites realizados</p>
+                        <div class="flex gap-4 items-center w-full">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900">Historial de Solicitudes</h3>
+                                <p class="text-sm text-gray-500">Seguimiento de tus trámites realizados</p>
+                            </div>
+                            
+                            {{-- Filtros --}}
+                            <div class="flex gap-2 ml-auto">
+                                <x-text-input 
+                                    wire:model.live="search" 
+                                    type="search" 
+                                    placeholder="Buscar..." 
+                                    class="w-48 text-sm"
+                                />
+                                <select wire:model.live="statusFilter" class="border-gray-300 rounded-lg text-sm text-gray-600 focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">Todos</option>
+                                    <option value="pendiente">Pendiente</option>
+                                    <option value="aprobado">Aprobada</option>
+                                    <option value="rechazado">Rechazada</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -175,14 +193,16 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-center">
                                             @php
-                                                $statusClass = match($request->status) {
-                                                    'aprobado' => 'bg-green-50 text-green-700 ring-green-600/20',
-                                                    'rechazado' => 'bg-red-50 text-red-700 ring-red-600/20',
+                                                // Normalizar estado para clases CSS (maneja inglés/español)
+                                                $normalizedStatus = strtolower($request->status);
+                                                $statusClass = match(true) {
+                                                    in_array($normalizedStatus, ['aprobado', 'approved']) => 'bg-green-50 text-green-700 ring-green-600/20',
+                                                    in_array($normalizedStatus, ['rechazado', 'rejected']) => 'bg-red-50 text-red-700 ring-red-600/20',
                                                     default => 'bg-yellow-50 text-yellow-800 ring-yellow-600/20',
                                                 };
-                                                $dotClass = match($request->status) {
-                                                    'aprobado' => 'bg-green-500',
-                                                    'rechazado' => 'bg-red-500',
+                                                $dotClass = match(true) {
+                                                    in_array($normalizedStatus, ['aprobado', 'approved']) => 'bg-green-500',
+                                                    in_array($normalizedStatus, ['rechazado', 'rejected']) => 'bg-red-500',
                                                     default => 'bg-yellow-500',
                                                 };
                                             @endphp
@@ -194,9 +214,10 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-center">
                                             @if($request->payment)
                                                 @php
-                                                    $payStatusClass = match($request->payment->status) {
-                                                        'Pagado', 'Completado' => 'bg-emerald-50 text-emerald-700 border-emerald-100',
-                                                        'Pendiente' => 'bg-orange-50 text-orange-700 border-orange-100',
+                                                    $normalizedPayStatus = strtolower($request->payment->status);
+                                                    $payStatusClass = match(true) {
+                                                        in_array($normalizedPayStatus, ['pagado', 'paid', 'completado', 'completed']) => 'bg-emerald-50 text-emerald-700 border-emerald-100',
+                                                        in_array($normalizedPayStatus, ['pendiente', 'pending']) => 'bg-orange-50 text-orange-700 border-orange-100',
                                                         default => 'bg-gray-50 text-gray-600 border-gray-100',
                                                     };
                                                 @endphp
@@ -214,7 +235,9 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
                                             {{-- BOTÓN PAGO O DESCARGA --}}
-                                            @if($request->payment && $request->payment->status == 'Pendiente')
+                                            
+                                            {{-- 1. Si hay pago y está pendiente -> Botón Pagar --}}
+                                            @if($request->payment && in_array(strtolower($request->payment->status), ['pendiente', 'pending']))
                                                 <a href="{{ route('student.payments') }}" class="inline-flex items-center text-white bg-gray-900 hover:bg-gray-800 font-medium text-xs px-3 py-1.5 rounded-lg shadow-sm transition-colors">
                                                     <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
@@ -222,24 +245,25 @@
                                                     Pagar
                                                 </a>
                                             
-                                            {{-- Lógica de Descarga corregida para ser más flexible --}}
-                                            @elseif($request->status == 'aprobado' && $request->requestType && 
-                                                    (stripos($request->requestType->name, 'Diploma') !== false || stripos($request->requestType->name, 'Certificado') !== false))
-                                                 @if(!$request->payment || $request->payment->status == 'Pagado')
-                                                    @if($request->course_id)
-                                                        <a href="{{ route('certificates.download', ['student' => $request->student_id, 'course' => $request->course_id]) }}" 
-                                                           target="_blank"
-                                                           class="inline-flex items-center text-indigo-600 hover:text-indigo-800 font-medium text-xs bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors">
-                                                            <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                                                            </svg>
-                                                            Descargar
-                                                        </a>
-                                                    @else
-                                                        {{-- Fallback si no hay curso asociado (ej: certificado general) --}}
-                                                        <span class="text-xs text-gray-400 cursor-help" title="No hay curso específico asociado">No disponible</span>
-                                                    @endif
-                                                 @endif
+                                            {{-- 2. Si está APROBADO y (No requiere pago O el pago está PAGADO) -> Botón Descargar --}}
+                                            {{-- Lógica movida al backend (método download), aquí solo mostramos el botón si cumple condiciones visuales --}}
+                                            @elseif(in_array(strtolower($request->status), ['aprobado', 'approved']))
+                                                @if(!$request->payment || in_array(strtolower($request->payment->status), ['pagado', 'paid', 'completado', 'completed']))
+                                                    
+                                                    <button wire:click="download({{ $request->id }})" 
+                                                            wire:loading.attr="disabled"
+                                                            class="inline-flex items-center text-indigo-600 hover:text-indigo-800 font-medium text-xs bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors">
+                                                        <svg wire:loading.remove wire:target="download({{ $request->id }})" class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                                        </svg>
+                                                        <svg wire:loading wire:target="download({{ $request->id }})" class="animate-spin w-3 h-3 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                        </svg>
+                                                        Descargar
+                                                    </button>
+
+                                                @endif
                                             @endif
                                         </td>
                                     </tr>
