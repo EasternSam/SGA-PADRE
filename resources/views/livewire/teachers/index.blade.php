@@ -88,7 +88,7 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50/50">
                         <tr>
-                            <th scope="col" class="py-4 pl-6 pr-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
                                 Profesor
                             </th>
                             <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
@@ -216,7 +216,7 @@
                         <div>
                             <x-input-label for="password" value="Contraseña" />
                             <x-text-input id="password" type="password" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" wire:model="password"
-                                        placeholder="{{ $userId ? 'Opcional si edita' : '' }}" />
+                                          placeholder="{{ $userId ? 'Opcional si edita' : '' }}" />
                             <x-input-error :messages="$errors->get('password')" class="mt-2" />
                         </div>
 
