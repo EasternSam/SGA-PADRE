@@ -78,7 +78,7 @@
                                 </div>
 
                                 {{-- FOOTER DE LA TARJETA CON BOTONES --}}
-                                <div class="px-4 pb-4 pt-2 mt-auto border-t border-gray-100 bg-gray-50/50 rounded-b-xl flex justify-between items-center">
+                                <div class="px-4 pb-[11px] pt-[8px] mt-auto border-t border-gray-100 bg-gray-50/50 rounded-b-xl flex justify-between items-center" style="padding-top: 8px; padding-bottom: 11px;">
                                     <button wire:click="showSchedule({{ $classroom->id }})" class="text-indigo-600 text-xs font-bold flex items-center hover:underline">
                                         Ver Agenda <svg class="w-3 h-3 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                                     </button>
