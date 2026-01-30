@@ -9,16 +9,23 @@ class StudentRequest extends Model
 {
     use HasFactory;
 
-    // Aseguramos que estos campos sean asignables para evitar "Curso No especificado"
     protected $fillable = [
         'student_id',
-        'course_id',   // Crucial para vincular el curso
-        'payment_id',  // Crucial para el cobro
-        'type',
+        'request_type_id', // Nuevo campo
+        'course_id',
+        'payment_id',
         'details',
         'status',
         'admin_notes',
     ];
+
+    /**
+     * Tipo de solicitud (Configuración).
+     */
+    public function requestType()
+    {
+        return $this->belongsTo(RequestType::class);
+    }
 
     /**
      * Obtiene el estudiante que realizó la solicitud.
