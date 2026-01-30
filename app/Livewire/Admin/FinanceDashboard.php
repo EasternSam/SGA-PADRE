@@ -72,7 +72,7 @@ class FinanceDashboard extends Component
         // pero aquí son consultas separadas de agregación.
         
         // Ingresos Reales (Completados)
-        $this->totalIncome = (clone $query)->where('status', 'Completado')->sum('amount');
+        $this->totalIncome = (clone $query)->whereIn('status', ['Completado', 'Pagado'])->sum('amount');
 
         // Deuda Pendiente (Pendientes)
         $this->totalPending = (clone $query)->whereIn('status', ['Pendiente', 'pendiente'])->sum('amount');
@@ -97,7 +97,7 @@ class FinanceDashboard extends Component
             // Ingresos del mes
             $income = Payment::whereYear('created_at', $date->year)
                 ->whereMonth('created_at', $date->month)
-                ->where('status', 'Completado')
+                ->whereIn('status', ['Completado', 'Pagado'])
                 ->sum('amount');
             
             // Deuda generada en el mes (que sigue pendiente o se generó pendiente en ese mes)
@@ -129,7 +129,10 @@ class FinanceDashboard extends Component
                 $query->whereMonth('created_at', Carbon::now()->subMonth()->month)
                       ->whereYear('created_at', Carbon::now()->subMonth()->year);
                 break;
-            // 'all' no aplica filtro
+            case 'all':
+            default:
+                // No aplicar filtro de fecha
+                break;
         }
     }
 
@@ -142,10 +145,12 @@ class FinanceDashboard extends Component
         $this->applyDateFilter($paymentsQuery);
 
         if ($this->search) {
-            $paymentsQuery->whereHas('student.user', function ($q) {
-                $q->where('name', 'like', '%' . $this->search . '%')
-                  ->orWhere('email', 'like', '%' . $this->search . '%');
-            })->orWhere('transaction_id', 'like', '%' . $this->search . '%');
+            $paymentsQuery->where(function($q) {
+                $q->whereHas('student.user', function ($uq) {
+                    $uq->where('name', 'like', '%' . $this->search . '%')
+                      ->orWhere('email', 'like', '%' . $this->search . '%');
+                })->orWhere('transaction_id', 'like', '%' . $this->search . '%');
+            });
         }
 
         if ($this->statusFilter) {
