@@ -80,8 +80,15 @@ class Requests extends Component
             'details' => 'nullable|string', // Cambiado a nullable según solicitud
         ]);
 
-        if (!$this->selectedType) {
+        // Asegurarnos de tener el tipo seleccionado cargado
+        if (!$this->selectedType || $this->selectedType->id != $this->typeId) {
             $this->selectedType = RequestType::find($this->typeId);
+        }
+        
+        // Verificación de seguridad adicional
+        if (!$this->selectedType) {
+            $this->addError('typeId', 'El tipo de solicitud seleccionado no es válido.');
+            return;
         }
 
         // Validación de curso requerido
@@ -126,7 +133,7 @@ class Requests extends Component
         StudentRequest::create([
             'student_id' => $this->student->id,
             'request_type_id' => $this->typeId,
-            'type' => $this->selectedType->name, // Mantenemos compatibilidad con columna antigua
+            'type' => $this->selectedType->name, // Usamos el nombre del tipo cargado
             'course_id' => $courseId,
             'details' => $finalDetails,
             'status' => 'pendiente',
