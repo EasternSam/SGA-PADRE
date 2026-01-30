@@ -157,7 +157,8 @@
                                         </td>
                                         <td class="px-6 py-4">
                                             <div class="flex flex-col">
-                                                <span class="text-sm font-medium text-gray-900">{{ $request->requestType->name ?? 'Tipo Desconocido' }}</span>
+                                                {{-- Usamos el nombre del tipo, y fallback al campo type antiguo si no hay relación --}}
+                                                <span class="text-sm font-medium text-gray-900">{{ $request->requestType->name ?? $request->type ?? 'Desconocido' }}</span>
                                                 @if($request->course)
                                                     <span class="text-xs text-gray-500 mt-0.5">{{ $request->course->name }}</span>
                                                 @endif
@@ -220,9 +221,21 @@
                                                     </svg>
                                                     Pagar
                                                 </a>
-                                            @elseif($request->status == 'aprobado' && $request->requestType && $request->requestType->name == 'Solicitud de Diploma')
+                                            
+                                            {{-- Lógica de Descarga corregida para ser más flexible --}}
+                                            @elseif($request->status == 'aprobado' && $request->requestType && 
+                                                    (stripos($request->requestType->name, 'Diploma') !== false || stripos($request->requestType->name, 'Certificado') !== false))
                                                  @if(!$request->payment || $request->payment->status == 'Pagado')
-                                                    <a href="#" class="text-indigo-600 hover:underline text-xs">Descargar</a>
+                                                    @if($request->course_id)
+                                                        <a href="{{ route('certificates.download', ['student' => $request->student_id, 'course' => $request->course_id]) }}" 
+                                                           target="_blank"
+                                                           class="inline-flex items-center text-indigo-600 hover:text-indigo-800 font-medium text-xs bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors">
+                                                            <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                                            </svg>
+                                                            Descargar
+                                                        </a>
+                                                    @endif
                                                  @endif
                                             @endif
                                         </td>
