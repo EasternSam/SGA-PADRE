@@ -107,7 +107,7 @@
 
                         <!-- Detalles / Motivo -->
                         <div>
-                            <x-input-label for="details" :value="__('Detalles Adicionales')" class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5" />
+                            <x-input-label for="details" :value="__('Detalles Adicionales (Opcional)')" class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5" />
                             <textarea wire:model="details" id="details" rows="4" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2" placeholder="Escriba aquí los detalles o motivos..."></textarea>
                             <x-input-error :messages="$errors->get('details')" class="mt-1" />
                         </div>
