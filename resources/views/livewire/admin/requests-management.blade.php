@@ -157,11 +157,15 @@
 
                         <!-- Información Lógica del Tipo -->
                         <div class="flex gap-2">
-                            @if($selectedRequest->requestType->requires_payment)
-                                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Genera Cobro: ${{ $selectedRequest->requestType->payment_amount }}</span>
-                            @endif
-                            @if($selectedRequest->requestType->requires_enrolled_course)
-                                <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">Requiere Materia Cursando</span>
+                            @if($selectedRequest->requestType)
+                                @if($selectedRequest->requestType->requires_payment)
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Genera Cobro: ${{ $selectedRequest->requestType->payment_amount }}</span>
+                                @endif
+                                @if($selectedRequest->requestType->requires_enrolled_course)
+                                    <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">Requiere Materia Cursando</span>
+                                @endif
+                            @else
+                                <span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">Sin tipo asignado</span>
                             @endif
                         </div>
 
