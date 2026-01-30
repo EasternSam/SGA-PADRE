@@ -80,19 +80,21 @@ class Requests extends Component
             'details' => 'nullable|string', // Cambiado a nullable según solicitud
         ]);
 
-        // Asegurarnos de tener el tipo seleccionado cargado
-        if (!$this->selectedType || $this->selectedType->id != $this->typeId) {
-            $this->selectedType = RequestType::find($this->typeId);
-        }
+        // Asegurarnos de tener el tipo seleccionado cargado y fresco
+        // A veces Livewire puede perder el estado de objetos complejos, mejor recargar por ID
+        $typeModel = RequestType::find($this->typeId);
         
         // Verificación de seguridad adicional
-        if (!$this->selectedType) {
+        if (!$typeModel) {
             $this->addError('typeId', 'El tipo de solicitud seleccionado no es válido.');
             return;
         }
+        
+        // Actualizamos la propiedad pública para la vista por si acaso
+        $this->selectedType = $typeModel;
 
         // Validación de curso requerido
-        if ($this->selectedType->requires_enrolled_course || $this->selectedType->requires_completed_course) {
+        if ($typeModel->requires_enrolled_course || $typeModel->requires_completed_course) {
             $this->validate([
                 'selectedTargetId' => 'required|exists:enrollments,id'
             ]);
@@ -116,7 +118,7 @@ class Requests extends Component
         }
 
         // Verificar duplicados para trámites importantes (ej: Diplomas)
-        if ($this->selectedType->requires_completed_course && $courseId) {
+        if ($typeModel->requires_completed_course && $courseId) {
             $exists = StudentRequest::where('student_id', $this->student->id)
                 ->where('request_type_id', $this->typeId)
                 ->where('course_id', $courseId)
@@ -130,10 +132,11 @@ class Requests extends Component
         }
 
         // Crear Solicitud
+        // Usamos $typeModel->name explícitamente para asegurar que no sea nulo
         StudentRequest::create([
             'student_id' => $this->student->id,
             'request_type_id' => $this->typeId,
-            'type' => $this->selectedType->name, // Usamos el nombre del tipo cargado
+            'type' => $typeModel->name, // Nombre recuperado directamente de la BD en este ciclo
             'course_id' => $courseId,
             'details' => $finalDetails,
             'status' => 'pendiente',
