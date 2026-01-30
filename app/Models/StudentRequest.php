@@ -11,7 +11,8 @@ class StudentRequest extends Model
 
     protected $fillable = [
         'student_id',
-        'request_type_id', // Nuevo campo
+        'request_type_id',
+        'type', // <-- AGREGADO: Necesario para compatibilidad con la columna NOT NULL antigua
         'course_id',
         'payment_id',
         'details',
