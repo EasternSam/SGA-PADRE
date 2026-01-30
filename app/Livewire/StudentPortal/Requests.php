@@ -77,7 +77,7 @@ class Requests extends Component
     {
         $this->validate([
             'typeId' => 'required|exists:request_types,id',
-            'details' => 'required|string|min:5',
+            'details' => 'nullable|string', // Cambiado a nullable según solicitud
         ]);
 
         if (!$this->selectedType) {
@@ -102,10 +102,9 @@ class Requests extends Component
                 $courseId = $enrollment->courseSchedule->module->course_id;
                 $courseName = $enrollment->courseSchedule->module->course->name ?? 'N/A';
                 
-                // Agregar contexto al detalle
-                $finalDetails = "Curso Relacionado: $courseName\n" . 
-                                "Estado Inscripción: {$enrollment->status}\n\n" . 
-                                $this->details;
+                // Agregar contexto al detalle si hay algo escrito, sino solo info del curso
+                $context = "Curso Relacionado: $courseName\nEstado Inscripción: {$enrollment->status}";
+                $finalDetails = $this->details ? "$context\n\n{$this->details}" : $context;
             }
         }
 
@@ -127,6 +126,7 @@ class Requests extends Component
         StudentRequest::create([
             'student_id' => $this->student->id,
             'request_type_id' => $this->typeId,
+            'type' => $this->selectedType->name, // Mantenemos compatibilidad con columna antigua
             'course_id' => $courseId,
             'details' => $finalDetails,
             'status' => 'pendiente',
