@@ -118,9 +118,10 @@
                                             </div>
                                             <div class="flex flex-col gap-0.5">
                                                 <div class="text-xs text-gray-500">{{ $student->email }}</div>
-                                                @if($student->enrollment_number)
-                                                    <div class="text-xs font-medium text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded w-fit">
-                                                        Mat: {{ $student->enrollment_number }}
+                                                {{-- AQUI SE MUESTRA LA MATRÍCULA --}}
+                                                @if($student->student_code)
+                                                    <div class="text-xs font-medium text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded w-fit mt-1">
+                                                        Mat: {{ $student->student_code }}
                                                     </div>
                                                 @endif
                                             </div>
@@ -357,7 +358,7 @@
                         </div>
 
                         <!-- Seguridad (Solo al editar y si se desea cambiar) -->
-                        @if($student_id)
+                        @if($studentId)
                         <div class="border-t border-gray-100"></div>
                         <div>
                             <h3 class="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -389,7 +390,7 @@
                             Cancelar
                         </button>
                         <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-500 hover:shadow-indigo-300 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all duration-200 active:scale-[0.98]">
-                            {{ $student_id ? 'Actualizar Estudiante' : 'Guardar Estudiante' }}
+                            {{ $studentId ? 'Actualizar Estudiante' : 'Guardar Estudiante' }}
                         </button>
                     </div>
                 </form>
