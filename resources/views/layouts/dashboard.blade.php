@@ -47,25 +47,26 @@
 
 <body class="h-full font-sans antialiased text-slate-600">
 
-    <!-- 1. Barra de Carga Global (Livewire) - Optimizada -->
-    <div wire:loading class="fixed top-0 left-0 w-full h-1 z-[100] bg-indigo-100/50" style="pointer-events: none;">
+    <!-- 1. Barra de Carga Global (Inmediata) -->
+    <!-- Se eliminó .delay para feedback instantáneo y se aumentó z-index -->
+    <div wire:loading class="fixed top-0 left-0 w-full h-1.5 z-[2000] bg-indigo-100/50" style="pointer-events: none;">
         <div class="h-full bg-indigo-600 animate-progress-indeterminate shadow-[0_0_10px_rgba(79,70,229,0.5)]"></div>
     </div>
 
-    <!-- 2. Indicador Flotante (Toast) - Aparece si tarda un poco -->
-    <div wire:loading.delay class="fixed bottom-6 right-6 z-[100] pointer-events-none" style="pointer-events: none;">
-        <div class="bg-white/90 backdrop-blur-sm border border-gray-200 shadow-lg rounded-full px-4 py-2 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <svg class="animate-spin h-4 w-4 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <!-- 2. Indicador Flotante (Toast) - Inmediato -->
+    <!-- Se eliminó .delay para que aparezca siempre que se procese algo, incluso abrir un modal -->
+    <div wire:loading class="fixed bottom-6 right-6 z-[2000] pointer-events-none transition-opacity duration-200 ease-in-out" style="pointer-events: none;">
+        <div class="bg-white/95 backdrop-blur-md border border-indigo-100 shadow-2xl rounded-full px-5 py-3 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200 ring-1 ring-indigo-50">
+            <svg class="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span class="text-xs font-semibold text-gray-700">Procesando...</span>
+            <span class="text-xs font-bold text-gray-700 tracking-wide">PROCESANDO...</span>
         </div>
     </div>
 
     <!-- 3. Sistema de Notificaciones Toast -->
-    <!-- Se añade style="pointer-events: none;" explícito para evitar bloqueo de clics -->
-    <div aria-live="assertive" class="pointer-events-none fixed inset-0 z-50 flex items-end px-4 py-6 sm:items-start sm:p-6" style="pointer-events: none;">
+    <div aria-live="assertive" class="pointer-events-none fixed inset-0 z-[1500] flex items-end px-4 py-6 sm:items-start sm:p-6" style="pointer-events: none;">
         <div class="flex w-full flex-col items-center space-y-4 sm:items-end">
             @if (session()->has('success'))
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
@@ -231,20 +232,20 @@
                 </div>
             </main>
 
-            <!-- 6. Footer Mejorado y Ajustado -->
+            <!-- 6. Footer -->
             <footer class="bg-white border-t border-gray-200 flex-shrink-0 z-10 py-6">
                 <div class="mx-auto max-w-7xl px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
                     
-                    {{-- Copyright alineado a la izquierda y unificado --}}
-                    <div class="text-left order-2 md:order-1">
-                        <p class="text-xs text-gray-400 leading-relaxed">
-                            &copy; {{ date('Y') }} <span class="font-medium text-gray-600">SGA CENTU | Academic+</span>. 
+                    {{-- Copyright --}}
+                    <div class="text-left w-full md:w-auto order-2 md:order-1">
+                        <p class="text-xs text-gray-500 leading-relaxed">
+                            &copy; {{ date('Y') }} <span class="font-medium text-gray-700">SGA CENTU | Academic+</span>. 
                             Todos los derechos reservados. Versión 1.0.0
                         </p>
                     </div>
 
                     {{-- Enlaces de Soporte --}}
-                    <div class="flex items-center justify-center gap-6 order-1 md:order-2">
+                    <div class="flex items-center justify-center md:justify-end gap-6 w-full md:w-auto order-1 md:order-2">
                         <a href="#" class="group flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-indigo-600 transition-colors duration-200">
                             <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
