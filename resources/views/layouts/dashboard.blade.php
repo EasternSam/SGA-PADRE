@@ -45,7 +45,7 @@
     </script>
 </head>
 
-<body class="h-full font-sans antialiased text-slate-600 overscroll-none">
+<body class="h-full font-sans antialiased text-slate-600 overscroll-none overflow-hidden">
 
     <!-- 1. Barra de Carga Global (Inmediata y Z-Index Alto) -->
     <div wire:loading class="fixed top-0 left-0 w-full h-1.5 z-[2000] bg-indigo-100/50" style="pointer-events: none;">
@@ -223,7 +223,8 @@
             </header>
 
             <!-- Page Content (Scrollable) -->
-            <main class="flex-1 overflow-y-auto focus:outline-none scroll-smooth">
+            <!-- Aquí aplicamos overscroll-none al contenedor de scroll -->
+            <main class="flex-1 overflow-y-auto focus:outline-none scroll-smooth overscroll-none">
                 <!-- Content Container -->
                 <div class="min-h-full pb-6">
                     <div class="max-w-full mx-auto px-0">
