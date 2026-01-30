@@ -26,6 +26,7 @@
                 <div class="flex bg-white rounded-lg shadow-sm p-1 border border-gray-200">
                     @foreach(['all' => 'Todo', 'this_month' => 'Este Mes', 'today' => 'Hoy'] as $key => $label)
                         <button 
+                            type="button"
                             wire:click="$set('dateFilter', '{{ $key }}')"
                             class="px-3 py-1.5 text-xs font-medium rounded-md transition-all {{ $dateFilter === $key ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50' }}">
                             {{ $label }}
