@@ -39,7 +39,7 @@ class Curriculum extends Component
     public $scheduleId = null;
     
     // Campos Horario
-    public $s_day_of_week = 'Lunes';
+    public $s_day_of_week = []; // Inicializamos como array para múltiples días
     public $s_start_time = '18:00';
     public $s_end_time = '20:00';
     public $s_teacher_id = '';
@@ -243,7 +243,7 @@ class Curriculum extends Component
     {
         $this->validate([
             's_section_name' => 'required|string|max:50',
-            's_day_of_week' => 'required',
+            's_day_of_week' => 'required|array|min:1', // Validamos que sea array y tenga al menos un día
             's_start_time' => 'required',
             's_end_time' => 'required|after:s_start_time',
             's_teacher_id' => 'required|exists:users,id',
@@ -252,15 +252,14 @@ class Curriculum extends Component
         ]);
 
         try {
-            // CORRECCIÓN PRINCIPAL: Mapeamos el input singular al campo plural de la BD
             $data = [
                 'module_id' => $this->selectedModuleId,
                 'teacher_id' => $this->s_teacher_id,
                 'classroom_id' => $this->s_classroom_id ?: null,
                 'section_name' => $this->s_section_name,
                 
-                // IMPORTANTE: Guardamos como array porque el modelo tiene cast 'array'
-                'days_of_week' => [$this->s_day_of_week], 
+                // Guardamos el array directamente, el modelo lo convertirá a JSON
+                'days_of_week' => $this->s_day_of_week, 
                 
                 'start_time' => $this->s_start_time,
                 'end_time' => $this->s_end_time,
@@ -294,14 +293,14 @@ class Curriculum extends Component
         $this->scheduleId = $id;
         $this->s_section_name = $schedule->section_name;
         
-        // CORRECCIÓN EN CARGA: Extraemos el primer día si es array
+        // Cargamos los días. Si es string (legacy) lo convertimos a array.
         $days = $schedule->days_of_week;
-        if (is_array($days) && count($days) > 0) {
-            $this->s_day_of_week = $days[0];
-        } elseif (is_string($days)) {
-            $this->s_day_of_week = $days; // Fallback por si hay datos viejos sin formato array
+        if (is_array($days)) {
+            $this->s_day_of_week = $days;
+        } elseif (is_string($days) && !empty($days)) {
+            $this->s_day_of_week = [$days];
         } else {
-            $this->s_day_of_week = 'Lunes'; // Default
+            $this->s_day_of_week = [];
         }
         
         $this->s_start_time = \Carbon\Carbon::parse($schedule->start_time)->format('H:i');
@@ -334,7 +333,7 @@ class Curriculum extends Component
     {
         $this->scheduleId = null;
         $this->s_section_name = 'Sec-' . str_pad(rand(1, 99), 2, '0', STR_PAD_LEFT);
-        $this->s_day_of_week = 'Lunes';
+        $this->s_day_of_week = []; // Resetear a array vacío
         $this->s_start_time = '18:00';
         $this->s_end_time = '20:00';
         $this->s_teacher_id = '';

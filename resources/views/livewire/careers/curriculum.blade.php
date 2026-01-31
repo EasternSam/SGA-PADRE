@@ -287,7 +287,13 @@
                                 <div class="space-y-1">
                                     <p class="font-bold text-sm text-gray-900 flex items-center gap-1">
                                         <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                        {{ $schedule->day_of_week }} {{ substr($schedule->start_time, 0, 5) }} - {{ substr($schedule->end_time, 0, 5) }}
+                                        {{-- Mostrar días seleccionados --}}
+                                        @if(is_array($schedule->days_of_week))
+                                            {{ implode(', ', $schedule->days_of_week) }}
+                                        @else
+                                            {{ $schedule->days_of_week }}
+                                        @endif
+                                        {{ substr($schedule->start_time, 0, 5) }} - {{ substr($schedule->end_time, 0, 5) }}
                                     </p>
                                     <p class="text-xs text-gray-600 flex items-center gap-1">
                                         <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
@@ -356,14 +362,22 @@
 
                         <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-100">
                             <h4 class="text-xs font-bold text-indigo-800 uppercase mb-3">Horario Semanal</h4>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <div class="col-span-1">
-                                    <x-input-label value="Día" />
-                                    <select wire:model="s_day_of_week" class="w-full mt-1 rounded-lg border-indigo-200 text-sm">
-                                        <option>Lunes</option><option>Martes</option><option>Miércoles</option>
-                                        <option>Jueves</option><option>Viernes</option><option>Sábado</option><option>Domingo</option>
-                                    </select>
+                            
+                            {{-- Selección de Días con Checkboxes --}}
+                            <div class="mb-4">
+                                <x-input-label value="Días de Clase" class="mb-2"/>
+                                <div class="flex flex-wrap gap-3">
+                                    @foreach(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] as $day)
+                                        <label class="inline-flex items-center bg-white px-3 py-1.5 rounded-md border border-indigo-100 shadow-sm cursor-pointer hover:bg-indigo-50">
+                                            <input type="checkbox" wire:model="s_day_of_week" value="{{ $day }}" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                            <span class="ml-2 text-sm text-gray-700 font-medium">{{ $day }}</span>
+                                        </label>
+                                    @endforeach
                                 </div>
+                                <x-input-error :messages="$errors->get('s_day_of_week')" class="mt-1" />
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <x-input-label value="Hora Inicio" />
                                     <x-text-input type="time" wire:model="s_start_time" class="w-full mt-1 border-indigo-200" />
