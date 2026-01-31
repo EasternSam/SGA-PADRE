@@ -35,7 +35,6 @@ class Curriculum extends Component
     
     // --- MODAL HORARIOS (Secciones) ---
     public $showScheduleModal = false;
-    // Cambiamos a ID para evitar errores de serialización de Modelos
     public $selectedModuleId = null; 
     public $scheduleId = null;
     
@@ -89,7 +88,6 @@ class Curriculum extends Component
         $teachers = User::role('Profesor')->orderBy('name')->get();
         $classrooms = Classroom::orderBy('name')->get(); 
         
-        // Carga dinámica de horarios basada en el ID seleccionado
         $moduleSchedules = [];
         $selectedModule = null;
 
@@ -103,14 +101,13 @@ class Curriculum extends Component
             }
         }
 
-        // Carga de prerrequisitos disponibles (filtrados por lógica de periodo)
         $availablePrerequisites = [];
         if ($this->showModuleModal) {
             $query = Module::where('course_id', $this->career->id);
             if ($this->period_number > 1) {
                  $query->where('period_number', '<', $this->period_number);
             } else {
-                 $query->whereRaw('1 = 0'); // Ninguno disponible para el 1er periodo
+                 $query->whereRaw('1 = 0');
             }
             if ($this->moduleId) {
                 $query->where('id', '!=', $this->moduleId);
@@ -122,7 +119,7 @@ class Curriculum extends Component
             'teachers' => $teachers,
             'classrooms' => $classrooms,
             'moduleSchedules' => $moduleSchedules,
-            'selectedModuleForSchedule' => $selectedModule, // Pasamos el modelo a la vista para el título
+            'selectedModuleForSchedule' => $selectedModule,
             'availablePrerequisites' => $availablePrerequisites
         ]);
     }
@@ -236,7 +233,6 @@ class Curriculum extends Component
 
     public function openScheduleModal($moduleId)
     {
-        // Guardamos solo el ID, Livewire se encarga del resto en render()
         $this->selectedModuleId = $moduleId; 
         $this->resetScheduleInput();
         $this->showScheduleModal = true;
@@ -256,12 +252,16 @@ class Curriculum extends Component
         ]);
 
         try {
+            // CORRECCIÓN PRINCIPAL: Mapeamos el input singular al campo plural de la BD
             $data = [
                 'module_id' => $this->selectedModuleId,
                 'teacher_id' => $this->s_teacher_id,
                 'classroom_id' => $this->s_classroom_id ?: null,
                 'section_name' => $this->s_section_name,
-                'day_of_week' => $this->s_day_of_week, // Esto debe coincidir con el $fillable del modelo
+                
+                // IMPORTANTE: Guardamos como array porque el modelo tiene cast 'array'
+                'days_of_week' => [$this->s_day_of_week], 
+                
                 'start_time' => $this->s_start_time,
                 'end_time' => $this->s_end_time,
                 'modality' => $this->s_modality,
@@ -271,7 +271,6 @@ class Curriculum extends Component
             ];
 
             if ($this->scheduleId) {
-                // Usamos findOrFail para asegurar que existe
                 $schedule = CourseSchedule::findOrFail($this->scheduleId);
                 $schedule->update($data);
                 $msg = 'Sección actualizada correctamente.';
@@ -280,7 +279,7 @@ class Curriculum extends Component
                 $msg = 'Sección creada exitosamente.';
             }
 
-            unset($this->modulesByPeriod); // Refrescar contadores principales
+            unset($this->modulesByPeriod);
             $this->resetScheduleInput();
             $this->dispatch('notify', message: $msg, type: 'success');
 
@@ -294,10 +293,17 @@ class Curriculum extends Component
         $schedule = CourseSchedule::findOrFail($id);
         $this->scheduleId = $id;
         $this->s_section_name = $schedule->section_name;
-        // Asumimos que la columna en base de datos es day_of_week (singular)
-        $this->s_day_of_week = $schedule->day_of_week; 
         
-        // Formatear horas para input time (H:i)
+        // CORRECCIÓN EN CARGA: Extraemos el primer día si es array
+        $days = $schedule->days_of_week;
+        if (is_array($days) && count($days) > 0) {
+            $this->s_day_of_week = $days[0];
+        } elseif (is_string($days)) {
+            $this->s_day_of_week = $days; // Fallback por si hay datos viejos sin formato array
+        } else {
+            $this->s_day_of_week = 'Lunes'; // Default
+        }
+        
         $this->s_start_time = \Carbon\Carbon::parse($schedule->start_time)->format('H:i');
         $this->s_end_time = \Carbon\Carbon::parse($schedule->end_time)->format('H:i');
         
@@ -305,7 +311,6 @@ class Curriculum extends Component
         $this->s_classroom_id = $schedule->classroom_id;
         $this->s_modality = $schedule->modality;
         
-        // Formatear fechas para input date (Y-m-d)
         $this->s_start_date = \Carbon\Carbon::parse($schedule->start_date)->format('Y-m-d');
         $this->s_end_date = \Carbon\Carbon::parse($schedule->end_date)->format('Y-m-d');
     }
@@ -320,16 +325,11 @@ class Curriculum extends Component
     public function closeScheduleModal()
     {
         $this->showScheduleModal = false;
-        $this->selectedModuleId = null; // Limpiar selección
+        $this->selectedModuleId = null;
         $this->resetScheduleInput();
         $this->dispatch('close-modal', 'schedule-management-modal');
     }
 
-    // =================================================================
-    // HELPERS
-    // =================================================================
-
-    // Método PÚBLICO para evitar error "MethodNotFound"
     public function resetScheduleInput()
     {
         $this->scheduleId = null;

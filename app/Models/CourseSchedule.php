@@ -18,16 +18,33 @@ class CourseSchedule extends Model
         'start_date', 
         'end_date',   
         'teacher_id', 
-        'days_of_week', // Revertido a 'days_of_week' (plural) para mantener consistencia con el esquema
+        'days_of_week', // Usamos el nombre plural de la BD
         'section_name',
         'modality', 
     ];
 
-    // Mantenemos el cast si la columna en base de datos espera almacenar arrays/JSON
-    // O si el sistema espera interactuar con este campo como un array.
     protected $casts = [
-        'days_of_week' => 'array',
+        'days_of_week' => 'array', // Convertimos JSON/Texto a Array automáticamente
     ];
+
+    /**
+     * Accessor para compatibilidad con vistas que usan 'day_of_week' (singular).
+     * Devuelve el primer día del array o el valor directo si no es array.
+     */
+    public function getDayOfWeekAttribute()
+    {
+        if (empty($this->days_of_week)) {
+            return null;
+        }
+
+        // Si es array (por el cast), devolvemos el primer elemento
+        if (is_array($this->days_of_week)) {
+            return $this->days_of_week[0] ?? null;
+        }
+
+        // Si por alguna razón es string, lo devolvemos tal cual
+        return $this->days_of_week;
+    }
 
     public function module()
     {
