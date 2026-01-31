@@ -20,6 +20,8 @@ use App\Livewire\Admin\ClassroomManagement;
 use App\Livewire\Admin\FinanceDashboard;
 // Importamos el probador de correos
 use App\Livewire\Admin\EmailTester;
+// Importar el nuevo controlador para PDF de Pensum
+use App\Http\Controllers\CurriculumPdfController;
 
 use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
 use App\Livewire\StudentPortal\CourseDetail as StudentPortalCourseDetail;
@@ -310,6 +312,8 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     // Rutas para Carreras y Pensum (UNIVERSIDAD)
     Route::get('/careers', \App\Livewire\Careers\Index::class)->name('admin.careers.index');
     Route::get('/careers/{career}/curriculum', \App\Livewire\Careers\Curriculum::class)->name('admin.careers.curriculum');
+    // --- RUTA PDF PENSUM ---
+    Route::get('/careers/{career}/curriculum/pdf', [CurriculumPdfController::class, 'download'])->name('admin.careers.curriculum.pdf');
     
     // --- GESTIÓN FINANCIERA ---
     // Dashboard General de Finanzas
