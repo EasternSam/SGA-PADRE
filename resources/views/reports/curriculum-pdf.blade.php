@@ -11,8 +11,8 @@
         body {
             font-family: 'Helvetica', 'Arial', sans-serif; /* Fallback seguro para DomPDF */
             background-color: #f9fafb; /* Gray 50 */
-            margin-top: 0px; 
-            margin-bottom: 0px;
+            margin-top: 240px; /* Aumentamos margen superior para el nuevo header */
+            margin-bottom: 60px; /* Espacio para el footer fijo */
             color: #1e293b; /* Slate 800 */
         }
 
@@ -25,7 +25,6 @@
         /* --- DECORATIVE BACKGROUND PATTERN --- */
         .bg-pattern {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: -1;
-            /* DomPDF tiene soporte limitado para gradientes complejos, usaremos un color sólido muy suave */
             background-color: #f9fafb;
         }
 
@@ -34,180 +33,197 @@
             position: relative;
             z-index: 10;
             background-color: white;
-            /* box-shadow no soportado en DomPDF para bloques grandes, se omite */
             width: 90%; 
-            margin: 40px auto;
+            margin: 0 auto; /* Quitamos margin top para que pegue con el margen del body */
             overflow: hidden;
         }
 
-        /* --- HEADER LAYOUT (Tabla para simular Flex) --- */
+        /* --- HEADER DISEÑO PERFECCIONADO --- */
         header {
-            width: 100%;
-            border-bottom: 4px solid #6b21a8; /* purple-800 */
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 240px; /* Altura ajustada para mejor distribución */
+            background-color: white;
+            z-index: 1000;
+            border-bottom: 5px solid #6b21a8; /* Borde inferior sólido */
         }
 
         .header-table {
             width: 100%;
+            height: 100%;
             border-collapse: collapse;
         }
 
-        /* Logo Area (Left) */
-        .logo-area {
-            background-color: #7b1fa2; /* itla-purple */
+        /* Lado Izquierdo (Marca Institucional) */
+        .header-left {
+            width: 40%; /* Un poco más ancho para las siglas */
+            background-color: #7b1fa2; /* Morado base */
+            /* Degradado sutil para profundidad */
+            background: linear-gradient(135deg, #7b1fa2 0%, #6a1b9a 100%);
             color: white;
-            padding: 2rem;
-            width: 35%;
             vertical-align: middle;
+            padding: 30px;
             position: relative;
         }
 
-        /* Logo Decoration (Simulado con borde o imagen de fondo simple si es posible) */
-        .logo-decoration {
-            /* DomPDF no soporta blur o formas complejas absolutas bien, simplificamos */
+        /* Lado Derecho (Información del Documento) */
+        .header-right {
+            width: 60%;
+            background-color: #111827; /* Fondo oscuro sólido para máximo contraste */
+            color: white;
+            vertical-align: middle;
+            padding: 30px 40px;
+            text-align: right;
+            /* Textura sutil simulada con borde o color */
+            border-left: 1px solid rgba(255,255,255,0.1);
         }
 
+        /* Elementos del Lado Izquierdo */
         .logo-siglas {
-            font-size: 3.5rem; 
-            line-height: 1; 
+            font-size: 4rem; /* Grande e impactante */
+            line-height: 0.9; 
             font-style: italic; 
             font-weight: 900;
             margin: 0;
-            margin-bottom: 5px;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2); /* Sombra suave para levantar el texto */
         }
         
         .logo-divider { 
             height: 4px; 
-            width: 50px; 
-            background-color: #d8b4fe; /* purple-300 */
-            margin-bottom: 1rem; 
+            width: 60px; 
+            background-color: #e9d5ff; /* Morado muy claro para contraste */
+            margin-bottom: 15px; 
             border-radius: 2px;
         }
         
         .logo-subtitle {
-            font-size: 10px; 
-            font-weight: 500; 
+            font-size: 11px; 
+            font-weight: 600; 
             text-transform: uppercase; 
             line-height: 1.4; 
-            letter-spacing: 1px;
-            border-left: 3px solid #d8b4fe; 
-            padding-left: 10px;
+            letter-spacing: 1.5px;
+            color: #f3e8ff; /* Blanco hueso */
         }
         
-        .logo-english { 
-            margin-top: 10px; 
-            font-size: 9px; 
-            color: #e9d5ff; 
-            font-style: italic; 
-            font-weight: 300; 
-        }
-
-        /* Title Area (Right) */
-        .title-area {
-            width: 65%;
-            background-color: #1f1f1f; /* Gray 900 */
-            /* Gradiente simple soportado */
-            background: linear-gradient(to top, #321c46 0%, #111827 100%);
-            vertical-align: bottom;
-            color: white;
-            padding: 2rem;
-            text-align: right;
-        }
-
-        .title-badge { 
+        .logo-appname { 
+            margin-top: 8px; 
             font-size: 10px; 
-            font-weight: 700; 
-            letter-spacing: 2px; 
-            text-transform: uppercase; 
-            color: #d8b4fe; 
-            margin-bottom: 5px; 
+            color: rgba(255,255,255,0.7); 
+            font-weight: normal; 
         }
-        
+
+        /* Elementos del Lado Derecho */
+        .doc-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #d8b4fe; /* Acento morado claro */
+            margin-bottom: 10px;
+            display: block;
+        }
+
         .main-title {
-            font-size: 24px; 
-            line-height: 1.1; 
+            font-size: 26px; 
+            line-height: 1.2; 
             font-weight: 900; 
             text-transform: uppercase; 
-            margin-bottom: 15px;
+            margin: 0 0 10px 0;
             color: white;
         }
 
-        .gradient-text {
-            color: #e9d5ff; /* Fallback color for gradient text */
+        .career-type-badge {
+            background-color: rgba(255,255,255,0.15);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .info-pill {
-            background-color: rgba(0,0,0,0.3); 
-            padding: 8px 15px; 
-            border-radius: 4px;
-            border: 1px solid rgba(255,255,255,0.2);
-            display: inline-block;
+        .info-row {
             font-size: 10px;
+            color: #9ca3af; /* Gris medio */
+            margin-top: 5px;
+        }
+        .info-row strong {
+            color: white;
+            font-weight: 600;
         }
 
         /* --- SLOGAN BAR --- */
         .slogan-bar {
             background-color: #f3f4f6; 
-            padding: 10px;
+            padding: 12px;
             text-align: center; 
             border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 30px;
         }
         .slogan-text {
-            color: #7b1fa2; 
-            font-size: 14px; 
+            color: #6b21a8; /* Morado oscuro */ 
+            font-size: 12px; 
             font-style: italic; 
             font-weight: 600;
             margin: 0;
+            letter-spacing: 0.5px;
         }
 
         /* --- CONTENT AREA --- */
-        .content-padding { padding: 40px; }
+        .content-padding { padding: 0 40px; }
 
         /* Grid Header (Simulado con tabla) */
         .grid-header-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 15px;
-            border-bottom: 2px solid #f3e8ff;
+            border-bottom: 2px solid #6b21a8; /* Acento morado */
         }
         .grid-header-table th {
             text-align: left;
-            font-size: 10px;
-            font-weight: 700;
-            color: #6b7280;
+            font-size: 9px;
+            font-weight: 800; /* Extra bold */
+            color: #4b5563; /* Gray 600 */
             text-transform: uppercase;
-            padding: 5px 10px;
+            padding: 8px 10px;
+            letter-spacing: 0.5px;
         }
 
         /* --- PERIODOS --- */
         .period-section { 
-            margin-bottom: 25px; 
+            margin-bottom: 30px; 
             page-break-inside: avoid; 
         }
         
         .period-header { 
             margin-bottom: 10px; 
-            border-bottom: 1px solid #f3e8ff;
+            border-bottom: 1px solid #e9d5ff; /* Línea muy suave */
             padding-bottom: 5px;
         }
         
         .period-number {
             display: inline-block;
-            height: 20px; width: 20px; 
-            background-color: #f3e8ff; 
-            color: #7b1fa2;
+            height: 22px; width: 22px; 
+            background-color: #7b1fa2; /* Morado fuerte */
+            color: white;
             text-align: center; 
-            border-radius: 4px;
+            border-radius: 50%; /* Círculo perfecto */
             font-weight: 700; 
             font-size: 12px;
-            line-height: 20px;
+            line-height: 22px;
             margin-right: 8px;
         }
         
         .period-title { 
-            color: #7b1fa2; 
+            color: #4a148c; /* Morado muy oscuro */
             font-size: 14px; 
             text-transform: uppercase; 
-            font-weight: 700; 
+            font-weight: 800; 
         }
 
         /* Course Row (Tabla) */
@@ -216,10 +232,10 @@
             border-collapse: collapse;
         }
         .modules-table td {
-            padding: 6px 8px;
-            font-size: 11px;
-            border-bottom: 1px solid #f3f4f6;
-            vertical-align: bottom;
+            padding: 8px 10px; /* Más aire */
+            font-size: 10px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
         }
         .modules-table tr:nth-child(even) {
             background-color: #faf5ff; /* Alternating row color */
@@ -227,14 +243,14 @@
 
         .col-code { 
             width: 15%; 
-            font-family: monospace; 
-            font-weight: 600; 
-            color: #374151; 
+            font-family: 'Courier New', monospace; /* Monospace real */
+            font-weight: 700; 
+            color: #334155; 
         }
         .col-desc { 
             width: 45%; 
-            color: #111827; 
-            font-weight: 600;
+            color: #0f172a; 
+            font-weight: 700;
         }
         .col-credits { 
             width: 10%; 
@@ -246,122 +262,160 @@
             width: 30%; 
             text-align: right; 
             font-size: 9px; 
-            color: #9ca3af; 
-            font-family: monospace; 
+            color: #64748b; 
+            font-style: italic;
         }
 
-        .dotted-leader {
-            border-bottom: 1px dotted #cbd5e1;
-            display: inline-block;
-            width: 20px; /* Placeholder width, DomPDF struggles with flex-grow dots */
-            margin-left: 5px;
+        .elective-tag {
+            color: #d97706; 
+            font-size: 8px; 
+            font-weight: 800; 
+            margin-left: 5px; 
+            text-transform: uppercase;
+            background-color: #fffbeb;
+            padding: 2px 4px;
+            border-radius: 2px;
+            border: 1px solid #fcd34d;
         }
 
         /* Subtotal */
         .subtotal-row {
             text-align: right;
-            margin-top: 10px;
-            padding-top: 5px;
-            border-top: 1px dashed #e5e7eb;
-            margin-right: 25%;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #cbd5e1;
+            margin-right: 25%; /* Alinear bajo créditos y prerequisitos */
         }
         .subtotal-label {
             font-size: 9px; 
             text-transform: uppercase; 
-            color: #9ca3af; 
+            color: #64748b; 
             margin-right: 10px; 
             font-weight: 700;
+            letter-spacing: 0.5px;
         }
         .subtotal-value {
             background-color: #f3f4f6; 
             color: #1f2937; 
-            padding: 2px 8px; 
+            padding: 4px 10px; 
             border-radius: 4px;
             font-size: 11px; 
-            font-weight: 700; 
-            border: 1px solid #e5e7eb;
+            font-weight: 800; 
+            border: 1px solid #e2e8f0;
         }
 
         /* Summary Box */
         .summary-box {
-            margin-top: 3rem; 
-            padding: 1.5rem; 
+            margin-top: 40px; 
+            padding: 20px; 
             background-color: #faf5ff; 
             border-radius: 8px;
-            border: 1px solid #f3e8ff; 
+            border: 1px solid #e9d5ff; 
+            page-break-inside: avoid;
         }
         .summary-table { width: 100%; }
-        .summary-total { font-size: 24px; font-weight: 900; color: #1f2937; }
-        .summary-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #9ca3af; }
+        .summary-total { font-size: 28px; font-weight: 900; color: #4a148c; line-height: 1; }
+        .summary-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #7b1fa2; letter-spacing: 1px; }
 
         /* Footer */
         .main-footer {
-            margin-top: 4rem; 
-            border-top: 2px solid #f3e8ff; 
-            padding-top: 2rem;
-            text-align: center;
-            color: #9ca3af; 
-            font-size: 10px;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background-color: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            padding: 10px 40px;
+            font-size: 9px;
+            color: #94a3b8;
         }
         .footer-table { width: 100%; }
         .footer-left { text-align: left; }
         .footer-right { text-align: right; }
 
+        /* Watermark */
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 120px;
+            color: rgba(123, 31, 162, 0.03); /* Extremadamente sutil */
+            z-index: -1000;
+            font-weight: 900;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
     </style>
 </head>
 <body>
 
+    <!-- MARCA DE AGUA -->
+    <div class="watermark">{{ $career->code }}</div>
+
+    <!-- HEADER (DISEÑO PERFECCIONADO) -->
+    <header>
+        <table class="header-table">
+            <tr>
+                <!-- Lado Izquierdo: Identidad Visual Fuerte -->
+                <td class="header-left">
+                    <h1 class="logo-siglas">
+                        {{ strtoupper(substr(config('app.name', 'SGA'), 0, 3)) }}
+                    </h1>
+                    <div class="logo-divider"></div>
+                    <div class="logo-subtitle">
+                        Centro Educativo<br>Universitario
+                    </div>
+                    <div class="logo-appname">{{ config('app.name', 'Sistema de Gestión') }}</div>
+                </td>
+
+                <!-- Lado Derecho: Información Clara y Contrastada -->
+                <td class="header-right">
+                    <span class="doc-label">Plan de Estudios Oficial</span>
+                    
+                    <h2 class="main-title">
+                        {{ $career->name }}
+                    </h2>
+                    
+                    <div class="career-type-badge">
+                        {{ $career->program_type === 'degree' ? 'GRADO ACADÉMICO' : 'CARRERA TÉCNICA' }}
+                    </div>
+                    
+                    <div class="info-row">
+                        Clave: <strong>{{ $career->code }}</strong> &nbsp;|&nbsp; 
+                        Generado: <strong>{{ $generatedAt }}</strong>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </header>
+
+    <!-- FOOTER -->
+    <footer class="main-footer">
+        <table class="footer-table">
+            <tr>
+                <td class="footer-left">
+                    &copy; {{ date('Y') }} {{ config('app.name', 'Institución Educativa') }}
+                </td>
+                <td class="footer-right">
+                    Documento Oficial | {{ config('app.name', 'SGA System') }} v1.0
+                </td>
+            </tr>
+        </table>
+    </footer>
+
+    <!-- SLOGAN BAR (Debajo del header fijo, parte del flujo normal) -->
+    <div class="slogan-bar">
+        <p class="slogan-text">"Excelencia académica para el futuro"</p>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL -->
     <div class="container">
-        
-        <!-- Header Section -->
-        <header>
-            <table class="header-table">
-                <tr>
-                    <!-- Logo Area -->
-                    <td class="logo-area">
-                        <div>
-                            <h1 class="logo-siglas font-heading">
-                                {{ strtoupper(substr(config('app.name', 'SGA'), 0, 3)) }}
-                            </h1>
-                            <div class="logo-divider"></div>
-                            <div class="logo-subtitle">
-                                Centro Educativo<br>Universitario
-                            </div>
-                            <p class="logo-english">{{ config('app.name', 'Sistema de Gestión') }}</p>
-                        </div>
-                    </td>
-
-                    <!-- Title Area -->
-                    <td class="title-area">
-                        <div>
-                            <p class="title-badge font-heading">Plan de Estudios Oficial</p>
-                            <h2 class="main-title font-heading">
-                                {{ $career->name }}<br>
-                                <span class="gradient-text" style="font-size: 16px; font-weight: normal;">
-                                    {{ $career->program_type === 'degree' ? 'GRADO ACADÉMICO' : 'CARRERA TÉCNICA' }}
-                                </span>
-                            </h2>
-                            
-                            <div class="info-pill">
-                                <span style="color: #4ade80; font-weight: bold;">●</span> Clave: <strong>{{ $career->code }}</strong>
-                                &nbsp;|&nbsp;
-                                <span style="color: #d8b4fe;">📅</span> Generado: <strong>{{ $generatedAt }}</strong>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            </table>
-        </header>
-
-        <!-- Slogan Bar -->
-        <div class="slogan-bar">
-            <p class="slogan-text font-heading">"Excelencia académica para el futuro"</p>
-        </div>
-
-        <!-- Main Content Container -->
         <div class="content-padding">
             
-            <!-- Table Headers -->
+            <!-- Encabezados de Tabla (Estáticos) -->
             <table class="grid-header-table">
                 <thead>
                     <tr>
@@ -373,7 +427,7 @@
                 </thead>
             </table>
 
-            <!-- Content Grid -->
+            <!-- Grid de Contenido -->
             <div>
                 @php $totalAccumulated = 0; @endphp
 
@@ -381,11 +435,13 @@
                     @php $periodCredits = 0; @endphp
                     
                     <div class="period-section">
+                        <!-- Título del Periodo -->
                         <div class="period-header">
                             <span class="period-number">{{ $period }}</span>
-                            <span class="period-title font-heading">Cuatrimestre {{ $period }}</span>
+                            <span class="period-title">Cuatrimestre {{ $period }}</span>
                         </div>
                         
+                        <!-- Tabla de Materias del Periodo -->
                         <table class="modules-table">
                             <tbody>
                                 @foreach($modules as $module)
@@ -395,7 +451,7 @@
                                         <td class="col-desc">
                                             {{ $module->name }}
                                             @if($module->is_elective)
-                                                <span style="color: #d97706; font-size: 9px; font-weight: bold; margin-left: 5px;">(ELECTIVA)</span>
+                                                <span class="elective-tag">Electiva</span>
                                             @endif
                                         </td>
                                         <td class="col-credits">{{ $module->credits }}</td>
@@ -413,7 +469,7 @@
                             </tbody>
                         </table>
 
-                        <!-- Subtotal Footer -->
+                        <!-- Subtotal del Periodo -->
                         <div class="subtotal-row">
                             <span class="subtotal-label">Créditos del Periodo</span>
                             <span class="subtotal-value">{{ $periodCredits }}</span>
@@ -424,15 +480,15 @@
                 @endforeach
             </div>
 
-            <!-- Summary Box -->
+            <!-- Resumen Total -->
             <div class="summary-box">
                 <table class="summary-table">
                     <tr>
-                        <td style="text-align: left;">
-                            <h4 class="text-itla-purple font-bold text-lg" style="margin: 0; color: #7b1fa2; font-size: 18px;">Resumen Académico</h4>
-                            <p class="text-sm text-gray-500" style="margin: 0; font-size: 12px; color: #6b7280;">Total acumulado de la carrera</p>
+                        <td style="text-align: left; vertical-align: middle;">
+                            <h4 style="margin: 0; color: #4a148c; font-size: 16px; font-weight: 800; text-transform: uppercase;">Resumen Académico</h4>
+                            <p style="margin: 5px 0 0 0; font-size: 11px; color: #64748b;">Total acumulado de créditos para la carrera</p>
                         </td>
-                        <td style="text-align: right;">
+                        <td style="text-align: right; vertical-align: middle;">
                             <span class="summary-total">{{ $totalAccumulated }}</span><br>
                             <span class="summary-label">Créditos Totales</span>
                         </td>
@@ -440,31 +496,21 @@
                 </table>
             </div>
 
-            <!-- Footer -->
-            <div class="main-footer">
-                <table class="footer-table">
-                    <tr>
-                        <td class="footer-left">
-                            &copy; {{ date('Y') }} {{ config('app.name', 'Institución Educativa') }}
-                        </td>
-                        <td class="footer-right">
-                            Documento generado automáticamente | SGA System v1.0
-                        </td>
-                    </tr>
-                </table>
+            <div style="text-align: center; margin-top: 40px; color: #cbd5e1; font-size: 9px; text-transform: uppercase; letter-spacing: 2px;">
+                *** Fin del Pensum Académico ***
             </div>
 
         </div>
     </div>
 
-    {{-- Script PHP para numeración de páginas --}}
+    {{-- Numeración de Páginas --}}
     <script type="text/php">
         if (isset($pdf)) {
-            $x = 500;
-            $y = 800;
+            $x = 520;
+            $y = 810; // Posición Y cerca del footer
             $text = "Página {PAGE_NUM} de {PAGE_COUNT}";
             $font = null;
-            $size = 9;
+            $size = 8;
             $color = array(0.5, 0.5, 0.5);
             $word_space = 0.0;
             $char_space = 0.0;
