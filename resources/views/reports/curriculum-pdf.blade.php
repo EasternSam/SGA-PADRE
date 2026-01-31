@@ -11,7 +11,8 @@
         body {
             font-family: 'Helvetica', 'Arial', sans-serif; /* Fallback seguro para DomPDF */
             background-color: #f9fafb; /* Gray 50 */
-            margin-top: 240px; /* Aumentamos margen superior para el nuevo header */
+            /* Aumentamos el margen superior para evitar superposición con el header */
+            margin-top: 260px; 
             margin-bottom: 60px; /* Espacio para el footer fijo */
             color: #1e293b; /* Slate 800 */
         }
@@ -34,7 +35,7 @@
             z-index: 10;
             background-color: white;
             width: 90%; 
-            margin: 0 auto; /* Quitamos margin top para que pegue con el margen del body */
+            margin: 0 auto;
             overflow: hidden;
         }
 
@@ -44,7 +45,7 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 240px; /* Altura ajustada para mejor distribución */
+            height: 240px; /* Altura fija del header */
             background-color: white;
             z-index: 1000;
             border-bottom: 5px solid #6b21a8; /* Borde inferior sólido */
@@ -56,63 +57,36 @@
             border-collapse: collapse;
         }
 
-        /* Lado Izquierdo (Marca Institucional) */
+        /* Lado Izquierdo (Marca Institucional - LOGO) */
         .header-left {
-            width: 40%; /* Un poco más ancho para las siglas */
+            width: 40%;
             background-color: #7b1fa2; /* Morado base */
-            /* Degradado sutil para profundidad */
             background: linear-gradient(135deg, #7b1fa2 0%, #6a1b9a 100%);
             color: white;
             vertical-align: middle;
-            padding: 30px;
+            text-align: center; /* Centrar logo */
+            padding: 20px;
             position: relative;
         }
 
         /* Lado Derecho (Información del Documento) */
         .header-right {
             width: 60%;
-            background-color: #111827; /* Fondo oscuro sólido para máximo contraste */
+            background-color: #111827; /* Fondo oscuro sólido */
             color: white;
             vertical-align: middle;
             padding: 30px 40px;
             text-align: right;
-            /* Textura sutil simulada con borde o color */
             border-left: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* Elementos del Lado Izquierdo */
-        .logo-siglas {
-            font-size: 4rem; /* Grande e impactante */
-            line-height: 0.9; 
-            font-style: italic; 
-            font-weight: 900;
-            margin: 0;
-            margin-bottom: 15px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2); /* Sombra suave para levantar el texto */
-        }
-        
-        .logo-divider { 
-            height: 4px; 
-            width: 60px; 
-            background-color: #e9d5ff; /* Morado muy claro para contraste */
-            margin-bottom: 15px; 
-            border-radius: 2px;
-        }
-        
-        .logo-subtitle {
-            font-size: 11px; 
-            font-weight: 600; 
-            text-transform: uppercase; 
-            line-height: 1.4; 
-            letter-spacing: 1.5px;
-            color: #f3e8ff; /* Blanco hueso */
-        }
-        
-        .logo-appname { 
-            margin-top: 8px; 
-            font-size: 10px; 
-            color: rgba(255,255,255,0.7); 
-            font-weight: normal; 
+        /* Logo Image Style */
+        .header-logo-img {
+            max-width: 80%;
+            max-height: 180px;
+            object-fit: contain;
+            /* Filtro para asegurar que se vea bien sobre fondo oscuro si es PNG transparente */
+            filter: brightness(0) invert(1); 
         }
 
         /* Elementos del Lado Derecho */
@@ -157,25 +131,9 @@
             font-weight: 600;
         }
 
-        /* --- SLOGAN BAR --- */
-        .slogan-bar {
-            background-color: #f3f4f6; 
-            padding: 12px;
-            text-align: center; 
-            border-bottom: 1px solid #e5e7eb;
-            margin-bottom: 30px;
-        }
-        .slogan-text {
-            color: #6b21a8; /* Morado oscuro */ 
-            font-size: 12px; 
-            font-style: italic; 
-            font-weight: 600;
-            margin: 0;
-            letter-spacing: 0.5px;
-        }
-
         /* --- CONTENT AREA --- */
-        .content-padding { padding: 0 40px; }
+        /* Padding superior para separar del header fijo */
+        .content-padding { padding: 20px 40px 0 40px; }
 
         /* Grid Header (Simulado con tabla) */
         .grid-header-table {
@@ -359,16 +317,9 @@
     <header>
         <table class="header-table">
             <tr>
-                <!-- Lado Izquierdo: Identidad Visual Fuerte -->
+                <!-- Lado Izquierdo: LOGO -->
                 <td class="header-left">
-                    <h1 class="logo-siglas">
-                        {{ strtoupper(substr(config('app.name', 'SGA'), 0, 3)) }}
-                    </h1>
-                    <div class="logo-divider"></div>
-                    <div class="logo-subtitle">
-                        Centro Educativo<br>Universitario
-                    </div>
-                    <div class="logo-appname">{{ config('app.name', 'Sistema de Gestión') }}</div>
+                    <img src="{{ public_path('centuu.png') }}" class="header-logo-img" alt="Logo Centuu">
                 </td>
 
                 <!-- Lado Derecho: Información Clara y Contrastada -->
@@ -406,12 +357,7 @@
         </table>
     </footer>
 
-    <!-- SLOGAN BAR (Debajo del header fijo, parte del flujo normal) -->
-    <div class="slogan-bar">
-        <p class="slogan-text">"Excelencia académica para el futuro"</p>
-    </div>
-
-    <!-- CONTENIDO PRINCIPAL -->
+    <!-- CONTENIDO PRINCIPAL (Sin Slogan) -->
     <div class="container">
         <div class="content-padding">
             
