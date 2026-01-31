@@ -11,7 +11,7 @@ use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema; // Importar Schema
+use Illuminate\Support\Facades\Schema;
 
 #[Layout('layouts.dashboard')]
 class Curriculum extends Component
@@ -19,7 +19,8 @@ class Curriculum extends Component
     public Course $career;
     
     // Datos Maestros
-    public $modulesByPeriod;
+    // IMPORTANTE: No tipar como Collection para evitar problemas de serialización complejos
+    public $modulesByPeriod; 
     public $teachers;
     public $classrooms;
 
@@ -53,7 +54,7 @@ class Curriculum extends Component
     public $s_modality = 'Presencial';
     public $s_start_date;
     public $s_end_date;
-    public $s_section_name = 'Sec-01'; // Nuevo campo para diferenciar secciones
+    public $s_section_name = 'Sec-01';
 
     public function mount(Course $career)
     {
@@ -67,28 +68,33 @@ class Curriculum extends Component
 
     public function loadResources()
     {
-        // Cargar profesores y aulas para los selectores de horarios
         $this->teachers = User::role('Profesor')->orderBy('name')->get();
         $this->classrooms = Classroom::where('status', 'Activo')->orderBy('name')->get();
     }
 
     public function loadCurriculum()
     {
-        // Verificar si la columna 'order' existe para evitar errores en la consulta
         $hasOrderColumn = Schema::hasColumn('modules', 'order');
+        $hasPrerequisitesTable = Schema::hasTable('module_prerequisites');
 
-        $query = $this->career->modules()
-            ->with(['prerequisites', 'schedules']) // Cargar horarios también para mostrar contador
-            ->orderBy('period_number');
+        $query = $this->career->modules();
+        
+        if ($hasPrerequisitesTable) {
+            $query->with('prerequisites');
+        }
+        
+        $query->with('schedules')
+              ->orderBy('period_number');
 
         if ($hasOrderColumn) {
             $query->orderBy('order');
         } else {
-            $query->orderBy('id'); // Fallback orden por ID
+            $query->orderBy('id');
         }
 
         $modules = $query->get();
 
+        // Agrupamos por periodo
         $this->modulesByPeriod = $modules->groupBy('period_number');
     }
 
@@ -113,7 +119,14 @@ class Curriculum extends Component
 
     public function editModule($id)
     {
-        $module = Module::with('prerequisites')->findOrFail($id);
+        $hasPrerequisitesTable = Schema::hasTable('module_prerequisites');
+        
+        $query = Module::query();
+        if ($hasPrerequisitesTable) {
+            $query->with('prerequisites');
+        }
+        
+        $module = $query->findOrFail($id);
         
         $this->moduleId = $module->id;
         $this->name = $module->name;
@@ -123,8 +136,12 @@ class Curriculum extends Component
         $this->is_elective = (bool)$module->is_elective;
         $this->description = $module->description;
         
-        // Convertir IDs a strings para el select múltiple si es necesario
-        $this->selectedPrerequisites = $module->prerequisites->pluck('id')->toArray();
+        if ($hasPrerequisitesTable) {
+            // Asegurar que sea un array de strings para evitar problemas con Livewire
+            $this->selectedPrerequisites = $module->prerequisites->pluck('id')->map(fn($item) => (string) $item)->toArray();
+        } else {
+            $this->selectedPrerequisites = [];
+        }
         
         $this->loadAvailablePrerequisites();
         $this->modalModuleTitle = 'Editar: ' . $module->code;
@@ -158,19 +175,19 @@ class Curriculum extends Component
                 $module = Module::findOrFail($this->moduleId);
                 $module->update($data);
             } else {
-                // Verificar si la columna 'order' existe antes de intentar usarla
                 if (Schema::hasColumn('modules', 'order')) {
-                    // Auto-orden
                     $lastOrder = Module::where('course_id', $this->career->id)
                         ->where('period_number', $this->period_number)
                         ->max('order');
                     $data['order'] = $lastOrder ? $lastOrder + 1 : 1;
                 }
-                
                 $module = Module::create($data);
             }
 
-            $module->prerequisites()->sync($this->selectedPrerequisites);
+            if (Schema::hasTable('module_prerequisites')) {
+                // sync espera un array de IDs. Aseguramos que lo sea.
+                $module->prerequisites()->sync($this->selectedPrerequisites);
+            }
         });
 
         $this->loadCurriculum();
@@ -182,15 +199,23 @@ class Curriculum extends Component
     {
         try {
             $module = Module::findOrFail($id);
-            if ($module->requiredFor()->exists()) {
-                $this->dispatch('notify', message: 'No se puede eliminar: Es prerrequisito de otras materias.', type: 'error');
-                return;
+            
+            if (Schema::hasTable('module_prerequisites')) {
+                // Verificar si es requisito de alguien
+                if ($module->requiredFor()->exists()) {
+                    $this->dispatch('notify', message: 'No se puede eliminar: Es prerrequisito de otras materias.', type: 'error');
+                    return;
+                }
+                // Limpiar relaciones antes de borrar para evitar errores de integridad si no hay cascade
+                $module->prerequisites()->detach();
+                $module->requiredFor()->detach();
             }
+            
             $module->delete();
             $this->loadCurriculum();
             $this->dispatch('notify', message: 'Asignatura eliminada.', type: 'success');
         } catch (\Exception $e) {
-            $this->dispatch('notify', message: 'Error al eliminar.', type: 'error');
+            $this->dispatch('notify', message: 'Error al eliminar: ' . $e->getMessage(), type: 'error');
         }
     }
 
@@ -251,9 +276,9 @@ class Curriculum extends Component
             $msg = 'Sección creada exitosamente.';
         }
 
-        $this->loadModuleSchedules(); // Recargar lista interna del modal
-        $this->loadCurriculum(); // Recargar contadores vista principal
-        $this->resetScheduleInput(); // Limpiar formulario para agregar otro
+        $this->loadModuleSchedules();
+        $this->loadCurriculum();
+        $this->resetScheduleInput();
         $this->dispatch('notify', message: $msg, type: 'success');
     }
 
@@ -286,15 +311,18 @@ class Curriculum extends Component
 
     private function loadAvailablePrerequisites()
     {
-        // Solo mostrar materias de periodos ANTERIORES para evitar lógica circular
         $query = Module::where('course_id', $this->career->id);
         
         if ($this->period_number > 1) {
              $query->where('period_number', '<', $this->period_number);
         } else {
-             // Si es periodo 1, no debería tener prerequisitos (normalmente)
              $this->availablePrerequisites = [];
              return;
+        }
+        
+        // Excluir la materia actual si estamos editando
+        if ($this->moduleId) {
+            $query->where('id', '!=', $this->moduleId);
         }
 
         $this->availablePrerequisites = $query->orderBy('period_number')->orderBy('code')->get();
@@ -302,7 +330,6 @@ class Curriculum extends Component
 
     public function updatedPeriodNumber()
     {
-        // Si cambia el periodo en el form, recargar prerequisitos válidos
         $this->loadAvailablePrerequisites();
     }
 
@@ -328,7 +355,6 @@ class Curriculum extends Component
         $this->s_teacher_id = '';
         $this->s_classroom_id = '';
         $this->s_modality = 'Presencial';
-        // Fechas por defecto (ej. inicio de mes actual)
         $this->s_start_date = now()->format('Y-m-d');
         $this->s_end_date = now()->addMonths(4)->format('Y-m-d');
         $this->resetValidation();
