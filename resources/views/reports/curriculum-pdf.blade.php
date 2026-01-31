@@ -6,8 +6,6 @@
     
     {{-- RESTAURACIÓN DE FUENTES WEB --}}
     {{-- Importante: Usamos una URL absoluta para asegurar que DomPDF la encuentre --}}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Montserrat:wght@400;700;800;900&display=swap" rel="stylesheet">
 
     <style>
@@ -16,8 +14,8 @@
             margin: 0cm;
         }
         body {
-            /* Prioridad a Inter, fallback a sans-serif estándar (Arial/Helvetica) para evitar Serif */
-            font-family: 'Inter', 'Helvetica', 'Arial', sans-serif;
+            /* Prioridad a Inter, luego Verdana (sans-serif segura), luego sans-serif genérico */
+            font-family: 'Inter', 'Verdana', sans-serif;
             background-color: #f9fafb; /* Gray 50 */
             /* Ajustamos margen superior: Header (240px) + Espacio (20px) */
             margin-top: 260px; 
@@ -26,9 +24,9 @@
         }
 
         /* --- FONTS ESPECÍFICAS --- */
-        /* Montserrat para títulos y elementos destacados */
+        /* Montserrat para títulos y elementos destacados. Fallback a Helvetica/Arial */
         h1, h2, h3, .font-heading, .main-title, .period-title, .doc-label, .career-type-badge, .period-number, .summary-total, .watermark {
-            font-family: 'Montserrat', sans-serif !important; /* Forzamos Montserrat */
+            font-family: 'Montserrat', 'Helvetica', 'Arial', sans-serif !important; 
             font-weight: 800; /* Extra bold por defecto para estos elementos */
         }
 
@@ -111,7 +109,8 @@
             color: #d8b4fe; /* Acento morado claro */
             margin-bottom: 10px;
             display: block;
-            font-family: 'Montserrat', sans-serif;
+            /* Fallback font added */
+            font-family: 'Montserrat', 'Helvetica', sans-serif;
         }
 
         .main-title {
@@ -121,7 +120,8 @@
             text-transform: uppercase; 
             margin: 0 0 10px 0;
             color: white;
-            font-family: 'Montserrat', sans-serif;
+            /* Fallback font added */
+            font-family: 'Montserrat', 'Helvetica', sans-serif;
         }
 
         .career-type-badge {
@@ -134,14 +134,16 @@
             display: inline-block;
             margin-bottom: 15px;
             border: 1px solid rgba(255,255,255,0.1);
-            font-family: 'Montserrat', sans-serif;
+            /* Fallback font added */
+            font-family: 'Montserrat', 'Helvetica', sans-serif;
         }
 
         .info-row {
             font-size: 10px;
             color: #9ca3af; /* Gris medio */
             margin-top: 5px;
-            font-family: 'Inter', sans-serif;
+            /* Fallback font added */
+            font-family: 'Inter', 'Verdana', sans-serif;
         }
         .info-row strong {
             color: white;
@@ -166,7 +168,8 @@
             text-transform: uppercase;
             padding: 8px 10px;
             letter-spacing: 0.5px;
-            font-family: 'Montserrat', sans-serif;
+            /* Fallback font added */
+            font-family: 'Montserrat', 'Helvetica', sans-serif;
         }
 
         /* --- PERIODOS --- */
@@ -190,7 +193,8 @@
             font-weight: 900; 
             letter-spacing: 0.5px;
             display: block; 
-            font-family: 'Montserrat', sans-serif;
+            /* Fallback font added */
+            font-family: 'Montserrat', 'Helvetica', sans-serif;
         }
 
         /* Tabla de Materias */
@@ -284,8 +288,8 @@
             page-break-inside: avoid;
         }
         .summary-table { width: 100%; }
-        .summary-total { font-size: 28px; font-weight: 900; color: #4a148c; line-height: 1; font-family: 'Montserrat', sans-serif; }
-        .summary-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #7b1fa2; letter-spacing: 1px; font-family: 'Montserrat', sans-serif; }
+        .summary-total { font-size: 28px; font-weight: 900; color: #4a148c; line-height: 1; font-family: 'Montserrat', 'Helvetica', sans-serif; }
+        .summary-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #7b1fa2; letter-spacing: 1px; font-family: 'Montserrat', 'Helvetica', sans-serif; }
 
         /* Footer */
         .main-footer {
@@ -316,7 +320,8 @@
             font-weight: 900;
             white-space: nowrap;
             pointer-events: none;
-            font-family: 'Montserrat', sans-serif;
+            /* Fallback font added */
+            font-family: 'Montserrat', 'Helvetica', sans-serif;
         }
 
     </style>
