@@ -19,10 +19,6 @@ class Curriculum extends Component
 {
     public Course $career;
     
-    // Listas para selects
-    public $teachers = [];
-    public $classrooms = [];
-
     // --- MODAL ASIGNATURA (Materia) ---
     public $showModuleModal = false;
     public $modalModuleTitle = '';
@@ -42,8 +38,7 @@ class Curriculum extends Component
     public $showScheduleModal = false;
     public $selectedModuleForSchedule = null;
     public $scheduleId = null;
-    public $moduleSchedules = [];
-
+    
     // Campos Horario
     public $s_day_of_week = 'Lunes';
     public $s_start_time = '18:00';
@@ -61,16 +56,6 @@ class Curriculum extends Component
             return redirect()->route('admin.courses.index')->with('error', 'Este curso no es una carrera universitaria.');
         }
         $this->career = $career;
-        $this->loadResources();
-    }
-
-    public function loadResources()
-    {
-        // Cargar profesores
-        $this->teachers = User::role('Profesor')->orderBy('name')->get();
-        
-        // Cargar todas las aulas (sin filtrar por estado para asegurar que aparezcan)
-        $this->classrooms = Classroom::orderBy('name')->get();
     }
 
     #[Computed]
@@ -101,7 +86,23 @@ class Curriculum extends Component
 
     public function render()
     {
-        return view('livewire.careers.curriculum');
+        // Cargamos los datos aquí para evitar problemas de serialización en propiedades públicas
+        $teachers = User::role('Profesor')->orderBy('name')->get();
+        $classrooms = Classroom::orderBy('name')->get(); // Traemos todas las aulas
+        
+        $moduleSchedules = [];
+        if ($this->selectedModuleForSchedule) {
+            $moduleSchedules = CourseSchedule::with(['teacher', 'classroom'])
+                ->where('module_id', $this->selectedModuleForSchedule->id)
+                ->orderBy('start_date', 'desc')
+                ->get();
+        }
+
+        return view('livewire.careers.curriculum', [
+            'teachers' => $teachers,
+            'classrooms' => $classrooms,
+            'moduleSchedules' => $moduleSchedules,
+        ]);
     }
 
     // =================================================================
@@ -138,6 +139,7 @@ class Curriculum extends Component
         $this->description = $module->description;
         
         if ($hasPrerequisitesTable) {
+            // Convertimos explícitamente a array simple de strings
             $this->selectedPrerequisites = $module->prerequisites->pluck('id')->map(fn($id) => (string)$id)->toArray();
         } else {
             $this->selectedPrerequisites = [];
@@ -185,12 +187,12 @@ class Curriculum extends Component
             }
 
             if (Schema::hasTable('module_prerequisites')) {
-                $module->refresh();
+                $module->refresh(); // Aseguramos instancia fresca
                 $module->prerequisites()->sync($this->selectedPrerequisites);
             }
         });
 
-        unset($this->modulesByPeriod); 
+        unset($this->modulesByPeriod); // Limpiar caché computed
         
         $this->closeModuleModal();
         $this->dispatch('notify', message: 'Asignatura guardada.', type: 'success');
@@ -225,20 +227,10 @@ class Curriculum extends Component
     public function openScheduleModal($moduleId)
     {
         $this->selectedModuleForSchedule = Module::findOrFail($moduleId);
-        $this->loadModuleSchedules();
+        // Los horarios se cargan automáticamente en el render
         $this->resetScheduleInput();
         $this->showScheduleModal = true;
         $this->dispatch('open-modal', 'schedule-management-modal');
-    }
-
-    public function loadModuleSchedules()
-    {
-        if ($this->selectedModuleForSchedule) {
-            $this->moduleSchedules = CourseSchedule::with(['teacher', 'classroom'])
-                ->where('module_id', $this->selectedModuleForSchedule->id)
-                ->orderBy('start_date', 'desc')
-                ->get();
-        }
     }
 
     public function saveSchedule()
@@ -275,8 +267,7 @@ class Curriculum extends Component
             $msg = 'Sección creada exitosamente.';
         }
 
-        $this->loadModuleSchedules();
-        unset($this->modulesByPeriod); // Refrescar contadores en la vista principal
+        unset($this->modulesByPeriod); // Refrescar contadores principales
         $this->resetScheduleInput();
         $this->dispatch('notify', message: $msg, type: 'success');
     }
@@ -288,7 +279,7 @@ class Curriculum extends Component
         $this->s_section_name = $schedule->section_name;
         $this->s_day_of_week = $schedule->day_of_week;
         
-        // CORRECCIÓN: Formatear hora (H:i) para que el input type="time" la reconozca
+        // Formatear horas para input time (H:i)
         $this->s_start_time = \Carbon\Carbon::parse($schedule->start_time)->format('H:i');
         $this->s_end_time = \Carbon\Carbon::parse($schedule->end_time)->format('H:i');
         
@@ -296,7 +287,7 @@ class Curriculum extends Component
         $this->s_classroom_id = $schedule->classroom_id;
         $this->s_modality = $schedule->modality;
         
-        // CORRECCIÓN: Formatear fecha (Y-m-d) para que el input type="date" la reconozca
+        // Formatear fechas para input date (Y-m-d)
         $this->s_start_date = \Carbon\Carbon::parse($schedule->start_date)->format('Y-m-d');
         $this->s_end_date = \Carbon\Carbon::parse($schedule->end_date)->format('Y-m-d');
     }
@@ -304,7 +295,6 @@ class Curriculum extends Component
     public function deleteSchedule($id)
     {
         CourseSchedule::destroy($id);
-        $this->loadModuleSchedules();
         unset($this->modulesByPeriod);
         $this->dispatch('notify', message: 'Horario eliminado.', type: 'success');
     }
@@ -355,7 +345,8 @@ class Curriculum extends Component
         $this->resetValidation();
     }
 
-    private function resetScheduleInput()
+    // CAMBIADO A PUBLIC PARA QUE FUNCIONE EL BOTÓN "+ NUEVA" EN LA VISTA
+    public function resetScheduleInput()
     {
         $this->scheduleId = null;
         $this->s_section_name = 'Sec-' . str_pad(rand(1, 99), 2, '0', STR_PAD_LEFT);
