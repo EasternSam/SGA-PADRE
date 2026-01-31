@@ -261,7 +261,7 @@ class Curriculum extends Component
                 'teacher_id' => $this->s_teacher_id,
                 'classroom_id' => $this->s_classroom_id ?: null,
                 'section_name' => $this->s_section_name,
-                'day_of_week' => $this->s_day_of_week,
+                'day_of_week' => $this->s_day_of_week, // Esto debe coincidir con el $fillable del modelo
                 'start_time' => $this->s_start_time,
                 'end_time' => $this->s_end_time,
                 'modality' => $this->s_modality,
@@ -271,7 +271,9 @@ class Curriculum extends Component
             ];
 
             if ($this->scheduleId) {
-                CourseSchedule::find($this->scheduleId)->update($data);
+                // Usamos findOrFail para asegurar que existe
+                $schedule = CourseSchedule::findOrFail($this->scheduleId);
+                $schedule->update($data);
                 $msg = 'Sección actualizada correctamente.';
             } else {
                 CourseSchedule::create($data);
@@ -292,7 +294,8 @@ class Curriculum extends Component
         $schedule = CourseSchedule::findOrFail($id);
         $this->scheduleId = $id;
         $this->s_section_name = $schedule->section_name;
-        $this->s_day_of_week = $schedule->day_of_week;
+        // Asumimos que la columna en base de datos es day_of_week (singular)
+        $this->s_day_of_week = $schedule->day_of_week; 
         
         // Formatear horas para input time (H:i)
         $this->s_start_time = \Carbon\Carbon::parse($schedule->start_time)->format('H:i');

@@ -4,11 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes; // <-- Importar
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CourseSchedule extends Model
 {
-    use HasFactory, SoftDeletes; // <-- Habilitar SoftDeletes
+    use HasFactory, SoftDeletes;
     
     protected $fillable = [
         'module_id',
@@ -18,11 +18,13 @@ class CourseSchedule extends Model
         'start_date', 
         'end_date',   
         'teacher_id', 
-        'days_of_week', 
+        'days_of_week', // Revertido a 'days_of_week' (plural) para mantener consistencia con el esquema
         'section_name',
         'modality', 
     ];
 
+    // Mantenemos el cast si la columna en base de datos espera almacenar arrays/JSON
+    // O si el sistema espera interactuar con este campo como un array.
     protected $casts = [
         'days_of_week' => 'array',
     ];
