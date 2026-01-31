@@ -44,7 +44,8 @@
     {{-- 2. CONTENIDO DEL PENSUM (Lista por Periodos) --}}
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
         
-        @if($modulesByPeriod->isEmpty())
+        {{-- CAMBIO AQUÍ: Acceso a Computed Property --}}
+        @if($this->modulesByPeriod->isEmpty())
             <div class="text-center py-20 bg-white rounded-2xl border-2 border-gray-200 border-dashed">
                 <div class="mx-auto h-16 w-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
                     <svg class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -63,7 +64,8 @@
                 </div>
             </div>
         @else
-            @foreach($modulesByPeriod as $period => $modules)
+            {{-- CAMBIO AQUÍ: Loop sobre Computed Property --}}
+            @foreach($this->modulesByPeriod as $period => $modules)
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                     
                     {{-- Header del Cuatrimestre --}}
@@ -117,6 +119,11 @@
                                                         <span>{{ $pre->code }}</span>{{ !$loop->last ? ',' : '' }}
                                                     @endforeach
                                                 </div>
+                                            @else
+                                                <span class="text-gray-400 flex items-center gap-1">
+                                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
+                                                    Sin requisitos
+                                                </span>
                                             @endif
 
                                             {{-- Contador de Horarios --}}
@@ -140,7 +147,7 @@
                                     <button wire:click="editModule({{ $module->id }})" class="p-2 text-gray-400 hover:text-indigo-600 hover:bg-gray-100 rounded-lg transition-colors" title="Editar Materia">
                                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                     </button>
-                                    <button wire:click="deleteModule({{ $module->id }})" wire:confirm="¿Eliminar esta materia? Se borrarán sus horarios." class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar Materia">
+                                    <button wire:click="deleteModule({{ $module->id }})" wire:confirm="¿Seguro que deseas eliminar esta materia? Esto podría afectar a los estudiantes inscritos." class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar Materia">
                                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                     </button>
                                 </div>
@@ -158,13 +165,13 @@
         @endif
 
         {{-- Botón Agregar Siguiente Periodo --}}
-        @if($modulesByPeriod->isNotEmpty())
+        @if($this->modulesByPeriod->isNotEmpty())
             <div class="flex justify-center pb-12">
-                <button wire:click="openCreateModule({{ $modulesByPeriod->keys()->max() + 1 }})" class="group flex flex-col items-center gap-2 text-gray-400 hover:text-indigo-600 transition-colors">
+                <button wire:click="openCreateModule({{ $this->modulesByPeriod->keys()->max() + 1 }})" class="group flex flex-col items-center gap-2 text-gray-400 hover:text-indigo-600 transition-colors">
                     <div class="h-12 w-12 rounded-full border-2 border-dashed border-current flex items-center justify-center group-hover:bg-indigo-50 group-hover:border-solid transition-all">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                     </div>
-                    <span class="text-sm font-medium">Agregar Cuatrimestre {{ $modulesByPeriod->keys()->max() + 1 }}</span>
+                    <span class="text-sm font-medium">Agregar Cuatrimestre {{ $this->modulesByPeriod->keys()->max() + 1 }}</span>
                 </button>
             </div>
         @endif
