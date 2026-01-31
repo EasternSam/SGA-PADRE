@@ -90,9 +90,8 @@
                             </a>
                             
                             <!-- Carreras (Universidad) -->
-                            <!-- Asumiendo que la ruta será admin.careers.index -->
-                            <a href="#" wire:navigate 
-                                class="block px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 rounded-md transition-colors {{ request()->routeIs('admin.careers.index') ? 'text-white bg-white/10 font-semibold' : '' }}">
+                            <a href="{{ route('admin.careers.index') }}" wire:navigate 
+                                class="block px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 rounded-md transition-colors {{ request()->routeIs('admin.careers.*') ? 'text-white bg-white/10 font-semibold' : '' }}">
                                 {{ __('Carreras') }}
                             </a>
                         </div>
