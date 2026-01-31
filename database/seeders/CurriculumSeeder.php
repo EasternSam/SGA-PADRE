@@ -32,18 +32,20 @@ class CurriculumSeeder extends Seeder
             $this->command->warn('No se encontraron aulas. Las secciones se crearán sin aula asignada.');
         }
 
-        // 1. Crear la Carrera
-        $course = Course::create([
-            'name' => 'Ingeniería en Desarrollo de Software',
-            'code' => 'IDS-2026',
-            'program_type' => 'degree', 
-            'description' => 'Carrera enfocada en el desarrollo, arquitectura y gestión de soluciones de software modernas.',
-            'status' => 'Activo',
-            'duration_periods' => 7,
-            'total_credits' => 0,
-            'registration_fee' => 5000.00,
-            'monthly_fee' => 4500.00,
-        ]);
+        // 1. Crear o Buscar la Carrera (CORREGIDO: firstOrCreate para evitar duplicados)
+        $course = Course::firstOrCreate(
+            ['code' => 'IDS-2026'], // Buscar por código único
+            [
+                'name' => 'Ingeniería en Desarrollo de Software',
+                'program_type' => 'degree', 
+                'description' => 'Carrera enfocada en el desarrollo, arquitectura y gestión de soluciones de software modernas.',
+                'status' => 'Activo',
+                'duration_periods' => 7,
+                'total_credits' => 0,
+                'registration_fee' => 5000.00,
+                'monthly_fee' => 4500.00,
+            ]
+        );
 
         // 2. Definir el Pensum con Prerrequisitos
         // Estructura: ['code', 'name', 'credits', 'prereqs' => ['CODE1', 'CODE2']]
@@ -108,11 +110,10 @@ class CurriculumSeeder extends Seeder
         foreach ($curriculum as $period => $modulesData) {
             $order = 1;
             foreach ($modulesData as $data) {
-                // A. Crear Módulo
+                // A. Crear o Buscar Módulo (CORREGIDO: firstOrCreate)
                 $moduleData = [
                     'course_id' => $course->id,
                     'name' => $data['name'],
-                    'code' => $data['code'],
                     'credits' => $data['credits'],
                     'period_number' => $period,
                     'is_elective' => $data['is_elective'] ?? false,
@@ -124,12 +125,17 @@ class CurriculumSeeder extends Seeder
                     $moduleData['order'] = $order++;
                 }
 
-                $module = Module::create($moduleData);
+                $module = Module::firstOrCreate(
+                    ['code' => $data['code'], 'course_id' => $course->id], // Clave de búsqueda
+                    $moduleData
+                );
+
                 $createdModulesMap[$data['code']] = $module; // Guardar referencia para prerrequisitos
                 $totalCredits += $data['credits'];
 
                 // B. Crear Secciones (Horarios) - Opcional, crea 1 o 2 por materia
-                if ($teachers->isNotEmpty()) {
+                // Solo creamos si no existen ya, para no duplicar infinitamente al correr el seeder de nuevo
+                if ($teachers->isNotEmpty() && $module->schedules()->count() == 0) {
                     $numSections = rand(1, 2); // 1 o 2 secciones por materia
                     
                     for ($i = 1; $i <= $numSections; $i++) {
@@ -183,10 +189,10 @@ class CurriculumSeeder extends Seeder
             }
         }
 
-        // 4. Actualizar créditos totales
+        // 4. Actualizar créditos totales (Esto podría sobreescribir el valor si cambia el pensum)
         $course->update(['total_credits' => $totalCredits]);
 
-        $this->command->info("¡Pensum completo creado! Carrera: {$course->name} con {$totalCredits} créditos.");
-        $this->command->info("Secciones y prerrequisitos asignados correctamente.");
+        $this->command->info("¡Pensum completo procesado! Carrera: {$course->name} con {$totalCredits} créditos.");
+        $this->command->info("Secciones y prerrequisitos asignados/verificados correctamente.");
     }
 }
