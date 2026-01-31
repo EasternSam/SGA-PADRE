@@ -251,6 +251,55 @@ class Curriculum extends Component
             's_end_date' => 'required|date|after_or_equal:s_start_date',
         ]);
 
+        // --- VALIDACIÓN DE CHOQUE DE HORARIOS ---
+        foreach ($this->s_day_of_week as $day) {
+            // 1. Validar choque de PROFESOR
+            $teacherConflict = CourseSchedule::where('teacher_id', $this->s_teacher_id)
+                ->whereJsonContains('days_of_week', $day) // Busca si el día está en el array JSON
+                ->where(function ($query) {
+                    // Solapamiento de tiempo: (StartA < EndB) and (EndA > StartB)
+                    $query->where('start_time', '<', $this->s_end_time)
+                          ->where('end_time', '>', $this->s_start_time);
+                })
+                ->where(function ($query) {
+                    // Solapamiento de fechas: (StartA <= EndB) and (EndA >= StartB)
+                    $query->where('start_date', '<=', $this->s_end_date)
+                          ->where('end_date', '>=', $this->s_start_date);
+                });
+
+            if ($this->scheduleId) {
+                $teacherConflict->where('id', '!=', $this->scheduleId);
+            }
+
+            if ($teacherConflict->exists()) {
+                $this->addError('s_teacher_id', "El profesor ya tiene clase el día $day en este horario.");
+                return;
+            }
+
+            // 2. Validar choque de AULA (solo si se asignó un aula física)
+            if ($this->s_classroom_id) {
+                $classroomConflict = CourseSchedule::where('classroom_id', $this->s_classroom_id)
+                    ->whereJsonContains('days_of_week', $day)
+                    ->where(function ($query) {
+                        $query->where('start_time', '<', $this->s_end_time)
+                              ->where('end_time', '>', $this->s_start_time);
+                    })
+                    ->where(function ($query) {
+                        $query->where('start_date', '<=', $this->s_end_date)
+                              ->where('end_date', '>=', $this->s_start_date);
+                    });
+
+                if ($this->scheduleId) {
+                    $classroomConflict->where('id', '!=', $this->scheduleId);
+                }
+
+                if ($classroomConflict->exists()) {
+                    $this->addError('s_classroom_id', "El aula seleccionada ya está ocupada el día $day en este horario.");
+                    return;
+                }
+            }
+        }
+
         try {
             $data = [
                 'module_id' => $this->selectedModuleId,
