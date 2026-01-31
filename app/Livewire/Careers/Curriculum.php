@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Classroom;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Computed; // Importar Computed
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -18,9 +19,9 @@ class Curriculum extends Component
 {
     public Course $career;
     
-    // Datos Maestros
-    // IMPORTANTE: No tipar como Collection para evitar problemas de serialización complejos
-    public $modulesByPeriod; 
+    // Eliminamos $modulesByPeriod de propiedades públicas para evitar errores de serialización
+    // public $modulesByPeriod; 
+
     public $teachers;
     public $classrooms;
 
@@ -63,7 +64,7 @@ class Curriculum extends Component
         }
         $this->career = $career;
         $this->loadResources();
-        $this->loadCurriculum();
+        // $this->loadCurriculum(); // Ya no se llama aquí, se usa computed
     }
 
     public function loadResources()
@@ -72,7 +73,9 @@ class Curriculum extends Component
         $this->classrooms = Classroom::where('status', 'Activo')->orderBy('name')->get();
     }
 
-    public function loadCurriculum()
+    // Convertido a Computed Property para evitar errores de serialización de Livewire con Colecciones Agrupadas
+    #[Computed]
+    public function modulesByPeriod()
     {
         $hasOrderColumn = Schema::hasColumn('modules', 'order');
         $hasPrerequisitesTable = Schema::hasTable('module_prerequisites');
@@ -95,7 +98,7 @@ class Curriculum extends Component
         $modules = $query->get();
 
         // Agrupamos por periodo
-        $this->modulesByPeriod = $modules->groupBy('period_number');
+        return $modules->groupBy('period_number');
     }
 
     public function render()
@@ -190,7 +193,9 @@ class Curriculum extends Component
             }
         });
 
-        $this->loadCurriculum();
+        // $this->loadCurriculum(); // Ya no es necesario recargar manual, computed se encarga
+        unset($this->modulesByPeriod); // Invalidar cache computed si es necesario (en Livewire 3 es automático al renderizar)
+        
         $this->closeModuleModal();
         $this->dispatch('notify', message: 'Asignatura guardada.', type: 'success');
     }
@@ -212,7 +217,8 @@ class Curriculum extends Component
             }
             
             $module->delete();
-            $this->loadCurriculum();
+            // $this->loadCurriculum(); // Innecesario con Computed
+            unset($this->modulesByPeriod); 
             $this->dispatch('notify', message: 'Asignatura eliminada.', type: 'success');
         } catch (\Exception $e) {
             $this->dispatch('notify', message: 'Error al eliminar: ' . $e->getMessage(), type: 'error');
@@ -277,7 +283,8 @@ class Curriculum extends Component
         }
 
         $this->loadModuleSchedules();
-        $this->loadCurriculum();
+        // $this->loadCurriculum(); // Innecesario con Computed
+        unset($this->modulesByPeriod);
         $this->resetScheduleInput();
         $this->dispatch('notify', message: $msg, type: 'success');
     }
@@ -301,7 +308,8 @@ class Curriculum extends Component
     {
         CourseSchedule::destroy($id);
         $this->loadModuleSchedules();
-        $this->loadCurriculum();
+        // $this->loadCurriculum(); // Innecesario con Computed
+        unset($this->modulesByPeriod);
         $this->dispatch('notify', message: 'Horario eliminado.', type: 'success');
     }
 
