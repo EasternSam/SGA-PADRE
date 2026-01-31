@@ -11,18 +11,19 @@
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
             background-color: #f9fafb; /* Gray 50 */
-            margin-top: 220px; /* Espacio para el header fijo */
+            /* Ajustamos márgenes para evitar espacios en blanco excesivos arriba */
+            margin-top: 180px; /* Reducido para ajustar mejor el header */
             margin-bottom: 60px; /* Espacio para el footer fijo */
             color: #1e293b; /* Slate 800 */
         }
 
-        /* --- HEADER (Simulación del diseño Flex/Grid usando Tablas) --- */
+        /* --- HEADER --- */
         header {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            height: 220px;
+            height: 180px; /* Altura ajustada */
             background-color: white;
             z-index: 1000;
         }
@@ -39,25 +40,24 @@
             background-color: #7b1fa2; /* bg-itla-purple */
             color: white;
             vertical-align: middle;
-            padding: 30px;
+            padding: 20px 30px; /* Padding ajustado */
             position: relative;
         }
 
-        /* Lado Derecho (Oscuro con Imagen) */
+        /* Lado Derecho (Oscuro) */
         .header-right {
             width: 65%;
             background-color: #111827; /* gray-900 */
             color: white;
             vertical-align: middle;
-            padding: 30px;
+            padding: 20px 30px; /* Padding ajustado */
             text-align: right;
-            /* Nota: DomPDF soporta background-image limitado, usamos color sólido oscuro como fallback elegante o degradado */
             background: linear-gradient(180deg, #321c46 0%, #111827 100%);
         }
 
         /* Títulos Header */
         .app-initials {
-            font-size: 50px;
+            font-size: 40px; /* Tamaño ajustado */
             font-weight: 900;
             line-height: 1;
             margin: 0;
@@ -69,21 +69,21 @@
             height: 4px;
             width: 50px;
             background-color: #d8b4fe; /* purple-300 */
-            margin: 10px 0;
+            margin: 8px 0;
             border-radius: 2px;
         }
 
         .institution-full {
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 1px;
             border-left: 3px solid #d8b4fe;
             padding-left: 10px;
-            line-height: 1.4;
+            line-height: 1.3;
         }
 
         .career-name {
-            font-size: 24px;
+            font-size: 20px; /* Tamaño ajustado */
             font-weight: 900;
             text-transform: uppercase;
             margin: 0;
@@ -92,18 +92,18 @@
 
         .career-type {
             color: #e9d5ff; /* purple-200 */
-            font-size: 16px;
+            font-size: 14px;
             font-weight: normal;
         }
 
         .header-badge {
             background-color: rgba(255,255,255,0.1);
             color: white;
-            padding: 5px 15px;
+            padding: 4px 12px;
             border-radius: 20px;
-            font-size: 10px;
+            font-size: 9px;
             display: inline-block;
-            margin-top: 10px;
+            margin-top: 8px;
             border: 1px solid rgba(255,255,255,0.2);
         }
 
@@ -111,13 +111,13 @@
         .slogan-bar {
             background-color: #f3f4f6; /* gray-100 */
             text-align: center;
-            padding: 8px;
+            padding: 5px;
             border-bottom: 1px solid #e5e7eb;
             color: #7b1fa2;
             font-style: italic;
             font-weight: bold;
-            font-size: 11px;
-            margin-bottom: 20px;
+            font-size: 10px;
+            margin-bottom: 15px;
         }
 
         /* --- CONTENIDO --- */
@@ -125,11 +125,11 @@
             padding: 0 40px;
         }
 
-        /* Tabla de Módulos (Reemplaza grid-cols-12) */
+        /* --- TABLA PRINCIPAL DE MÓDULOS --- */
         .modules-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 0; /* Quitamos margen bottom para que pegue con el total */
         }
 
         .modules-table th {
@@ -142,8 +142,8 @@
         }
 
         .modules-table td {
-            padding: 8px 10px;
-            font-size: 11px;
+            padding: 6px 10px; /* Padding vertical reducido */
+            font-size: 10px;   /* Fuente ligeramente reducida */
             border-bottom: 1px solid #f3f4f6;
             vertical-align: middle;
         }
@@ -173,32 +173,39 @@
             width: 25%;
             text-align: right;
             color: #9ca3af;
-            font-size: 10px;
+            font-size: 9px;
+        }
+
+        /* --- CONTENEDOR DE PERIODO (EVITA CORTES) --- */
+        .period-container {
+            margin-bottom: 20px;
+            page-break-inside: avoid; /* CRÍTICO: Evita partir el bloque a la mitad */
+            break-inside: avoid;      /* Compatibilidad */
         }
 
         /* Period Header */
         .period-header {
-            margin-top: 25px;
             margin-bottom: 5px;
-            page-break-inside: avoid;
+            border-bottom: 2px solid #f3e8ff; /* purple-100 */
+            padding-bottom: 2px;
         }
 
         .period-number {
             background-color: #f3e8ff; /* purple-100 */
             color: #7b1fa2;
             display: inline-block;
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             text-align: center;
             border-radius: 4px;
             font-weight: bold;
-            font-size: 12px;
-            line-height: 20px;
-            margin-right: 8px;
+            font-size: 11px;
+            line-height: 18px;
+            margin-right: 6px;
         }
 
         .period-title {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
             color: #7b1fa2;
             text-transform: uppercase;
@@ -206,19 +213,21 @@
 
         .period-total {
             text-align: right;
-            font-size: 10px;
-            margin-top: 5px;
-            margin-bottom: 20px;
-            border-top: 1px dashed #e5e7eb;
-            padding-top: 5px;
+            font-size: 9px;
+            margin-top: 0;
+            background-color: #faf5ff; /* purple-50 muy suave */
+            padding: 4px 10px;
+            border-radius: 0 0 4px 4px;
+            border-bottom: 1px dashed #e9d5ff;
         }
 
         .total-badge {
-            background-color: #f3f4f6;
-            padding: 2px 8px;
+            background-color: white;
+            padding: 1px 6px;
             border-radius: 4px;
             font-weight: bold;
             border: 1px solid #e5e7eb;
+            color: #1e293b;
         }
 
         /* --- FOOTER --- */
@@ -310,7 +319,7 @@
     <div class="content">
 
         <!-- RESUMEN ENCABEZADO (Tabla oculta en diseño móvil, visible en PDF) -->
-        <table class="modules-table" style="margin-top: 20px; border-bottom: 2px solid #e5e7eb;">
+        <table class="modules-table" style="margin-bottom: 15px;">
             <thead>
                 <tr>
                     <th width="20%">CÓDIGO</th>
@@ -326,41 +335,44 @@
         @foreach($modulesByPeriod as $period => $modules)
             @php $periodCredits = 0; @endphp
             
-            <div class="period-header">
-                <span class="period-number">{{ $period }}</span>
-                <span class="period-title">Cuatrimestre {{ $period }}</span>
-            </div>
+            <!-- CONTENEDOR INDIVISIBLE PARA CADA CUATRIMESTRE -->
+            <div class="period-container">
+                <div class="period-header">
+                    <span class="period-number">{{ $period }}</span>
+                    <span class="period-title">Cuatrimestre {{ $period }}</span>
+                </div>
 
-            <table class="modules-table">
-                <tbody>
-                    @foreach($modules as $module)
-                        @php $periodCredits += $module->credits; @endphp
-                        <tr>
-                            <td class="cell-code">{{ $module->code }}</td>
-                            <td class="cell-name">
-                                {{ $module->name }}
-                                @if($module->is_elective)
-                                    <span style="color: #d97706; font-size: 8px; margin-left: 5px; text-transform: uppercase;">(Electiva)</span>
-                                @endif
-                            </td>
-                            <td class="cell-credits">{{ $module->credits }}</td>
-                            <td class="cell-prereq">
-                                @if($module->prerequisites->count() > 0)
-                                    @foreach($module->prerequisites as $pre)
-                                        {{ $pre->code }}{{ !$loop->last ? ', ' : '' }}
-                                    @endforeach
-                                @else
-                                    -
-                                @endif
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                <table class="modules-table">
+                    <tbody>
+                        @foreach($modules as $module)
+                            @php $periodCredits += $module->credits; @endphp
+                            <tr>
+                                <td class="cell-code">{{ $module->code }}</td>
+                                <td class="cell-name">
+                                    {{ $module->name }}
+                                    @if($module->is_elective)
+                                        <span style="color: #d97706; font-size: 8px; margin-left: 5px; text-transform: uppercase;">(Electiva)</span>
+                                    @endif
+                                </td>
+                                <td class="cell-credits">{{ $module->credits }}</td>
+                                <td class="cell-prereq">
+                                    @if($module->prerequisites->count() > 0)
+                                        @foreach($module->prerequisites as $pre)
+                                            {{ $pre->code }}{{ !$loop->last ? ', ' : '' }}
+                                        @endforeach
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
 
-            <div class="period-total">
-                <span style="text-transform: uppercase; color: #9ca3af; margin-right: 10px; font-weight: bold;">Créditos del Periodo</span>
-                <span class="total-badge">{{ $periodCredits }}</span>
+                <div class="period-total">
+                    <span style="text-transform: uppercase; color: #64748b; margin-right: 10px; font-weight: bold;">Créditos del Periodo</span>
+                    <span class="total-badge">{{ $periodCredits }}</span>
+                </div>
             </div>
 
             @php $totalAccumulated += $periodCredits; @endphp
