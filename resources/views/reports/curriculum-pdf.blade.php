@@ -1,223 +1,408 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
     <title>Pensum Académico - {{ $career->code }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+        /* CONFIGURACIÓN BÁSICA COMPATIBLE CON DOMPDF */
+        @page {
+            margin: 0cm;
         }
-        h1, h2, h3, .font-heading {
-            font-family: 'Montserrat', sans-serif;
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            background-color: #f9fafb; /* Gray 50 */
+            margin-top: 220px; /* Espacio para el header fijo */
+            margin-bottom: 60px; /* Espacio para el footer fijo */
+            color: #1e293b; /* Slate 800 */
+        }
+
+        /* --- HEADER (Simulación del diseño Flex/Grid usando Tablas) --- */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 220px;
+            background-color: white;
+            z-index: 1000;
+        }
+
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            height: 100%;
+        }
+
+        /* Lado Izquierdo (Morado) */
+        .header-left {
+            width: 35%;
+            background-color: #7b1fa2; /* bg-itla-purple */
+            color: white;
+            vertical-align: middle;
+            padding: 30px;
+            position: relative;
+        }
+
+        /* Lado Derecho (Oscuro con Imagen) */
+        .header-right {
+            width: 65%;
+            background-color: #111827; /* gray-900 */
+            color: white;
+            vertical-align: middle;
+            padding: 30px;
+            text-align: right;
+            /* Nota: DomPDF soporta background-image limitado, usamos color sólido oscuro como fallback elegante o degradado */
+            background: linear-gradient(180deg, #321c46 0%, #111827 100%);
+        }
+
+        /* Títulos Header */
+        .app-initials {
+            font-size: 50px;
+            font-weight: 900;
+            line-height: 1;
+            margin: 0;
+            font-style: italic;
+            letter-spacing: -2px;
         }
         
-        /* Custom Dotted Leader - More refined */
-        .dotted-leader {
-            background-image: radial-gradient(circle, #cbd5e1 1.5px, transparent 1.5px); /* Smaller dots, lighter color */
-            background-size: 8px 100%; /* More spacing between dots */
-            background-repeat: repeat-x;
-            background-position: bottom 6px left 0; /* Align with text baseline */
-            height: 1.5em;
+        .separator-bar {
+            height: 4px;
+            width: 50px;
+            background-color: #d8b4fe; /* purple-300 */
+            margin: 10px 0;
+            border-radius: 2px;
         }
 
-        .bg-itla-purple {
-            background-color: #7b1fa2;
+        .institution-full {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-left: 3px solid #d8b4fe;
+            padding-left: 10px;
+            line-height: 1.4;
         }
-        .text-itla-purple {
+
+        .career-name {
+            font-size: 24px;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin: 0;
+            line-height: 1.1;
+        }
+
+        .career-type {
+            color: #e9d5ff; /* purple-200 */
+            font-size: 16px;
+            font-weight: normal;
+        }
+
+        .header-badge {
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 10px;
+            display: inline-block;
+            margin-top: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* --- BARRA SLOGAN --- */
+        .slogan-bar {
+            background-color: #f3f4f6; /* gray-100 */
+            text-align: center;
+            padding: 8px;
+            border-bottom: 1px solid #e5e7eb;
             color: #7b1fa2;
-        }
-        .bg-itla-dark {
-            background-color: #4a148c;
-        }
-
-        /* Subtle Pattern Background */
-        .bg-pattern {
-            background-image: 
-                linear-gradient(30deg, #7b1fa2 12%, transparent 12.5%, transparent 87%, #7b1fa2 87.5%, #7b1fa2),
-                linear-gradient(150deg, #7b1fa2 12%, transparent 12.5%, transparent 87%, #7b1fa2 87.5%, #7b1fa2),
-                linear-gradient(30deg, #7b1fa2 12%, transparent 12.5%, transparent 87%, #7b1fa2 87.5%, #7b1fa2),
-                linear-gradient(150deg, #7b1fa2 12%, transparent 12.5%, transparent 87%, #7b1fa2 87.5%, #7b1fa2),
-                linear-gradient(60deg, #7b1fa277 25%, transparent 25.5%, transparent 75%, #7b1fa277 75%, #7b1fa277),
-                linear-gradient(60deg, #7b1fa277 25%, transparent 25.5%, transparent 75%, #7b1fa277 75%, #7b1fa277);
-            background-position: 0 0, 0 0, 50px 90px, 50px 90px, 0 0, 50px 90px;
-            background-size: 100px 180px;
-            opacity: 0.03;
+            font-style: italic;
+            font-weight: bold;
+            font-size: 11px;
+            margin-bottom: 20px;
         }
 
-        @media print {
-            body { background: white; }
-            .shadow-2xl { box-shadow: none; }
-            .bg-pattern { display: none; }
-            .max-w-5xl { max-width: 100%; margin: 0; padding: 0; }
+        /* --- CONTENIDO --- */
+        .content {
+            padding: 0 40px;
+        }
+
+        /* Tabla de Módulos (Reemplaza grid-cols-12) */
+        .modules-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        .modules-table th {
+            text-align: left;
+            font-size: 9px;
+            text-transform: uppercase;
+            color: #6b7280; /* gray-500 */
+            padding: 5px 10px;
+            border-bottom: 2px solid #f3e8ff; /* purple-100 */
+        }
+
+        .modules-table td {
+            padding: 8px 10px;
+            font-size: 11px;
+            border-bottom: 1px solid #f3f4f6;
+            vertical-align: middle;
+        }
+
+        /* Estilos de Celdas */
+        .cell-code {
+            width: 15%;
+            font-weight: bold;
+            color: #374151;
+            font-family: monospace;
+        }
+        
+        .cell-name {
+            width: 50%;
+            font-weight: bold;
+            color: #111827;
+        }
+
+        .cell-credits {
+            width: 10%;
+            text-align: center;
+            font-weight: bold;
+            color: #4b5563;
+        }
+
+        .cell-prereq {
+            width: 25%;
+            text-align: right;
+            color: #9ca3af;
+            font-size: 10px;
+        }
+
+        /* Period Header */
+        .period-header {
+            margin-top: 25px;
+            margin-bottom: 5px;
+            page-break-inside: avoid;
+        }
+
+        .period-number {
+            background-color: #f3e8ff; /* purple-100 */
+            color: #7b1fa2;
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+            line-height: 20px;
+            margin-right: 8px;
+        }
+
+        .period-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #7b1fa2;
+            text-transform: uppercase;
+        }
+
+        .period-total {
+            text-align: right;
+            font-size: 10px;
+            margin-top: 5px;
+            margin-bottom: 20px;
+            border-top: 1px dashed #e5e7eb;
+            padding-top: 5px;
+        }
+
+        .total-badge {
+            background-color: #f3f4f6;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* --- FOOTER --- */
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background-color: white;
+            border-top: 3px solid #7b1fa2;
+            padding: 10px 40px;
+            font-size: 9px;
+            color: #9ca3af;
+        }
+
+        /* Marca de Agua */
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 100px;
+            color: rgba(123, 31, 162, 0.05); /* Morado muy muy tenue */
+            z-index: -1000;
+            font-weight: 900;
+            white-space: nowrap;
         }
     </style>
 </head>
-<body class="bg-gray-50 text-slate-800 min-h-screen relative overflow-x-hidden">
+<body>
 
-    <!-- Decorative Background -->
-    <div class="fixed inset-0 bg-pattern z-0 pointer-events-none"></div>
+    <!-- MARCA DE AGUA -->
+    <div class="watermark">{{ $career->code }}</div>
 
-    <div class="relative z-10 max-w-5xl mx-auto md:my-8 bg-white shadow-2xl overflow-hidden print:shadow-none print:my-0">
-        
-        <!-- Header Section -->
-        <header class="flex flex-col md:flex-row h-auto md:h-64 border-b-4 border-purple-800">
-            <!-- Logo Area -->
-            <div class="bg-itla-purple w-full md:w-1/3 p-8 text-white flex flex-col justify-center relative overflow-hidden">
-                <!-- Subtle circle decoration behind logo -->
-                <div class="absolute -top-10 -left-10 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl"></div>
-                
-                <div class="relative z-10">
-                    <!-- Siglas de la institución (usamos el nombre de la app configurado) -->
-                    <h1 class="text-6xl font-heading font-black italic tracking-tighter mb-1 leading-none">
-                        {{ strtoupper(substr(config('app.name', 'SGA'), 0, 3)) }}
-                    </h1>
-                    <div class="h-1 w-12 bg-purple-300 mb-4 rounded-full"></div>
-                    <!-- Nombre completo de la institución -->
-                    <div class="text-xs font-medium uppercase leading-relaxed tracking-wide border-l-[3px] border-purple-300 pl-3">
+    <!-- HEADER -->
+    <header>
+        <table class="header-table">
+            <tr>
+                <td class="header-left">
+                    <h1 class="app-initials">{{ strtoupper(substr(config('app.name', 'SGA'), 0, 3)) }}</h1>
+                    <div class="separator-bar"></div>
+                    <div class="institution-full">
                         Centro Educativo<br>Universitario
                     </div>
-                    <!-- Subtítulo -->
-                    <p class="mt-3 text-[10px] text-purple-200 italic font-light tracking-wider">{{ config('app.name', 'Sistema de Gestión') }}</p>
-                </div>
-            </div>
-
-            <!-- Title Area -->
-            <div class="w-full md:w-2/3 relative flex flex-col justify-end bg-gray-900">
-                <img src="https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?ixlib=rb-1.2.1&auto=format&fit=crop&w=1600&q=80" 
-                     alt="Background" 
-                     class="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-luminosity">
-                
-                <div class="absolute inset-0 bg-gradient-to-t from-purple-900/90 via-purple-900/40 to-transparent"></div>
-
-                <div class="relative z-10 p-8 text-white text-right">
-                    <p class="text-xs font-bold tracking-[0.2em] uppercase text-purple-300 mb-2">Plan de Estudios Oficial</p>
-                    <h2 class="text-3xl md:text-4xl font-black uppercase leading-tight mb-4 drop-shadow-lg">
-                        {{ $career->name }}<br>
-                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-white to-purple-200">
-                            {{ $career->program_type === 'degree' ? 'GRADO ACADÉMICO' : 'CARRERA TÉCNICA' }}
-                        </span>
-                    </h2>
-                    
-                    <div class="flex justify-end gap-6 text-xs font-medium bg-black/20 inline-flex p-2 px-4 rounded-lg backdrop-blur-sm border border-white/10">
-                        <div class="flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-green-400"></span>
-                            <span class="opacity-80">Clave: <strong class="text-white">{{ $career->code }}</strong></span>
-                        </div>
-                        <div class="w-px h-4 bg-white/20"></div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-purple-300">📅</span>
-                            <span class="opacity-80">Generado: <strong class="text-white">{{ $generatedAt }}</strong></span>
-                        </div>
+                    <div style="font-size: 9px; color: #e9d5ff; margin-top: 10px;">
+                        {{ config('app.name', 'Sistema de Gestión') }}
                     </div>
-                </div>
-            </div>
-        </header>
+                </td>
+                <td class="header-right">
+                    <div style="text-transform: uppercase; color: #d8b4fe; font-size: 10px; letter-spacing: 2px; margin-bottom: 5px;">
+                        Plan de Estudios Oficial
+                    </div>
+                    <h2 class="career-name">
+                        {{ $career->name }}
+                    </h2>
+                    <div class="career-type">
+                        {{ $career->program_type === 'degree' ? 'GRADO ACADÉMICO' : 'CARRERA TÉCNICA' }}
+                    </div>
+                    <div class="header-badge">
+                        CLAVE: <strong>{{ $career->code }}</strong> &nbsp;|&nbsp; 
+                        GENERADO: <strong>{{ $generatedAt }}</strong>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </header>
 
-        <!-- Slogan Bar -->
-        <div class="bg-gray-100 py-3 text-center border-b border-gray-200 shadow-inner">
-            <p class="text-itla-purple font-heading font-semibold text-lg italic tracking-wide">"Excelencia académica para el futuro"</p>
-        </div>
+    <!-- FOOTER -->
+    <footer>
+        <table style="width: 100%;">
+            <tr>
+                <td style="text-align: left;">
+                    &copy; {{ date('Y') }} {{ config('app.name', 'Institución Educativa') }} - Todos los derechos reservados.
+                </td>
+                <td style="text-align: right;">
+                    Documento Oficial | {{ config('app.name', 'SGA System') }} v1.0
+                </td>
+            </tr>
+        </table>
+    </footer>
 
-        <!-- Main Content Container -->
-        <div class="p-6 md:p-10">
-            
-            <!-- Table Headers -->
-            <div class="hidden md:grid grid-cols-12 gap-4 text-xs font-bold text-gray-500 uppercase tracking-wider mb-6 pb-2 border-b-2 border-purple-100 px-2">
-                <div class="col-span-2">Código</div>
-                <div class="col-span-5">Descripción del Curso</div>
-                <div class="col-span-2 text-center">Créditos</div>
-                <div class="col-span-3 text-right">Prerrequisitos</div>
-            </div>
-
-            <!-- Content Grid -->
-            <div class="space-y-10">
-
-                @php $totalAccumulated = 0; @endphp
-
-                @foreach($modulesByPeriod as $period => $modules)
-                    <section class="relative page-break-inside-avoid"> <!-- Evitar cortar secciones -->
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="h-8 w-8 rounded bg-purple-100 text-itla-purple flex items-center justify-center font-bold text-sm">{{ $period }}</div>
-                            <h3 class="text-itla-purple font-heading font-bold text-lg uppercase tracking-tight">Cuatrimestre {{ $period }}</h3>
-                            <div class="flex-grow h-px bg-purple-100"></div>
-                        </div>
-                        
-                        <div class="space-y-1">
-                            @php $periodCredits = 0; @endphp
-                            @foreach($modules as $module)
-                                @php $periodCredits += $module->credits; @endphp
-                                <!-- Row Item -->
-                                <div class="grid grid-cols-12 gap-2 md:gap-4 items-end p-2 rounded-lg hover:bg-purple-50 transition-colors group">
-                                    <div class="col-span-2 text-sm font-semibold text-gray-700 font-mono">{{ $module->code }}</div>
-                                    <div class="col-span-6 md:col-span-5 flex items-end overflow-hidden">
-                                        <span class="whitespace-nowrap mr-2 text-gray-900 font-medium group-hover:text-itla-purple transition-colors">
-                                            {{ $module->name }}
-                                            @if($module->is_elective)
-                                                <span class="text-[10px] text-amber-600 font-bold ml-1">(ELECTIVA)</span>
-                                            @endif
-                                        </span>
-                                        <div class="dotted-leader flex-grow opacity-40"></div>
-                                    </div>
-                                    <div class="col-span-2 text-center text-sm font-bold text-gray-600">{{ $module->credits }}</div>
-                                    <div class="col-span-2 md:col-span-3 text-right text-xs text-gray-400 font-mono">
-                                        @if($module->prerequisites->count() > 0)
-                                            @foreach($module->prerequisites as $pre)
-                                                {{ $pre->code }}{{ !$loop->last ? ', ' : '' }}
-                                            @endforeach
-                                        @else
-                                            -
-                                        @endif
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-
-                        <!-- Subtotal Footer -->
-                        <div class="flex justify-end items-center mt-3 pt-2 border-t border-dashed border-gray-200 mr-2 md:mr-[25%]">
-                            <span class="text-[10px] uppercase tracking-widest text-gray-400 mr-4 font-bold">Créditos del Periodo</span>
-                            <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded text-sm font-bold border border-gray-200">{{ $periodCredits }}</span>
-                        </div>
-                        @php $totalAccumulated += $periodCredits; @endphp
-                    </section>
-                @endforeach
-
-            </div>
-
-            <!-- Total General -->
-            <div class="mt-12 p-6 bg-purple-50 rounded-xl border border-purple-100 flex justify-between items-center">
-                <div>
-                    <h4 class="text-itla-purple font-bold text-lg">Resumen Académico</h4>
-                    <p class="text-sm text-gray-500">Total acumulado de la carrera</p>
-                </div>
-                <div class="text-right">
-                    <span class="block text-3xl font-black text-gray-800">{{ $totalAccumulated }}</span>
-                    <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Créditos Totales</span>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <footer class="mt-16 border-t-2 border-purple-100 pt-8 flex flex-col md:flex-row justify-between items-center text-gray-400 text-xs">
-                <div class="flex items-center gap-4 mb-4 md:mb-0">
-                    <!-- Placeholder Logo en Footer -->
-                    <div class="h-6 w-6 bg-gray-300 rounded-full opacity-50"></div>
-                    <div class="h-8 w-px bg-gray-200"></div>
-                    <p>&copy; {{ date('Y') }} {{ config('app.name', 'Institución Educativa') }}</p>
-                </div>
-                <div class="text-right">
-                    <p>Documento generado automáticamente</p>
-                    <p>SGA System v1.0</p>
-                </div>
-            </footer>
-
-        </div>
+    <!-- SLOGAN -->
+    <div class="slogan-bar">
+        "Excelencia académica para el futuro"
     </div>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="content">
+
+        <!-- RESUMEN ENCABEZADO (Tabla oculta en diseño móvil, visible en PDF) -->
+        <table class="modules-table" style="margin-top: 20px; border-bottom: 2px solid #e5e7eb;">
+            <thead>
+                <tr>
+                    <th width="20%">CÓDIGO</th>
+                    <th width="45%">DESCRIPCIÓN DEL CURSO</th>
+                    <th width="15%" style="text-align: center;">CRÉDITOS</th>
+                    <th width="20%" style="text-align: right;">PRERREQUISITOS</th>
+                </tr>
+            </thead>
+        </table>
+
+        @php $totalAccumulated = 0; @endphp
+
+        @foreach($modulesByPeriod as $period => $modules)
+            @php $periodCredits = 0; @endphp
+            
+            <div class="period-header">
+                <span class="period-number">{{ $period }}</span>
+                <span class="period-title">Cuatrimestre {{ $period }}</span>
+            </div>
+
+            <table class="modules-table">
+                <tbody>
+                    @foreach($modules as $module)
+                        @php $periodCredits += $module->credits; @endphp
+                        <tr>
+                            <td class="cell-code">{{ $module->code }}</td>
+                            <td class="cell-name">
+                                {{ $module->name }}
+                                @if($module->is_elective)
+                                    <span style="color: #d97706; font-size: 8px; margin-left: 5px; text-transform: uppercase;">(Electiva)</span>
+                                @endif
+                            </td>
+                            <td class="cell-credits">{{ $module->credits }}</td>
+                            <td class="cell-prereq">
+                                @if($module->prerequisites->count() > 0)
+                                    @foreach($module->prerequisites as $pre)
+                                        {{ $pre->code }}{{ !$loop->last ? ', ' : '' }}
+                                    @endforeach
+                                @else
+                                    -
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+
+            <div class="period-total">
+                <span style="text-transform: uppercase; color: #9ca3af; margin-right: 10px; font-weight: bold;">Créditos del Periodo</span>
+                <span class="total-badge">{{ $periodCredits }}</span>
+            </div>
+
+            @php $totalAccumulated += $periodCredits; @endphp
+        @endforeach
+
+        <!-- TOTAL GENERAL -->
+        <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 15px; border-radius: 8px; margin-top: 20px; page-break-inside: avoid;">
+            <table style="width: 100%;">
+                <tr>
+                    <td style="width: 70%;">
+                        <div style="color: #7b1fa2; font-weight: bold; font-size: 14px;">Resumen Académico</div>
+                        <div style="color: #6b7280; font-size: 10px;">Total acumulado de la carrera</div>
+                    </td>
+                    <td style="width: 30%; text-align: right;">
+                        <div style="font-size: 24px; font-weight: 900; color: #1f2937; line-height: 1;">{{ $totalAccumulated }}</div>
+                        <div style="font-size: 8px; text-transform: uppercase; font-weight: bold; color: #9ca3af; letter-spacing: 1px;">Créditos Totales</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; color: #cbd5e1; font-size: 9px;">
+            *** Fin del Pensum Académico ***
+        </div>
+
+    </div>
+
+    {{-- Script PHP para numeración de páginas --}}
+    <script type="text/php">
+        if (isset($pdf)) {
+            $x = 520;
+            $y = 810;
+            $text = "Página {PAGE_NUM} de {PAGE_COUNT}";
+            $font = null;
+            $size = 8;
+            $color = array(0.5, 0.5, 0.5);
+            $word_space = 0.0;
+            $char_space = 0.0;
+            $angle = 0.0;
+            $pdf->page_text($x, $y, $text, $font, $size, $color, $word_space, $char_space, $angle);
+        }
+    </script>
 
 </body>
 </html>
