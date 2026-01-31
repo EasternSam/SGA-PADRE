@@ -67,12 +67,36 @@
                         <span>{{ __('Docentes') }}</span>
                     </x-responsive-nav-link>
 
-                    <x-responsive-nav-link :href="route('admin.courses.index')" :active="request()->routeIs('admin.courses.index')" wire:navigate>
-                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.25c2.291 0 4.545-.16 6.731-.462a60.504 60.504 0 0 0-.49-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.75c2.395 0 4.708.16 6.949.462a59.903 59.903 0 0 1-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.5c2.389 0 4.692-.157 6.928-.461" />
-                        </svg>
-                        <span>{{ __('Académico') }}</span>
-                    </x-responsive-nav-link>
+                    <!-- DESPLEGABLE ACADÉMICO -->
+                    <div x-data="{ openAcademic: {{ request()->routeIs(['admin.courses.*', 'admin.careers.*']) ? 'true' : 'false' }} }">
+                        <button @click="openAcademic = !openAcademic" 
+                            class="flex w-full items-center justify-between px-4 py-2 text-sm font-medium text-white transition duration-150 ease-in-out hover:bg-white/10 focus:outline-none focus:bg-white/10 rounded-md {{ request()->routeIs(['admin.courses.*', 'admin.careers.*']) ? 'bg-white/10' : '' }}">
+                            <div class="flex items-center gap-3">
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.25c2.291 0 4.545-.16 6.731-.462a60.504 60.504 0 0 0-.49-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.75c2.395 0 4.708.16 6.949.462a59.903 59.903 0 0 1-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.5c2.389 0 4.692-.157 6.928-.461" />
+                                </svg>
+                                <span>{{ __('Académico') }}</span>
+                            </div>
+                            <svg class="h-4 w-4 transform transition-transform duration-200" :class="openAcademic ? 'rotate-180' : ''" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        
+                        <div x-show="openAcademic" x-collapse class="pl-10 space-y-1 mt-1">
+                            <!-- Cursos (Instituto) -->
+                            <a href="{{ route('admin.courses.index') }}" wire:navigate 
+                                class="block px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 rounded-md transition-colors {{ request()->routeIs('admin.courses.index') ? 'text-white bg-white/10 font-semibold' : '' }}">
+                                {{ __('Cursos') }}
+                            </a>
+                            
+                            <!-- Carreras (Universidad) -->
+                            <!-- Asumiendo que la ruta será admin.careers.index -->
+                            <a href="#" wire:navigate 
+                                class="block px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 rounded-md transition-colors {{ request()->routeIs('admin.careers.index') ? 'text-white bg-white/10 font-semibold' : '' }}">
+                                {{ __('Carreras') }}
+                            </a>
+                        </div>
+                    </div>
 
                     <x-responsive-nav-link :href="route('admin.classrooms.index')" :active="request()->routeIs('admin.classrooms.index')" wire:navigate>
                         <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
