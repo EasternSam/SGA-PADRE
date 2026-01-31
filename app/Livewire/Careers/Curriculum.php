@@ -32,11 +32,11 @@ class Curriculum extends Component
     public $is_elective = false;
     public $description = '';
     public $selectedPrerequisites = []; 
-    public $availablePrerequisites = [];
-
+    
     // --- MODAL HORARIOS (Secciones) ---
     public $showScheduleModal = false;
-    public $selectedModuleForSchedule = null;
+    // Cambiamos a ID para evitar errores de serialización de Modelos
+    public $selectedModuleId = null; 
     public $scheduleId = null;
     
     // Campos Horario
@@ -64,7 +64,6 @@ class Curriculum extends Component
         $hasOrderColumn = Schema::hasColumn('modules', 'order');
         $hasPrerequisitesTable = Schema::hasTable('module_prerequisites');
 
-        // Usamos una nueva consulta limpia
         $query = $this->career->modules();
         
         if ($hasPrerequisitesTable) {
@@ -87,22 +86,44 @@ class Curriculum extends Component
 
     public function render()
     {
-        // Cargamos los datos aquí para evitar problemas de serialización en propiedades públicas
         $teachers = User::role('Profesor')->orderBy('name')->get();
         $classrooms = Classroom::orderBy('name')->get(); 
         
+        // Carga dinámica de horarios basada en el ID seleccionado
         $moduleSchedules = [];
-        if ($this->selectedModuleForSchedule) {
-            $moduleSchedules = CourseSchedule::with(['teacher', 'classroom'])
-                ->where('module_id', $this->selectedModuleForSchedule->id)
-                ->orderBy('start_date', 'desc')
-                ->get();
+        $selectedModule = null;
+
+        if ($this->selectedModuleId) {
+            $selectedModule = Module::find($this->selectedModuleId);
+            if ($selectedModule) {
+                $moduleSchedules = CourseSchedule::with(['teacher', 'classroom'])
+                    ->where('module_id', $this->selectedModuleId)
+                    ->orderBy('start_date', 'desc')
+                    ->get();
+            }
+        }
+
+        // Carga de prerrequisitos disponibles (filtrados por lógica de periodo)
+        $availablePrerequisites = [];
+        if ($this->showModuleModal) {
+            $query = Module::where('course_id', $this->career->id);
+            if ($this->period_number > 1) {
+                 $query->where('period_number', '<', $this->period_number);
+            } else {
+                 $query->whereRaw('1 = 0'); // Ninguno disponible para el 1er periodo
+            }
+            if ($this->moduleId) {
+                $query->where('id', '!=', $this->moduleId);
+            }
+            $availablePrerequisites = $query->orderBy('period_number')->orderBy('code')->get();
         }
 
         return view('livewire.careers.curriculum', [
             'teachers' => $teachers,
             'classrooms' => $classrooms,
             'moduleSchedules' => $moduleSchedules,
+            'selectedModuleForSchedule' => $selectedModule, // Pasamos el modelo a la vista para el título
+            'availablePrerequisites' => $availablePrerequisites
         ]);
     }
 
@@ -115,21 +136,13 @@ class Curriculum extends Component
         $this->resetModuleInput();
         $this->period_number = $period;
         $this->modalModuleTitle = 'Nueva Asignatura';
-        $this->loadAvailablePrerequisites();
         $this->showModuleModal = true;
         $this->dispatch('open-modal', 'module-form-modal');
     }
 
     public function editModule($id)
     {
-        $hasPrerequisitesTable = Schema::hasTable('module_prerequisites');
-        
-        $query = Module::query();
-        if ($hasPrerequisitesTable) {
-            $query->with('prerequisites');
-        }
-        
-        $module = $query->findOrFail($id);
+        $module = Module::findOrFail($id);
         
         $this->moduleId = $module->id;
         $this->name = $module->name;
@@ -139,13 +152,12 @@ class Curriculum extends Component
         $this->is_elective = (bool)$module->is_elective;
         $this->description = $module->description;
         
-        if ($hasPrerequisitesTable) {
-            $this->selectedPrerequisites = $module->prerequisites->pluck('id')->map(fn($id) => (string)$id)->toArray();
+        if (Schema::hasTable('module_prerequisites')) {
+            $this->selectedPrerequisites = $module->prerequisites()->pluck('prerequisite_id')->map(fn($id) => (string)$id)->toArray();
         } else {
             $this->selectedPrerequisites = [];
         }
         
-        $this->loadAvailablePrerequisites();
         $this->modalModuleTitle = 'Editar: ' . $module->code;
         $this->showModuleModal = true;
         $this->dispatch('open-modal', 'module-form-modal');
@@ -187,14 +199,11 @@ class Curriculum extends Component
             }
 
             if (Schema::hasTable('module_prerequisites')) {
-                $module->refresh(); 
                 $module->prerequisites()->sync($this->selectedPrerequisites);
             }
         });
 
-        // Limpiar caché de propiedad computada
         unset($this->modulesByPeriod); 
-        
         $this->closeModuleModal();
         $this->dispatch('notify', message: 'Asignatura guardada.', type: 'success');
     }
@@ -214,7 +223,6 @@ class Curriculum extends Component
             }
             
             $module->delete();
-            // Limpiar caché de propiedad computada
             unset($this->modulesByPeriod); 
             $this->dispatch('notify', message: 'Asignatura eliminada.', type: 'success');
         } catch (\Exception $e) {
@@ -228,7 +236,8 @@ class Curriculum extends Component
 
     public function openScheduleModal($moduleId)
     {
-        $this->selectedModuleForSchedule = Module::findOrFail($moduleId);
+        // Guardamos solo el ID, Livewire se encarga del resto en render()
+        $this->selectedModuleId = $moduleId; 
         $this->resetScheduleInput();
         $this->showScheduleModal = true;
         $this->dispatch('open-modal', 'schedule-management-modal');
@@ -246,32 +255,36 @@ class Curriculum extends Component
             's_end_date' => 'required|date|after_or_equal:s_start_date',
         ]);
 
-        $data = [
-            'module_id' => $this->selectedModuleForSchedule->id,
-            'teacher_id' => $this->s_teacher_id,
-            'classroom_id' => $this->s_classroom_id ?: null,
-            'section_name' => $this->s_section_name,
-            'day_of_week' => $this->s_day_of_week,
-            'start_time' => $this->s_start_time,
-            'end_time' => $this->s_end_time,
-            'modality' => $this->s_modality,
-            'start_date' => $this->s_start_date,
-            'end_date' => $this->s_end_date,
-            'status' => 'Activo',
-        ];
+        try {
+            $data = [
+                'module_id' => $this->selectedModuleId,
+                'teacher_id' => $this->s_teacher_id,
+                'classroom_id' => $this->s_classroom_id ?: null,
+                'section_name' => $this->s_section_name,
+                'day_of_week' => $this->s_day_of_week,
+                'start_time' => $this->s_start_time,
+                'end_time' => $this->s_end_time,
+                'modality' => $this->s_modality,
+                'start_date' => $this->s_start_date,
+                'end_date' => $this->s_end_date,
+                'status' => 'Activo',
+            ];
 
-        if ($this->scheduleId) {
-            CourseSchedule::find($this->scheduleId)->update($data);
-            $msg = 'Horario actualizado.';
-        } else {
-            CourseSchedule::create($data);
-            $msg = 'Sección creada exitosamente.';
+            if ($this->scheduleId) {
+                CourseSchedule::find($this->scheduleId)->update($data);
+                $msg = 'Sección actualizada correctamente.';
+            } else {
+                CourseSchedule::create($data);
+                $msg = 'Sección creada exitosamente.';
+            }
+
+            unset($this->modulesByPeriod); // Refrescar contadores principales
+            $this->resetScheduleInput();
+            $this->dispatch('notify', message: $msg, type: 'success');
+
+        } catch (\Exception $e) {
+            $this->dispatch('notify', message: 'Error al guardar horario: ' . $e->getMessage(), type: 'error');
         }
-
-        // Limpiar caché de propiedad computada
-        unset($this->modulesByPeriod); 
-        $this->resetScheduleInput();
-        $this->dispatch('notify', message: $msg, type: 'success');
     }
 
     public function editSchedule($id)
@@ -281,6 +294,7 @@ class Curriculum extends Component
         $this->s_section_name = $schedule->section_name;
         $this->s_day_of_week = $schedule->day_of_week;
         
+        // Formatear horas para input time (H:i)
         $this->s_start_time = \Carbon\Carbon::parse($schedule->start_time)->format('H:i');
         $this->s_end_time = \Carbon\Carbon::parse($schedule->end_time)->format('H:i');
         
@@ -288,6 +302,7 @@ class Curriculum extends Component
         $this->s_classroom_id = $schedule->classroom_id;
         $this->s_modality = $schedule->modality;
         
+        // Formatear fechas para input date (Y-m-d)
         $this->s_start_date = \Carbon\Carbon::parse($schedule->start_date)->format('Y-m-d');
         $this->s_end_date = \Carbon\Carbon::parse($schedule->end_date)->format('Y-m-d');
     }
@@ -295,14 +310,14 @@ class Curriculum extends Component
     public function deleteSchedule($id)
     {
         CourseSchedule::destroy($id);
-        // Limpiar caché de propiedad computada
-        unset($this->modulesByPeriod); 
+        unset($this->modulesByPeriod);
         $this->dispatch('notify', message: 'Horario eliminado.', type: 'success');
     }
 
     public function closeScheduleModal()
     {
         $this->showScheduleModal = false;
+        $this->selectedModuleId = null; // Limpiar selección
         $this->resetScheduleInput();
         $this->dispatch('close-modal', 'schedule-management-modal');
     }
@@ -311,42 +326,7 @@ class Curriculum extends Component
     // HELPERS
     // =================================================================
 
-    private function loadAvailablePrerequisites()
-    {
-        $query = Module::where('course_id', $this->career->id);
-        
-        if ($this->period_number > 1) {
-             $query->where('period_number', '<', $this->period_number);
-        } else {
-             $this->availablePrerequisites = [];
-             return;
-        }
-        
-        if ($this->moduleId) {
-            $query->where('id', '!=', $this->moduleId);
-        }
-
-        $this->availablePrerequisites = $query->orderBy('period_number')->orderBy('code')->get();
-    }
-
-    public function updatedPeriodNumber()
-    {
-        $this->loadAvailablePrerequisites();
-    }
-
-    private function resetModuleInput()
-    {
-        $this->moduleId = null;
-        $this->name = '';
-        $this->code = '';
-        $this->credits = 3;
-        $this->is_elective = false;
-        $this->description = '';
-        $this->selectedPrerequisites = [];
-        $this->resetValidation();
-    }
-
-    // ESTE ES EL MÉTODO QUE DA EL ERROR, AHORA ES PÚBLICO
+    // Método PÚBLICO para evitar error "MethodNotFound"
     public function resetScheduleInput()
     {
         $this->scheduleId = null;
@@ -359,6 +339,18 @@ class Curriculum extends Component
         $this->s_modality = 'Presencial';
         $this->s_start_date = now()->format('Y-m-d');
         $this->s_end_date = now()->addMonths(4)->format('Y-m-d');
+        $this->resetValidation();
+    }
+
+    private function resetModuleInput()
+    {
+        $this->moduleId = null;
+        $this->name = '';
+        $this->code = '';
+        $this->credits = 3;
+        $this->is_elective = false;
+        $this->description = '';
+        $this->selectedPrerequisites = [];
         $this->resetValidation();
     }
 
