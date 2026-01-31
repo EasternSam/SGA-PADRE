@@ -11,8 +11,8 @@
         body {
             font-family: 'Helvetica', 'Arial', sans-serif; /* Fallback seguro para DomPDF */
             background-color: #f9fafb; /* Gray 50 */
-            /* Aumentamos el margen superior para evitar superposición con el header */
-            margin-top: 260px; 
+            /* Margen superior exacto para que el contenido empiece justo debajo del header + slogan */
+            margin-top: 290px; /* 240px Header + 5px Border + ~45px Slogan Bar */
             margin-bottom: 60px; /* Espacio para el footer fijo */
             color: #1e293b; /* Slate 800 */
         }
@@ -48,13 +48,15 @@
             height: 240px; /* Altura fija del header */
             background-color: white;
             z-index: 1000;
-            border-bottom: 5px solid #6b21a8; /* Borde inferior sólido */
+            /* Eliminado border-bottom del contenedor para evitar efecto "suelto" */
         }
 
         .header-table {
             width: 100%;
             height: 100%;
             border-collapse: collapse;
+            /* Asegura que no haya espacios entre celdas */
+            border-spacing: 0; 
         }
 
         /* Lado Izquierdo (Marca Institucional - LOGO) */
@@ -64,9 +66,11 @@
             background: linear-gradient(135deg, #7b1fa2 0%, #6a1b9a 100%);
             color: white;
             vertical-align: middle;
-            text-align: center; /* Centrar logo */
+            text-align: center;
             padding: 20px;
             position: relative;
+            /* Borde inferior integrado en la celda */
+            border-bottom: 5px solid #4a148c; /* Morado más oscuro para el lado izquierdo */
         }
 
         /* Lado Derecho (Información del Documento) */
@@ -78,14 +82,15 @@
             padding: 30px 40px;
             text-align: right;
             border-left: 1px solid rgba(255,255,255,0.1);
+            /* Borde inferior integrado en la celda - PEGADO AL RECUADRO */
+            border-bottom: 5px solid #6b21a8; /* Acento morado brillante */
         }
 
         /* Logo Image Style */
         .header-logo-img {
             max-width: 80%;
-            max-height: 180px;
+            max-height: 150px; /* Ajustado para que quepa bien */
             object-fit: contain;
-            /* Filtro para asegurar que se vea bien sobre fondo oscuro si es PNG transparente */
             filter: brightness(0) invert(1); 
         }
 
@@ -131,9 +136,32 @@
             font-weight: 600;
         }
 
+        /* --- SLOGAN BAR --- */
+        /* Posicionada fija justo debajo del header para que sea parte del encabezado visual */
+        .slogan-bar {
+            position: fixed;
+            top: 245px; /* 240px Header + 5px Border */
+            left: 0;
+            right: 0;
+            background-color: #f3f4f6; 
+            padding: 8px;
+            text-align: center; 
+            border-bottom: 1px solid #e5e7eb;
+            height: 30px; /* Altura controlada */
+            z-index: 900;
+        }
+        .slogan-text {
+            color: #6b21a8; 
+            font-size: 12px; 
+            font-style: italic; 
+            font-weight: 600;
+            margin: 0;
+            letter-spacing: 0.5px;
+            line-height: 30px; /* Centrado vertical */
+        }
+
         /* --- CONTENT AREA --- */
-        /* Padding superior para separar del header fijo */
-        .content-padding { padding: 20px 40px 0 40px; }
+        .content-padding { padding: 0 40px; }
 
         /* Grid Header (Simulado con tabla) */
         .grid-header-table {
@@ -357,7 +385,13 @@
         </table>
     </footer>
 
-    <!-- CONTENIDO PRINCIPAL (Sin Slogan) -->
+    <!-- SLOGAN BAR -->
+    <!-- Se mantiene vacio o comentado si el usuario pide quitarlo explicitamente, pero "Quita el apartado..." referia a uno viejo. 
+         Aqui lo dejo integrado como elemento visual sutil si se requiere, o podemos ocultarlo si "apartado" se referia a este.
+         El usuario dijo: 'Quita el apartado de "Excelencia académica para el futuro"' -->
+    <!-- Slogan removido por solicitud -->
+
+    <!-- CONTENIDO PRINCIPAL -->
     <div class="container">
         <div class="content-padding">
             
