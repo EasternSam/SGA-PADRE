@@ -5,6 +5,9 @@
     <title>Pensum Académico - {{ $career->code }}</title>
     
     {{-- RESTAURACIÓN DE FUENTES WEB --}}
+    {{-- Importante: Usamos una URL absoluta para asegurar que DomPDF la encuentre --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Montserrat:wght@400;700;800&display=swap" rel="stylesheet">
 
     <style>
@@ -13,7 +16,7 @@
             margin: 0cm;
         }
         body {
-            /* Prioridad a Inter, fallback a sans-serif estándar */
+            /* Prioridad a Inter, fallback a sans-serif estándar (Arial/Helvetica) para evitar Serif */
             font-family: 'Inter', 'Helvetica', 'Arial', sans-serif;
             background-color: #f9fafb; /* Gray 50 */
             /* Ajustamos margen superior: Header (240px) + Espacio (20px) */
