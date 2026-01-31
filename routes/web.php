@@ -303,7 +303,13 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     Route::get('/dashboard', \App\Livewire\Dashboard\Index::class)->name('admin.dashboard');
     Route::get('/students', \App\Livewire\Students\Index::class)->name('admin.students.index');
     Route::get('/students/profile/{student}', \App\Livewire\StudentProfile\Index::class)->name('admin.students.profile');
+    
+    // --- GESTIÓN ACADÉMICA ---
     Route::get('/courses', \App\Livewire\Courses\Index::class)->name('admin.courses.index');
+    
+    // Rutas para Carreras y Pensum (UNIVERSIDAD)
+    Route::get('/careers', \App\Livewire\Careers\Index::class)->name('admin.careers.index');
+    Route::get('/careers/{career}/curriculum', \App\Livewire\Careers\Curriculum::class)->name('admin.careers.curriculum');
     
     // --- GESTIÓN FINANCIERA ---
     // Dashboard General de Finanzas
@@ -342,11 +348,6 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     Route::get('/users', \App\Livewire\Admin\Users\Index::class)->name('admin.users.index');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
-
-
-    Route::get('/admin/careers/{career}/curriculum', \App\Livewire\Careers\Curriculum::class)
-    ->name('admin.careers.curriculum')
-    ->middleware(['auth', 'verified', 'role:Admin|Registro']);
 });
 
 // --- RUTAS DE ESTUDIANTE ---
