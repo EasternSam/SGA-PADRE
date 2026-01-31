@@ -1,88 +1,86 @@
 <div class="min-h-screen bg-gray-50/50 pb-12">
     
-    {{-- Notificaciones --}}
     <x-action-message on="notify" />
 
-    {{-- Encabezado con Breadcrumb y Stats --}}
+    {{-- 1. ENCABEZADO FIJO (Resumen de Carrera) --}}
     <div class="bg-white shadow-sm border-b border-gray-200 sticky top-16 z-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 
-                {{-- Info Carrera --}}
+                {{-- Título y Breadcrumb --}}
                 <div>
                     <div class="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                        <a href="{{ route('admin.careers.index') }}" class="hover:text-indigo-600 hover:underline" wire:navigate>Carreras</a>
+                        <a href="{{ route('admin.careers.index') }}" class="hover:text-indigo-600 hover:underline" wire:navigate>
+                            <svg class="w-3 h-3 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                            Volver a Carreras
+                        </a>
                         <span>/</span>
-                        <span>Pensum</span>
+                        <span class="font-medium text-gray-800">Pensum Académico</span>
                     </div>
-                    <h1 class="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                    <h1 class="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
                         {{ $career->name }}
-                        <span class="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold tracking-wide uppercase">
+                        <span class="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold tracking-wide uppercase border border-indigo-200">
                             {{ $career->code }}
                         </span>
                     </h1>
                 </div>
 
-                {{-- Stats Rápidos --}}
-                <div class="flex items-center gap-6 text-sm">
-                    <div class="hidden sm:block text-right">
-                        <p class="text-gray-500">Créditos Totales</p>
+                {{-- Estadísticas Rápidas --}}
+                <div class="flex items-center gap-6 bg-gray-50 px-4 py-2 rounded-xl border border-gray-200">
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500 uppercase font-bold">Créditos</p>
                         <p class="font-bold text-gray-900 text-lg">{{ $career->total_credits }}</p>
                     </div>
-                    <div class="hidden sm:block text-right border-l border-gray-200 pl-6">
-                        <p class="text-gray-500">Duración</p>
-                        <p class="font-bold text-gray-900 text-lg">{{ $career->duration_periods }} Cuatrimestres</p>
-                    </div>
-                    <div class="pl-2">
-                        <button wire:click="openCreateModal(1)" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-indigo-500 transition-all">
-                            <svg class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                            </svg>
-                            Agregar Materia
-                        </button>
+                    <div class="w-px h-8 bg-gray-300"></div>
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500 uppercase font-bold">Duración</p>
+                        <p class="font-bold text-gray-900 text-lg">{{ $career->duration_periods }} <span class="text-xs font-normal text-gray-500">Cuatrimestres</span></p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- Contenido del Pensum --}}
+    {{-- 2. CONTENIDO DEL PENSUM (Lista por Periodos) --}}
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
         
         @if($modulesByPeriod->isEmpty())
-            <div class="text-center py-20 bg-white rounded-2xl border border-gray-200 border-dashed">
-                <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                </svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">Pensum Vacío</h3>
-                <p class="mt-1 text-sm text-gray-500">Comienza agregando las materias del primer cuatrimestre.</p>
+            <div class="text-center py-20 bg-white rounded-2xl border-2 border-gray-200 border-dashed">
+                <div class="mx-auto h-16 w-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
+                    <svg class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900">Pensum Vacío</h3>
+                <p class="mt-1 text-gray-500 max-w-sm mx-auto">Esta carrera aún no tiene materias configuradas. Comienza agregando el primer cuatrimestre.</p>
                 <div class="mt-6">
-                    <button wire:click="openCreateModal(1)" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                    <button wire:click="openCreateModule(1)" class="inline-flex items-center px-5 py-2.5 border border-transparent shadow-sm text-sm font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition-all">
                         <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
-                        Agregar Primera Materia
+                        Agregar Materia al Cuatrimestre 1
                     </button>
                 </div>
             </div>
         @else
-            {{-- Loop por Periodos (Cuatrimestres) --}}
             @foreach($modulesByPeriod as $period => $modules)
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    {{-- Header del Periodo --}}
-                    <div class="bg-gray-50/80 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                        <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-white border border-gray-200 text-sm font-bold text-gray-600 shadow-sm">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    
+                    {{-- Header del Cuatrimestre --}}
+                    <div class="bg-gradient-to-r from-gray-50 to-white px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900 text-white text-sm font-bold shadow-md">
                                 {{ $period }}
                             </span>
-                            Cuatrimestre {{ $period }}
-                        </h3>
+                            <h3 class="text-lg font-bold text-gray-800">Cuatrimestre {{ $period }}</h3>
+                        </div>
                         <div class="flex items-center gap-4">
-                            <span class="text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded border border-gray-200">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                                 {{ $modules->sum('credits') }} Créditos
                             </span>
-                            <button wire:click="openCreateModal({{ $period }})" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium hover:underline">
-                                + Agregar aquí
+                            <button wire:click="openCreateModule({{ $period }})" class="text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                Agregar Materia
                             </button>
                         </div>
                     </div>
@@ -90,51 +88,59 @@
                     {{-- Lista de Materias --}}
                     <div class="divide-y divide-gray-100">
                         @foreach($modules as $module)
-                            <div class="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors group">
-                                <div class="flex items-start gap-4">
-                                    {{-- Código --}}
-                                    <div class="shrink-0 w-24">
-                                        <span class="block font-mono text-sm font-bold text-gray-700">{{ $module->code }}</span>
+                            <div class="px-6 py-5 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-gray-50 transition-colors group">
+                                
+                                {{-- Info Principal --}}
+                                <div class="flex items-start gap-5">
+                                    <div class="shrink-0 text-center w-20">
+                                        <span class="block font-mono text-sm font-bold text-gray-900 bg-gray-100 rounded px-2 py-1">{{ $module->code }}</span>
                                         @if($module->is_elective)
-                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 mt-1">
-                                                Electiva
-                                            </span>
+                                            <span class="block mt-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-1 rounded border border-amber-100">ELECTIVA</span>
                                         @endif
                                     </div>
                                     
-                                    {{-- Detalles --}}
                                     <div>
-                                        <h4 class="text-sm font-bold text-gray-900">{{ $module->name }}</h4>
-                                        <div class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500">
-                                            <span class="flex items-center gap-1">
+                                        <h4 class="text-base font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{{ $module->name }}</h4>
+                                        
+                                        <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+                                            {{-- Créditos --}}
+                                            <span class="flex items-center gap-1.5 text-gray-600 bg-white border border-gray-200 px-2 py-0.5 rounded-md">
                                                 <svg class="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                                                 {{ $module->credits }} Créditos
                                             </span>
-                                            
+
+                                            {{-- Prerrequisitos --}}
                                             @if($module->prerequisites->count() > 0)
-                                                <div class="flex items-center gap-1.5 text-rose-600 font-medium">
-                                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                                    Pre-req: 
+                                                <div class="flex items-center gap-1.5 text-rose-700 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-md">
+                                                    <span class="font-bold">Pre-req:</span>
                                                     @foreach($module->prerequisites as $pre)
-                                                        <span class="bg-rose-50 px-1.5 rounded border border-rose-100">{{ $pre->code }}</span>
+                                                        <span>{{ $pre->code }}</span>{{ !$loop->last ? ',' : '' }}
                                                     @endforeach
                                                 </div>
-                                            @else
-                                                <span class="text-gray-400 flex items-center gap-1">
-                                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
-                                                    Sin requisitos
-                                                </span>
                                             @endif
+
+                                            {{-- Contador de Horarios --}}
+                                            <span class="flex items-center gap-1.5 {{ $module->schedules->count() > 0 ? 'text-emerald-700 bg-emerald-50 border-emerald-100' : 'text-gray-400 bg-gray-50 border-gray-200' }} border px-2 py-0.5 rounded-md">
+                                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                {{ $module->schedules->count() }} Secciones
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
 
-                                {{-- Acciones --}}
-                                <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button wire:click="edit({{ $module->id }})" class="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Editar">
+                                {{-- Botones de Acción --}}
+                                <div class="mt-4 sm:mt-0 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button wire:click="openScheduleModal({{ $module->id }})" class="inline-flex items-center px-3 py-1.5 border border-indigo-200 text-xs font-medium rounded-lg text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors" title="Gestionar Horarios">
+                                        <svg class="mr-1.5 h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        Horarios
+                                    </button>
+                                    
+                                    <div class="h-6 w-px bg-gray-300 mx-1"></div>
+
+                                    <button wire:click="editModule({{ $module->id }})" class="p-2 text-gray-400 hover:text-indigo-600 hover:bg-gray-100 rounded-lg transition-colors" title="Editar Materia">
                                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                     </button>
-                                    <button wire:click="delete({{ $module->id }})" wire:confirm="¿Seguro que deseas eliminar esta materia? Esto podría afectar a los estudiantes inscritos." class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
+                                    <button wire:click="deleteModule({{ $module->id }})" wire:confirm="¿Eliminar esta materia? Se borrarán sus horarios." class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar Materia">
                                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                     </button>
                                 </div>
@@ -142,21 +148,20 @@
                         @endforeach
                     </div>
                 </div>
-                
-                {{-- Conector Visual entre periodos --}}
+
                 @if(!$loop->last)
-                    <div class="flex justify-center h-6">
-                        <div class="w-px bg-gray-300 border-l border-dashed border-gray-400"></div>
+                    <div class="flex justify-center py-4">
+                        <div class="h-8 w-px border-l-2 border-dashed border-gray-300"></div>
                     </div>
                 @endif
             @endforeach
         @endif
 
-        {{-- Botón para agregar siguiente periodo --}}
+        {{-- Botón Agregar Siguiente Periodo --}}
         @if($modulesByPeriod->isNotEmpty())
-            <div class="flex justify-center pb-8">
-                <button wire:click="openCreateModal({{ $modulesByPeriod->keys()->max() + 1 }})" class="group flex flex-col items-center gap-2 text-gray-400 hover:text-indigo-600 transition-colors">
-                    <div class="h-10 w-10 rounded-full border-2 border-dashed border-current flex items-center justify-center group-hover:border-solid group-hover:bg-indigo-50">
+            <div class="flex justify-center pb-12">
+                <button wire:click="openCreateModule({{ $modulesByPeriod->keys()->max() + 1 }})" class="group flex flex-col items-center gap-2 text-gray-400 hover:text-indigo-600 transition-colors">
+                    <div class="h-12 w-12 rounded-full border-2 border-dashed border-current flex items-center justify-center group-hover:bg-indigo-50 group-hover:border-solid transition-all">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                     </div>
                     <span class="text-sm font-medium">Agregar Cuatrimestre {{ $modulesByPeriod->keys()->max() + 1 }}</span>
@@ -165,49 +170,39 @@
         @endif
     </div>
 
-    {{-- Modal Crear/Editar Asignatura --}}
+    {{-- MODAL 1: Crear/Editar Materia --}}
     <x-modal name="module-form-modal" maxWidth="2xl">
         <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                <h2 class="text-lg font-bold text-gray-900">{{ $modalTitle }}</h2>
+                <h2 class="text-lg font-bold text-gray-900">{{ $modalModuleTitle }}</h2>
                 <button x-on:click="$dispatch('close')" class="text-gray-400 hover:text-gray-500">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
-            <form wire:submit.prevent="save" class="p-6 space-y-6">
+            <form wire:submit.prevent="saveModule" class="p-6 space-y-6">
                 
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    {{-- Código --}}
                     <div class="md:col-span-1">
-                        <x-input-label for="code" value="Clave" />
+                        <x-input-label for="code" value="Clave *" />
                         <x-text-input id="code" type="text" class="mt-1 w-full font-mono uppercase" wire:model="code" placeholder="MAT-101" />
                         <x-input-error :messages="$errors->get('code')" class="mt-1" />
                     </div>
-                    
-                    {{-- Nombre --}}
                     <div class="md:col-span-3">
-                        <x-input-label for="name" value="Nombre de la Asignatura" />
+                        <x-input-label for="name" value="Nombre Asignatura *" />
                         <x-text-input id="name" type="text" class="mt-1 w-full" wire:model="name" placeholder="Ej. Cálculo Diferencial" />
                         <x-input-error :messages="$errors->get('name')" class="mt-1" />
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {{-- Créditos --}}
                     <div>
-                        <x-input-label for="credits" value="Créditos" />
+                        <x-input-label for="credits" value="Créditos *" />
                         <x-text-input id="credits" type="number" class="mt-1 w-full" wire:model="credits" />
-                        <x-input-error :messages="$errors->get('credits')" class="mt-1" />
                     </div>
-                    
-                    {{-- Periodo --}}
                     <div>
-                        <x-input-label for="period_number" value="Cuatrimestre" />
+                        <x-input-label for="period_number" value="Cuatrimestre *" />
                         <x-text-input id="period_number" type="number" min="1" class="mt-1 w-full" wire:model="period_number" />
-                        <x-input-error :messages="$errors->get('period_number')" class="mt-1" />
                     </div>
-
-                    {{-- Electiva --}}
                     <div class="flex items-center pt-8">
                         <label class="flex items-center cursor-pointer">
                             <input type="checkbox" wire:model="is_elective" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
@@ -216,27 +211,140 @@
                     </div>
                 </div>
 
-                {{-- Prerrequisitos (Multi-Select Nativo Simple) --}}
                 <div>
-                    <x-input-label for="prerequisites" value="Pre-requisitos (Selecciona con Ctrl/Cmd + Click)" />
-                    <div class="mt-1 relative">
-                        <select id="prerequisites" wire:model="selectedPrerequisites" multiple 
-                                class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 h-32">
-                            @foreach($availablePrerequisites as $pre)
-                                <option value="{{ $pre->id }}">
-                                    [{{ $pre->code }}] {{ $pre->name }} (Cuatrimestre {{ $pre->period_number }})
-                                </option>
-                            @endforeach
-                        </select>
-                        <p class="text-xs text-gray-500 mt-1">Materias que el estudiante debe aprobar antes de tomar esta.</p>
-                    </div>
+                    <x-input-label for="prerequisites" value="Pre-requisitos (Materias anteriores)" />
+                    <select id="prerequisites" wire:model="selectedPrerequisites" multiple class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 h-32">
+                        @foreach($availablePrerequisites as $pre)
+                            <option value="{{ $pre->id }}">[{{ $pre->code }}] {{ $pre->name }}</option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Usa Ctrl (Win) o Cmd (Mac) para seleccionar varias.</p>
                 </div>
 
                 <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                    <x-secondary-button wire:click="closeModal">Cancelar</x-secondary-button>
+                    <x-secondary-button x-on:click="$dispatch('close')">Cancelar</x-secondary-button>
                     <x-primary-button>Guardar Asignatura</x-primary-button>
                 </div>
             </form>
         </div>
     </x-modal>
+
+    {{-- MODAL 2: Gestión de Horarios (Secciones) --}}
+    <x-modal name="schedule-management-modal" maxWidth="4xl">
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden h-[80vh] flex flex-col">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center shrink-0">
+                <h2 class="text-lg font-bold text-gray-900">
+                    Horarios: <span class="text-indigo-600">{{ $selectedModuleForSchedule?->name }}</span>
+                </h2>
+                <button x-on:click="$dispatch('close')" class="text-gray-400 hover:text-gray-500">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-hidden flex flex-col md:flex-row">
+                
+                {{-- Columna Izq: Lista de Secciones --}}
+                <div class="w-full md:w-1/2 border-r border-gray-200 overflow-y-auto p-4 bg-gray-50">
+                    <h3 class="text-xs font-bold text-gray-500 uppercase mb-3">Secciones Activas</h3>
+                    <div class="space-y-3">
+                        @forelse($moduleSchedules as $schedule)
+                            <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm hover:border-indigo-300 transition-colors relative group">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <span class="text-xs font-bold bg-gray-100 px-2 py-0.5 rounded text-gray-700">{{ $schedule->section_name }}</span>
+                                        <p class="font-bold text-sm text-gray-900 mt-1">{{ $schedule->day_of_week }} {{ substr($schedule->start_time, 0, 5) }} - {{ substr($schedule->end_time, 0, 5) }}</p>
+                                        <p class="text-xs text-gray-500">{{ $schedule->teacher->name ?? 'Sin Prof.' }} • {{ $schedule->classroom->name ?? 'Virtual' }}</p>
+                                    </div>
+                                    <div class="flex gap-1">
+                                        <button wire:click="editSchedule({{ $schedule->id }})" class="text-indigo-600 hover:bg-indigo-50 p-1 rounded"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                                        <button wire:click="deleteSchedule({{ $schedule->id }})" wire:confirm="Eliminar horario?" class="text-red-600 hover:bg-red-50 p-1 rounded"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="text-sm text-gray-400 text-center py-4">No hay horarios registrados.</p>
+                        @endforelse
+                    </div>
+                </div>
+
+                {{-- Columna Der: Formulario --}}
+                <div class="w-full md:w-1/2 p-6 overflow-y-auto">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">{{ $scheduleId ? 'Editar Sección' : 'Nueva Sección' }}</h3>
+                    <form wire:submit.prevent="saveSchedule" class="space-y-4">
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label value="Sección (Ej: 01)" />
+                                <x-text-input wire:model="s_section_name" class="w-full mt-1" />
+                                <x-input-error :messages="$errors->get('s_section_name')" />
+                            </div>
+                            <div>
+                                <x-input-label value="Modalidad" />
+                                <select wire:model="s_modality" class="w-full mt-1 rounded-lg border-gray-300 text-sm">
+                                    <option>Presencial</option>
+                                    <option>Virtual</option>
+                                    <option>Semi-Presencial</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <x-input-label value="Profesor" />
+                            <select wire:model="s_teacher_id" class="w-full mt-1 rounded-lg border-gray-300 text-sm">
+                                <option value="">-- Seleccionar --</option>
+                                @foreach($teachers as $t)
+                                    <option value="{{ $t->id }}">{{ $t->name }}</option>
+                                @endforeach
+                            </select>
+                            <x-input-error :messages="$errors->get('s_teacher_id')" />
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="col-span-1">
+                                <x-input-label value="Día" />
+                                <select wire:model="s_day_of_week" class="w-full mt-1 rounded-lg border-gray-300 text-sm">
+                                    <option>Lunes</option><option>Martes</option><option>Miércoles</option>
+                                    <option>Jueves</option><option>Viernes</option><option>Sábado</option><option>Domingo</option>
+                                </select>
+                            </div>
+                            <div>
+                                <x-input-label value="Inicio" />
+                                <x-text-input type="time" wire:model="s_start_time" class="w-full mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label value="Fin" />
+                                <x-text-input type="time" wire:model="s_end_time" class="w-full mt-1" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <x-input-label value="Aula" />
+                            <select wire:model="s_classroom_id" class="w-full mt-1 rounded-lg border-gray-300 text-sm">
+                                <option value="">-- Virtual / Sin Aula --</option>
+                                @foreach($classrooms as $c)
+                                    <option value="{{ $c->id }}">{{ $c->name }} (Cap: {{ $c->capacity }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 pt-2">
+                            <div>
+                                <x-input-label value="Fecha Inicio" />
+                                <x-text-input type="date" wire:model="s_start_date" class="w-full mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label value="Fecha Fin" />
+                                <x-text-input type="date" wire:model="s_end_date" class="w-full mt-1" />
+                            </div>
+                        </div>
+
+                        <div class="pt-4 flex justify-end">
+                            <x-primary-button>Guardar Horario</x-primary-button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </x-modal>
+
 </div>

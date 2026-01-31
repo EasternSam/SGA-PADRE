@@ -30,6 +30,8 @@ class Index extends Component
 
     public $confirmingDeletion = false;
     public $careerToDeleteId = null;
+    
+    public $modalTitle = '';
 
     protected $paginationTheme = 'tailwind';
 
@@ -51,13 +53,13 @@ class Index extends Component
 
         return view('livewire.careers.index', [
             'careers' => $careers,
-            'modalTitle' => $this->careerId ? 'Editar Carrera' : 'Nueva Carrera Universitaria'
         ]);
     }
 
     public function create()
     {
         $this->resetInput();
+        $this->modalTitle = 'Nueva Carrera Universitaria';
         $this->dispatch('open-modal', 'career-form-modal');
     }
 
@@ -74,9 +76,10 @@ class Index extends Component
         $this->degree_title = $career->degree_title;
         $this->registration_fee = $career->registration_fee;
         $this->monthly_fee = $career->monthly_fee;
-        $this->is_sequential = $career->is_sequential;
+        $this->is_sequential = (bool)$career->is_sequential;
         $this->status = $career->status;
 
+        $this->modalTitle = 'Editar Carrera';
         $this->resetValidation();
         $this->dispatch('open-modal', 'career-form-modal');
     }
@@ -114,8 +117,7 @@ class Index extends Component
         Course::updateOrCreate(['id' => $this->careerId], $data);
 
         session()->flash('message', $this->careerId ? 'Carrera actualizada correctamente.' : 'Carrera creada correctamente.');
-        $this->dispatch('close-modal', 'career-form-modal');
-        $this->resetInput();
+        $this->closeModal(); // Usamos el método interno para cerrar y limpiar
     }
 
     public function delete($id)
@@ -135,6 +137,13 @@ class Index extends Component
         }
     }
 
+    // --- ESTE ES EL MÉTODO QUE FALTABA O ESTABA PRIVADO ---
+    public function closeModal() 
+    {
+        $this->dispatch('close-modal', 'career-form-modal');
+        $this->resetInput();
+    }
+
     private function resetInput()
     {
         $this->careerId = null;
@@ -148,6 +157,7 @@ class Index extends Component
         $this->monthly_fee = 0;
         $this->is_sequential = true;
         $this->status = 'Activo';
+        $this->modalTitle = '';
         $this->resetValidation();
     }
 }
