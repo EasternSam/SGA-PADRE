@@ -397,6 +397,8 @@
                                     <option value="{{ $c->id }}">{{ $c->name }} (Capacidad: {{ $c->capacity }})</option>
                                 @endforeach
                             </select>
+                            {{-- Error agregado para el aula --}}
+                            <x-input-error :messages="$errors->get('s_classroom_id')" class="mt-1" />
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
