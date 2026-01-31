@@ -155,7 +155,7 @@
                                     <button wire:click="editModule({{ $module->id }})" class="p-2 text-gray-400 hover:text-indigo-600 hover:bg-gray-100 rounded-lg transition-colors" title="Editar Materia">
                                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                     </button>
-                                    <button wire:click="deleteModule({{ $module->id }})" wire:confirm="¿Eliminar esta materia? Se borrarán sus horarios." class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar Materia">
+                                    <button wire:click="deleteModule({{ $module->id }})" wire:confirm="¿Seguro que deseas eliminar esta materia? Esto podría afectar a los estudiantes inscritos." class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar Materia">
                                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                     </button>
                                 </div>
@@ -252,7 +252,7 @@
                     <h2 class="text-lg font-bold text-gray-900">Gestión de Secciones</h2>
                     <p class="text-sm text-gray-500">Materia: <span class="text-indigo-600 font-bold">{{ $selectedModuleForSchedule?->name }}</span> ({{ $selectedModuleForSchedule?->code }})</p>
                 </div>
-                <button x-on:click="$dispatch('close')" class="text-gray-400 hover:text-gray-500">
+                <button wire:click="closeScheduleModal" class="text-gray-400 hover:text-gray-500">
                     <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
@@ -268,7 +268,7 @@
                     
                     <div class="space-y-3">
                         @forelse($moduleSchedules as $schedule)
-                            <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all relative group">
+                            <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all relative group" wire:key="schedule-{{ $schedule->id }}">
                                 
                                 <div class="flex justify-between items-start mb-2">
                                     <span class="text-xs font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-100">
@@ -390,7 +390,7 @@
                         </div>
 
                         <div class="pt-6 flex justify-end gap-3">
-                            <x-secondary-button x-on:click="$dispatch('close')">Cerrar</x-secondary-button>
+                            <x-secondary-button wire:click="closeScheduleModal">Cerrar</x-secondary-button>
                             <x-primary-button class="w-full sm:w-auto justify-center">
                                 {{ $scheduleId ? 'Actualizar Sección' : 'Crear Sección' }}
                             </x-primary-button>

@@ -9,7 +9,7 @@ use App\Models\User;
 use App\Models\Classroom;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Computed; // Importar Computed
+use Livewire\Attributes\Computed;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -19,11 +19,9 @@ class Curriculum extends Component
 {
     public Course $career;
     
-    // Eliminamos $modulesByPeriod de propiedades públicas para evitar errores de serialización
-    // public $modulesByPeriod; 
-
-    public $teachers;
-    public $classrooms;
+    // Listas para selects
+    public $teachers = [];
+    public $classrooms = [];
 
     // --- MODAL ASIGNATURA (Materia) ---
     public $showModuleModal = false;
@@ -64,16 +62,17 @@ class Curriculum extends Component
         }
         $this->career = $career;
         $this->loadResources();
-        // $this->loadCurriculum(); // Ya no se llama aquí, se usa computed
     }
 
     public function loadResources()
     {
+        // Cargar profesores
         $this->teachers = User::role('Profesor')->orderBy('name')->get();
-        $this->classrooms = Classroom::where('status', 'Activo')->orderBy('name')->get();
+        
+        // Cargar todas las aulas (sin filtrar por estado para asegurar que aparezcan)
+        $this->classrooms = Classroom::orderBy('name')->get();
     }
 
-    // Convertido a Computed Property para evitar errores de serialización de Livewire con Colecciones Agrupadas
     #[Computed]
     public function modulesByPeriod()
     {
@@ -97,7 +96,6 @@ class Curriculum extends Component
 
         $modules = $query->get();
 
-        // Agrupamos por periodo
         return $modules->groupBy('period_number');
     }
 
@@ -140,8 +138,7 @@ class Curriculum extends Component
         $this->description = $module->description;
         
         if ($hasPrerequisitesTable) {
-            // Asegurar que sea un array de strings para evitar problemas con Livewire
-            $this->selectedPrerequisites = $module->prerequisites->pluck('id')->map(fn($item) => (string) $item)->toArray();
+            $this->selectedPrerequisites = $module->prerequisites->pluck('id')->map(fn($id) => (string)$id)->toArray();
         } else {
             $this->selectedPrerequisites = [];
         }
@@ -188,13 +185,12 @@ class Curriculum extends Component
             }
 
             if (Schema::hasTable('module_prerequisites')) {
-                // sync espera un array de IDs. Aseguramos que lo sea.
+                $module->refresh();
                 $module->prerequisites()->sync($this->selectedPrerequisites);
             }
         });
 
-        // $this->loadCurriculum(); // Ya no es necesario recargar manual, computed se encarga
-        unset($this->modulesByPeriod); // Invalidar cache computed si es necesario (en Livewire 3 es automático al renderizar)
+        unset($this->modulesByPeriod); 
         
         $this->closeModuleModal();
         $this->dispatch('notify', message: 'Asignatura guardada.', type: 'success');
@@ -206,18 +202,15 @@ class Curriculum extends Component
             $module = Module::findOrFail($id);
             
             if (Schema::hasTable('module_prerequisites')) {
-                // Verificar si es requisito de alguien
                 if ($module->requiredFor()->exists()) {
                     $this->dispatch('notify', message: 'No se puede eliminar: Es prerrequisito de otras materias.', type: 'error');
                     return;
                 }
-                // Limpiar relaciones antes de borrar para evitar errores de integridad si no hay cascade
                 $module->prerequisites()->detach();
                 $module->requiredFor()->detach();
             }
             
             $module->delete();
-            // $this->loadCurriculum(); // Innecesario con Computed
             unset($this->modulesByPeriod); 
             $this->dispatch('notify', message: 'Asignatura eliminada.', type: 'success');
         } catch (\Exception $e) {
@@ -283,8 +276,7 @@ class Curriculum extends Component
         }
 
         $this->loadModuleSchedules();
-        // $this->loadCurriculum(); // Innecesario con Computed
-        unset($this->modulesByPeriod);
+        unset($this->modulesByPeriod); // Refrescar contadores en la vista principal
         $this->resetScheduleInput();
         $this->dispatch('notify', message: $msg, type: 'success');
     }
@@ -308,9 +300,15 @@ class Curriculum extends Component
     {
         CourseSchedule::destroy($id);
         $this->loadModuleSchedules();
-        // $this->loadCurriculum(); // Innecesario con Computed
         unset($this->modulesByPeriod);
         $this->dispatch('notify', message: 'Horario eliminado.', type: 'success');
+    }
+
+    public function closeScheduleModal()
+    {
+        $this->showScheduleModal = false;
+        $this->resetScheduleInput();
+        $this->dispatch('close-modal', 'schedule-management-modal');
     }
 
     // =================================================================
@@ -328,7 +326,6 @@ class Curriculum extends Component
              return;
         }
         
-        // Excluir la materia actual si estamos editando
         if ($this->moduleId) {
             $query->where('id', '!=', $this->moduleId);
         }
