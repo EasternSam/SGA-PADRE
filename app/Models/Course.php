@@ -22,6 +22,12 @@ class Course extends Model
         'is_sequential',
         'registration_fee',
         'monthly_fee',
+        // Nuevos campos Universidad
+        'program_type', // 'technical' o 'degree'
+        'total_credits',
+        'duration_periods',
+        'degree_title',
+        'status', // Agregado status que estaba en la migración original pero faltaba aquí
     ];
 
     /**
@@ -33,14 +39,18 @@ class Course extends Model
         'is_sequential' => 'boolean',
         'registration_fee' => 'decimal:2',
         'monthly_fee' => 'decimal:2',
+        // Nuevos casts
+        'total_credits' => 'integer',
+        'duration_periods' => 'integer',
     ];
 
     /**
      * Relación: Un Curso tiene muchos Módulos.
+     * En modo universidad, ordenamos por periodo (pensum).
      */
     public function modules()
     {
-        return $this->hasMany(Module::class);
+        return $this->hasMany(Module::class)->orderBy('period_number')->orderBy('order');
     }
 
     // ====================================================================
@@ -53,5 +63,17 @@ class Course extends Model
     public function mapping()
     {
         return $this->hasOne(CourseMapping::class);
+    }
+
+    // --- Helpers para Modo ---
+    
+    public function isUniversity()
+    {
+        return $this->program_type === 'degree';
+    }
+
+    public function isTechnical()
+    {
+        return $this->program_type === 'technical';
     }
 }
