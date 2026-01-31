@@ -3,23 +3,29 @@
 <head>
     <meta charset="utf-8">
     <title>Pensum Académico - {{ $career->code }}</title>
+    
+    {{-- RESTAURACIÓN DE FUENTES WEB --}}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Montserrat:wght@400;700;800&display=swap" rel="stylesheet">
+
     <style>
         /* CONFIGURACIÓN BÁSICA COMPATIBLE CON DOMPDF */
         @page {
             margin: 0cm;
         }
         body {
-            font-family: 'Helvetica', 'Arial', sans-serif; /* Fallback seguro para DomPDF */
+            /* Prioridad a Inter, fallback a sans-serif estándar */
+            font-family: 'Inter', 'Helvetica', 'Arial', sans-serif;
             background-color: #f9fafb; /* Gray 50 */
-            /* Margen superior exacto para que el contenido empiece justo debajo del header + slogan */
-            margin-top: 290px; /* 240px Header + 5px Border + ~45px Slogan Bar */
+            /* Ajustamos margen superior: Header (240px) + Espacio (20px) */
+            margin-top: 260px; 
             margin-bottom: 60px; /* Espacio para el footer fijo */
             color: #1e293b; /* Slate 800 */
         }
 
-        /* --- FONTS --- */
-        h1, h2, h3, .font-heading {
-            font-family: sans-serif;
+        /* --- FONTS ESPECÍFICAS --- */
+        /* Montserrat para títulos y elementos destacados */
+        h1, h2, h3, .font-heading, .main-title, .period-title, .doc-label, .career-type-badge, .period-number, .summary-total, .watermark {
+            font-family: 'Montserrat', sans-serif;
             font-weight: bold;
         }
 
@@ -48,14 +54,13 @@
             height: 240px; /* Altura fija del header */
             background-color: white;
             z-index: 1000;
-            border-bottom: 5px solid #6b21a8; /* Borde inferior sólido */
+            /* Eliminado border-bottom del contenedor para que las celdas controlen el borde */
         }
 
         .header-table {
             width: 100%;
             height: 100%;
             border-collapse: collapse;
-            /* Asegura que no haya espacios entre celdas */
             border-spacing: 0; 
         }
 
@@ -136,30 +141,6 @@
             font-weight: 600;
         }
 
-        /* --- SLOGAN BAR --- */
-        /* Posicionada fija justo debajo del header para que sea parte del encabezado visual */
-        .slogan-bar {
-            position: fixed;
-            top: 245px; /* 240px Header + 5px Border */
-            left: 0;
-            right: 0;
-            background-color: #f3f4f6; 
-            padding: 8px;
-            text-align: center; 
-            border-bottom: 1px solid #e5e7eb;
-            height: 30px; /* Altura controlada */
-            z-index: 900;
-        }
-        .slogan-text {
-            color: #6b21a8; 
-            font-size: 12px; 
-            font-style: italic; 
-            font-weight: 600;
-            margin: 0;
-            letter-spacing: 0.5px;
-            line-height: 30px; /* Centrado vertical */
-        }
-
         /* --- CONTENT AREA --- */
         .content-padding { padding: 0 40px; }
 
@@ -178,6 +159,7 @@
             text-transform: uppercase;
             padding: 8px 10px;
             letter-spacing: 0.5px;
+            font-family: 'Montserrat', sans-serif;
         }
 
         /* --- PERIODOS --- */
@@ -190,11 +172,9 @@
             margin-bottom: 10px; 
             border-bottom: 2px solid #e9d5ff; /* Línea un poco más gruesa */
             padding-bottom: 5px;
-            display: block; /* Cambiado de table a block para texto simple */
+            display: block; 
             width: 100%;
         }
-        
-        /* Eliminamos el estilo de period-number anterior */
         
         .period-title { 
             color: #4a148c; /* Morado muy oscuro */
@@ -202,7 +182,7 @@
             text-transform: uppercase; 
             font-weight: 900; 
             letter-spacing: 0.5px;
-            display: block; /* Asegura que ocupe el espacio */
+            display: block; 
         }
 
         /* Tabla de Materias */
@@ -380,9 +360,6 @@
             </tr>
         </table>
     </footer>
-
-    <!-- SLOGAN BAR -->
-    <!-- Slogan removido por solicitud -->
 
     <!-- CONTENIDO PRINCIPAL -->
     <div class="container">
