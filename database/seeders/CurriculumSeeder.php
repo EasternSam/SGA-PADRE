@@ -33,10 +33,13 @@ class CurriculumSeeder extends Seeder
         }
 
         // 1. Crear o Buscar la Carrera (CORREGIDO: firstOrCreate para evitar duplicados)
+        // CAMBIO IMPORTANTE: Usamos un código nuevo para evitar conflictos con datos existentes
+        $courseCode = 'IDS-2026-B'; 
+        
         $course = Course::firstOrCreate(
-            ['code' => 'IDS-2026'], // Buscar por código único
+            ['code' => $courseCode], // Buscar por este código nuevo
             [
-                'name' => 'Ingeniería en Desarrollo de Software',
+                'name' => 'Ingeniería en Desarrollo de Software (Plan B)',
                 'program_type' => 'degree', 
                 'description' => 'Carrera enfocada en el desarrollo, arquitectura y gestión de soluciones de software modernas.',
                 'status' => 'Activo',
@@ -51,52 +54,52 @@ class CurriculumSeeder extends Seeder
         // Estructura: ['code', 'name', 'credits', 'prereqs' => ['CODE1', 'CODE2']]
         $curriculum = [
             1 => [
-                ['code' => 'ESP-101', 'name' => 'Lengua Española I', 'credits' => 3, 'prereqs' => []],
-                ['code' => 'MAT-101', 'name' => 'Matemática Básica', 'credits' => 4, 'prereqs' => []],
-                ['code' => 'INF-100', 'name' => 'Introducción a la Informática', 'credits' => 3, 'prereqs' => []],
-                ['code' => 'SOC-101', 'name' => 'Orientación Institucional', 'credits' => 2, 'prereqs' => []],
-                ['code' => 'ING-101', 'name' => 'Inglés I', 'credits' => 3, 'prereqs' => []],
+                ['code' => 'ESP-101-B', 'name' => 'Lengua Española I', 'credits' => 3, 'prereqs' => []],
+                ['code' => 'MAT-101-B', 'name' => 'Matemática Básica', 'credits' => 4, 'prereqs' => []],
+                ['code' => 'INF-100-B', 'name' => 'Introducción a la Informática', 'credits' => 3, 'prereqs' => []],
+                ['code' => 'SOC-101-B', 'name' => 'Orientación Institucional', 'credits' => 2, 'prereqs' => []],
+                ['code' => 'ING-101-B', 'name' => 'Inglés I', 'credits' => 3, 'prereqs' => []],
             ],
             2 => [
-                ['code' => 'ESP-102', 'name' => 'Lengua Española II', 'credits' => 3, 'prereqs' => ['ESP-101']],
-                ['code' => 'MAT-102', 'name' => 'Cálculo Diferencial', 'credits' => 4, 'prereqs' => ['MAT-101']],
-                ['code' => 'INF-101', 'name' => 'Algoritmos y Programación', 'credits' => 4, 'prereqs' => ['INF-100', 'MAT-101']],
-                ['code' => 'FIS-101', 'name' => 'Física General', 'credits' => 3, 'prereqs' => ['MAT-101']],
-                ['code' => 'ING-102', 'name' => 'Inglés II', 'credits' => 3, 'prereqs' => ['ING-101']],
+                ['code' => 'ESP-102-B', 'name' => 'Lengua Española II', 'credits' => 3, 'prereqs' => ['ESP-101-B']],
+                ['code' => 'MAT-102-B', 'name' => 'Cálculo Diferencial', 'credits' => 4, 'prereqs' => ['MAT-101-B']],
+                ['code' => 'INF-101-B', 'name' => 'Algoritmos y Programación', 'credits' => 4, 'prereqs' => ['INF-100-B', 'MAT-101-B']],
+                ['code' => 'FIS-101-B', 'name' => 'Física General', 'credits' => 3, 'prereqs' => ['MAT-101-B']],
+                ['code' => 'ING-102-B', 'name' => 'Inglés II', 'credits' => 3, 'prereqs' => ['ING-101-B']],
             ],
             3 => [
-                ['code' => 'MAT-201', 'name' => 'Cálculo Integral', 'credits' => 4, 'prereqs' => ['MAT-102']],
-                ['code' => 'INF-102', 'name' => 'Programación Orientada a Objetos', 'credits' => 4, 'prereqs' => ['INF-101']],
-                ['code' => 'INF-103', 'name' => 'Base de Datos I', 'credits' => 4, 'prereqs' => ['INF-101']],
-                ['code' => 'FIS-102', 'name' => 'Física Eléctrica', 'credits' => 3, 'prereqs' => ['FIS-101', 'MAT-102']],
-                ['code' => 'ING-103', 'name' => 'Inglés Técnico', 'credits' => 3, 'prereqs' => ['ING-102']],
+                ['code' => 'MAT-201-B', 'name' => 'Cálculo Integral', 'credits' => 4, 'prereqs' => ['MAT-102-B']],
+                ['code' => 'INF-102-B', 'name' => 'Programación Orientada a Objetos', 'credits' => 4, 'prereqs' => ['INF-101-B']],
+                ['code' => 'INF-103-B', 'name' => 'Base de Datos I', 'credits' => 4, 'prereqs' => ['INF-101-B']],
+                ['code' => 'FIS-102-B', 'name' => 'Física Eléctrica', 'credits' => 3, 'prereqs' => ['FIS-101-B', 'MAT-102-B']],
+                ['code' => 'ING-103-B', 'name' => 'Inglés Técnico', 'credits' => 3, 'prereqs' => ['ING-102-B']],
             ],
             4 => [
-                ['code' => 'INF-201', 'name' => 'Estructura de Datos', 'credits' => 4, 'prereqs' => ['INF-102']],
-                ['code' => 'INF-202', 'name' => 'Base de Datos II', 'credits' => 4, 'prereqs' => ['INF-103']],
-                ['code' => 'INF-203', 'name' => 'Sistemas Operativos', 'credits' => 3, 'prereqs' => ['INF-100']],
-                ['code' => 'EST-201', 'name' => 'Estadística y Probabilidad', 'credits' => 3, 'prereqs' => ['MAT-101']],
-                ['code' => 'ADM-201', 'name' => 'Administración de Proyectos', 'credits' => 3, 'prereqs' => ['INF-100']],
+                ['code' => 'INF-201-B', 'name' => 'Estructura de Datos', 'credits' => 4, 'prereqs' => ['INF-102-B']],
+                ['code' => 'INF-202-B', 'name' => 'Base de Datos II', 'credits' => 4, 'prereqs' => ['INF-103-B']],
+                ['code' => 'INF-203-B', 'name' => 'Sistemas Operativos', 'credits' => 3, 'prereqs' => ['INF-100-B']],
+                ['code' => 'EST-201-B', 'name' => 'Estadística y Probabilidad', 'credits' => 3, 'prereqs' => ['MAT-101-B']],
+                ['code' => 'ADM-201-B', 'name' => 'Administración de Proyectos', 'credits' => 3, 'prereqs' => ['INF-100-B']],
             ],
             5 => [
-                ['code' => 'INF-301', 'name' => 'Desarrollo Web I', 'credits' => 4, 'prereqs' => ['INF-102', 'INF-103']],
-                ['code' => 'INF-302', 'name' => 'Análisis y Diseño de Sistemas', 'credits' => 4, 'prereqs' => ['INF-103', 'ADM-201']],
-                ['code' => 'INF-303', 'name' => 'Redes de Computadoras I', 'credits' => 3, 'prereqs' => ['INF-203']],
-                ['code' => 'INF-304', 'name' => 'Metodología de la Investigación', 'credits' => 3, 'prereqs' => ['ESP-102']],
-                ['code' => 'ELE-001', 'name' => 'Electiva Profesional I', 'credits' => 3, 'is_elective' => true, 'prereqs' => []],
+                ['code' => 'INF-301-B', 'name' => 'Desarrollo Web I', 'credits' => 4, 'prereqs' => ['INF-102-B', 'INF-103-B']],
+                ['code' => 'INF-302-B', 'name' => 'Análisis y Diseño de Sistemas', 'credits' => 4, 'prereqs' => ['INF-103-B', 'ADM-201-B']],
+                ['code' => 'INF-303-B', 'name' => 'Redes de Computadoras I', 'credits' => 3, 'prereqs' => ['INF-203-B']],
+                ['code' => 'INF-304-B', 'name' => 'Metodología de la Investigación', 'credits' => 3, 'prereqs' => ['ESP-102-B']],
+                ['code' => 'ELE-001-B', 'name' => 'Electiva Profesional I', 'credits' => 3, 'is_elective' => true, 'prereqs' => []],
             ],
             6 => [
-                ['code' => 'INF-305', 'name' => 'Desarrollo Web II', 'credits' => 4, 'prereqs' => ['INF-301']],
-                ['code' => 'INF-306', 'name' => 'Ingeniería de Software', 'credits' => 4, 'prereqs' => ['INF-302']],
-                ['code' => 'INF-307', 'name' => 'Redes de Computadoras II', 'credits' => 3, 'prereqs' => ['INF-303']],
-                ['code' => 'INF-308', 'name' => 'Seguridad Informática', 'credits' => 3, 'prereqs' => ['INF-303']],
-                ['code' => 'ELE-002', 'name' => 'Electiva Profesional II', 'credits' => 3, 'is_elective' => true, 'prereqs' => []],
+                ['code' => 'INF-305-B', 'name' => 'Desarrollo Web II', 'credits' => 4, 'prereqs' => ['INF-301-B']],
+                ['code' => 'INF-306-B', 'name' => 'Ingeniería de Software', 'credits' => 4, 'prereqs' => ['INF-302-B']],
+                ['code' => 'INF-307-B', 'name' => 'Redes de Computadoras II', 'credits' => 3, 'prereqs' => ['INF-303-B']],
+                ['code' => 'INF-308-B', 'name' => 'Seguridad Informática', 'credits' => 3, 'prereqs' => ['INF-303-B']],
+                ['code' => 'ELE-002-B', 'name' => 'Electiva Profesional II', 'credits' => 3, 'is_elective' => true, 'prereqs' => []],
             ],
             7 => [
-                ['code' => 'INF-401', 'name' => 'Inteligencia Artificial', 'credits' => 3, 'prereqs' => ['INF-201', 'EST-201']],
-                ['code' => 'INF-402', 'name' => 'Desarrollo de Apps Móviles', 'credits' => 4, 'prereqs' => ['INF-102']],
-                ['code' => 'INF-403', 'name' => 'Ética Profesional', 'credits' => 2, 'prereqs' => ['SOC-101']],
-                ['code' => 'INF-490', 'name' => 'Proyecto Final de Grado', 'credits' => 6, 'prereqs' => ['INF-304', 'INF-306']],
+                ['code' => 'INF-401-B', 'name' => 'Inteligencia Artificial', 'credits' => 3, 'prereqs' => ['INF-201-B', 'EST-201-B']],
+                ['code' => 'INF-402-B', 'name' => 'Desarrollo de Apps Móviles', 'credits' => 4, 'prereqs' => ['INF-102-B']],
+                ['code' => 'INF-403-B', 'name' => 'Ética Profesional', 'credits' => 2, 'prereqs' => ['SOC-101-B']],
+                ['code' => 'INF-490-B', 'name' => 'Proyecto Final de Grado', 'credits' => 6, 'prereqs' => ['INF-304-B', 'INF-306-B']],
             ],
         ];
 
@@ -126,7 +129,7 @@ class CurriculumSeeder extends Seeder
                 }
 
                 $module = Module::firstOrCreate(
-                    ['code' => $data['code'], 'course_id' => $course->id], // Clave de búsqueda
+                    ['code' => $data['code'], 'course_id' => $course->id], // Clave de búsqueda (Código + ID Curso)
                     $moduleData
                 );
 
