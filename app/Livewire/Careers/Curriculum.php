@@ -287,13 +287,18 @@ class Curriculum extends Component
         $this->scheduleId = $id;
         $this->s_section_name = $schedule->section_name;
         $this->s_day_of_week = $schedule->day_of_week;
-        $this->s_start_time = $schedule->start_time;
-        $this->s_end_time = $schedule->end_time;
+        
+        // CORRECCIÓN: Formatear hora (H:i) para que el input type="time" la reconozca
+        $this->s_start_time = \Carbon\Carbon::parse($schedule->start_time)->format('H:i');
+        $this->s_end_time = \Carbon\Carbon::parse($schedule->end_time)->format('H:i');
+        
         $this->s_teacher_id = $schedule->teacher_id;
         $this->s_classroom_id = $schedule->classroom_id;
         $this->s_modality = $schedule->modality;
-        $this->s_start_date = $schedule->start_date;
-        $this->s_end_date = $schedule->end_date;
+        
+        // CORRECCIÓN: Formatear fecha (Y-m-d) para que el input type="date" la reconozca
+        $this->s_start_date = \Carbon\Carbon::parse($schedule->start_date)->format('Y-m-d');
+        $this->s_end_date = \Carbon\Carbon::parse($schedule->end_date)->format('Y-m-d');
     }
 
     public function deleteSchedule($id)

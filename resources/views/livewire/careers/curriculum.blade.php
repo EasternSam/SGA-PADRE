@@ -268,15 +268,19 @@
                     
                     <div class="space-y-3">
                         @forelse($moduleSchedules as $schedule)
-                            <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all relative group" wire:key="schedule-{{ $schedule->id }}">
+                            {{-- CAMBIO CLAVE AQUÍ: Agregar wire:click en el contenedor principal para que sea cliqueable --}}
+                            <div 
+                                wire:click="editSchedule({{ $schedule->id }})" 
+                                class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm hover:border-indigo-400 hover:shadow-md transition-all relative group cursor-pointer {{ $scheduleId === $schedule->id ? 'border-indigo-500 ring-2 ring-indigo-200 bg-indigo-50' : '' }}" 
+                                wire:key="schedule-{{ $schedule->id }}">
                                 
                                 <div class="flex justify-between items-start mb-2">
-                                    <span class="text-xs font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-100">
+                                    <span class="text-xs font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">
                                         {{ $schedule->section_name }}
                                     </span>
-                                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button wire:click="editSchedule({{ $schedule->id }})" class="text-indigo-600 hover:bg-indigo-50 p-1 rounded" title="Editar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
-                                        <button wire:click="deleteSchedule({{ $schedule->id }})" wire:confirm="¿Eliminar esta sección?" class="text-red-600 hover:bg-red-50 p-1 rounded" title="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                                    <div class="flex gap-1">
+                                        {{-- Botón eliminar sigue siendo funcional individualmente pero requiere stop propagation --}}
+                                        <button wire:click.stop="deleteSchedule({{ $schedule->id }})" wire:confirm="¿Eliminar esta sección?" class="text-red-600 hover:bg-red-50 p-1 rounded" title="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                                     </div>
                                 </div>
                                 
@@ -312,6 +316,9 @@
                         @if($scheduleId)
                             <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                             Editar Sección
+                            <button wire:click="resetScheduleInput" class="ml-auto text-xs font-medium text-indigo-600 hover:underline">
+                                + Nueva
+                            </button>
                         @else
                             <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                             Nueva Sección
