@@ -342,6 +342,11 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     Route::get('/users', \App\Livewire\Admin\Users\Index::class)->name('admin.users.index');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
+
+
+    Route::get('/admin/careers/{career}/curriculum', \App\Livewire\Careers\Curriculum::class)
+    ->name('admin.careers.curriculum')
+    ->middleware(['auth', 'verified', 'role:Admin|Registro']);
 });
 
 // --- RUTAS DE ESTUDIANTE ---

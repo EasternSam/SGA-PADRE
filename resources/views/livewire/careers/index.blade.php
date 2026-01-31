@@ -196,7 +196,7 @@
                 </div>
 
                 <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                    <x-secondary-button x-on:click="$dispatch('close')">Cancelar</x-secondary-button>
+                    <x-secondary-button wire:click="closeModal">Cancelar</x-secondary-button>
                     <x-primary-button>Guardar Carrera</x-primary-button>
                 </div>
             </form>
