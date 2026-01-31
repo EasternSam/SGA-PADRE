@@ -11,6 +11,7 @@ use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema; // Importar Schema
 
 #[Layout('layouts.dashboard')]
 class Curriculum extends Component
@@ -73,11 +74,20 @@ class Curriculum extends Component
 
     public function loadCurriculum()
     {
-        $modules = $this->career->modules()
+        // Verificar si la columna 'order' existe para evitar errores en la consulta
+        $hasOrderColumn = Schema::hasColumn('modules', 'order');
+
+        $query = $this->career->modules()
             ->with(['prerequisites', 'schedules']) // Cargar horarios también para mostrar contador
-            ->orderBy('period_number')
-            ->orderBy('order')
-            ->get();
+            ->orderBy('period_number');
+
+        if ($hasOrderColumn) {
+            $query->orderBy('order');
+        } else {
+            $query->orderBy('id'); // Fallback orden por ID
+        }
+
+        $modules = $query->get();
 
         $this->modulesByPeriod = $modules->groupBy('period_number');
     }
@@ -148,11 +158,15 @@ class Curriculum extends Component
                 $module = Module::findOrFail($this->moduleId);
                 $module->update($data);
             } else {
-                // Auto-orden
-                $lastOrder = Module::where('course_id', $this->career->id)
-                    ->where('period_number', $this->period_number)
-                    ->max('order');
-                $data['order'] = $lastOrder ? $lastOrder + 1 : 1;
+                // Verificar si la columna 'order' existe antes de intentar usarla
+                if (Schema::hasColumn('modules', 'order')) {
+                    // Auto-orden
+                    $lastOrder = Module::where('course_id', $this->career->id)
+                        ->where('period_number', $this->period_number)
+                        ->max('order');
+                    $data['order'] = $lastOrder ? $lastOrder + 1 : 1;
+                }
+                
                 $module = Module::create($data);
             }
 
