@@ -10,6 +10,8 @@
     <style>
         /* CONFIGURACIÓN BÁSICA COMPATIBLE CON DOMPDF */
         @page {
+            /* CAMBIO: Tamaño Carta */
+            size: letter; 
             margin: 0cm;
         }
         body {
@@ -466,8 +468,11 @@
     {{-- Numeración de Páginas --}}
     <script type="text/php">
         if (isset($pdf)) {
-            $x = 520;
-            $y = 810;
+            // Ajustamos la coordenada X para Carta (Letter es más ancho que A4 en puntos por defecto, aprox 612pt)
+            // A4 = 595.28pt, Letter = 612pt.  Restamos márgenes (~40px padding = 30pt)
+            // Un valor seguro para alinear a la derecha en Letter:
+            $x = 540; 
+            $y = 750; // Ajuste vertical para Letter (altura 792pt)
             $text = "Página {PAGE_NUM} de {PAGE_COUNT}";
             $font = null;
             $size = 8;
