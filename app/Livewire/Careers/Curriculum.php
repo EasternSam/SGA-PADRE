@@ -294,7 +294,9 @@ class Curriculum extends Component
                 }
 
                 if ($classroomConflict->exists()) {
-                    $this->addError('s_classroom_id', "El aula seleccionada ya está ocupada el día $day en este horario.");
+                    // Obtenemos información extra para el mensaje de error
+                    $conflictInfo = $classroomConflict->first();
+                    $this->addError('s_classroom_id', "El aula seleccionada ya está ocupada el día $day en este horario (Sección: {$conflictInfo->section_name}).");
                     return;
                 }
             }
