@@ -48,7 +48,7 @@
             height: 240px; /* Altura fija del header */
             background-color: white;
             z-index: 1000;
-            /* Eliminado border-bottom del contenedor para evitar efecto "suelto" */
+            border-bottom: 5px solid #6b21a8; /* Borde inferior sólido */
         }
 
         .header-table {
@@ -169,6 +169,7 @@
             border-collapse: collapse;
             margin-bottom: 15px;
             border-bottom: 2px solid #6b21a8; /* Acento morado */
+            /* Se repite en cada página si es necesario por dompdf, pero aquí lo usamos como cabecera estática al inicio */
         }
         .grid-header-table th {
             text-align: left;
@@ -186,47 +187,62 @@
             page-break-inside: avoid; 
         }
         
+        /* Nuevo estilo para header de periodo */
         .period-header { 
             margin-bottom: 10px; 
-            border-bottom: 1px solid #e9d5ff; /* Línea muy suave */
-            padding-bottom: 5px;
+            border-bottom: 2px solid #e9d5ff; /* Línea un poco más gruesa */
+            padding-bottom: 8px;
+            display: table; /* Para alinear verticalmente el número y texto */
+            width: 100%;
         }
         
         .period-number {
-            display: inline-block;
-            height: 22px; width: 22px; 
+            display: table-cell;
+            vertical-align: middle;
+            height: 28px; width: 28px; 
             background-color: #7b1fa2; /* Morado fuerte */
             color: white;
             text-align: center; 
-            border-radius: 50%; /* Círculo perfecto */
-            font-weight: 700; 
-            font-size: 12px;
-            line-height: 22px;
-            margin-right: 8px;
+            border-radius: 4px; /* Cuadrado redondeado en vez de círculo */
+            font-weight: 800; 
+            font-size: 14px;
+            line-height: 28px; /* Centrado vertical en bloque */
+            padding: 0 5px; /* Un poco de padding horizontal */
         }
         
+        .period-title-container {
+            display: table-cell;
+            vertical-align: middle;
+            padding-left: 10px;
+        }
+
         .period-title { 
             color: #4a148c; /* Morado muy oscuro */
-            font-size: 14px; 
+            font-size: 16px; 
             text-transform: uppercase; 
-            font-weight: 800; 
+            font-weight: 900; 
+            letter-spacing: 0.5px;
         }
 
         /* Course Row (Tabla) */
         .modules-table {
             width: 100%;
             border-collapse: collapse;
+            /* Table-layout fixed ayuda a mantener columnas consistentes */
+            table-layout: fixed; 
         }
         .modules-table td {
             padding: 8px 10px; /* Más aire */
             font-size: 10px;
             border-bottom: 1px solid #f1f5f9;
             vertical-align: middle;
+            word-wrap: break-word; /* Evitar que textos largos rompan el layout */
         }
         .modules-table tr:nth-child(even) {
             background-color: #faf5ff; /* Alternating row color */
         }
 
+        /* Anchos fijos y clases consistentes para ALINEACIÓN */
         .col-code { 
             width: 15%; 
             font-family: 'Courier New', monospace; /* Monospace real */
@@ -270,7 +286,7 @@
             margin-top: 8px;
             padding-top: 8px;
             border-top: 1px dashed #cbd5e1;
-            margin-right: 25%; /* Alinear bajo créditos y prerequisitos */
+            margin-right: 25%; /* Alinear bajo créditos y prerequisitos aprox */
         }
         .subtotal-label {
             font-size: 9px; 
@@ -385,17 +401,12 @@
         </table>
     </footer>
 
-    <!-- SLOGAN BAR -->
-    <!-- Se mantiene vacio o comentado si el usuario pide quitarlo explicitamente, pero "Quita el apartado..." referia a uno viejo. 
-         Aqui lo dejo integrado como elemento visual sutil si se requiere, o podemos ocultarlo si "apartado" se referia a este.
-         El usuario dijo: 'Quita el apartado de "Excelencia académica para el futuro"' -->
-    <!-- Slogan removido por solicitud -->
-
     <!-- CONTENIDO PRINCIPAL -->
     <div class="container">
         <div class="content-padding">
             
-            <!-- Encabezados de Tabla (Estáticos) -->
+            <!-- Encabezados de Tabla (Estáticos - Solo para referencia visual inicial) -->
+            <!-- Nota: No usamos <thead> repetido automáticamente porque a veces DomPDF falla con estilos complejos en headers repetidos -->
             <table class="grid-header-table">
                 <thead>
                     <tr>
@@ -415,10 +426,12 @@
                     @php $periodCredits = 0; @endphp
                     
                     <div class="period-section">
-                        <!-- Título del Periodo -->
+                        <!-- Título del Periodo REDISEÑADO -->
                         <div class="period-header">
-                            <span class="period-number">{{ $period }}</span>
-                            <span class="period-title">Cuatrimestre {{ $period }}</span>
+                            <div class="period-number">{{ $period }}</div>
+                            <div class="period-title-container">
+                                <span class="period-title">Cuatrimestre {{ $period }}</span>
+                            </div>
                         </div>
                         
                         <!-- Tabla de Materias del Periodo -->
@@ -427,15 +440,16 @@
                                 @foreach($modules as $module)
                                     @php $periodCredits += $module->credits; @endphp
                                     <tr>
-                                        <td class="col-code">{{ $module->code }}</td>
-                                        <td class="col-desc">
+                                        <!-- Usamos anchos fijos inline también para reforzar layout -->
+                                        <td class="col-code" width="15%">{{ $module->code }}</td>
+                                        <td class="col-desc" width="45%">
                                             {{ $module->name }}
                                             @if($module->is_elective)
                                                 <span class="elective-tag">Electiva</span>
                                             @endif
                                         </td>
-                                        <td class="col-credits">{{ $module->credits }}</td>
-                                        <td class="col-prereq">
+                                        <td class="col-credits" width="10%">{{ $module->credits }}</td>
+                                        <td class="col-prereq" width="30%">
                                             @if($module->prerequisites->count() > 0)
                                                 @foreach($module->prerequisites as $pre)
                                                     {{ $pre->code }}{{ !$loop->last ? ', ' : '' }}
