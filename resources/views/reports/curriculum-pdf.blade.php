@@ -3,27 +3,33 @@
 <head>
     <meta charset="utf-8">
     <title>Pensum Académico - {{ $career->code }}</title>
+    
+    {{-- Carga de Fuentes de Google Fonts --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Montserrat:wght@400;700;800&display=swap" rel="stylesheet">
+
     <style>
-        /* CONFIGURACIÓN BÁSICA COMPATIBLE CON DOMPDF */
+        /* CONFIGURACIÓN BÁSICA */
         @page {
             margin: 0cm;
         }
         body {
-            font-family: 'Helvetica', 'Arial', sans-serif; /* Fallback seguro para DomPDF */
+            /* Intentamos usar las fuentes descargadas, fallback a sans-serif */
+            font-family: 'Inter', 'Helvetica', 'Arial', sans-serif;
             background-color: #f9fafb; /* Gray 50 */
-            /* Margen superior exacto para que el contenido empiece justo debajo del header + slogan */
-            margin-top: 290px; /* 240px Header + 5px Border + ~45px Slogan Bar */
-            margin-bottom: 60px; /* Espacio para el footer fijo */
+            /* Margen superior suficiente para el header fijo (180px) + espacio (40px) */
+            margin-top: 220px; 
+            margin-bottom: 60px;
             color: #1e293b; /* Slate 800 */
         }
 
-        /* --- FONTS --- */
-        h1, h2, h3, .font-heading {
-            font-family: sans-serif;
-            font-weight: bold;
+        /* --- FUENTES ESPECÍFICAS --- */
+        h1, h2, h3, .font-heading, .main-title, .period-title, .doc-label, .career-type-badge {
+            font-family: 'Montserrat', sans-serif;
         }
 
-        /* --- DECORATIVE BACKGROUND PATTERN --- */
+        /* --- DECORATIVE BACKGROUND --- */
         .bg-pattern {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: -1;
             background-color: #f9fafb;
@@ -39,76 +45,77 @@
             overflow: hidden;
         }
 
-        /* --- HEADER DISEÑO PERFECCIONADO --- */
+        /* --- HEADER FIJO --- */
         header {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            height: 240px; /* Altura fija del header */
+            height: 180px; /* Altura fija reducida para ser más estético */
             background-color: white;
             z-index: 1000;
-            border-bottom: 5px solid #6b21a8; /* Borde inferior sólido */
+            /* El borde se aplica en las celdas para que pegue perfecto */
         }
 
         .header-table {
             width: 100%;
             height: 100%;
             border-collapse: collapse;
-            /* Asegura que no haya espacios entre celdas */
-            border-spacing: 0; 
+            border-spacing: 0;
         }
 
-        /* Lado Izquierdo (Marca Institucional - LOGO) */
+        /* Lado Izquierdo (Logo) */
         .header-left {
-            width: 40%;
+            width: 35%;
             background-color: #7b1fa2; /* Morado base */
             background: linear-gradient(135deg, #7b1fa2 0%, #6a1b9a 100%);
-            color: white;
             vertical-align: middle;
             text-align: center;
-            padding: 20px;
-            position: relative;
-            /* Borde inferior integrado en la celda */
-            border-bottom: 5px solid #4a148c; /* Morado más oscuro para el lado izquierdo */
+            padding: 0; /* Sin padding para que el borde pegue */
+            border-bottom: 5px solid #4a148c; /* Borde inferior integrado */
         }
 
-        /* Lado Derecho (Información del Documento) */
+        /* Lado Derecho (Información) */
         .header-right {
-            width: 60%;
-            background-color: #111827; /* Fondo oscuro sólido */
+            width: 65%;
+            background-color: #111827; /* Fondo oscuro */
             color: white;
             vertical-align: middle;
-            padding: 30px 40px;
+            padding: 20px 40px;
             text-align: right;
             border-left: 1px solid rgba(255,255,255,0.1);
-            /* Borde inferior integrado en la celda - PEGADO AL RECUADRO */
-            border-bottom: 5px solid #6b21a8; /* Acento morado brillante */
+            border-bottom: 5px solid #6b21a8; /* Borde inferior integrado - PEGADO */
         }
 
-        /* Logo Image Style */
+        /* Imagen Logo */
+        .header-logo-container {
+            padding: 20px;
+            display: block;
+        }
+        
         .header-logo-img {
-            max-width: 80%;
-            max-height: 150px; /* Ajustado para que quepa bien */
+            max-width: 90%;
+            max-height: 120px;
             object-fit: contain;
+            /* Filtro blanco para asegurar visibilidad sobre morado */
             filter: brightness(0) invert(1); 
         }
 
-        /* Elementos del Lado Derecho */
+        /* Textos Header Derecho */
         .doc-label {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 3px;
-            color: #d8b4fe; /* Acento morado claro */
-            margin-bottom: 10px;
+            color: #d8b4fe;
+            margin-bottom: 8px;
             display: block;
         }
 
         .main-title {
-            font-size: 26px; 
-            line-height: 1.2; 
-            font-weight: 900; 
+            font-size: 22px; 
+            line-height: 1.1; 
+            font-weight: 800; 
             text-transform: uppercase; 
             margin: 0 0 10px 0;
             color: white;
@@ -117,97 +124,74 @@
         .career-type-badge {
             background-color: rgba(255,255,255,0.15);
             color: white;
-            padding: 6px 12px;
+            padding: 5px 10px;
             border-radius: 4px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
             display: inline-block;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             border: 1px solid rgba(255,255,255,0.1);
+            text-transform: uppercase;
         }
 
         .info-row {
-            font-size: 10px;
-            color: #9ca3af; /* Gris medio */
+            font-size: 9px;
+            color: #9ca3af;
             margin-top: 5px;
+            font-family: 'Inter', sans-serif;
         }
         .info-row strong {
             color: white;
             font-weight: 600;
         }
 
-        /* --- SLOGAN BAR --- */
-        /* Posicionada fija justo debajo del header para que sea parte del encabezado visual */
-        .slogan-bar {
-            position: fixed;
-            top: 245px; /* 240px Header + 5px Border */
-            left: 0;
-            right: 0;
-            background-color: #f3f4f6; 
-            padding: 8px;
-            text-align: center; 
-            border-bottom: 1px solid #e5e7eb;
-            height: 30px; /* Altura controlada */
-            z-index: 900;
-        }
-        .slogan-text {
-            color: #6b21a8; 
-            font-size: 12px; 
-            font-style: italic; 
-            font-weight: 600;
-            margin: 0;
-            letter-spacing: 0.5px;
-            line-height: 30px; /* Centrado vertical */
-        }
-
         /* --- CONTENT AREA --- */
         .content-padding { padding: 0 40px; }
 
-        /* Grid Header (Simulado con tabla) */
+        /* Grid Header (Estático) */
         .grid-header-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 15px;
-            border-bottom: 2px solid #6b21a8; /* Acento morado */
-            /* Se repite en cada página si es necesario por dompdf, pero aquí lo usamos como cabecera estática al inicio */
+            border-bottom: 2px solid #6b21a8;
         }
         .grid-header-table th {
             text-align: left;
             font-size: 9px;
-            font-weight: 800; /* Extra bold */
-            color: #4b5563; /* Gray 600 */
+            font-weight: 800;
+            color: #4b5563;
             text-transform: uppercase;
             padding: 8px 10px;
             letter-spacing: 0.5px;
+            font-family: 'Montserrat', sans-serif;
         }
 
         /* --- PERIODOS --- */
         .period-section { 
-            margin-bottom: 30px; 
+            margin-bottom: 25px; 
             page-break-inside: avoid; 
         }
         
-        /* Nuevo estilo para header de periodo */
         .period-header { 
-            margin-bottom: 10px; 
-            border-bottom: 2px solid #e9d5ff; /* Línea un poco más gruesa */
-            padding-bottom: 8px;
-            display: table; /* Para alinear verticalmente el número y texto */
+            margin-bottom: 8px; 
+            border-bottom: 1px solid #e9d5ff; 
+            padding-bottom: 5px;
+            display: table;
             width: 100%;
         }
         
         .period-number {
             display: table-cell;
             vertical-align: middle;
-            height: 28px; width: 28px; 
-            background-color: #7b1fa2; /* Morado fuerte */
+            height: 24px; width: 24px; 
+            background-color: #7b1fa2; 
             color: white;
             text-align: center; 
-            border-radius: 4px; /* Cuadrado redondeado en vez de círculo */
+            border-radius: 4px;
             font-weight: 800; 
-            font-size: 14px;
-            line-height: 28px; /* Centrado vertical en bloque */
-            padding: 0 5px; /* Un poco de padding horizontal */
+            font-size: 12px;
+            line-height: 24px;
+            margin-right: 8px;
         }
         
         .period-title-container {
@@ -217,42 +201,41 @@
         }
 
         .period-title { 
-            color: #4a148c; /* Morado muy oscuro */
-            font-size: 16px; 
+            color: #4a148c; 
+            font-size: 14px; 
             text-transform: uppercase; 
-            font-weight: 900; 
+            font-weight: 800; 
             letter-spacing: 0.5px;
         }
 
-        /* Course Row (Tabla) */
+        /* Tabla de Materias */
         .modules-table {
             width: 100%;
             border-collapse: collapse;
-            /* Table-layout fixed ayuda a mantener columnas consistentes */
             table-layout: fixed; 
         }
         .modules-table td {
-            padding: 8px 10px; /* Más aire */
+            padding: 7px 10px;
             font-size: 10px;
             border-bottom: 1px solid #f1f5f9;
             vertical-align: middle;
-            word-wrap: break-word; /* Evitar que textos largos rompan el layout */
+            word-wrap: break-word;
         }
         .modules-table tr:nth-child(even) {
-            background-color: #faf5ff; /* Alternating row color */
+            background-color: #faf5ff;
         }
 
-        /* Anchos fijos y clases consistentes para ALINEACIÓN */
+        /* Columnas */
         .col-code { 
             width: 15%; 
-            font-family: 'Courier New', monospace; /* Monospace real */
+            font-family: 'Courier New', monospace; 
             font-weight: 700; 
             color: #334155; 
         }
         .col-desc { 
             width: 45%; 
             color: #0f172a; 
-            font-weight: 700;
+            font-weight: 600;
         }
         .col-credits { 
             width: 10%; 
@@ -283,10 +266,10 @@
         /* Subtotal */
         .subtotal-row {
             text-align: right;
-            margin-top: 8px;
-            padding-top: 8px;
+            margin-top: 5px;
+            padding-top: 5px;
             border-top: 1px dashed #cbd5e1;
-            margin-right: 25%; /* Alinear bajo créditos y prerequisitos aprox */
+            margin-right: 25%; 
         }
         .subtotal-label {
             font-size: 9px; 
@@ -294,29 +277,28 @@
             color: #64748b; 
             margin-right: 10px; 
             font-weight: 700;
-            letter-spacing: 0.5px;
         }
         .subtotal-value {
             background-color: #f3f4f6; 
             color: #1f2937; 
-            padding: 4px 10px; 
+            padding: 2px 8px; 
             border-radius: 4px;
-            font-size: 11px; 
+            font-size: 10px; 
             font-weight: 800; 
             border: 1px solid #e2e8f0;
         }
 
         /* Summary Box */
         .summary-box {
-            margin-top: 40px; 
-            padding: 20px; 
+            margin-top: 30px; 
+            padding: 15px; 
             background-color: #faf5ff; 
             border-radius: 8px;
             border: 1px solid #e9d5ff; 
             page-break-inside: avoid;
         }
         .summary-table { width: 100%; }
-        .summary-total { font-size: 28px; font-weight: 900; color: #4a148c; line-height: 1; }
+        .summary-total { font-size: 24px; font-weight: 900; color: #4a148c; line-height: 1; font-family: 'Montserrat', sans-serif; }
         .summary-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #7b1fa2; letter-spacing: 1px; }
 
         /* Footer */
@@ -343,11 +325,12 @@
             left: 50%;
             transform: translate(-50%, -50%) rotate(-45deg);
             font-size: 120px;
-            color: rgba(123, 31, 162, 0.03); /* Extremadamente sutil */
+            color: rgba(123, 31, 162, 0.03);
             z-index: -1000;
             font-weight: 900;
             white-space: nowrap;
             pointer-events: none;
+            font-family: 'Montserrat', sans-serif;
         }
 
     </style>
@@ -363,7 +346,10 @@
             <tr>
                 <!-- Lado Izquierdo: LOGO -->
                 <td class="header-left">
-                    <img src="{{ public_path('centuu.png') }}" class="header-logo-img" alt="Logo Centuu">
+                    <div class="header-logo-container">
+                        <!-- Logo Centuu reemplaza el texto -->
+                        <img src="{{ public_path('centuu.png') }}" class="header-logo-img" alt="Logo Centuu">
+                    </div>
                 </td>
 
                 <!-- Lado Derecho: Información Clara y Contrastada -->
@@ -405,8 +391,7 @@
     <div class="container">
         <div class="content-padding">
             
-            <!-- Encabezados de Tabla (Estáticos - Solo para referencia visual inicial) -->
-            <!-- Nota: No usamos <thead> repetido automáticamente porque a veces DomPDF falla con estilos complejos en headers repetidos -->
+            <!-- Encabezados de Tabla (Estáticos) -->
             <table class="grid-header-table">
                 <thead>
                     <tr>
@@ -426,7 +411,7 @@
                     @php $periodCredits = 0; @endphp
                     
                     <div class="period-section">
-                        <!-- Título del Periodo REDISEÑADO -->
+                        <!-- Título del Periodo -->
                         <div class="period-header">
                             <div class="period-number">{{ $period }}</div>
                             <div class="period-title-container">
@@ -440,16 +425,15 @@
                                 @foreach($modules as $module)
                                     @php $periodCredits += $module->credits; @endphp
                                     <tr>
-                                        <!-- Usamos anchos fijos inline también para reforzar layout -->
-                                        <td class="col-code" width="15%">{{ $module->code }}</td>
-                                        <td class="col-desc" width="45%">
+                                        <td class="col-code">{{ $module->code }}</td>
+                                        <td class="col-desc">
                                             {{ $module->name }}
                                             @if($module->is_elective)
                                                 <span class="elective-tag">Electiva</span>
                                             @endif
                                         </td>
-                                        <td class="col-credits" width="10%">{{ $module->credits }}</td>
-                                        <td class="col-prereq" width="30%">
+                                        <td class="col-credits">{{ $module->credits }}</td>
+                                        <td class="col-prereq">
                                             @if($module->prerequisites->count() > 0)
                                                 @foreach($module->prerequisites as $pre)
                                                     {{ $pre->code }}{{ !$loop->last ? ', ' : '' }}
