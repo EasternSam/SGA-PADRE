@@ -114,8 +114,8 @@
         }
 
         .main-title {
-            font-size: 26px; 
-            line-height: 1.2; 
+            font-size: 20px; 
+            line-height: 1; 
             font-weight: 900; 
             text-transform: uppercase; 
             margin: 0 0 10px 0;
