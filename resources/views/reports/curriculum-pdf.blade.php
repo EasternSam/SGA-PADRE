@@ -4,158 +4,295 @@
     <meta charset="utf-8">
     <title>Pensum Académico - {{ $career->code }}</title>
     <style>
-        body {
+        /* Configuración de Página */
+        @page {
+            margin: 0cm 0cm;
             font-family: 'Helvetica', 'Arial', sans-serif;
+        }
+
+        body {
+            margin-top: 3cm; /* Espacio para el header fijo */
+            margin-left: 1.5cm;
+            margin-right: 1.5cm;
+            margin-bottom: 2cm; /* Espacio para el footer fijo */
+            background-color: #fff;
             color: #333;
             font-size: 12px;
-            line-height: 1.4;
-            margin: 0;
-            padding: 20px;
         }
-        
-        .header {
+
+        /* Marca de Agua */
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 120px;
+            color: rgba(200, 200, 200, 0.15);
+            z-index: -1000;
+            font-weight: bold;
+            white-space: nowrap;
             text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #4f46e5; /* Indigo 600 */
-            padding-bottom: 10px;
         }
-        
+
+        /* Header Fijo */
+        header {
+            position: fixed;
+            top: 0cm;
+            left: 0cm;
+            right: 0cm;
+            height: 2.5cm;
+            background-color: #1e1b4b; /* Indigo 950 */
+            color: white;
+            line-height: 2.5cm;
+            padding: 0 1.5cm;
+            z-index: 1000;
+        }
+
+        .header-content {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
         .institution-name {
-            font-size: 18px;
+            font-size: 22px;
             font-weight: bold;
-            text-transform: uppercase;
-            color: #1f2937; /* Gray 800 */
-            margin-bottom: 5px;
-        }
-        
-        .document-title {
-            font-size: 14px;
-            font-weight: bold;
-            color: #4b5563; /* Gray 600 */
             text-transform: uppercase;
             letter-spacing: 1px;
+            float: left;
         }
 
-        .career-info {
+        .document-label {
+            float: right;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: normal;
+            opacity: 0.8;
+            letter-spacing: 2px;
+        }
+
+        /* Footer Fijo */
+        footer {
+            position: fixed;
+            bottom: 0cm;
+            left: 0cm;
+            right: 0cm;
+            height: 1.2cm;
             background-color: #f3f4f6; /* Gray 100 */
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 25px;
+            border-top: 3px solid #4338ca; /* Indigo 700 */
+            color: #6b7280;
+            text-align: center;
+            line-height: 1.2cm;
+            font-size: 10px;
         }
 
-        .career-name {
-            font-size: 20px;
-            font-weight: bold;
+        /* Tarjeta de Información de la Carrera */
+        .career-card {
+            background-color: #f9fafb; /* Gray 50 */
+            border: 1px solid #e5e7eb;
+            border-left: 5px solid #4f46e5; /* Indigo 600 */
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 35px;
+            position: relative;
+        }
+
+        .career-title {
+            font-size: 26px;
+            font-weight: 800;
             color: #111827; /* Gray 900 */
-            margin-bottom: 5px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            line-height: 1.2;
         }
 
-        .career-meta {
+        .meta-grid {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .meta-grid td {
+            padding: 4px 0;
             font-size: 11px;
-            color: #6b7280; /* Gray 500 */
+            color: #4b5563;
         }
 
-        .meta-item {
-            display: inline-block;
-            margin-right: 15px;
-        }
-
-        .meta-label {
+        .label {
             font-weight: bold;
             text-transform: uppercase;
+            color: #6b7280;
+            width: 140px;
+            font-size: 10px;
         }
 
-        /* Tabla de Pensum */
-        .curriculum-container {
-            width: 100%;
+        .value {
+            font-weight: bold;
+            color: #1f2937;
+            font-size: 12px;
+        }
+
+        /* Contenedores de Cuatrimestres */
+        .period-block {
+            margin-bottom: 25px;
+            page-break-inside: avoid; /* Evita cortar tablas a la mitad */
         }
 
         .period-header {
-            background-color: #4f46e5; /* Indigo 600 */
+            background-color: #4338ca; /* Indigo 700 */
             color: white;
-            padding: 8px 12px;
+            padding: 6px 15px;
             font-weight: bold;
             font-size: 13px;
-            margin-top: 15px;
-            margin-bottom: 0;
-            border-radius: 4px 4px 0 0;
             text-transform: uppercase;
+            border-radius: 4px 4px 0 0;
+            display: inline-block;
+            margin-bottom: 0;
         }
 
-        table {
+        .period-header-line {
+            height: 2px;
+            background-color: #4338ca; /* Indigo 700 */
+            width: 100%;
+            margin-bottom: 0;
+        }
+
+        /* Tablas de Materias */
+        table.modules {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 5px;
-            background-color: white;
+            font-size: 11px;
+            margin-top: 0;
         }
 
-        th, td {
-            padding: 8px 12px;
-            text-align: left;
-            border: 1px solid #e5e7eb; /* Gray 200 */
-        }
-
-        th {
-            background-color: #f9fafb; /* Gray 50 */
-            color: #374151; /* Gray 700 */
-            font-weight: bold;
-            font-size: 10px;
-            text-transform: uppercase;
-        }
-
-        tr:nth-child(even) {
-            background-color: #f9fafb; /* Gray 50 */
-        }
-
-        .col-code { width: 15%; font-weight: bold; font-family: monospace; }
-        .col-name { width: 50%; }
-        .col-credits { width: 10%; text-align: center; }
-        .col-prereq { width: 25%; font-size: 10px; color: #6b7280; }
-
-        .total-credits-row {
+        table.modules th {
             background-color: #eef2ff; /* Indigo 50 */
+            color: #3730a3; /* Indigo 800 */
             font-weight: bold;
-            text-align: right;
+            text-transform: uppercase;
+            font-size: 9px;
+            text-align: left;
+            padding: 8px 10px;
+            border-bottom: 1px solid #c7d2fe;
         }
 
-        .footer {
-            margin-top: 40px;
-            text-align: center;
-            font-size: 10px;
-            color: #9ca3af; /* Gray 400 */
-            border-top: 1px solid #e5e7eb;
-            padding-top: 10px;
+        table.modules td {
+            padding: 7px 10px;
+            border-bottom: 1px solid #f3f4f6;
+            color: #374151;
+            vertical-align: middle;
         }
-        
-        .page-break {
-            page-break-after: always;
+
+        table.modules tr:last-child td {
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        /* Columnas */
+        .col-code { 
+            width: 12%; 
+            font-family: 'Courier New', monospace; 
+            font-weight: 700;
+            color: #1f2937;
+        }
+        .col-name { width: 50%; font-weight: 600; }
+        .col-credits { width: 10%; text-align: center; font-weight: bold; }
+        .col-prereq { 
+            width: 28%; 
+            color: #6b7280; 
+            font-size: 10px; 
+            font-style: italic; 
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+
+        .badge-elective {
+            background-color: #fffbeb;
+            color: #d97706;
+            border: 1px solid #fcd34d;
+        }
+
+        /* Resumen por Periodo */
+        .period-footer {
+            background-color: #f9fafb;
+            text-align: right;
+            padding: 5px 10px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #4b5563;
+            border: 1px solid #f3f4f6;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+        }
+
+        /* Numeración de Página */
+        .page-number:before {
+            content: counter(page);
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div class="institution-name">Centro Educativo Universitario</div>
-        <div class="document-title">Pensum Académico Oficial</div>
-    </div>
-
-    <div class="career-info">
-        <div class="career-name">{{ $career->name }}</div>
-        <div class="career-meta">
-            <span class="meta-item"><span class="meta-label">Código:</span> {{ $career->code }}</span>
-            <span class="meta-item"><span class="meta-label">Créditos Totales:</span> {{ $career->total_credits }}</span>
-            <span class="meta-item"><span class="meta-label">Duración:</span> {{ $career->duration_periods }} Periodos</span>
+    <header>
+        <div class="header-content">
+            <span class="institution-name">Centro Educativo Universitario</span>
+            <span class="document-label">Pensum Oficial</span>
         </div>
+    </header>
+
+    <footer>
+        Sistema de Gestión Académica - Documento generado el {{ $generatedAt }} | Página <span class="page-number"></span>
+    </footer>
+
+    <!-- Marca de agua sutil en el fondo -->
+    <div class="watermark">{{ $career->code }}</div>
+
+    <!-- Tarjeta de Información Principal -->
+    <div class="career-card">
+        <div class="career-title">{{ $career->name }}</div>
+        
+        <table class="meta-grid">
+            <tr>
+                <td class="label">Código Oficial:</td>
+                <td class="value">{{ $career->code }}</td>
+                <td class="label">Modalidad:</td>
+                <td class="value">{{ $career->program_type === 'degree' ? 'Grado / Licenciatura' : 'Técnico Superior' }}</td>
+            </tr>
+            <tr>
+                <td class="label">Créditos Totales:</td>
+                <td class="value">{{ $career->total_credits }}</td>
+                <td class="label">Duración:</td>
+                <td class="value">{{ $career->duration_periods }} Periodos Académicos</td>
+            </tr>
+            @if($career->description)
+            <tr>
+                <td class="label" style="vertical-align: top; padding-top: 8px;">Descripción:</td>
+                <td class="value" colspan="3" style="padding-top: 8px; font-weight: normal; font-style: italic;">
+                    {{ $career->description }}
+                </td>
+            </tr>
+            @endif
+        </table>
     </div>
 
-    <div class="curriculum-container">
-        @php $accumulatedCredits = 0; @endphp
+    @php $totalAccumulated = 0; @endphp
 
-        @foreach($modulesByPeriod as $period => $modules)
+    @foreach($modulesByPeriod as $period => $modules)
+        <div class="period-block">
             <div class="period-header">
                 Cuatrimestre {{ $period }}
             </div>
-            <table>
+            <div class="period-header-line"></div>
+
+            <table class="modules">
                 <thead>
                     <tr>
                         <th class="col-code">Clave</th>
@@ -173,7 +310,7 @@
                             <td class="col-name">
                                 {{ $module->name }}
                                 @if($module->is_elective)
-                                    <span style="color: #d97706; font-size: 9px; font-weight: bold; margin-left: 5px;">(ELECTIVA)</span>
+                                    <span class="badge badge-elective">Electiva</span>
                                 @endif
                             </td>
                             <td class="col-credits">{{ $module->credits }}</td>
@@ -183,39 +320,29 @@
                                         {{ $pre->code }}{{ !$loop->last ? ', ' : '' }}
                                     @endforeach
                                 @else
-                                    -
+                                    <span style="color: #d1d5db;">---</span>
                                 @endif
                             </td>
                         </tr>
                     @endforeach
-                    <tr class="total-credits-row">
-                        <td colspan="2">Total Créditos Cuatrimestre {{ $period }}</td>
-                        <td class="col-credits">{{ $periodCredits }}</td>
-                        <td></td>
-                    </tr>
                 </tbody>
             </table>
-            @php $accumulatedCredits += $periodCredits; @endphp
-        @endforeach
+            
+            <div class="period-footer">
+                Total Créditos del Periodo: {{ $periodCredits }}
+            </div>
+            @php $totalAccumulated += $periodCredits; @endphp
+        </div>
+    @endforeach
+
+    <div style="margin-top: 40px; text-align: center; border-top: 1px dashed #d1d5db; padding-top: 20px;">
+        <p style="font-size: 10px; color: #9ca3af; text-transform: uppercase; font-weight: bold;">
+            *** Fin del Pensum Académico ***
+        </p>
+        <p style="font-size: 9px; color: #9ca3af;">
+            Este documento es de carácter informativo. La institución se reserva el derecho de realizar cambios curriculares.
+        </p>
     </div>
 
-    <div class="footer">
-        Documento generado el {{ $generatedAt }} | Página <span class="page-number"></span>
-    </div>
-
-    <script type="text/php">
-        if (isset($pdf)) {
-            $x = 520;
-            $y = 820;
-            $text = "Página {PAGE_NUM} de {PAGE_COUNT}";
-            $font = null;
-            $size = 9;
-            $color = array(0.5, 0.5, 0.5);
-            $word_space = 0.0;  //  default
-            $char_space = 0.0;  //  default
-            $angle = 0.0;   //  default
-            $pdf->page_text($x, $y, $text, $font, $size, $color, $word_space, $char_space, $angle);
-        }
-    </script>
 </body>
 </html>

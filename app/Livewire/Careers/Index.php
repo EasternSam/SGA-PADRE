@@ -3,10 +3,13 @@
 namespace App\Livewire\Careers;
 
 use App\Models\Course;
+use App\Models\Module;
+use App\Models\CourseSchedule;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 #[Layout('layouts.dashboard')]
 class Index extends Component
@@ -120,20 +123,44 @@ class Index extends Component
         $this->closeModal(); // Usamos el método interno para cerrar y limpiar
     }
 
+    // --- MODIFICADO PARA BORRADO EN CASCADA COMPLETO ---
     public function delete($id)
     {
         try {
-            $career = Course::findOrFail($id);
-            // Validar si tiene alumnos o materias antes de borrar (opcional pero recomendado)
-            if ($career->modules()->exists()) {
-                 session()->flash('error', 'No se puede eliminar la carrera porque tiene materias asociadas.');
-                 return;
-            }
-            
-            $career->delete();
-            session()->flash('message', 'Carrera eliminada correctamente.');
+            DB::transaction(function () use ($id) {
+                $career = Course::findOrFail($id);
+                
+                // 1. Obtener todos los módulos (materias) de la carrera
+                $modules = $career->modules;
+
+                foreach ($modules as $module) {
+                    // A. Eliminar relaciones de prerrequisitos (tabla pivote)
+                    // Primero detach de donde este módulo es requisito
+                    $module->requiredFor()->detach();
+                    // Segundo detach de los requisitos que tiene este módulo
+                    $module->prerequisites()->detach();
+
+                    // B. Eliminar Secciones (Horarios) asociadas
+                    // Si tienes inscripciones (Enrollments), deberías decidir si borrarlas o bloquear el borrado.
+                    // Aquí asumimos borrado fuerte, pero si hay inscripciones activas, CourseSchedule podría tener restricción.
+                    // Para limpieza total, borramos schedules.
+                    foreach ($module->schedules as $schedule) {
+                        // Opcional: Borrar inscripciones si es necesario
+                        // $schedule->enrollments()->delete();
+                        $schedule->delete();
+                    }
+
+                    // C. Eliminar el módulo
+                    $module->delete();
+                }
+
+                // 2. Eliminar la carrera
+                $career->delete();
+            });
+
+            session()->flash('message', 'Carrera y todos sus datos asociados (materias, horarios) eliminados correctamente.');
         } catch (\Exception $e) {
-            session()->flash('error', 'Error al eliminar: ' . $e->getMessage());
+            session()->flash('error', 'Error crítico al eliminar: ' . $e->getMessage());
         }
     }
 
