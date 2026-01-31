@@ -17,7 +17,8 @@
         }
         body {
             /* Prioridad a Inter, fallback a sans-serif estándar (Arial/Helvetica) para evitar Serif */
-            font-family: 'Inter', 'Helvetica', 'Arial', sans-serif;
+            font-family: 'Montserrat', 'Helvetica', 'Arial', sans-serif;
+            font-weight: 400; /* Montserrat normal */
             background-color: #f9fafb; /* Gray 50 */
             /* Ajustamos margen superior: Header (240px) + Espacio (20px) */
             margin-top: 260px; 
