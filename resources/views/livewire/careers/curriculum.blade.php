@@ -25,7 +25,7 @@
                     </h1>
                 </div>
 
-                {{-- Estadísticas Rápidas --}}
+                {{-- Stats Rápidos --}}
                 <div class="flex items-center gap-6 bg-gray-50 px-4 py-2 rounded-xl border border-gray-200">
                     <div class="text-center">
                         <p class="text-xs text-gray-500 uppercase font-bold">Créditos</p>
@@ -34,7 +34,7 @@
                     <div class="w-px h-8 bg-gray-300"></div>
                     <div class="text-center">
                         <p class="text-xs text-gray-500 uppercase font-bold">Duración</p>
-                        <p class="font-bold text-gray-900 text-lg">{{ $career->duration_periods }} <span class="text-xs font-normal text-gray-500">Cuatrimestres</span></p>
+                        <p class="font-bold text-gray-900 text-lg">{{ $career->duration_periods }} <span class="text-xs font-normal text-gray-500">Períodos</span></p>
                     </div>
                 </div>
             </div>
@@ -44,7 +44,7 @@
     {{-- 2. CONTENIDO DEL PENSUM (Lista por Periodos) --}}
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
         
-        {{-- CAMBIO AQUÍ: Acceso a Computed Property --}}
+        {{-- Acceso a Computed Property --}}
         @if($this->modulesByPeriod->isEmpty())
             <div class="text-center py-20 bg-white rounded-2xl border-2 border-gray-200 border-dashed">
                 <div class="mx-auto h-16 w-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
@@ -64,7 +64,7 @@
                 </div>
             </div>
         @else
-            {{-- CAMBIO AQUÍ: Loop sobre Computed Property --}}
+            {{-- Loop sobre Computed Property --}}
             @foreach($this->modulesByPeriod as $period => $modules)
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                     
@@ -126,28 +126,36 @@
                                                 </span>
                                             @endif
 
-                                            {{-- Contador de Horarios --}}
-                                            <span class="flex items-center gap-1.5 {{ $module->schedules->count() > 0 ? 'text-emerald-700 bg-emerald-50 border-emerald-100' : 'text-gray-400 bg-gray-50 border-gray-200' }} border px-2 py-0.5 rounded-md">
-                                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                {{ $module->schedules->count() }} Secciones
-                                            </span>
+                                            {{-- Contador de Horarios/Secciones (Aquí se ve la oferta académica) --}}
+                                            @if($module->schedules->count() > 0)
+                                                <span class="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md font-medium">
+                                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                    {{ $module->schedules->count() }} Secciones Abiertas
+                                                </span>
+                                            @else
+                                                <span class="flex items-center gap-1.5 text-gray-400 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-md">
+                                                    Sin secciones
+                                                </span>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
 
                                 {{-- Botones de Acción --}}
-                                <div class="mt-4 sm:mt-0 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button wire:click="openScheduleModal({{ $module->id }})" class="inline-flex items-center px-3 py-1.5 border border-indigo-200 text-xs font-medium rounded-lg text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors" title="Gestionar Horarios">
-                                        <svg class="mr-1.5 h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                        Horarios
+                                <div class="mt-4 sm:mt-0 flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                    
+                                    {{-- BOTÓN PRINCIPAL: GESTIONAR HORARIOS/SECCIONES --}}
+                                    <button wire:click="openScheduleModal({{ $module->id }})" class="inline-flex items-center px-3 py-1.5 border border-indigo-200 text-xs font-bold rounded-lg text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors shadow-sm" title="Asignar Horarios, Maestros y Aulas">
+                                        <svg class="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        Secciones y Horarios
                                     </button>
                                     
-                                    <div class="h-6 w-px bg-gray-300 mx-1"></div>
+                                    <div class="h-6 w-px bg-gray-300 mx-1 hidden sm:block"></div>
 
                                     <button wire:click="editModule({{ $module->id }})" class="p-2 text-gray-400 hover:text-indigo-600 hover:bg-gray-100 rounded-lg transition-colors" title="Editar Materia">
                                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                     </button>
-                                    <button wire:click="deleteModule({{ $module->id }})" wire:confirm="¿Seguro que deseas eliminar esta materia? Esto podría afectar a los estudiantes inscritos." class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar Materia">
+                                    <button wire:click="deleteModule({{ $module->id }})" wire:confirm="¿Eliminar esta materia? Se borrarán sus horarios." class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar Materia">
                                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                     </button>
                                 </div>
@@ -237,12 +245,13 @@
     </x-modal>
 
     {{-- MODAL 2: Gestión de Horarios (Secciones) --}}
-    <x-modal name="schedule-management-modal" maxWidth="4xl">
-        <div class="bg-white rounded-2xl shadow-xl overflow-hidden h-[80vh] flex flex-col">
+    <x-modal name="schedule-management-modal" maxWidth="5xl">
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden h-[85vh] flex flex-col">
             <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center shrink-0">
-                <h2 class="text-lg font-bold text-gray-900">
-                    Horarios: <span class="text-indigo-600">{{ $selectedModuleForSchedule?->name }}</span>
-                </h2>
+                <div>
+                    <h2 class="text-lg font-bold text-gray-900">Gestión de Secciones</h2>
+                    <p class="text-sm text-gray-500">Materia: <span class="text-indigo-600 font-bold">{{ $selectedModuleForSchedule?->name }}</span> ({{ $selectedModuleForSchedule?->code }})</p>
+                </div>
                 <button x-on:click="$dispatch('close')" class="text-gray-400 hover:text-gray-500">
                     <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
@@ -251,43 +260,75 @@
             <div class="flex-1 overflow-hidden flex flex-col md:flex-row">
                 
                 {{-- Columna Izq: Lista de Secciones --}}
-                <div class="w-full md:w-1/2 border-r border-gray-200 overflow-y-auto p-4 bg-gray-50">
-                    <h3 class="text-xs font-bold text-gray-500 uppercase mb-3">Secciones Activas</h3>
+                <div class="w-full md:w-5/12 border-r border-gray-200 overflow-y-auto p-4 bg-gray-50">
+                    <h3 class="text-xs font-bold text-gray-500 uppercase mb-3 flex justify-between items-center">
+                        Secciones Activas
+                        <span class="bg-gray-200 text-gray-600 px-1.5 rounded-full text-[10px]">{{ count($moduleSchedules) }}</span>
+                    </h3>
+                    
                     <div class="space-y-3">
                         @forelse($moduleSchedules as $schedule)
-                            <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm hover:border-indigo-300 transition-colors relative group">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <span class="text-xs font-bold bg-gray-100 px-2 py-0.5 rounded text-gray-700">{{ $schedule->section_name }}</span>
-                                        <p class="font-bold text-sm text-gray-900 mt-1">{{ $schedule->day_of_week }} {{ substr($schedule->start_time, 0, 5) }} - {{ substr($schedule->end_time, 0, 5) }}</p>
-                                        <p class="text-xs text-gray-500">{{ $schedule->teacher->name ?? 'Sin Prof.' }} • {{ $schedule->classroom->name ?? 'Virtual' }}</p>
+                            <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all relative group">
+                                
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-xs font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-100">
+                                        {{ $schedule->section_name }}
+                                    </span>
+                                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button wire:click="editSchedule({{ $schedule->id }})" class="text-indigo-600 hover:bg-indigo-50 p-1 rounded" title="Editar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                                        <button wire:click="deleteSchedule({{ $schedule->id }})" wire:confirm="¿Eliminar esta sección?" class="text-red-600 hover:bg-red-50 p-1 rounded" title="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                                     </div>
-                                    <div class="flex gap-1">
-                                        <button wire:click="editSchedule({{ $schedule->id }})" class="text-indigo-600 hover:bg-indigo-50 p-1 rounded"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
-                                        <button wire:click="deleteSchedule({{ $schedule->id }})" wire:confirm="Eliminar horario?" class="text-red-600 hover:bg-red-50 p-1 rounded"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
-                                    </div>
+                                </div>
+                                
+                                <div class="space-y-1">
+                                    <p class="font-bold text-sm text-gray-900 flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        {{ $schedule->day_of_week }} {{ substr($schedule->start_time, 0, 5) }} - {{ substr($schedule->end_time, 0, 5) }}
+                                    </p>
+                                    <p class="text-xs text-gray-600 flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                        {{ $schedule->teacher->name ?? 'Sin Profesor' }}
+                                    </p>
+                                    <p class="text-xs text-gray-600 flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                        {{ $schedule->classroom->name ?? 'Aula Virtual' }}
+                                        <span class="ml-auto text-[10px] uppercase font-bold text-gray-400 border px-1 rounded">{{ $schedule->modality }}</span>
+                                    </p>
                                 </div>
                             </div>
                         @empty
-                            <p class="text-sm text-gray-400 text-center py-4">No hay horarios registrados.</p>
+                            <div class="text-center py-8">
+                                <svg class="w-10 h-10 text-gray-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <p class="text-sm text-gray-500 font-medium">No hay horarios definidos.</p>
+                                <p class="text-xs text-gray-400">Crea una nueva sección a la derecha.</p>
+                            </div>
                         @endforelse
                     </div>
                 </div>
 
                 {{-- Columna Der: Formulario --}}
-                <div class="w-full md:w-1/2 p-6 overflow-y-auto">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">{{ $scheduleId ? 'Editar Sección' : 'Nueva Sección' }}</h3>
-                    <form wire:submit.prevent="saveSchedule" class="space-y-4">
+                <div class="w-full md:w-7/12 p-6 overflow-y-auto bg-white">
+                    <h3 class="text-lg font-bold text-gray-800 mb-6 border-b pb-2 flex items-center gap-2">
+                        @if($scheduleId)
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                            Editar Sección
+                        @else
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                            Nueva Sección
+                        @endif
+                    </h3>
+
+                    <form wire:submit.prevent="saveSchedule" class="space-y-5">
                         
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div>
-                                <x-input-label value="Sección (Ej: 01)" />
-                                <x-text-input wire:model="s_section_name" class="w-full mt-1" />
+                                <x-input-label value="Nombre Sección (Ej: 01, A, Matutina)" />
+                                <x-text-input wire:model="s_section_name" class="w-full mt-1 bg-gray-50" placeholder="01" />
                                 <x-input-error :messages="$errors->get('s_section_name')" />
                             </div>
                             <div>
                                 <x-input-label value="Modalidad" />
-                                <select wire:model="s_modality" class="w-full mt-1 rounded-lg border-gray-300 text-sm">
+                                <select wire:model="s_modality" class="w-full mt-1 rounded-lg border-gray-300 text-sm bg-gray-50 focus:ring-indigo-500">
                                     <option>Presencial</option>
                                     <option>Virtual</option>
                                     <option>Semi-Presencial</option>
@@ -296,9 +337,9 @@
                         </div>
 
                         <div>
-                            <x-input-label value="Profesor" />
-                            <select wire:model="s_teacher_id" class="w-full mt-1 rounded-lg border-gray-300 text-sm">
-                                <option value="">-- Seleccionar --</option>
+                            <x-input-label value="Profesor Asignado" />
+                            <select wire:model="s_teacher_id" class="w-full mt-1 rounded-lg border-gray-300 text-sm bg-gray-50 focus:ring-indigo-500">
+                                <option value="">-- Seleccionar Profesor --</option>
                                 @foreach($teachers as $t)
                                     <option value="{{ $t->id }}">{{ $t->name }}</option>
                                 @endforeach
@@ -306,47 +347,53 @@
                             <x-input-error :messages="$errors->get('s_teacher_id')" />
                         </div>
 
-                        <div class="grid grid-cols-3 gap-3">
-                            <div class="col-span-1">
-                                <x-input-label value="Día" />
-                                <select wire:model="s_day_of_week" class="w-full mt-1 rounded-lg border-gray-300 text-sm">
-                                    <option>Lunes</option><option>Martes</option><option>Miércoles</option>
-                                    <option>Jueves</option><option>Viernes</option><option>Sábado</option><option>Domingo</option>
-                                </select>
-                            </div>
-                            <div>
-                                <x-input-label value="Inicio" />
-                                <x-text-input type="time" wire:model="s_start_time" class="w-full mt-1" />
-                            </div>
-                            <div>
-                                <x-input-label value="Fin" />
-                                <x-text-input type="time" wire:model="s_end_time" class="w-full mt-1" />
+                        <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-100">
+                            <h4 class="text-xs font-bold text-indigo-800 uppercase mb-3">Horario Semanal</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div class="col-span-1">
+                                    <x-input-label value="Día" />
+                                    <select wire:model="s_day_of_week" class="w-full mt-1 rounded-lg border-indigo-200 text-sm">
+                                        <option>Lunes</option><option>Martes</option><option>Miércoles</option>
+                                        <option>Jueves</option><option>Viernes</option><option>Sábado</option><option>Domingo</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <x-input-label value="Hora Inicio" />
+                                    <x-text-input type="time" wire:model="s_start_time" class="w-full mt-1 border-indigo-200" />
+                                </div>
+                                <div>
+                                    <x-input-label value="Hora Fin" />
+                                    <x-text-input type="time" wire:model="s_end_time" class="w-full mt-1 border-indigo-200" />
+                                </div>
                             </div>
                         </div>
 
                         <div>
-                            <x-input-label value="Aula" />
-                            <select wire:model="s_classroom_id" class="w-full mt-1 rounded-lg border-gray-300 text-sm">
-                                <option value="">-- Virtual / Sin Aula --</option>
+                            <x-input-label value="Aula / Espacio Físico" />
+                            <select wire:model="s_classroom_id" class="w-full mt-1 rounded-lg border-gray-300 text-sm bg-gray-50">
+                                <option value="">-- Aula Virtual / Sin Asignar --</option>
                                 @foreach($classrooms as $c)
-                                    <option value="{{ $c->id }}">{{ $c->name }} (Cap: {{ $c->capacity }})</option>
+                                    <option value="{{ $c->id }}">{{ $c->name }} (Capacidad: {{ $c->capacity }})</option>
                                 @endforeach
                             </select>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-4 pt-2">
+                        <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <x-input-label value="Fecha Inicio" />
+                                <x-input-label value="Inicio de Clases" />
                                 <x-text-input type="date" wire:model="s_start_date" class="w-full mt-1" />
                             </div>
                             <div>
-                                <x-input-label value="Fecha Fin" />
+                                <x-input-label value="Fin de Clases" />
                                 <x-text-input type="date" wire:model="s_end_date" class="w-full mt-1" />
                             </div>
                         </div>
 
-                        <div class="pt-4 flex justify-end">
-                            <x-primary-button>Guardar Horario</x-primary-button>
+                        <div class="pt-6 flex justify-end gap-3">
+                            <x-secondary-button x-on:click="$dispatch('close')">Cerrar</x-secondary-button>
+                            <x-primary-button class="w-full sm:w-auto justify-center">
+                                {{ $scheduleId ? 'Actualizar Sección' : 'Crear Sección' }}
+                            </x-primary-button>
                         </div>
                     </form>
                 </div>
