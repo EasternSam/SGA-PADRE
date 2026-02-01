@@ -1,4 +1,7 @@
-<div class="calendar-wrapper" x-data="{ showDetail: @entangle('selectedDate') }">
+<div class="calendar-wrapper" x-data="{ 
+    showDetail: @entangle('selectedDate'), 
+    showEventModal: @entangle('showEventModal') 
+}">
     
     <style>
         /* --- RESET Y BASE --- */
@@ -9,14 +12,14 @@
             height: calc(100vh - 64px); /* Ajuste para navbar existente */
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Importante */
+            overflow: hidden; 
         }
 
         /* --- HEADER DEL CALENDARIO --- */
         .calendar-header {
             background-color: white;
             border-bottom: 1px solid #e5e7eb;
-            flex: none; /* No encoger/crecer */
+            flex: none; 
             z-index: 20;
             padding: 1rem 1.5rem;
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -34,7 +37,7 @@
             display: flex;
             align-items: center;
             gap: 1rem;
-            position: relative; /* Para el dropdown absoluto */
+            position: relative; 
         }
 
         .month-title {
@@ -82,7 +85,7 @@
             border: 1px solid #e5e7eb;
             border-radius: 0.75rem;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            width: 320px; /* Un poco más ancho */
+            width: 320px; 
             padding: 1rem;
             z-index: 50;
             animation: fadeIn 0.2s ease-out;
@@ -124,7 +127,6 @@
             font-weight: 700;
             border-color: #dbeafe;
         }
-
 
         .nav-buttons {
             display: flex;
@@ -177,7 +179,6 @@
             transition: all 0.2s;
         }
         
-        /* Estados de los checkbox */
         input:checked + .filter-chip.chip-blue { background-color: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
         input:checked + .filter-chip.chip-green { background-color: #ecfdf5; color: #047857; border-color: #a7f3d0; }
         input:checked + .filter-chip.chip-amber { background-color: #fffbeb; color: #b45309; border-color: #fde68a; }
@@ -187,7 +188,6 @@
         .bg-green { background-color: #10b981; }
         .bg-amber { background-color: #f59e0b; }
 
-        /* Botón de Acción Principal */
         .btn-primary {
             display: flex;
             align-items: center;
@@ -206,18 +206,20 @@
         .btn-primary:hover { background-color: #1d4ed8; }
         .btn-primary svg { width: 1.25rem; height: 1.25rem; }
 
-        /* --- LAYOUT DE CONTENIDO (DOS COLUMNAS) --- */
+        /* --- LAYOUT DE CONTENIDO (CORREGIDO) --- */
         .content-layout {
             display: flex;
-            flex-direction: row; /* CORRECCIÓN: Aseguramos fila para layout horizontal */
+            flex-direction: row; /* Forzar fila */
+            flex-wrap: nowrap; /* Evitar que baje */
             flex: 1;
             height: 100%;
             overflow: hidden; 
         }
 
-        /* --- GRID DEL CALENDARIO (COLUMNA IZQUIERDA) --- */
+        /* --- GRID DEL CALENDARIO --- */
         .calendar-section {
-            flex: 1; /* Ocupa el espacio restante */
+            flex: 1;
+            min-width: 0; /* Permite que flex shrink funcione correctamente */
             padding: 1.5rem;
             display: flex;
             flex-direction: column;
@@ -236,13 +238,12 @@
             overflow: hidden;
         }
 
-        /* Días de la semana header */
         .week-header {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             background-color: #f9fafb;
             border-bottom: 1px solid #e5e7eb;
-            flex: none; /* Altura fija */
+            flex: none; 
         }
 
         .day-name {
@@ -257,13 +258,12 @@
         }
         .day-name:last-child { border-right: none; }
 
-        /* Rejilla de días */
         .days-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             grid-auto-rows: 1fr; 
-            background-color: #e5e7eb; /* Color de las líneas del grid */
-            gap: 1px; /* Espacio para las líneas */
+            background-color: #e5e7eb; 
+            gap: 1px; 
             flex: 1; 
             overflow-y: auto;
         }
@@ -308,7 +308,6 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
 
-        /* Chips de Eventos en el día */
         .event-chips-container {
             display: flex;
             flex-direction: column;
@@ -337,18 +336,17 @@
         .chip-class { background-color: #eff6ff; color: #1d4ed8; border-left-color: #3b82f6; }
 
 
-        /* --- PANEL DE DETALLES (COLUMNA DERECHA) --- */
+        /* --- PANEL DE DETALLES --- */
         .details-panel {
-            width: 24rem; /* Ancho fijo para el panel */
+            width: 24rem; 
+            flex-shrink: 0; /* Evita que el panel se encoja */
             background-color: white;
             display: flex;
             flex-direction: column;
             border-left: 1px solid #e5e7eb;
             overflow: hidden;
-            transition: width 0.3s ease;
         }
-        [x-cloak] { display: none !important; }
-
+        
         .panel-header {
             background-color: white;
             padding: 1.5rem;
@@ -357,6 +355,13 @@
         
         .panel-title { font-size: 1.25rem; font-weight: 600; margin: 0; color: #111827; }
         .panel-date { margin-top: 0.25rem; font-size: 0.875rem; color: #6b7280; font-weight: 500; text-transform: capitalize; }
+        
+        .close-btn {
+            background: rgba(255,255,255,0.2); border: none; border-radius: 50%;
+            padding: 0.25rem; color: #bfdbfe; cursor: pointer; display: flex;
+            transition: background 0.2s;
+        }
+        .close-btn svg { width: 1.5rem; height: 1.5rem; }
 
         .panel-content {
             flex: 1;
@@ -408,6 +413,50 @@
         }
         .empty-selection svg { width: 3rem; height: 3rem; margin-bottom: 1rem; color: #d1d5db; }
 
+        /* --- MODAL PROPIO (Para Nueva Actividad) --- */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 100;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem;
+        }
+        .modal-bg {
+            position: fixed; inset: 0;
+            background-color: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(4px);
+        }
+        .modal-card {
+            background-color: white;
+            width: 100%; max-width: 32rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            position: relative; z-index: 101;
+            overflow: hidden;
+        }
+        .modal-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: #f9fafb;
+        }
+        .modal-body { padding: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-label { display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem; }
+        .form-input, .form-select, .form-textarea {
+            width: 100%; border-radius: 0.375rem; border: 1px solid #d1d5db;
+            padding: 0.5rem; font-size: 0.875rem; color: #111827;
+        }
+        .form-textarea { resize: vertical; }
+        .modal-footer {
+            padding: 1rem 1.5rem; background-color: #f9fafb; border-top: 1px solid #e5e7eb;
+            display: flex; justify-content: flex-end; gap: 0.75rem;
+        }
+        .btn {
+            padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 500; border-radius: 0.375rem; cursor: pointer;
+        }
+        .btn-cancel { background-color: white; border: 1px solid #d1d5db; color: #374151; }
+        .btn-save { background-color: #2563eb; border: 1px solid transparent; color: white; }
+
+        [x-cloak] { display: none !important; }
     </style>
     
     <!-- HEADER -->
@@ -540,9 +589,12 @@
                 <div class="panel-header">
                     <div class="panel-title-row">
                         <h2 class="panel-title">Detalles del Día</h2>
-                        <button class="close-btn" @click="$wire.set('selectedDate', null)">
-                            <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
+                        <!-- Botón cerrar para limpiar selección -->
+                        <div style="display: flex; justify-content: flex-end;">
+                            <button class="btn-nav" @click="$wire.set('selectedDate', null)">
+                                <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
                     </div>
                     <p class="panel-date">{{ $selectedDayData['date_human'] ?? '' }}</p>
                 </div>
@@ -622,61 +674,66 @@
         </div>
     </div>
 
-    {{-- MODAL NUEVO EVENTO --}}
-    <x-modal name="event-modal" :show="$showEventModal" maxWidth="lg">
-        <div class="bg-white rounded-lg shadow-xl overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                <h2 class="text-lg font-bold text-gray-900">Nueva Actividad</h2>
-                <button wire:click="closeEventModal" class="text-gray-400 hover:text-gray-500">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+    {{-- MODAL NUEVO EVENTO (MANUAL IMPLEMENTATION) --}}
+    <div x-show="showEventModal" style="display: none;" class="modal-overlay" x-cloak>
+        <div class="modal-bg" @click="showEventModal = false; $wire.closeEventModal()"></div>
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 style="font-size:1.125rem; font-weight:700; color:#111827; margin:0;">Nueva Actividad</h2>
+                <button @click="showEventModal = false; $wire.closeEventModal()" style="border:none; background:none; cursor:pointer; color:#9ca3af;">
+                    <svg style="width:1.5rem; height:1.5rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
             
-            <form wire:submit.prevent="saveEvent" class="p-6 space-y-4">
-                <div>
-                    <x-input-label for="newEventTitle" value="Título" />
-                    <x-text-input id="newEventTitle" type="text" class="mt-1 w-full" wire:model="newEventTitle" placeholder="Ej: Examen Final, Suspensión..." />
-                    <x-input-error :messages="$errors->get('newEventTitle')" class="mt-1" />
-                </div>
-                <div>
-                    <x-input-label for="newEventType" value="Tipo de Actividad" />
-                    <select id="newEventType" wire:model="newEventType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
-                        <option value="academic">Académico</option>
-                        <option value="administrative">Administrativo</option>
-                        <option value="holiday">Feriado / Suspensión</option>
-                        <option value="extracurricular">Extracurricular</option>
-                    </select>
-                    <x-input-error :messages="$errors->get('newEventType')" class="mt-1" />
-                </div>
-                <div>
-                    <x-input-label for="newEventDate" value="Fecha" />
-                    <x-text-input id="newEventDate" type="date" class="mt-1 w-full" wire:model="newEventDate" />
-                    <x-input-error :messages="$errors->get('newEventDate')" class="mt-1" />
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <x-input-label for="newEventStartTime" value="Hora Inicio (Opcional)" />
-                        <x-text-input id="newEventStartTime" type="time" class="mt-1 w-full" wire:model="newEventStartTime" />
-                        <x-input-error :messages="$errors->get('newEventStartTime')" class="mt-1" />
+            <form wire:submit.prevent="saveEvent">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label" for="newEventTitle">Título</label>
+                        <input class="form-input" id="newEventTitle" type="text" wire:model="newEventTitle" placeholder="Ej: Examen Final, Suspensión...">
+                        @error('newEventTitle') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
                     </div>
-                    <div>
-                        <x-input-label for="newEventEndTime" value="Hora Fin (Opcional)" />
-                        <x-text-input id="newEventEndTime" type="time" class="mt-1 w-full" wire:model="newEventEndTime" />
-                        <x-input-error :messages="$errors->get('newEventEndTime')" class="mt-1" />
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="newEventType">Tipo de Actividad</label>
+                        <select class="form-select" id="newEventType" wire:model="newEventType">
+                            <option value="academic">Académico</option>
+                            <option value="administrative">Administrativo</option>
+                            <option value="holiday">Feriado / Suspensión</option>
+                            <option value="extracurricular">Extracurricular</option>
+                        </select>
+                        @error('newEventType') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="newEventDate">Fecha</label>
+                        <input class="form-input" id="newEventDate" type="date" wire:model="newEventDate">
+                        @error('newEventDate') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label" for="newEventStartTime">Hora Inicio</label>
+                            <input class="form-input" id="newEventStartTime" type="time" wire:model="newEventStartTime">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="newEventEndTime">Hora Fin</label>
+                            <input class="form-input" id="newEventEndTime" type="time" wire:model="newEventEndTime">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="newEventDescription">Descripción</label>
+                        <textarea class="form-textarea" id="newEventDescription" wire:model="newEventDescription" rows="3" placeholder="Detalles adicionales..."></textarea>
                     </div>
                 </div>
-                <div>
-                    <x-input-label for="newEventDescription" value="Descripción" />
-                    <textarea id="newEventDescription" wire:model="newEventDescription" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" placeholder="Detalles adicionales..."></textarea>
-                    <x-input-error :messages="$errors->get('newEventDescription')" class="mt-1" />
-                </div>
-                <div class="flex justify-end gap-3 pt-4">
-                    <x-secondary-button wire:click="closeEventModal">Cancelar</x-secondary-button>
-                    <x-primary-button>Guardar</x-primary-button>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-cancel" @click="showEventModal = false; $wire.closeEventModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-save">Guardar Actividad</button>
                 </div>
             </form>
         </div>
-    </x-modal>
+    </div>
 
     <x-action-message on="message" />
 
