@@ -67,7 +67,7 @@
         {{-- Visible para Admin, Registro, Contabilidad y Caja --}}
         @hasanyrole('Admin|Registro|Contabilidad|Caja')
             <div class="pt-4 space-y-1">
-                <!-- CAMBIO AQUÍ: Color de texto cambiado a text-white/70 para mejor contraste pero manteniendo jerarquía -->
+                <!-- CAMBIO AQUÍ: Color de texto cambiado a text-white/70 para mejor contraste -->
                 <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white/70">
                     {{ __('Gestión') }}
                 </p>
@@ -211,6 +211,7 @@
         <!-- Sección Estudiante -->
         @role('Estudiante')
             <div class="pt-4 space-y-1">
+                <!-- CAMBIO AQUÍ: Color de texto también actualizado -->
                 <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white/70">
                     {{ __('Mi Portal') }}
                 </p>
@@ -236,6 +237,7 @@
         <!-- Sección Profesor -->
         @role('Profesor')
             <div class="pt-4 space-y-1">
+                <!-- CAMBIO AQUÍ: Color de texto también actualizado -->
                 <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white/70">
                     {{ __('Docencia') }}
                 </p>
