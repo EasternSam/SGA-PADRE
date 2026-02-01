@@ -1,39 +1,22 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendario Académico</title>
-    <!-- Alpine.js para la interactividad del modal -->
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<div class="calendar-wrapper" x-data="{ showDetail: @entangle('selectedDate') }">
+    
     <style>
         /* --- RESET Y BASE --- */
-        * { box-sizing: border-box; }
-        body {
+        .calendar-wrapper {
             font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 0;
             background-color: #f3f4f6;
             color: #1f2937;
-            height: 100vh;
+            height: calc(100vh - 64px); /* Ajuste para navbar existente */
             display: flex;
             flex-direction: column;
-        }
-
-        /* --- LAYOUT PRINCIPAL --- */
-        .calendar-wrapper {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
+            overflow: hidden; /* Importante */
         }
 
         /* --- HEADER DEL CALENDARIO --- */
         .calendar-header {
             background-color: white;
             border-bottom: 1px solid #e5e7eb;
-            position: sticky;
-            top: 0;
+            flex: none; /* No encoger/crecer */
             z-index: 20;
             padding: 1rem 1.5rem;
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -61,6 +44,7 @@
             align-items: center;
             gap: 0.5rem;
             margin: 0;
+            text-transform: capitalize;
         }
 
         .month-icon {
@@ -70,7 +54,10 @@
             border-radius: 0.5rem;
             border: 1px solid #dbeafe;
             display: flex;
+            align-items: center;
+            justify-content: center;
         }
+        .month-icon svg { width: 1.5rem; height: 1.5rem; }
 
         .year-text {
             color: #9ca3af;
@@ -96,6 +83,7 @@
             align-items: center;
             justify-content: center;
         }
+        .btn-nav svg { width: 1.25rem; height: 1.25rem; }
         .btn-nav:hover { background-color: #f9fafb; color: #2563eb; }
         .nav-divider { width: 1px; background-color: #e5e7eb; margin: 0.25rem 0; }
 
@@ -133,11 +121,11 @@
 
         /* --- GRID DEL CALENDARIO --- */
         .calendar-body {
-            flex: 1;
+            flex: 1; /* Ocupa el resto de la altura */
             padding: 1.5rem;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow: hidden; /* Evita scroll doble */
         }
 
         .calendar-container {
@@ -147,7 +135,7 @@
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
-            flex: 1;
+            flex: 1; /* Se estira para llenar el body */
             overflow: hidden;
         }
 
@@ -157,10 +145,11 @@
             grid-template-columns: repeat(7, 1fr);
             background-color: #f9fafb;
             border-bottom: 1px solid #e5e7eb;
+            flex: none; /* Altura fija */
         }
 
         .day-name {
-            padding: 0.5rem;
+            padding: 0.75rem 0.5rem;
             text-align: center;
             font-size: 0.75rem;
             font-weight: 600;
@@ -175,15 +164,17 @@
         .days-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
+            /* Usamos auto-rows-fr para que todas las filas tengan la misma altura y llenen el espacio */
+            grid-auto-rows: 1fr; 
             background-color: #e5e7eb; /* Color de las líneas del grid */
             gap: 1px; /* Espacio para las líneas */
-            flex: 1;
+            flex: 1; /* Se estira */
             overflow-y: auto;
         }
 
         .day-cell {
             background-color: white;
-            min-height: 120px;
+            min-height: 100px; /* Altura mínima visual */
             padding: 0.5rem;
             display: flex;
             flex-direction: column;
@@ -191,14 +182,21 @@
             transition: background-color 0.2s;
             cursor: pointer;
             position: relative;
+            overflow: hidden; /* Para contener chips */
         }
         .day-cell:hover { background-color: #eff6ff; }
         .day-cell.empty { background-color: #f9fafb; cursor: default; }
         .day-cell.today { background-color: rgba(239, 246, 255, 0.6); }
 
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
         .day-number {
             font-size: 0.875rem;
-            font-weight: 700;
+            font-weight: 600;
             width: 1.75rem;
             height: 1.75rem;
             display: flex;
@@ -206,7 +204,6 @@
             justify-content: center;
             border-radius: 50%;
             color: #374151;
-            margin-bottom: 0.25rem;
         }
         .day-cell.today .day-number {
             background-color: #2563eb;
@@ -218,25 +215,29 @@
         .event-chips-container {
             display: flex;
             flex-direction: column;
-            gap: 0.25rem;
-            overflow-y: auto;
-            max-height: 100px;
+            gap: 0.125rem;
+            overflow-y: auto; /* Scroll interno si hay muchos eventos */
+            flex: 1; /* Ocupa espacio disponible */
+            /* Ocultar scrollbar */
+            scrollbar-width: none; 
+            -ms-overflow-style: none;
         }
+        .event-chips-container::-webkit-scrollbar { display: none; }
 
         .event-chip {
             padding: 0.125rem 0.375rem;
             border-radius: 0.25rem;
             font-size: 0.625rem;
-            font-weight: 500;
+            font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            border-left-width: 2px;
+            border-left-width: 3px;
             border-left-style: solid;
         }
 
-        .chip-academic { background-color: #d1fae5; color: #065f46; border-left-color: #10b981; }
-        .chip-event { background-color: #fef3c7; color: #92400e; border-left-color: #f59e0b; }
+        .chip-academic { background-color: #ecfdf5; color: #047857; border-left-color: #10b981; }
+        .chip-event { background-color: #fffbeb; color: #b45309; border-left-color: #f59e0b; }
         .chip-class { background-color: #eff6ff; color: #1d4ed8; border-left-color: #3b82f6; }
 
         /* --- SLIDE-OVER (PANEL LATERAL) --- */
@@ -248,12 +249,8 @@
             transition: opacity 0.3s;
         }
 
-        .slide-over-container {
-            position: fixed; inset: 0; overflow: hidden; z-index: 50; pointer-events: none;
-        }
-
         .slide-over-wrapper {
-            position: absolute; inset: 0; overflow: hidden; display: flex; justify-content: flex-end;
+            position: fixed; inset: 0; overflow: hidden; display: flex; justify-content: flex-end; z-index: 50; pointer-events: none;
         }
 
         .slide-over-panel {
@@ -265,11 +262,7 @@
             display: flex;
             flex-direction: column;
             height: 100%;
-            transform: translateX(100%);
-            transition: transform 0.3s ease-in-out;
         }
-        /* Alpine se encargará de mostrar/ocultar esto, pero por defecto para CSS puro: */
-        [x-show="showDetail"] .slide-over-panel { transform: translateX(0); }
 
         .panel-header {
             background-color: #2563eb;
@@ -284,6 +277,7 @@
             background: rgba(255,255,255,0.2); border: none; border-radius: 50%;
             padding: 0.25rem; color: #bfdbfe; cursor: pointer; display: flex;
         }
+        .close-btn svg { width: 1.5rem; height: 1.5rem; }
         .close-btn:hover { color: white; background: rgba(255,255,255,0.3); }
 
         .panel-date { margin-top: 0.5rem; font-size: 0.875rem; color: #dbeafe; font-weight: 500; text-transform: capitalize; }
@@ -304,6 +298,7 @@
         .icon-box {
             padding: 0.375rem; border-radius: 0.375rem; display: flex;
         }
+        .icon-box svg { width: 1rem; height: 1rem; }
         .icon-box.green { background-color: #d1fae5; color: #059669; }
         .icon-box.blue { background-color: #dbeafe; color: #2563eb; }
         .icon-box.amber { background-color: #fef3c7; color: #d97706; }
@@ -324,53 +319,10 @@
 
         .card-title { font-size: 0.875rem; font-weight: 600; color: #111827; margin: 0 0 0.25rem 0; }
         .card-desc { font-size: 0.75rem; color: #6b7280; margin: 0; }
-
-        /* Timeline Items */
-        .timeline-item {
-            display: flex; gap: 1rem; position: relative; margin-bottom: 1rem;
-        }
-        .timeline-marker {
-            display: flex; flex-direction: column; align-items: center; width: 1.5rem;
-        }
-        .timeline-dot {
-            width: 0.75rem; height: 0.75rem; background-color: #3b82f6; border-radius: 50%;
-            border: 2px solid #eff6ff; box-shadow: 0 0 0 1px #dbeafe; z-index: 10;
-        }
-        .timeline-line {
-            width: 2px; background-color: #e2e8f0; flex: 1; margin-top: 0.25rem; margin-bottom: 0.25rem;
-        }
         
-        .class-card {
-            flex: 1; background-color: white; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1rem;
-            transition: border-color 0.2s;
-        }
-        .class-card:hover { border-color: #93c5fd; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-
-        .class-time {
-            display: inline-block; background-color: #eff6ff; color: #1d4ed8; font-size: 0.75rem;
-            font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 0.25rem; margin-bottom: 0.5rem;
-        }
-        .class-meta {
-            display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.5rem;
-            padding-top: 0.5rem; border-top: 1px solid #f3f4f6; font-size: 0.75rem; color: #6b7280;
-        }
-        .meta-item { display: flex; align-items: center; gap: 0.375rem; }
-
-        .empty-state {
-            text-align: center; padding: 2rem; background-color: white;
-            border: 2px dashed #e5e7eb; border-radius: 0.5rem;
-        }
-
-        /* Utilidades SVG */
-        .icon { width: 1rem; height: 1rem; }
-        .icon-md { width: 1.25rem; height: 1.25rem; }
-        .icon-lg { width: 1.5rem; height: 1.5rem; }
+        /* Utility */
+        .empty-text { text-align: center; color: #9ca3af; font-size: 0.875rem; margin-top: 2rem; }
     </style>
-</head>
-<body>
-
-<!-- El wrapper x-data debe estar aquí para que Alpine controle todo el estado -->
-<div class="calendar-wrapper" x-data="{ showDetail: @entangle('selectedDate') }">
     
     <!-- HEADER -->
     <div class="calendar-header">
@@ -379,19 +331,19 @@
             <div class="month-controls">
                 <h1 class="month-title">
                     <span class="month-icon">
-                        <svg class="icon-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                     </span>
-                    <span style="text-transform: capitalize;">{{ \Carbon\Carbon::createFromDate($currentYear, $currentMonth, 1)->locale('es')->monthName }}</span>
+                    <span>{{ \Carbon\Carbon::createFromDate($currentYear, $currentMonth, 1)->locale('es')->monthName }}</span>
                     <span class="year-text">{{ $currentYear }}</span>
                 </h1>
                 
                 <div class="nav-buttons">
                     <button wire:click="previousMonth" class="btn-nav">
-                        <svg class="icon-md" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                     </button>
                     <div class="nav-divider"></div>
                     <button wire:click="nextMonth" class="btn-nav">
-                        <svg class="icon-md" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                     </button>
                 </div>
             </div>
@@ -441,19 +393,24 @@
                             wire:click="selectDay({{ $dayData['day'] }})"
                             class="day-cell {{ $dayData['isToday'] ? 'today' : '' }}"
                         >
-                            <div class="day-number">
-                                {{ $dayData['day'] }}
+                            <div class="day-header">
+                                <div class="day-number">
+                                    {{ $dayData['day'] }}
+                                </div>
                             </div>
 
                             <div class="event-chips-container">
+                                {{-- 1. Hitos --}}
                                 @if($dayData['hasSystem'])
                                     <div class="event-chip chip-academic">Hitos Académicos</div>
                                 @endif
                                 
+                                {{-- 2. Eventos --}}
                                 @if($dayData['hasEvents'])
                                     <div class="event-chip chip-event">Eventos</div>
                                 @endif
 
+                                {{-- 3. Clases --}}
                                 @if($dayData['hasClasses'])
                                     <div class="event-chip chip-class">Clases</div>
                                 @endif
@@ -481,122 +438,104 @@
         ></div>
 
         <!-- Panel -->
-        <div class="slide-over-container">
-            <div class="slide-over-wrapper">
-                <div 
-                    class="slide-over-panel"
-                    x-show="showDetail"
-                    x-transition:enter="transform transition ease-in-out duration-500"
-                    x-transition:enter-start="translate-x-full"
-                    x-transition:enter-end="translate-x-0"
-                    x-transition:leave="transform transition ease-in-out duration-500"
-                    x-transition:leave-start="translate-x-0"
-                    x-transition:leave-end="translate-x-full"
-                >
-                    <!-- Header Panel -->
-                    <div class="panel-header">
-                        <div class="panel-title-row">
-                            <h2 class="panel-title">Resumen del Día</h2>
-                            <button class="close-btn" @click="showDetail = false; $wire.set('selectedDate', null)">
-                                <svg class="icon-lg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                        </div>
-                        <p class="panel-date">{{ $selectedDayData['date_human'] ?? 'Seleccione un día' }}</p>
+        <div class="slide-over-wrapper">
+            <div 
+                class="slide-over-panel"
+                x-show="showDetail"
+                x-transition:enter="transform transition ease-in-out duration-500"
+                x-transition:enter-start="translate-x-full"
+                x-transition:enter-end="translate-x-0"
+                x-transition:leave="transform transition ease-in-out duration-500"
+                x-transition:leave-start="translate-x-0"
+                x-transition:leave-end="translate-x-full"
+            >
+                <!-- Header Panel -->
+                <div class="panel-header">
+                    <div class="panel-title-row">
+                        <h2 class="panel-title">Resumen del Día</h2>
+                        <button class="close-btn" @click="showDetail = false; $wire.set('selectedDate', null)">
+                            <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
                     </div>
+                    <p class="panel-date">{{ $selectedDayData['date_human'] ?? 'Seleccione un día' }}</p>
+                </div>
 
-                    <!-- Contenido Panel -->
-                    <div class="panel-content">
-                        
-                        <!-- 1. Hitos -->
-                        @if(!empty($selectedDayData['system_events']) && count($selectedDayData['system_events']) > 0)
-                            <section>
-                                <div class="section-title">
-                                    <div class="icon-box green">
-                                        <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                                    </div>
-                                    <h3 class="section-heading">Hitos Académicos</h3>
+                <!-- Contenido Panel -->
+                <div class="panel-content">
+                    
+                    <!-- 1. Hitos -->
+                    @if(!empty($selectedDayData['system_events']) && count($selectedDayData['system_events']) > 0)
+                        <section>
+                            <div class="section-title">
+                                <div class="icon-box green">
+                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                                 </div>
-                                <div>
-                                    @foreach($selectedDayData['system_events'] as $sysEvent)
-                                        <div class="card card-l-green">
-                                            <p class="card-title">{{ $sysEvent['title'] }}</p>
-                                            <p class="card-desc">{{ $sysEvent['description'] }}</p>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </section>
-                        @endif
-
-                        <!-- 2. Clases -->
-                        @if(!empty($selectedDayData['sections']) && count($selectedDayData['sections']) > 0)
-                            <section>
-                                <div class="section-title">
-                                    <div class="icon-box blue">
-                                        <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                                    </div>
-                                    <h3 class="section-heading">Clases Programadas</h3>
-                                </div>
-                                
-                                <div style="margin-left: 0.5rem; border-left: 2px solid #e2e8f0; padding-left: 1.5rem;">
-                                    @foreach($selectedDayData['sections'] as $section)
-                                        <div class="timeline-item">
-                                            <div class="class-card">
-                                                <div style="display: flex; justify-content: space-between;">
-                                                    <span class="class-time">
-                                                        {{ \Carbon\Carbon::parse($section->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($section->end_time)->format('H:i') }}
-                                                    </span>
-                                                    <span style="font-size: 0.625rem; color: #9ca3af; font-family: monospace;">{{ $section->section_name }}</span>
-                                                </div>
-                                                <h4 class="card-title">{{ $section->module->name }}</h4>
-                                                <div class="class-meta">
-                                                    <div class="meta-item">
-                                                        <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                                                        {{ $section->teacher->name ?? 'Sin Profesor' }}
-                                                    </div>
-                                                    <div class="meta-item">
-                                                        <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                                                        {{ $section->classroom->name ?? 'Virtual' }}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </section>
-                        @elseif($showClasses)
-                            <div class="empty-state">
-                                <svg class="icon-lg" style="margin: 0 auto; color: #d1d5db;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-                                <h3 style="font-size: 0.875rem; font-weight: 600; margin: 0.5rem 0 0.25rem 0;">Día libre</h3>
-                                <p style="font-size: 0.75rem; color: #6b7280; margin: 0;">No hay clases hoy.</p>
+                                <h3 class="section-heading">Hitos Académicos</h3>
                             </div>
-                        @endif
-
-                        <!-- 3. Eventos Extra -->
-                        @if(!empty($selectedDayData['events']) && count($selectedDayData['events']) > 0)
-                            <section>
-                                <div class="section-title">
-                                    <div class="icon-box amber">
-                                        <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>
+                            <div>
+                                @foreach($selectedDayData['system_events'] as $sysEvent)
+                                    <div class="card card-l-green">
+                                        <p class="card-title">{{ $sysEvent['title'] }}</p>
+                                        <p class="card-desc">{{ $sysEvent['description'] }}</p>
                                     </div>
-                                    <h3 class="section-heading">Agenda Extra</h3>
-                                </div>
-                                <div>
-                                    @foreach($selectedDayData['events'] as $event)
-                                        <div class="card card-l-amber">
-                                            <p class="card-title">{{ $event['title'] }}</p>
-                                            <p class="card-desc">{{ $event['description'] }}</p>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </section>
-                        @endif
+                                @endforeach
+                            </div>
+                        </section>
+                    @endif
 
-                    </div>
+                    <!-- 2. Clases -->
+                    @if(!empty($selectedDayData['sections']) && count($selectedDayData['sections']) > 0)
+                        <section>
+                            <div class="section-title">
+                                <div class="icon-box blue">
+                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                                </div>
+                                <h3 class="section-heading">Clases Programadas</h3>
+                            </div>
+                            
+                            <div>
+                                @foreach($selectedDayData['sections'] as $section)
+                                    <div class="card card-l-blue">
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem;">
+                                            <p class="card-title" style="margin:0;">{{ $section->module->name }}</p>
+                                            <span style="font-size:0.75rem; background:#eff6ff; padding:2px 6px; border-radius:4px; color:#1d4ed8; font-weight:600;">
+                                                {{ \Carbon\Carbon::parse($section->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($section->end_time)->format('H:i') }}
+                                            </span>
+                                        </div>
+                                        <div class="card-desc" style="display:flex; gap:1rem;">
+                                            <span>👨‍🏫 {{ $section->teacher->name ?? 'Sin Profesor' }}</span>
+                                            <span>🏫 {{ $section->classroom->name ?? 'Virtual' }}</span>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </section>
+                    @elseif($showClasses)
+                        <div class="empty-text">No hay clases programadas para hoy.</div>
+                    @endif
+
+                    <!-- 3. Eventos Extra -->
+                    @if(!empty($selectedDayData['events']) && count($selectedDayData['events']) > 0)
+                        <section>
+                            <div class="section-title">
+                                <div class="icon-box amber">
+                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>
+                                </div>
+                                <h3 class="section-heading">Agenda Extra</h3>
+                            </div>
+                            <div>
+                                @foreach($selectedDayData['events'] as $event)
+                                    <div class="card card-l-amber">
+                                        <p class="card-title">{{ $event['title'] }}</p>
+                                        <p class="card-desc">{{ $event['description'] }}</p>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </section>
+                    @endif
+
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-</body>
-</html>
