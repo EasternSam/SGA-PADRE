@@ -194,14 +194,14 @@
                                 @foreach($selectedAdmission->documents as $key => $path)
                                     @if($path)
                                     <div class="border rounded-lg p-3 transition-all duration-200 
-                                        {{ $tempDocStatus[$key] == 'approved' ? 'bg-green-50 border-green-300 ring-1 ring-green-300' : 
-                                          ($tempDocStatus[$key] == 'rejected' ? 'bg-red-50 border-red-300 ring-1 ring-red-300' : 'bg-white hover:shadow-md') }}">
+                                        {{ isset($tempDocStatus[$key]) && $tempDocStatus[$key] == 'approved' ? 'bg-green-50 border-green-300 ring-1 ring-green-300' : 
+                                          (isset($tempDocStatus[$key]) && $tempDocStatus[$key] == 'rejected' ? 'bg-red-50 border-red-300 ring-1 ring-red-300' : 'bg-white hover:shadow-md') }}">
                                         
                                         <div class="flex justify-between items-center mb-3">
                                             <span class="text-sm font-bold text-gray-700 flex items-center gap-2">
-                                                @if($tempDocStatus[$key] == 'approved')
+                                                @if(isset($tempDocStatus[$key]) && $tempDocStatus[$key] == 'approved')
                                                     <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                                                @elseif($tempDocStatus[$key] == 'rejected')
+                                                @elseif(isset($tempDocStatus[$key]) && $tempDocStatus[$key] == 'rejected')
                                                     <svg class="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
                                                 @endif
                                                 {{ ucwords(str_replace('_', ' ', $key)) }}
@@ -216,14 +216,14 @@
                                         <div class="flex gap-2">
                                             <button wire:click="setDocStatus('{{ $key }}', 'approved')" 
                                                 class="flex-1 py-1.5 text-xs font-bold rounded shadow-sm transition-all
-                                                {{ $tempDocStatus[$key] == 'approved' 
+                                                {{ isset($tempDocStatus[$key]) && $tempDocStatus[$key] == 'approved' 
                                                     ? 'bg-green-600 text-white shadow-inner' 
                                                     : 'bg-white text-gray-600 border border-gray-300 hover:bg-green-50 hover:text-green-700 hover:border-green-300' }}">
                                                 ✓ Aprobar
                                             </button>
                                             <button wire:click="setDocStatus('{{ $key }}', 'rejected')" 
                                                 class="flex-1 py-1.5 text-xs font-bold rounded shadow-sm transition-all
-                                                {{ $tempDocStatus[$key] == 'rejected' 
+                                                {{ isset($tempDocStatus[$key]) && $tempDocStatus[$key] == 'rejected' 
                                                     ? 'bg-red-600 text-white shadow-inner' 
                                                     : 'bg-white text-gray-600 border border-gray-300 hover:bg-red-50 hover:text-red-700 hover:border-red-300' }}">
                                                 ✕ Rechazar
@@ -240,10 +240,21 @@
                 <!-- Footer Sticky -->
                 <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center sticky bottom-0 z-10">
                     <div class="text-xs text-gray-500">
-                        * Aprobar todos los documentos completará automáticamente la inscripción.
+                        * Guardar revisión actualiza el estado. 
+                        <strong>Aprobar e Inscribir</strong> finaliza el proceso inmediatamente.
                     </div>
                     <div class="flex gap-3">
                         <x-secondary-button wire:click="$set('showProcessModal', false)">Cancelar</x-secondary-button>
+                        
+                        <!-- BOTÓN NUEVO: APROBACIÓN MANUAL -->
+                        @if($selectedAdmission->status !== 'approved')
+                            <button wire:click="approveAdmission" 
+                                    wire:confirm="¿Está seguro de aprobar e inscribir manualmente a este estudiante? Esto omitirá validaciones pendientes."
+                                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest bg-green-600 hover:bg-green-700 focus:bg-green-700 active:bg-green-900 transition ease-in-out duration-150">
+                                Aprobar e Inscribir
+                            </button>
+                        @endif
+
                         <x-primary-button wire:click="saveReview">
                             Guardar Revisión
                         </x-primary-button>

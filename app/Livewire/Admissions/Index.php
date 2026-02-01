@@ -57,6 +57,50 @@ class Index extends Component
         $this->tempDocStatus[$key] = $status;
     }
 
+    // Método para APROBAR MANUALMENTE la admisión completa
+    public function approveAdmission()
+    {
+        $admission = $this->selectedAdmission;
+
+        DB::transaction(function () use ($admission) {
+            $user = User::find($admission->user_id) ?? User::where('email', $admission->email)->first();
+            
+            if ($user) {
+                // Actualizar rol
+                $user->removeRole('Solicitante');
+                $user->assignRole('Estudiante');
+
+                // Crear Estudiante si no existe
+                $existingStudent = Student::where('user_id', $user->id)->first();
+                if (!$existingStudent) {
+                    Student::create([
+                        'user_id' => $user->id,
+                        'first_name' => $admission->first_name,
+                        'last_name' => $admission->last_name,
+                        'email' => $admission->email,
+                        'cedula' => $admission->identification_id,
+                        'status' => 'Activo',
+                        'phone' => $admission->phone,
+                        'birth_date' => $admission->birth_date,
+                        'address' => $admission->address,
+                        'enrollment_date' => now(),
+                        'student_code' => 'EST-' . date('Y') . '-' . str_pad($user->id, 4, '0', STR_PAD_LEFT),
+                    ]);
+                }
+            }
+
+            // Actualizar admisión a aprobado
+            $admission->status = 'approved';
+            $admission->document_status = $this->tempDocStatus; // Guardar estado actual de documentos
+            $admission->notes = $this->admissionNotes . "\n[Sistema] Aprobado manualmente por administración.";
+            $admission->save();
+        });
+
+        session()->flash('message', 'Solicitud APROBADA manualmente. Estudiante inscrito.');
+        $this->showProcessModal = false;
+        $this->reset(['selectedAdmission', 'tempDocStatus']);
+    }
+
     public function saveReview()
     {
         $admission = $this->selectedAdmission;
@@ -65,44 +109,14 @@ class Index extends Component
         $admission->document_status = $this->tempDocStatus;
         $admission->notes = $this->admissionNotes;
 
-        // 2. Determinar estado general
-        // Si hay algún rechazado -> estado general = rejected
-        // Si todos aprobados -> estado general = approved (y crear estudiante)
-        // Si mezcla -> pending
-        
+        // 2. Determinar estado general AUTOMÁTICO
         $allApproved = !in_array('pending', $this->tempDocStatus) && !in_array('rejected', $this->tempDocStatus);
         $hasRejection = in_array('rejected', $this->tempDocStatus);
 
         if ($allApproved) {
-            // APROBAR FINALMENTE
-            DB::transaction(function () use ($admission) {
-                $user = User::find($admission->user_id) ?? User::where('email', $admission->email)->first();
-                
-                if ($user) {
-                    $user->removeRole('Solicitante');
-                    $user->assignRole('Estudiante');
-
-                    $existingStudent = Student::where('user_id', $user->id)->first();
-                    if (!$existingStudent) {
-                        Student::create([
-                            'user_id' => $user->id,
-                            'first_name' => $admission->first_name,
-                            'last_name' => $admission->last_name,
-                            'email' => $admission->email,
-                            'cedula' => $admission->identification_id,
-                            'status' => 'Activo',
-                            'phone' => $admission->phone,
-                            'birth_date' => $admission->birth_date,
-                            'address' => $admission->address,
-                        ]);
-                    }
-                }
-
-                $admission->status = 'approved';
-                $admission->save();
-            });
-            session()->flash('message', 'Solicitud aprobada completamente. Estudiante inscrito.');
-
+            // Si todos están aprobados, podemos llamar a la aprobación completa
+            $this->approveAdmission();
+            return;
         } elseif ($hasRejection) {
             $admission->status = 'rejected';
             $admission->save();

@@ -69,6 +69,28 @@ class Dashboard extends Component
         }
     }
 
+    // Traducción de nombres de campos para mensajes de error
+    protected $validationAttributes = [
+        'first_name' => 'nombres',
+        'last_name' => 'apellidos',
+        'identification_id' => 'cédula',
+        'birth_date' => 'fecha de nacimiento',
+        'nationality' => 'nacionalidad',
+        'address' => 'dirección',
+        'phone' => 'teléfono',
+        'course_id' => 'carrera',
+        'previous_school' => 'escuela de procedencia',
+        'file_birth_certificate' => 'acta de nacimiento',
+        'file_id_card' => 'cédula de identidad',
+        'file_high_school_record' => 'récord de notas',
+        'file_medical_certificate' => 'certificado médico',
+        'file_payment_receipt' => 'recibo de pago',
+        'file_bachelor_certificate' => 'certificado de bachiller',
+        'file_photo' => 'fotografía 2x2',
+        'works' => 'trabaja',
+        'work_place' => 'lugar de trabajo',
+    ];
+
     protected $rules = [
         'first_name' => 'required|string|max:255',
         'last_name' => 'required|string|max:255',
@@ -176,7 +198,7 @@ class Dashboard extends Component
         ]);
 
         // Limpiar input
-        unset($this->reupload_files[$key]); // Usar unset es más seguro para arrays de Livewire
+        unset($this->reupload_files[$key]); 
         
         session()->flash('message', 'Documento actualizado correctamente. Pendiente de revisión.');
     }
