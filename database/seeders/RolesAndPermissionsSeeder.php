@@ -18,7 +18,15 @@ class RolesAndPermissionsSeeder extends Seeder
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // 1. CREAR ROLES (Usamos firstOrCreate para evitar duplicados)
+        // 0. CREAR PERMISOS (Básicos para el sistema)
+        // Usamos firstOrCreate para no duplicar si se corre el seeder varias veces
+        Permission::firstOrCreate(['name' => 'ver dashboard']);
+        Permission::firstOrCreate(['name' => 'gestionar usuarios']);
+        Permission::firstOrCreate(['name' => 'ver cursos']);
+        Permission::firstOrCreate(['name' => 'gestionar cursos']);
+        Permission::firstOrCreate(['name' => 'ver estudiantes']);
+
+        // 1. CREAR ROLES
         
         // Roles Existentes
         $roleAdmin = Role::firstOrCreate(['name' => 'Admin']);
@@ -29,6 +37,15 @@ class RolesAndPermissionsSeeder extends Seeder
         $roleRegistro = Role::firstOrCreate(['name' => 'Registro']);       // Control Académico
         $roleContabilidad = Role::firstOrCreate(['name' => 'Contabilidad']); // Reportes Financieros
         $roleCaja = Role::firstOrCreate(['name' => 'Caja']);               // Cobros diarios
+        
+        // --- NUEVO ROL SOLICITANTE (Para Admisiones) ---
+        $roleSolicitante = Role::firstOrCreate(['name' => 'Solicitante']);
+
+        // 1.1 ASIGNAR PERMISOS A ROLES
+        $roleAdmin->givePermissionTo(Permission::all());
+        $roleProfesor->givePermissionTo(['ver dashboard', 'ver cursos', 'ver estudiantes']);
+        $roleEstudiante->givePermissionTo(['ver dashboard', 'ver cursos']);
+        $roleSolicitante->givePermissionTo(['ver dashboard']); // Permiso mínimo para ver su portal
 
         // 2. CREAR USUARIOS DE PRUEBA (Opcional, para desarrollo)
 
@@ -91,5 +108,12 @@ class RolesAndPermissionsSeeder extends Seeder
             ['name' => 'Cajero Principal', 'password' => bcrypt('password')]
         );
         $cajaUser->assignRole($roleCaja);
+
+        // --- USUARIO DE PRUEBA SOLICITANTE ---
+        $solicitanteUser = User::firstOrCreate(
+            ['email' => 'solicitante@prueba.com'],
+            ['name' => 'Aspirante Prueba', 'password' => bcrypt('password')]
+        );
+        $solicitanteUser->assignRole($roleSolicitante);
     }
 }

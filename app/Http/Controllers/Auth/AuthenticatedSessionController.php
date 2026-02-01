@@ -29,7 +29,6 @@ class AuthenticatedSessionController extends Controller
         Log::info('Email: ' . $request->email);
 
         try {
-            // Usamos el método authenticate() de LoginRequest que maneja rate limiting y validación auth
             $request->authenticate();
             
             Log::info('Autenticación exitosa.');
@@ -38,14 +37,12 @@ class AuthenticatedSessionController extends Controller
 
             $user = $request->user();
             
-            // Log de roles para depuración
             $roles = method_exists($user, 'getRoleNames') ? $user->getRoleNames()->toArray() : [];
             Log::info('Usuario ID: ' . $user->id . ' | Roles: ' . implode(',', $roles));
 
-            // --- LÓGICA DE REDIRECCIÓN ORIGINAL ---
-            // Recuperamos la lógica exacta que funcionaba para Admin/Profesor
+            // --- LÓGICA DE REDIRECCIÓN ---
 
-            if ($user->hasRole('Admin')) {
+            if ($user->hasRole('Admin') || $user->hasAnyRole(['Registro', 'Contabilidad', 'Caja'])) {
                 return redirect()->route('admin.dashboard');
             }
             
@@ -57,13 +54,17 @@ class AuthenticatedSessionController extends Controller
                 return redirect()->route('student.dashboard');
             }
 
-            // Fallback para usuarios sin rol específico (ej. recién registrados)
-            Log::info('Redirigiendo a dashboard general.');
+            // --- NUEVO: Redirección para el rol Solicitante ---
+            if ($user->hasRole('Solicitante')) {
+                Log::info('Rol Solicitante detectado -> Redirigiendo a applicant.portal');
+                return redirect()->route('applicant.portal');
+            }
+
+            Log::info('Redirigiendo a dashboard general (Usuario sin rol específico).');
             return redirect()->intended(route('dashboard'));
 
         } catch (\Exception $e) {
             Log::error('ERROR EN LOGIN: ' . $e->getMessage());
-            // Re-lanzamos la excepción para que Laravel devuelva los errores al formulario
             throw $e;
         }
     }

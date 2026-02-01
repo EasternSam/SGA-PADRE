@@ -47,12 +47,11 @@ use App\Mail\PaymentReceiptMail;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 // --- NUEVOS IMPORTS PARA ADMISIONES ---
-// Asegúrate de que estos archivos existan en app/Livewire/Admissions/
 use App\Livewire\Admissions\Index as AdmissionsIndex;
 use App\Livewire\Admissions\Register as AdmissionsRegister;
 use App\Livewire\Applicant\Dashboard as ApplicantDashboard; // Nuevo componente Portal Aspirante
 
-// Importamos el componente de Calendario que se creó anteriormente
+// Importamos el componente de Calendario
 use App\Livewire\Calendar\Index as CalendarIndex;
 
 
@@ -72,25 +71,16 @@ Route::get('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserCo
     ->middleware('guest')
     ->name('student.register.link');
 
-// 2. POST: Procesa el registro (CORRECCIÓN: Agregado el nombre de ruta)
+// 2. POST: Procesa el registro (Crea usuario con rol 'Solicitante')
 Route::post('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'store'])
     ->middleware('guest')
     ->name('student.register.store');
 
-// --- LINK ESPECIAL DE LOGIN PARA ESTUDIANTES (ASPIRANTES) ---
-// 1. GET: Muestra el formulario personalizado
-Route::get('/login-estudiantes', function () {
-    return view('auth.student-login');
-})->middleware('guest')->name('student.login.link');
-
-// 2. POST: Procesa el login
-Route::post('/login-estudiantes', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'store'])
-    ->middleware('guest')
-    ->name('student.login.store');
+// NOTA: Se eliminaron las rutas de login específicas (/login-estudiantes).
+// Ahora todos usan /login principal.
 
 
 // --- RUTA PÚBLICA DE ADMISIONES (OPCIONAL / OBSOLETA) ---
-// Se mantiene por compatibilidad, pero el flujo principal ahora es vía Auth -> Portal Aspirante
 if (class_exists(AdmissionsRegister::class)) {
     Route::get('/admisiones/registro', AdmissionsRegister::class)->name('admissions.register');
 }
@@ -193,8 +183,6 @@ Route::any('/cardnet/response', function (Request $request, EcfService $ecfServi
 
     } else {
         // RECHAZADO
-        // CAMBIO: MANTENER ESTADO "Pendiente" PARA QUE NO DESAPAREZCA DEL LISTADO
-        // Solo actualizamos las notas para registrar el intento fallido.
         $payment->update([
             'status' => 'Pendiente', 
             'notes' => "Intento fallido Cardnet [{$responseCode}]: {$responseMessage}",
@@ -207,7 +195,7 @@ Route::any('/cardnet/response', function (Request $request, EcfService $ecfServi
 
 })->name('cardnet.response')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]); 
 
-// 2. Ruta de Cancelación (Evita error 405 Method Not Allowed)
+// 2. Ruta de Cancelación
 Route::any('/cardnet/cancel', function (Request $request) {
     Log::info('Cardnet Debug: Cancelación detectada', $request->all());
     
@@ -317,27 +305,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
         $user = Auth::user();
 
-        if ($user->hasRole('Admin')) {
+        if ($user->hasRole('Admin') || $user->hasAnyRole(['Registro', 'Contabilidad', 'Caja'])) {
             return redirect()->route('admin.dashboard');
         } elseif ($user->hasRole('Estudiante')) {
             return redirect()->route('student.dashboard');
         } elseif ($user->hasRole('Profesor')) {
             return redirect()->route('teacher.dashboard');
-        }
-        
-        // Si tiene uno de los nuevos roles administrativos, mandarlo al admin dashboard
-        if ($user->hasAnyRole(['Registro', 'Contabilidad', 'Caja'])) {
-            return redirect()->route('admin.dashboard');
+        } elseif ($user->hasRole('Solicitante')) {
+            return redirect()->route('applicant.portal');
         }
 
-        // Si el usuario está autenticado pero no tiene roles (Aspirante Recién Registrado)
-        // Lo redirigimos forzosamente al Portal del Aspirante
+        // Default si no tiene rol o es algo no contemplado
         return redirect()->route('applicant.portal');
 
     })->name('dashboard');
 
-    // --- PORTAL DEL ASPIRANTE (NUEVO) ---
-    // Aquí es donde el usuario completa su solicitud y ve el estado
+    // --- PORTAL DEL ASPIRANTE/SOLICITANTE ---
+    // Aquí es donde el usuario 'Solicitante' completa su solicitud y ve el estado
     Route::get('/portal-aspirante', ApplicantDashboard::class)->name('applicant.portal');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -346,39 +330,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 
-// --- RUTAS DE ADMINISTRADOR (Y ROLES ESPECIALES) ---
-// Nota: Usamos middleware 'role:Admin|Registro|Contabilidad|Caja' para permitir acceso a la zona admin
-// Luego dentro de los controladores o vistas se restringe qué ven.
+// --- RUTAS DE ADMINISTRADOR ---
 Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('admin')->group(function () {
     Route::get('/dashboard', \App\Livewire\Dashboard\Index::class)->name('admin.dashboard');
     Route::get('/students', \App\Livewire\Students\Index::class)->name('admin.students.index');
     Route::get('/students/profile/{student}', \App\Livewire\StudentProfile\Index::class)->name('admin.students.profile');
     
-    // --- GESTIÓN ACADÉMICA ---
     Route::get('/courses', \App\Livewire\Courses\Index::class)->name('admin.courses.index');
     
-    // Rutas para Carreras y Pensum (UNIVERSIDAD)
     Route::get('/careers', \App\Livewire\Careers\Index::class)->name('admin.careers.index');
     Route::get('/careers/{career}/curriculum', \App\Livewire\Careers\Curriculum::class)->name('admin.careers.curriculum');
-    // --- RUTA PDF PENSUM ---
     Route::get('/careers/{career}/curriculum/pdf', [CurriculumPdfController::class, 'download'])->name('admin.careers.curriculum.pdf');
     
-    // --- NUEVA RUTA PARA CALENDARIO ACADÉMICO ---
-    // Verificamos si existe la clase antes de registrar la ruta para evitar errores en migraciones
     if (class_exists(CalendarIndex::class)) {
         Route::get('/calendar', CalendarIndex::class)->name('admin.calendar.index');
     }
     
-    // --- GESTIÓN DE ADMISIONES (NUEVO) ---
-    // Panel administrativo para ver y procesar solicitudes
+    // --- GESTIÓN DE ADMISIONES ---
     if (class_exists(AdmissionsIndex::class)) {
         Route::get('/admissions', AdmissionsIndex::class)->name('admin.admissions.index');
     }
 
-    // --- GESTIÓN FINANCIERA ---
-    // Dashboard General de Finanzas
     Route::get('/finance/dashboard', FinanceDashboard::class)->name('admin.finance.dashboard');
-    // Configuración de Conceptos
     Route::get('/finance/payment-concepts', \App\Livewire\Finance\PaymentConcepts::class)->name('admin.finance.concepts');
 
     Route::get('/teachers', \App\Livewire\Teachers\Index::class)->name('admin.teachers.index');
@@ -387,28 +360,17 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     Route::get('/requests', \App\Livewire\Admin\RequestsManagement::class)->name('admin.requests');
     Route::get('/import', DatabaseImport::class)->name('admin.import');
     
-    // --- GESTIÓN DE REPORTES Y CERTIFICADOS (Admin) ---
     Route::get('/reports', \App\Livewire\Reports\Index::class)->name('reports.index');
     Route::get('/certificates', \App\Livewire\Certificates\Index::class)->name('admin.certificates.index'); 
     
-    // --- GESTIÓN DE PLANTILLAS DE DIPLOMAS ---
-    // Listado de plantillas
     Route::get('/certificate-templates', CertificateTemplatesIndex::class)->name('admin.certificates.templates');
-    
-    // Editor (Crear nueva)
     Route::get('/certificate-editor', CertificateEditor::class)->name('admin.certificates.editor');
-    
-    // Editor (Editar existente - sobreescribimos la ruta anterior genérica para ser específicos)
     Route::get('/certificate-editor/{templateId?}', CertificateEditor::class)->name('admin.certificates.edit');
 
-    // --- GESTIÓN DE AULAS ---
     Route::get('/classrooms', ClassroomManagement::class)->name('admin.classrooms.index');
 
-    // --- PROBADOR DE CORREOS (NUEVO) ---
     Route::get('/email-tester', EmailTester::class)->name('admin.email-tester');
 
-    // --- NUEVA RUTA: GESTIÓN DE USUARIOS ---
-    // Usamos el FQCN directamente para asegurar que Laravel lo encuentre
     Route::get('/users', \App\Livewire\Admin\Users\Index::class)->name('admin.users.index');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
@@ -442,12 +404,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/reports/students-list/{section}/pdf', [StudentListPdfController::class, 'download'])->name('reports.students.pdf');
     Route::get('/reports/financial/{student}', [FinancialPdfController::class, 'download'])->name('reports.financial-report');
 
-    // --- RUTA DESCARGA CERTIFICADO ---
-    // Esta ruta ya estaba definida, pero nos aseguramos de que sea la correcta y accesible
-    // Se ha verificado que usa 'student' y 'course' como parámetros.
     Route::get('/reports/certificate/{student}/{course}/pdf', [CertificatePdfController::class, 'download'])->name('certificates.download'); 
     
-    // --- RUTA TICKET TÉRMICO (NUEVO) ---
     Route::get('/finance/ticket/{payment}', [\App\Http\Controllers\FinancialPdfController::class, 'ticket'])->name('finance.ticket');
 });
 

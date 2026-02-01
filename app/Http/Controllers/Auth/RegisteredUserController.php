@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Student; // <-- Importado
+use App\Models\Student;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon; // <-- Importado
+use Carbon\Carbon;
 
 class RegisteredUserController extends Controller
 {
@@ -22,7 +22,7 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
-        // CORRECCIÓN CRÍTICA: Debe retornar la vista personalizada que tiene los campos first_name y last_name
+        // Usamos la vista personalizada de registro de estudiantes/solicitantes
         return view('auth.student-register'); 
     }
 
@@ -33,15 +33,13 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        Log::info('--- INTENTO DE REGISTRO NUEVO INGRESO (LÓGICA ASPIRANTE) ---');
+        Log::info('--- INTENTO DE REGISTRO NUEVO INGRESO (SOLICITANTE) ---');
         Log::info('Datos recibidos:', $request->except(['password', 'password_confirmation']));
 
         try {
-            // --- CAMBIO LÓGICA DE VALIDACIÓN ---
             $request->validate([
                 'first_name' => ['required', 'string', 'max:255'],
                 'last_name' => ['required', 'string', 'max:255'],
-                // Se valida unicidad en usuarios y en estudiantes
                 'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users', 'unique:students'],
                 'cedula' => ['required', 'string', 'max:20', 'unique:students'],
             ]);
@@ -50,7 +48,7 @@ class RegisteredUserController extends Controller
             throw $e;
         }
 
-        Log::info('Validación exitosa. Procediendo a crear Usuario y Estudiante...');
+        Log::info('Validación exitosa. Procediendo a crear Usuario y Solicitante...');
 
         try {
             // 1. Crear el Usuario con acceso temporal
@@ -59,47 +57,44 @@ class RegisteredUserController extends Controller
                 'name' => $request->first_name . ' ' . $request->last_name,
                 'email' => $request->email,
                 'password' => Hash::make($request->cedula), 
-                'access_expires_at' => Carbon::now()->addMonths(3),
-                'must_change_password' => true, // Opcional: forzar cambio al primer login
+                'access_expires_at' => Carbon::now()->addMonths(3), // Acceso temporal para completar admisión
+                'must_change_password' => true,
             ]);
 
             Log::info('Usuario base creado ID: ' . $user->id);
 
-            // 2. Asignar rol de Estudiante
-            // Verificamos si existe el método (depende de Spatie Permission)
+            // 2. Asignar rol de Solicitante (NUEVO ROL)
             if (method_exists($user, 'assignRole')) {
-                $user->assignRole('Estudiante');
+                $user->assignRole('Solicitante');
             } else {
                 Log::warning('No se pudo asignar rol: método assignRole no existe en User.');
             }
 
-            // 3. Crear el perfil de Estudiante asociado
-            // CORRECCIÓN AQUÍ: Usar 'cedula' en lugar de 'identification_id' si la columna se llama así en la BD
+            // 3. Crear el perfil de Estudiante asociado (como Prospecto)
             Student::create([
                 'user_id' => $user->id,
                 'first_name' => $request->first_name,
                 'last_name' => $request->last_name,
                 'email' => $request->email,
-                'cedula' => $request->cedula, // <-- CORREGIDO: Usamos el nombre de columna que dio error en el log
-                'status' => 'Prospecto', // Estado inicial para alguien que se registra solo
-                // 'phone' => $request->phone, // Si agregas teléfono al form, agrégalo aquí
+                'cedula' => $request->cedula, 
+                'status' => 'Prospecto', // Estado inicial
             ]);
 
-            Log::info('Perfil de estudiante creado exitosamente.');
+            Log::info('Perfil de prospecto creado exitosamente.');
 
             event(new Registered($user));
 
             Auth::login($user);
 
-            Log::info('Usuario autenticado. Redirigiendo a dashboard/portal.');
+            Log::info('Usuario autenticado. Redirigiendo a portal de solicitante.');
 
-            return redirect(route('dashboard', absolute: false));
+            // Redirigir directamente al portal de aspirante
+            return redirect()->route('applicant.portal');
 
         } catch (\Exception $e) {
             Log::error('ERROR CRÍTICO EN PROCESO DE REGISTRO: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
             
-            // Si falló después de crear el usuario, intentamos borrarlo para no dejar basura
             if (isset($user) && $user->exists) {
                 $user->delete();
                 Log::info('Usuario huérfano eliminado por fallo en creación de estudiante.');
