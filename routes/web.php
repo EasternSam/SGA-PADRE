@@ -46,6 +46,10 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\PaymentReceiptMail;
 use Barryvdh\DomPDF\Facade\Pdf;
 
+// --- NUEVOS IMPORTS PARA ADMISIONES ---
+use App\Livewire\Admissions\Index as AdmissionsIndex;
+use App\Livewire\Admissions\Register as AdmissionsRegister;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -55,6 +59,10 @@ use Barryvdh\DomPDF\Facade\Pdf;
 Route::get('/', function () {
     return view('auth.login');
 });
+
+// --- RUTA PÚBLICA DE ADMISIONES ---
+Route::get('/admisiones/registro', AdmissionsRegister::class)->name('admissions.register');
+
 
 // ==============================================================================
 // RUTAS DE CARDNET (DEFINIDAS EXPLÍCITAMENTE COMO PÚBLICAS Y SIN CSRF)
@@ -318,6 +326,9 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     // --- NUEVA RUTA PARA CALENDARIO ACADÉMICO ---
     Route::get('/calendar', \App\Livewire\Calendar\Index::class)->name('admin.calendar.index');
     
+    // --- GESTIÓN DE ADMISIONES (NUEVO) ---
+    Route::get('/admissions', AdmissionsIndex::class)->name('admin.admissions.index');
+
     // --- GESTIÓN FINANCIERA ---
     // Dashboard General de Finanzas
     Route::get('/finance/dashboard', FinanceDashboard::class)->name('admin.finance.dashboard');
