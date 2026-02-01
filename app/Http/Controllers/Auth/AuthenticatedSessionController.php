@@ -3,15 +3,12 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\LoginRequest; // Se mantiene para compatibilidad de tipos si es necesario
+use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request; // Usamos Request genérico para validación manual
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\Hash;
-use App\Models\User;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -26,62 +23,28 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(LoginRequest $request): RedirectResponse
     {
-        // 1. LOG INICIAL
-        Log::info('--- DEBUG LOGIN START (Bypass LoginRequest) ---');
-        Log::info('Datos recibidos:', $request->only('email'));
+        Log::info('--- INTENTO DE LOGIN (Standard) ---');
+        Log::info('Email: ' . $request->email);
 
-        // 2. Validación Manual con Log de Errores
         try {
-            $credentials = $request->validate([
-                'email' => ['required', 'string', 'email'],
-                'password' => ['required', 'string'],
-            ]);
-            Log::info('Validación de formato: CORRECTA');
-        } catch (ValidationException $e) {
-            Log::error('Error de validación de formato (campos vacíos o email inválido):', $e->errors());
-            throw $e; // Devuelve los errores a la vista
-        }
-
-        // 3. Diagnóstico de Credenciales antes de intentar Auth
-        $user = User::where('email', $request->email)->first();
-        if (!$user) {
-            Log::error("LOGIN FALLIDO: No existe usuario con el email: " . $request->email);
-        } else {
-            Log::info("Usuario encontrado ID: {$user->id}. Verificando contraseña...");
-            // Chequeo manual del hash para ver si coincide
-            if (Hash::check($request->password, $user->password)) {
-                Log::info("DEBUG HASH: La contraseña coincide manualmente.");
-            } else {
-                Log::error("DEBUG HASH: La contraseña NO coincide.");
-            }
-        }
-
-        // 4. Intento de Autenticación Real
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
-            Log::error('Auth::attempt devolvió FALSE.');
+            // Usamos el método authenticate() de LoginRequest que maneja rate limiting y validación auth
+            $request->authenticate();
             
-            // Mensaje de error genérico para seguridad, pero log detallado arriba
-            throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
-            ]);
-        }
+            Log::info('Autenticación exitosa.');
 
-        // 5. Éxito
-        Log::info('Autenticación exitosa. Regenerando sesión...');
-        $request->session()->regenerate();
+            $request->session()->regenerate();
 
-        $user = Auth::user();
-        
-        // Verificar roles de manera segura (si Spatie no está configurado, evita error)
-        $roles = method_exists($user, 'getRoleNames') ? implode(',', $user->getRoleNames()->toArray()) : 'Sin Roles (Spatie)';
-        Log::info("Usuario logueado. Roles: " . $roles);
+            $user = $request->user();
+            
+            // Log de roles para depuración
+            $roles = method_exists($user, 'getRoleNames') ? $user->getRoleNames()->toArray() : [];
+            Log::info('Usuario ID: ' . $user->id . ' | Roles: ' . implode(',', $roles));
 
-        // --- LÓGICA DE REDIRECCIÓN ---
+            // --- LÓGICA DE REDIRECCIÓN ORIGINAL ---
+            // Recuperamos la lógica exacta que funcionaba para Admin/Profesor
 
-        // Verificar roles usando el trait de Spatie si está disponible
-        if (method_exists($user, 'hasRole')) {
             if ($user->hasRole('Admin')) {
                 return redirect()->route('admin.dashboard');
             }
@@ -93,10 +56,16 @@ class AuthenticatedSessionController extends Controller
             if ($user->hasRole('Estudiante')) {
                 return redirect()->route('student.dashboard');
             }
-        }
 
-        Log::info('Redirigiendo a dashboard general (Usuario sin rol específico o nuevo ingreso).');
-        return redirect()->intended(route('dashboard'));
+            // Fallback para usuarios sin rol específico (ej. recién registrados)
+            Log::info('Redirigiendo a dashboard general.');
+            return redirect()->intended(route('dashboard'));
+
+        } catch (\Exception $e) {
+            Log::error('ERROR EN LOGIN: ' . $e->getMessage());
+            // Re-lanzamos la excepción para que Laravel devuelva los errores al formulario
+            throw $e;
+        }
     }
 
     /**
