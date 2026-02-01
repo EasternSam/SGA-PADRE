@@ -225,9 +225,9 @@
         .event-chips-container::-webkit-scrollbar { display: none; }
 
         .event-chip {
-            padding: 0.125rem 0.375rem;
+            padding: 0.25rem 0.5rem; /* Aumentado padding */
             border-radius: 0.25rem;
-            font-size: 0.625rem;
+            font-size: 0.75rem; /* Aumentado tamaño fuente */
             font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
@@ -240,28 +240,37 @@
         .chip-event { background-color: #fffbeb; color: #b45309; border-left-color: #f59e0b; }
         .chip-class { background-color: #eff6ff; color: #1d4ed8; border-left-color: #3b82f6; }
 
-        /* --- SLIDE-OVER (PANEL LATERAL) --- */
-        .slide-over-backdrop {
+        /* --- MODAL (CENTRAL) --- */
+        .modal-backdrop {
             position: fixed; inset: 0;
             background-color: rgba(107, 114, 128, 0.75);
             backdrop-filter: blur(4px);
             z-index: 40;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             transition: opacity 0.3s;
         }
 
-        .slide-over-wrapper {
-            position: fixed; inset: 0; overflow: hidden; display: flex; justify-content: flex-end; z-index: 50; pointer-events: none;
-        }
-
-        .slide-over-panel {
+        .modal-panel {
             pointer-events: auto;
             width: 100%;
-            max-width: 28rem;
+            max-width: 32rem; /* Ancho máximo del modal */
             background-color: white;
-            box-shadow: -4px 0 15px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-radius: 0.75rem;
             display: flex;
             flex-direction: column;
-            height: 100%;
+            max-height: 80vh; /* Altura máxima */
+            margin: 1.5rem;
+            overflow: hidden;
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        }
+        
+        /* Animación de entrada para el modal */
+        [x-show="showDetail"] .modal-panel {
+            transform: scale(1);
+            opacity: 1;
         }
 
         .panel-header {
@@ -422,11 +431,11 @@
         </div>
     </div>
 
-    <!-- PANEL LATERAL (MODAL DETALLE) -->
+    <!-- MODAL (CENTRAL) -->
     <div x-show="showDetail" style="display: none;">
         <!-- Backdrop -->
         <div 
-            class="slide-over-backdrop"
+            class="modal-backdrop"
             x-show="showDetail"
             x-transition:enter="ease-out duration-300"
             x-transition:enter-start="opacity-0"
@@ -435,19 +444,19 @@
             x-transition:leave-start="opacity-100"
             x-transition:leave-end="opacity-0"
             @click="showDetail = false; $wire.set('selectedDate', null)"
-        ></div>
-
-        <!-- Panel -->
-        <div class="slide-over-wrapper">
+        >
+        
+            <!-- Panel -->
             <div 
-                class="slide-over-panel"
+                class="modal-panel"
                 x-show="showDetail"
-                x-transition:enter="transform transition ease-in-out duration-500"
-                x-transition:enter-start="translate-x-full"
-                x-transition:enter-end="translate-x-0"
-                x-transition:leave="transform transition ease-in-out duration-500"
-                x-transition:leave-start="translate-x-0"
-                x-transition:leave-end="translate-x-full"
+                x-transition:enter="transform transition ease-out duration-300"
+                x-transition:enter-start="scale-95 opacity-0"
+                x-transition:enter-end="scale-100 opacity-100"
+                x-transition:leave="transform transition ease-in duration-200"
+                x-transition:leave-start="scale-100 opacity-100"
+                x-transition:leave-end="scale-95 opacity-0"
+                @click.stop
             >
                 <!-- Header Panel -->
                 <div class="panel-header">
