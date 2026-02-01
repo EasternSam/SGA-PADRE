@@ -11,7 +11,7 @@ class Admission extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'user_id', // Nuevo campo vinculado
+        'user_id',
         'first_name',
         'last_name',
         'email',
@@ -21,9 +21,10 @@ class Admission extends Model
         'course_id',
         'previous_school',
         'previous_gpa',
-        'status', // pending, approved, rejected, info_required
+        'status', 
         'notes',
         'documents', 
+        'document_status', // Nuevo campo
         'address',
         'work_place',
         'disease',
@@ -32,21 +33,19 @@ class Admission extends Model
     protected $casts = [
         'birth_date' => 'date',
         'documents' => 'array',
+        'document_status' => 'array', // Cast automático
     ];
 
-    // Relación con el usuario que creó la solicitud
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    // Relación con la carrera de interés
     public function course()
     {
         return $this->belongsTo(Course::class);
     }
 
-    // Helper para nombre completo
     public function getFullNameAttribute()
     {
         return "{$this->first_name} {$this->last_name}";

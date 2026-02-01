@@ -5,148 +5,148 @@
     {{-- Encabezado --}}
     <div class="bg-white shadow-sm border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Portal de Admisiones</h1>
-                    <p class="text-sm text-gray-500 mt-1">Gestiona las solicitudes de ingreso a carreras universitarias.</p>
-                </div>
-            </div>
-
-            {{-- Filtros --}}
-            <div class="mt-6 flex flex-col sm:flex-row gap-4">
-                <div class="relative flex-1">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                    </div>
-                    <input wire:model.live.debounce.300ms="search" type="text" placeholder="Buscar aspirante..." 
-                           class="block w-full pl-10 pr-3 py-2 border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                </div>
-                
-                <select wire:model.live="statusFilter" class="block w-full sm:w-48 py-2 border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                    <option value="">Todos los Estados</option>
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Gestión de Admisiones</h1>
+            {{-- Filtros (Igual que antes) --}}
+            <div class="mt-4 flex gap-4">
+                <input wire:model.live.debounce.300ms="search" type="text" placeholder="Buscar por nombre o cédula..." class="rounded-lg border-gray-300 w-full md:w-1/3">
+                <select wire:model.live="statusFilter" class="rounded-lg border-gray-300">
+                    <option value="">Todos</option>
                     <option value="pending">Pendientes</option>
                     <option value="approved">Aprobados</option>
-                    <option value="rejected">Rechazados</option>
+                    <option value="rejected">Con Correcciones</option>
                 </select>
             </div>
         </div>
     </div>
 
-    {{-- Lista de Solicitudes --}}
+    {{-- Tabla Resumen --}}
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        <div class="bg-white rounded-xl shadow-sm ring-1 ring-gray-900/5 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50/50">
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Aspirante</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Carrera</th>
+                        <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Estado</th>
+                        <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">Acción</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    @foreach($admissions as $adm)
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Aspirante</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Carrera de Interés</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">Fecha Solicitud</th>
-                            <th scope="col" class="px-6 py-3 text-center text-xs font-bold uppercase tracking-wider text-gray-500">Estado</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">Acciones</th>
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-gray-900">{{ $adm->full_name }}</div>
+                                <div class="text-xs text-gray-500">{{ $adm->identification_id }}</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600">{{ $adm->course->name ?? '-' }}</td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="px-2 py-1 text-xs rounded-full 
+                                    {{ $adm->status == 'approved' ? 'bg-green-100 text-green-800' : 
+                                       ($adm->status == 'rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800') }}">
+                                    {{ ucfirst($adm->status) }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <button wire:click="openProcessModal({{ $adm->id }})" class="text-indigo-600 hover:text-indigo-900 font-medium text-sm">
+                                    Revisar Detalle
+                                </button>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-100">
-                        @forelse ($admissions as $admission)
-                            <tr class="hover:bg-gray-50/80 transition-colors">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
-                                            {{ substr($admission->first_name, 0, 1) }}{{ substr($admission->last_name, 0, 1) }}
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">{{ $admission->full_name }}</div>
-                                            <div class="text-xs text-gray-500">{{ $admission->email }}</div>
-                                            <div class="text-xs text-gray-400">{{ $admission->phone }}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900 font-medium">{{ $admission->course->name ?? 'N/A' }}</div>
-                                    <div class="text-xs text-gray-500">Código: {{ $admission->course->code ?? '-' }}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {{ $admission->created_at->format('d/m/Y H:i') }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-center">
-                                    @php
-                                        $statusClasses = [
-                                            'pending' => 'bg-yellow-100 text-yellow-800',
-                                            'approved' => 'bg-green-100 text-green-800',
-                                            'rejected' => 'bg-red-100 text-red-800',
-                                        ];
-                                        $statusLabels = [
-                                            'pending' => 'Pendiente',
-                                            'approved' => 'Aprobado',
-                                            'rejected' => 'Rechazado',
-                                        ];
-                                    @endphp
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusClasses[$admission->status] }}">
-                                        {{ $statusLabels[$admission->status] }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    @if($admission->status === 'pending')
-                                        <button wire:click="openProcessModal({{ $admission->id }}, 'approve')" class="text-green-600 hover:text-green-900 mr-3" title="Aprobar e Inscribir">
-                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                                        </button>
-                                        <button wire:click="openProcessModal({{ $admission->id }}, 'reject')" class="text-red-600 hover:text-red-900" title="Rechazar">
-                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                                        </button>
-                                    @else
-                                        <span class="text-gray-400 text-xs italic">Procesado</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="px-6 py-12 text-center text-gray-500">No hay solicitudes de admisión.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
-                {{ $admissions->links() }}
-            </div>
+                    @endforeach
+                </tbody>
+            </table>
+            <div class="p-4">{{ $admissions->links() }}</div>
         </div>
     </div>
 
-    {{-- Modal de Procesamiento --}}
-    <x-modal name="process-admission-modal" :show="$showProcessModal" maxWidth="lg">
-        <div class="bg-white rounded-lg shadow-xl overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                <h3 class="text-lg font-bold {{ $processAction === 'approve' ? 'text-green-700' : 'text-red-700' }}">
-                    {{ $processAction === 'approve' ? 'Aprobar Solicitud' : 'Rechazar Solicitud' }}
-                </h3>
-                <button wire:click="$set('showProcessModal', false)" class="text-gray-400 hover:text-gray-500">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+    {{-- MODAL DE REVISIÓN DETALLADA --}}
+    <x-modal name="review-modal" :show="$showProcessModal" maxWidth="4xl">
+        @if($selectedAdmission)
+        <div class="bg-white rounded-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <!-- Header Modal -->
+            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center sticky top-0 z-10">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">Revisión de Solicitud #{{ $selectedAdmission->id }}</h3>
+                    <p class="text-sm text-gray-500">{{ $selectedAdmission->full_name }} - {{ $selectedAdmission->identification_id }}</p>
+                </div>
+                <button wire:click="$set('showProcessModal', false)" class="text-gray-400 hover:text-gray-600">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
-            
-            <div class="p-6">
-                <p class="text-sm text-gray-600 mb-4">
-                    @if($processAction === 'approve')
-                        Estás a punto de aprobar esta solicitud. Esto <strong>creará automáticamente un usuario estudiante</strong> en el sistema y enviará las credenciales por correo.
-                    @else
-                        Estás a punto de rechazar esta solicitud. Puedes agregar una nota explicando el motivo.
-                    @endif
-                </p>
 
-                <div class="mb-4">
-                    <x-input-label for="admissionNotes" value="Notas / Observaciones" />
-                    <textarea id="admissionNotes" wire:model="admissionNotes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"></textarea>
-                </div>
+            <!-- Content Scrollable -->
+            <div class="p-6 overflow-y-auto flex-1">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    
+                    <!-- Columna Izquierda: Datos -->
+                    <div class="space-y-6">
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                            <h4 class="font-bold text-gray-700 mb-2 border-b pb-1">Datos Personales</h4>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div><span class="text-gray-500 block">Nacionalidad:</span> {{ $selectedAdmission->address }}</div> {{-- Usando address campo compuesto --}}
+                                <div><span class="text-gray-500 block">Email:</span> {{ $selectedAdmission->email }}</div>
+                                <div><span class="text-gray-500 block">Teléfono:</span> {{ $selectedAdmission->phone }}</div>
+                                <div><span class="text-gray-500 block">Enfermedad:</span> {{ $selectedAdmission->disease ?? 'Ninguna' }}</div>
+                                <div><span class="text-gray-500 block">Trabaja:</span> {{ $selectedAdmission->work_place ?? 'No' }}</div>
+                            </div>
+                        </div>
 
-                <div class="flex justify-end gap-3">
-                    <x-secondary-button wire:click="$set('showProcessModal', false)">Cancelar</x-secondary-button>
-                    <button wire:click="processAdmission" 
-                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest transition ease-in-out duration-150 {{ $processAction === 'approve' ? 'bg-green-600 hover:bg-green-700 focus:bg-green-700 active:bg-green-900' : 'bg-red-600 hover:bg-red-700 focus:bg-red-700 active:bg-red-900' }}">
-                        Confirmar {{ $processAction === 'approve' ? 'Aprobación' : 'Rechazo' }}
-                    </button>
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                            <h4 class="font-bold text-gray-700 mb-2 border-b pb-1">Datos Académicos</h4>
+                            <div class="text-sm space-y-2">
+                                <p><span class="text-gray-500">Carrera Interés:</span> <span class="font-medium text-indigo-700">{{ $selectedAdmission->course->name ?? 'N/A' }}</span></p>
+                                <p><span class="text-gray-500">Escuela Procedencia:</span> {{ $selectedAdmission->previous_school }}</p>
+                                <p><span class="text-gray-500">GPA Anterior:</span> {{ $selectedAdmission->previous_gpa }}</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Notas Generales / Feedback</label>
+                            <textarea wire:model="admissionNotes" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="Escribe aquí las razones de rechazo o instrucciones para el estudiante..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Columna Derecha: Documentos -->
+                    <div>
+                        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            Validación de Documentos
+                        </h4>
+                        
+                        <div class="space-y-3">
+                            @foreach($selectedAdmission->documents as $key => $path)
+                                @if($path)
+                                <div class="border rounded-lg p-3 {{ $tempDocStatus[$key] == 'approved' ? 'bg-green-50 border-green-200' : ($tempDocStatus[$key] == 'rejected' ? 'bg-red-50 border-red-200' : 'bg-white') }}">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="text-sm font-medium text-gray-700">{{ ucwords(str_replace('_', ' ', $key)) }}</span>
+                                        <a href="{{ asset('storage/'.$path) }}" target="_blank" class="text-xs text-blue-600 hover:underline flex items-center">
+                                            <svg class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                            Ver
+                                        </a>
+                                    </div>
+                                    
+                                    <div class="flex gap-2">
+                                        <button wire:click="setDocStatus('{{ $key }}', 'approved')" class="flex-1 py-1 text-xs rounded border transition-colors {{ $tempDocStatus[$key] == 'approved' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50' }}">
+                                            Aprobar
+                                        </button>
+                                        <button wire:click="setDocStatus('{{ $key }}', 'rejected')" class="flex-1 py-1 text-xs rounded border transition-colors {{ $tempDocStatus[$key] == 'rejected' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50' }}">
+                                            Rechazar
+                                        </button>
+                                    </div>
+                                </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </x-modal>
 
+            <!-- Footer Sticky -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3 sticky bottom-0 z-10">
+                <x-secondary-button wire:click="$set('showProcessModal', false)">Cancelar</x-secondary-button>
+                <x-primary-button wire:click="saveReview">Guardar Revisión</x-primary-button>
+            </div>
+        </div>
+        @endif
+    </x-modal>
 </div>

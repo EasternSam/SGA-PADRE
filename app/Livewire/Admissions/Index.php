@@ -9,7 +9,7 @@ use App\Models\Admission;
 use App\Models\User;
 use App\Models\Student;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash; // Ya no se usa para generar pass, pero lo dejo por si acaso
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 #[Layout('layouts.dashboard')]
@@ -22,104 +22,108 @@ class Index extends Component
 
     // Modal de Procesamiento
     public $showProcessModal = false;
-    public $selectedAdmissionId = null;
+    public $selectedAdmission = null; // Guardamos el objeto completo
     public $admissionNotes = '';
-    public $processAction = ''; // 'approve' o 'reject'
+    
+    // Estado temporal de documentos en el modal antes de guardar
+    public $tempDocStatus = [];
 
     public function updatingSearch()
     {
         $this->resetPage();
     }
 
-    public function openProcessModal($id, $action)
+    public function openProcessModal($id)
     {
-        $this->selectedAdmissionId = $id;
-        $this->processAction = $action;
-        $admission = Admission::find($id);
-        $this->admissionNotes = $admission->notes;
+        $this->selectedAdmission = Admission::with('user', 'course')->find($id);
+        $this->admissionNotes = $this->selectedAdmission->notes;
+        
+        // Cargar estados actuales o default 'pending'
+        $currentStatus = $this->selectedAdmission->document_status ?? [];
+        $documents = $this->selectedAdmission->documents ?? [];
+        
+        foreach($documents as $key => $path) {
+            if(!isset($currentStatus[$key])) {
+                $currentStatus[$key] = 'pending';
+            }
+        }
+        
+        $this->tempDocStatus = $currentStatus;
         $this->showProcessModal = true;
     }
 
-    public function processAdmission()
+    public function setDocStatus($key, $status)
     {
-        $admission = Admission::findOrFail($this->selectedAdmissionId);
+        $this->tempDocStatus[$key] = $status;
+    }
 
-        if ($this->processAction === 'approve') {
+    public function saveReview()
+    {
+        $admission = $this->selectedAdmission;
+
+        // 1. Guardar estados de documentos
+        $admission->document_status = $this->tempDocStatus;
+        $admission->notes = $this->admissionNotes;
+
+        // 2. Determinar estado general
+        // Si hay algún rechazado -> estado general = rejected
+        // Si todos aprobados -> estado general = approved (y crear estudiante)
+        // Si mezcla -> pending
+        
+        $allApproved = !in_array('pending', $this->tempDocStatus) && !in_array('rejected', $this->tempDocStatus);
+        $hasRejection = in_array('rejected', $this->tempDocStatus);
+
+        if ($allApproved) {
+            // APROBAR FINALMENTE
             DB::transaction(function () use ($admission) {
+                $user = User::find($admission->user_id) ?? User::where('email', $admission->email)->first();
                 
-                // 1. Obtener Usuario Existente
-                // Buscamos por user_id si existe, si no por email (para compatibilidad hacia atrás)
-                $user = null;
-                
-                if ($admission->user_id) {
-                    $user = User::find($admission->user_id);
-                }
-                
-                if (!$user) {
-                    $user = User::where('email', $admission->email)->first();
-                }
+                if ($user) {
+                    $user->removeRole('Solicitante');
+                    $user->assignRole('Estudiante');
 
-                // Si por alguna razón crítica no existe el usuario (ej: borrado manual), lo recreamos
-                if (!$user) {
-                    $tempPassword = Str::random(10);
-                    $user = User::create([
-                        'name' => $admission->full_name,
-                        'email' => $admission->email,
-                        'password' => Hash::make($tempPassword),
-                    ]);
-                    $admission->update(['user_id' => $user->id]);
-                    $this->admissionNotes .= "\n[Sistema] Usuario recreado. Pass temporal: " . $tempPassword;
+                    $existingStudent = Student::where('user_id', $user->id)->first();
+                    if (!$existingStudent) {
+                        Student::create([
+                            'user_id' => $user->id,
+                            'first_name' => $admission->first_name,
+                            'last_name' => $admission->last_name,
+                            'email' => $admission->email,
+                            'cedula' => $admission->identification_id,
+                            'status' => 'Activo',
+                            'phone' => $admission->phone,
+                            'birth_date' => $admission->birth_date,
+                            'address' => $admission->address,
+                        ]);
+                    }
                 }
 
-                // Asignar rol
-                $user->assignRole('Estudiante');
-
-                // 2. Crear Estudiante asociado (Si no existe ya)
-                $existingStudent = Student::where('user_id', $user->id)->first();
-                
-                if (!$existingStudent) {
-                    Student::create([
-                        'user_id' => $user->id,
-                        'student_code' => 'EST-' . date('Y') . '-' . str_pad($user->id, 4, '0', STR_PAD_LEFT),
-                        'enrollment_date' => now(),
-                        'status' => 'Activo',
-                        'phone' => $admission->phone,
-                        'birth_date' => $admission->birth_date,
-                        'address' => $admission->address,
-                    ]);
-                }
-
-                // 3. Actualizar Admisión
-                $admission->update([
-                    'status' => 'approved',
-                    'notes' => $this->admissionNotes . "\n[Sistema] Solicitud Aprobada. El estudiante ya puede acceder a su panel académico.",
-                ]);
-
-                // TODO: Enviar correo de notificación de aprobación
+                $admission->status = 'approved';
+                $admission->save();
             });
+            session()->flash('message', 'Solicitud aprobada completamente. Estudiante inscrito.');
 
-            session()->flash('message', 'Solicitud aprobada correctamente. El usuario ahora es un Estudiante activo.');
-
+        } elseif ($hasRejection) {
+            $admission->status = 'rejected';
+            $admission->save();
+            session()->flash('message', 'Solicitud marcada con correcciones pendientes.');
         } else {
-            // RECHAZO
-            $admission->update([
-                'status' => 'rejected',
-                'notes' => $this->admissionNotes, // Aquí el admin explica qué documento está mal
-            ]);
-            session()->flash('message', 'Solicitud rechazada/devuelta al aspirante.');
+            $admission->status = 'pending';
+            $admission->save();
+            session()->flash('message', 'Revisión guardada. Aún pendiente.');
         }
 
         $this->showProcessModal = false;
-        $this->reset(['selectedAdmissionId', 'admissionNotes', 'processAction']);
+        $this->reset(['selectedAdmission', 'tempDocStatus']);
     }
 
     public function render()
     {
-        $admissions = Admission::with(['course', 'user']) // Eager load user
+        $admissions = Admission::with(['course', 'user'])
             ->where(function($query) {
                 $query->where('first_name', 'like', '%' . $this->search . '%')
                       ->orWhere('last_name', 'like', '%' . $this->search . '%')
-                      ->orWhere('email', 'like', '%' . $this->search . '%');
+                      ->orWhere('identification_id', 'like', '%' . $this->search . '%');
             })
             ->when($this->statusFilter, function($query) {
                 $query->where('status', $this->statusFilter);

@@ -9,15 +9,15 @@ use App\Models\Admission;
 use App\Models\Course;
 use Illuminate\Support\Facades\Auth;
 
-#[Layout('layouts.dashboard')] // <-- CORREGIDO: Usar el layout existente 'layouts.dashboard'
+#[Layout('layouts.dashboard')]
 class Dashboard extends Component
 {
     use WithFileUploads;
 
-    public $admission; // Instancia de la admisión si existe
+    public $admission;
     public $existing_application = false;
 
-    // Campos del formulario
+    // Campos del formulario (Para nueva solicitud)
     public $first_name;
     public $last_name;
     public $identification_id;
@@ -33,7 +33,7 @@ class Dashboard extends Component
     public $previous_school;
     public $previous_gpa;
 
-    // Archivos
+    // Archivos (Para nueva solicitud)
     public $file_birth_certificate;
     public $file_id_card;
     public $file_high_school_record;
@@ -42,25 +42,25 @@ class Dashboard extends Component
     public $file_bachelor_certificate;
     public $file_photo;
 
-    // Feedback visual
+    // Para re-subida de documentos rechazados
+    public $reupload_files = []; 
+
     public $success_message = false;
 
     public function mount()
     {
         $user = Auth::user();
-        
-        // Verificar si el usuario ya tiene una solicitud
-        $this->admission = Admission::where('user_id', $user->id)->first();
+        $this->admission = Admission::where('user_id', $user->id)->with('course')->first();
 
         if ($this->admission) {
             $this->existing_application = true;
             $this->course_id = $this->admission->course_id;
         } else {
-            // Pre-llenar datos si tenemos el perfil de estudiante (creado en el registro)
+            // Pre-llenar datos
             if ($user->student) {
                 $this->first_name = $user->student->first_name;
                 $this->last_name = $user->student->last_name;
-                $this->identification_id = $user->student->cedula; // O identification_id según tu BD
+                $this->identification_id = $user->student->cedula;
                 $this->email = $user->email;
             } else {
                 $this->first_name = $user->name;
@@ -79,8 +79,6 @@ class Dashboard extends Component
         'phone' => 'required|string|max:20',
         'course_id' => 'required|exists:courses,id',
         'previous_school' => 'required|string|max:255',
-        
-        // Archivos requeridos solo si es nueva solicitud
         'file_birth_certificate' => 'required|file|mimes:pdf,jpg,png,jpeg|max:5120',
         'file_id_card' => 'required|file|mimes:pdf,jpg,png,jpeg|max:5120',
         'file_high_school_record' => 'required|file|mimes:pdf,jpg,png,jpeg|max:5120',
@@ -91,7 +89,6 @@ class Dashboard extends Component
     {
         $this->validate();
 
-        // Subir archivos
         $documents = [
             'birth_certificate' => $this->file_birth_certificate->store('admissions/birth_certificates', 'public'),
             'id_card' => $this->file_id_card->store('admissions/id_cards', 'public'),
@@ -101,6 +98,9 @@ class Dashboard extends Component
             'bachelor_certificate' => $this->file_bachelor_certificate ? $this->file_bachelor_certificate->store('admissions/bachelor', 'public') : null,
             'photo' => $this->file_photo->store('admissions/photos', 'public'),
         ];
+
+        // Estado inicial de documentos: todos pendientes
+        $docStatus = array_fill_keys(array_keys($documents), 'pending');
 
         Admission::create([
             'user_id' => Auth::id(),
@@ -117,12 +117,52 @@ class Dashboard extends Component
             'previous_school' => $this->previous_school,
             'previous_gpa' => $this->previous_gpa,
             'documents' => $documents,
+            'document_status' => $docStatus,
             'status' => 'pending',
         ]);
 
         $this->success_message = true;
         $this->existing_application = true;
-        $this->admission = Admission::where('user_id', Auth::id())->first();
+        $this->admission = Admission::where('user_id', Auth::id())->with('course')->first();
+    }
+
+    public function reuploadDocument($key)
+    {
+        $this->validate([
+            'reupload_files.'.$key => 'required|file|max:5120', // 5MB max
+        ]);
+
+        $file = $this->reupload_files[$key];
+        
+        // Determinar carpeta basada en la clave
+        $folder = match($key) {
+            'birth_certificate' => 'admissions/birth_certificates',
+            'id_card' => 'admissions/id_cards',
+            'high_school_record' => 'admissions/records',
+            'photo' => 'admissions/photos',
+            default => 'admissions/others',
+        };
+
+        // Guardar nuevo archivo
+        $path = $file->store($folder, 'public');
+
+        // Actualizar registro
+        $documents = $this->admission->documents;
+        $documents[$key] = $path;
+
+        $statuses = $this->admission->document_status ?? [];
+        $statuses[$key] = 'pending'; // Volver a poner en pendiente para revisión
+
+        $this->admission->update([
+            'documents' => $documents,
+            'document_status' => $statuses,
+            'status' => 'pending', // La solicitud vuelve a pendiente global
+        ]);
+
+        // Limpiar input
+        $this->reupload_files[$key] = null;
+        
+        session()->flash('message', 'Documento actualizado correctamente. Pendiente de revisión.');
     }
 
     public function render()
