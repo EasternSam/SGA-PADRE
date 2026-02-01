@@ -66,6 +66,12 @@ Route::get('/', function () {
     return view('auth.login');
 });
 
+// --- LINK ESPECIAL DE REGISTRO PARA ESTUDIANTES (ASPIRANTES) ---
+// Este es el link que compartirás. Muestra el formulario de registro pero con una URL dedicada.
+Route::get('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])
+    ->middleware('guest')
+    ->name('student.register.link');
+
 // --- RUTA PÚBLICA DE ADMISIONES (OPCIONAL / OBSOLETA) ---
 // Se mantiene por compatibilidad, pero el flujo principal ahora es vía Auth -> Portal Aspirante
 if (class_exists(AdmissionsRegister::class)) {
@@ -308,7 +314,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         }
 
         // Si el usuario está autenticado pero no tiene roles (Aspirante Recién Registrado)
-        // Lo redirigimos al Portal del Aspirante
+        // Lo redirigimos forzosamente al Portal del Aspirante
         return redirect()->route('applicant.portal');
 
     })->name('dashboard');
