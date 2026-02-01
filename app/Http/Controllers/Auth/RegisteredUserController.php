@@ -22,7 +22,7 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
-        // Nota: Asegúrate de que esta vista tenga los campos first_name, last_name, cedula
+        // CORRECCIÓN CRÍTICA: Debe retornar la vista personalizada que tiene los campos first_name y last_name
         return view('auth.student-register'); 
     }
 
