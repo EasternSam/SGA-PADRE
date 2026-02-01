@@ -74,12 +74,13 @@ class RegisteredUserController extends Controller
             }
 
             // 3. Crear el perfil de Estudiante asociado
+            // CORRECCIÓN AQUÍ: Usar 'cedula' en lugar de 'identification_id' si la columna se llama así en la BD
             Student::create([
                 'user_id' => $user->id,
                 'first_name' => $request->first_name,
                 'last_name' => $request->last_name,
                 'email' => $request->email,
-                'identification_id' => $request->cedula, // Mapeamos cedula a identification_id o el campo que uses en la BD
+                'cedula' => $request->cedula, // <-- CORREGIDO: Usamos el nombre de columna que dio error en el log
                 'status' => 'Prospecto', // Estado inicial para alguien que se registra solo
                 // 'phone' => $request->phone, // Si agregas teléfono al form, agrégalo aquí
             ]);
@@ -97,6 +98,13 @@ class RegisteredUserController extends Controller
         } catch (\Exception $e) {
             Log::error('ERROR CRÍTICO EN PROCESO DE REGISTRO: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
+            
+            // Si falló después de crear el usuario, intentamos borrarlo para no dejar basura
+            if (isset($user) && $user->exists) {
+                $user->delete();
+                Log::info('Usuario huérfano eliminado por fallo en creación de estudiante.');
+            }
+
             return back()->with('error', 'Ocurrió un error al procesar tu registro. Por favor intenta nuevamente.');
         }
     }
