@@ -15,7 +15,7 @@
                 <div class="md:w-1/3 p-6 bg-gray-50 border-b md:border-b-0 md:border-r border-gray-200 text-center">
                     <div class="relative inline-block">
                         <img class="h-32 w-32 rounded-full mx-auto shadow-md mb-4 object-cover"
-                             src="{{ $admission->photo ? asset('storage/'.$admission->photo) : 'https://ui-avatars.com/api/?name='.urlencode($admission->full_name).'&background=4f46e5&color=ffffff&size=128' }}"
+                             src="{{ isset($admission->documents['photo']) && $admission->documents['photo'] ? asset('storage/'.$admission->documents['photo']) : 'https://ui-avatars.com/api/?name='.urlencode($admission->full_name).'&background=4f46e5&color=ffffff&size=128' }}"
                              alt="Avatar">
                         
                         <div class="absolute bottom-2 right-2 p-2 rounded-full bg-white shadow-sm border border-gray-200">
@@ -108,7 +108,7 @@
                             :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'docs', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'docs' }"
                             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center">
                         Documentación
-                        @if(collect($admission->document_status)->contains('rejected'))
+                        @if(is_array($admission->document_status) && collect($admission->document_status)->contains('rejected'))
                             <span class="ml-2 bg-red-100 text-red-600 py-0.5 px-2 rounded-full text-xs font-bold">!</span>
                         @endif
                     </button>
@@ -168,7 +168,7 @@
                             @foreach($admission->documents as $key => $path)
                                 @if($path)
                                     @php
-                                        $status = $admission->document_status[$key] ?? 'pending';
+                                        $status = isset($admission->document_status) && is_array($admission->document_status) ? ($admission->document_status[$key] ?? 'pending') : 'pending';
                                         $label = match($key) {
                                             'birth_certificate' => 'Acta de Nacimiento',
                                             'id_card' => 'Cédula de Identidad',
@@ -200,10 +200,23 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             @if($status == 'rejected')
                                                 <div class="flex items-center justify-end gap-2">
-                                                    <input type="file" wire:model="reupload_files.{{ $key }}" class="block w-48 text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100">
+                                                    <!-- Input con wire:model -->
+                                                    <div class="relative">
+                                                        <input type="file" 
+                                                               wire:model="reupload_files.{{ $key }}" 
+                                                               class="block w-48 text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100">
+                                                        
+                                                        <!-- Mensaje de Carga (Subiendo...) -->
+                                                        <div wire:loading wire:target="reupload_files.{{ $key }}" class="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center">
+                                                            <span class="text-xs text-indigo-600 font-bold">Subiendo...</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Botón Reenviar (Se bloquea mientras sube) -->
                                                     <button wire:click="reuploadDocument('{{ $key }}')" 
                                                             wire:loading.attr="disabled"
-                                                            class="text-red-600 hover:text-red-900 font-bold text-xs underline">
+                                                            wire:target="reupload_files.{{ $key }}"
+                                                            class="text-red-600 hover:text-red-900 font-bold text-xs underline disabled:opacity-50 disabled:cursor-not-allowed">
                                                         Reenviar
                                                     </button>
                                                 </div>

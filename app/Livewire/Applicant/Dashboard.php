@@ -17,7 +17,7 @@ class Dashboard extends Component
     public $admission;
     public $existing_application = false;
 
-    // Campos del formulario (Para nueva solicitud)
+    // Campos del formulario
     public $first_name;
     public $last_name;
     public $identification_id;
@@ -33,7 +33,7 @@ class Dashboard extends Component
     public $previous_school;
     public $previous_gpa;
 
-    // Archivos (Para nueva solicitud)
+    // Archivos
     public $file_birth_certificate;
     public $file_id_card;
     public $file_high_school_record;
@@ -42,7 +42,7 @@ class Dashboard extends Component
     public $file_bachelor_certificate;
     public $file_photo;
 
-    // Para re-subida de documentos rechazados
+    // Re-subida
     public $reupload_files = []; 
 
     public $success_message = false;
@@ -50,13 +50,13 @@ class Dashboard extends Component
     public function mount()
     {
         $user = Auth::user();
+        
         $this->admission = Admission::where('user_id', $user->id)->with('course')->first();
 
         if ($this->admission) {
             $this->existing_application = true;
             $this->course_id = $this->admission->course_id;
         } else {
-            // Pre-llenar datos
             if ($user->student) {
                 $this->first_name = $user->student->first_name;
                 $this->last_name = $user->student->last_name;
@@ -99,7 +99,6 @@ class Dashboard extends Component
             'photo' => $this->file_photo->store('admissions/photos', 'public'),
         ];
 
-        // Estado inicial de documentos: todos pendientes
         $docStatus = array_fill_keys(array_keys($documents), 'pending');
 
         Admission::create([
@@ -128,13 +127,31 @@ class Dashboard extends Component
 
     public function reuploadDocument($key)
     {
+        // 1. Definir nombre legible para el mensaje de error
+        $readableName = match($key) {
+            'birth_certificate' => 'Acta de Nacimiento',
+            'id_card' => 'Cédula de Identidad',
+            'high_school_record' => 'Récord de Notas',
+            'medical_certificate' => 'Certificado Médico',
+            'payment_receipt' => 'Recibo de Pago',
+            'bachelor_certificate' => 'Certificado de Bachiller',
+            'photo' => 'Fotografía',
+            default => 'Documento'
+        };
+
+        // 2. Validación con mensajes personalizados
         $this->validate([
-            'reupload_files.'.$key => 'required|file|max:5120', // 5MB max
+            'reupload_files.'.$key => 'required|file|max:5120', 
+        ], [
+            'required' => 'Debes seleccionar un archivo para :attribute antes de enviar.',
+            'file' => 'El :attribute debe ser un archivo válido.',
+            'max' => 'El :attribute no debe pesar más de 5MB.',
+        ], [
+            'reupload_files.'.$key => $readableName,
         ]);
 
         $file = $this->reupload_files[$key];
         
-        // Determinar carpeta basada en la clave
         $folder = match($key) {
             'birth_certificate' => 'admissions/birth_certificates',
             'id_card' => 'admissions/id_cards',
@@ -143,7 +160,6 @@ class Dashboard extends Component
             default => 'admissions/others',
         };
 
-        // Guardar nuevo archivo
         $path = $file->store($folder, 'public');
 
         // Actualizar registro
@@ -151,16 +167,16 @@ class Dashboard extends Component
         $documents[$key] = $path;
 
         $statuses = $this->admission->document_status ?? [];
-        $statuses[$key] = 'pending'; // Volver a poner en pendiente para revisión
+        $statuses[$key] = 'pending'; 
 
         $this->admission->update([
             'documents' => $documents,
             'document_status' => $statuses,
-            'status' => 'pending', // La solicitud vuelve a pendiente global
+            'status' => 'pending',
         ]);
 
         // Limpiar input
-        $this->reupload_files[$key] = null;
+        unset($this->reupload_files[$key]); // Usar unset es más seguro para arrays de Livewire
         
         session()->flash('message', 'Documento actualizado correctamente. Pendiente de revisión.');
     }
