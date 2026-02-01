@@ -106,7 +106,7 @@
         }
         .month-btn {
             padding: 0.5rem;
-            font-size: 0.875rem; /* Un poco más grande */
+            font-size: 0.875rem; 
             font-weight: 500;
             text-align: center;
             border-radius: 0.375rem;
@@ -177,7 +177,7 @@
             transition: all 0.2s;
         }
         
-        /* Estados de los checkbox (Simulados con clases activas o checked) */
+        /* Estados de los checkbox */
         input:checked + .filter-chip.chip-blue { background-color: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
         input:checked + .filter-chip.chip-green { background-color: #ecfdf5; color: #047857; border-color: #a7f3d0; }
         input:checked + .filter-chip.chip-amber { background-color: #fffbeb; color: #b45309; border-color: #fde68a; }
@@ -206,13 +206,23 @@
         .btn-primary:hover { background-color: #1d4ed8; }
         .btn-primary svg { width: 1.25rem; height: 1.25rem; }
 
-        /* --- GRID DEL CALENDARIO --- */
-        .calendar-body {
-            flex: 1; /* Ocupa el resto de la altura */
+        /* --- LAYOUT DE CONTENIDO (DOS COLUMNAS) --- */
+        .content-layout {
+            display: flex;
+            flex-direction: row; /* CORRECCIÓN: Aseguramos fila para layout horizontal */
+            flex: 1;
+            height: 100%;
+            overflow: hidden; 
+        }
+
+        /* --- GRID DEL CALENDARIO (COLUMNA IZQUIERDA) --- */
+        .calendar-section {
+            flex: 1; /* Ocupa el espacio restante */
             padding: 1.5rem;
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Evita scroll doble */
+            overflow: hidden; 
+            border-right: 1px solid #e5e7eb;
         }
 
         .calendar-container {
@@ -222,7 +232,7 @@
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
-            flex: 1; /* Se estira para llenar el body */
+            flex: 1; 
             overflow: hidden;
         }
 
@@ -265,14 +275,13 @@
             display: flex;
             flex-direction: column;
             gap: 0.25rem;
-            transition: background-color 0.1s; /* Transición rápida sin animación compleja */
+            transition: background-color 0.1s; 
             cursor: pointer;
             position: relative;
             overflow: hidden; 
         }
         .day-cell:hover { background-color: #eff6ff; }
         .day-cell.empty { background-color: #f9fafb; cursor: default; }
-        /* Estilo para el día seleccionado */
         .day-cell.selected { background-color: #eff6ff; box-shadow: inset 0 0 0 2px #2563eb; z-index: 1; }
         .day-cell.today { background-color: rgba(239, 246, 255, 0.6); }
 
@@ -336,10 +345,8 @@
             flex-direction: column;
             border-left: 1px solid #e5e7eb;
             overflow: hidden;
-            /* Transición suave al aparecer */
             transition: width 0.3s ease;
         }
-        /* Ocultar si no hay selección */
         [x-cloak] { display: none !important; }
 
         .panel-header {
@@ -407,7 +414,6 @@
     <div class="calendar-header">
         <div class="header-content">
             <!-- Título y Navegación -->
-            <!-- x-data para el dropdown local -->
             <div class="month-controls" x-data="{ showDatePicker: false }" @click.outside="showDatePicker = false">
                 <div class="month-title" @click="showDatePicker = !showDatePicker">
                     <span class="month-icon">
@@ -420,7 +426,6 @@
 
                 <!-- Date Picker Dropdown -->
                 <div x-show="showDatePicker" style="display: none;" class="date-picker-dropdown">
-                    <!-- Selector de Año -->
                     <div class="year-selector">
                         <button wire:click.stop="$set('currentYear', {{ $currentYear - 1 }})" class="btn-nav">
                             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
@@ -430,8 +435,6 @@
                             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                         </button>
                     </div>
-
-                    <!-- Selector de Mes -->
                     <div class="months-grid">
                         @foreach(range(1, 12) as $m)
                             <button 
@@ -444,7 +447,6 @@
                     </div>
                 </div>
                 
-                <!-- Botones navegación simple -->
                 <div class="nav-buttons">
                     <button wire:click="previousMonth" class="btn-nav">
                         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
@@ -457,7 +459,6 @@
             </div>
 
             <div class="header-actions">
-                <!-- Filtros -->
                 <div class="filters">
                     <label class="filter-label">
                         <input type="checkbox" wire:model.live="showClasses" style="display: none;">
@@ -490,21 +491,17 @@
         </div>
     </div>
 
-    <!-- CONTENIDO PRINCIPAL (LAYOUT FLEX) -->
+    <!-- CONTENIDO PRINCIPAL (LAYOUT FLEX ROW) -->
     <div class="content-layout">
         
         <!-- SECCIÓN IZQUIERDA: CALENDARIO -->
         <div class="calendar-section">
             <div class="calendar-container">
-                
-                <!-- Header Días Semana -->
                 <div class="week-header">
                     @foreach(['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'] as $day)
                         <div class="day-name">{{ $day }}</div>
                     @endforeach
                 </div>
-
-                <!-- Celdas Días -->
                 <div class="days-grid">
                     @foreach($calendarDays as $dayData)
                         @if(is_null($dayData))
@@ -519,19 +516,13 @@
                                         {{ $dayData['day'] }}
                                     </div>
                                 </div>
-
                                 <div class="event-chips-container">
-                                    {{-- 1. Hitos --}}
                                     @if($dayData['hasSystem'])
                                         <div class="event-chip chip-academic">Hitos Académicos</div>
                                     @endif
-                                    
-                                    {{-- 2. Eventos --}}
                                     @if($dayData['hasEvents'])
                                         <div class="event-chip chip-event">Eventos</div>
                                     @endif
-
-                                    {{-- 3. Clases --}}
                                     @if($dayData['hasClasses'])
                                         <div class="event-chip chip-class">Clases</div>
                                     @endif
@@ -544,25 +535,18 @@
         </div>
 
         <!-- SECCIÓN DERECHA: PANEL DE DETALLES -->
-        <!-- Usamos x-show para ocultar si no hay seleccion, o dejarlo visible siempre con un estado vacío -->
         <div class="details-panel">
             @if($selectedDate)
-                <!-- Header Panel -->
                 <div class="panel-header">
                     <div class="panel-title-row">
                         <h2 class="panel-title">Detalles del Día</h2>
-                        <!-- Botón cerrar opcional, ya que es un panel fijo, pero útil para 'deseleccionar' -->
                         <button class="close-btn" @click="$wire.set('selectedDate', null)">
                             <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                     </div>
                     <p class="panel-date">{{ $selectedDayData['date_human'] ?? '' }}</p>
                 </div>
-
-                <!-- Contenido Panel -->
                 <div class="panel-content">
-                    
-                    <!-- 1. Hitos -->
                     @if(!empty($selectedDayData['system_events']) && count($selectedDayData['system_events']) > 0)
                         <section>
                             <div class="section-title">
@@ -581,8 +565,6 @@
                             </div>
                         </section>
                     @endif
-
-                    <!-- 2. Clases -->
                     @if(!empty($selectedDayData['sections']) && count($selectedDayData['sections']) > 0)
                         <section>
                             <div class="section-title">
@@ -591,7 +573,6 @@
                                 </div>
                                 <h3 class="section-heading">Clases Programadas</h3>
                             </div>
-                            
                             <div>
                                 @foreach($selectedDayData['sections'] as $section)
                                     <div class="card card-l-blue">
@@ -610,11 +591,8 @@
                             </div>
                         </section>
                     @elseif($showClasses)
-                         <!-- Mensaje si no hay clases -->
                          <div style="text-align: center; color: #9ca3af; font-size: 0.875rem;">No hay clases programadas.</div>
                     @endif
-
-                    <!-- 3. Eventos Extra -->
                     @if(!empty($selectedDayData['events']) && count($selectedDayData['events']) > 0)
                         <section>
                             <div class="section-title">
@@ -655,15 +633,11 @@
             </div>
             
             <form wire:submit.prevent="saveEvent" class="p-6 space-y-4">
-                
-                <!-- Título -->
                 <div>
                     <x-input-label for="newEventTitle" value="Título" />
                     <x-text-input id="newEventTitle" type="text" class="mt-1 w-full" wire:model="newEventTitle" placeholder="Ej: Examen Final, Suspensión..." />
                     <x-input-error :messages="$errors->get('newEventTitle')" class="mt-1" />
                 </div>
-
-                <!-- Tipo -->
                 <div>
                     <x-input-label for="newEventType" value="Tipo de Actividad" />
                     <select id="newEventType" wire:model="newEventType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
@@ -674,15 +648,11 @@
                     </select>
                     <x-input-error :messages="$errors->get('newEventType')" class="mt-1" />
                 </div>
-
-                <!-- Fecha -->
                 <div>
                     <x-input-label for="newEventDate" value="Fecha" />
                     <x-text-input id="newEventDate" type="date" class="mt-1 w-full" wire:model="newEventDate" />
                     <x-input-error :messages="$errors->get('newEventDate')" class="mt-1" />
                 </div>
-
-                <!-- Horas (Opcional) -->
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <x-input-label for="newEventStartTime" value="Hora Inicio (Opcional)" />
@@ -695,14 +665,11 @@
                         <x-input-error :messages="$errors->get('newEventEndTime')" class="mt-1" />
                     </div>
                 </div>
-
-                <!-- Descripción -->
                 <div>
                     <x-input-label for="newEventDescription" value="Descripción" />
                     <textarea id="newEventDescription" wire:model="newEventDescription" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" placeholder="Detalles adicionales..."></textarea>
                     <x-input-error :messages="$errors->get('newEventDescription')" class="mt-1" />
                 </div>
-
                 <div class="flex justify-end gap-3 pt-4">
                     <x-secondary-button wire:click="closeEventModal">Cancelar</x-secondary-button>
                     <x-primary-button>Guardar</x-primary-button>
