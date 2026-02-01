@@ -1,4 +1,4 @@
-<div class="calendar-wrapper" x-data="{ showDetail: @entangle('selectedDate') }">
+<div class="calendar-wrapper" x-data="{ showDetail: @entangle('selectedDate'), showDatePicker: false }">
     
     <style>
         /* --- RESET Y BASE --- */
@@ -34,6 +34,7 @@
             display: flex;
             align-items: center;
             gap: 1rem;
+            position: relative; /* Para el dropdown absoluto */
         }
 
         .month-title {
@@ -45,6 +46,13 @@
             gap: 0.5rem;
             margin: 0;
             text-transform: capitalize;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+        }
+        .month-title:hover {
+            background-color: #f3f4f6;
         }
 
         .month-icon {
@@ -63,6 +71,59 @@
             color: #9ca3af;
             font-weight: 400;
         }
+
+        /* Date Picker Dropdown */
+        .date-picker-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 0.5rem;
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            width: 280px;
+            padding: 1rem;
+            z-index: 50;
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .year-selector {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .year-display { font-weight: 700; color: #111827; font-size: 1.125rem; }
+
+        .months-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+        .month-btn {
+            padding: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            border: 1px solid transparent;
+            background-color: transparent;
+            color: #4b5563;
+            transition: all 0.2s;
+            text-transform: capitalize;
+        }
+        .month-btn:hover { background-color: #f3f4f6; }
+        .month-btn.active {
+            background-color: #eff6ff;
+            color: #2563eb;
+            border-color: #dbeafe;
+        }
+
 
         .nav-buttons {
             display: flex;
@@ -119,21 +180,13 @@
         .bg-green { background-color: #10b981; }
         .bg-amber { background-color: #f59e0b; }
 
-        /* --- LAYOUT DE CONTENIDO (DOS COLUMNAS) --- */
-        .content-layout {
-            display: flex;
-            flex: 1;
-            overflow: hidden; /* Importante para que el scroll interno funcione */
-        }
-
-        /* --- GRID DEL CALENDARIO (COLUMNA IZQUIERDA) --- */
-        .calendar-section {
-            flex: 1; /* Ocupa el espacio restante */
+        /* --- GRID DEL CALENDARIO --- */
+        .calendar-body {
+            flex: 1; /* Ocupa el resto de la altura */
             padding: 1.5rem;
             display: flex;
             flex-direction: column;
-            overflow: hidden; 
-            border-right: 1px solid #e5e7eb;
+            overflow: hidden; /* Evita scroll doble */
         }
 
         .calendar-container {
@@ -143,7 +196,7 @@
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
-            flex: 1; 
+            flex: 1; /* Se estira para llenar el body */
             overflow: hidden;
         }
 
@@ -324,15 +377,43 @@
     <div class="calendar-header">
         <div class="header-content">
             <!-- Título y Navegación -->
-            <div class="month-controls">
-                <h1 class="month-title">
+            <div class="month-controls" @click.outside="showDatePicker = false">
+                <div class="month-title" @click="showDatePicker = !showDatePicker">
                     <span class="month-icon">
                         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                     </span>
                     <span>{{ \Carbon\Carbon::createFromDate($currentYear, $currentMonth, 1)->locale('es')->monthName }}</span>
                     <span class="year-text">{{ $currentYear }}</span>
-                </h1>
+                    <svg style="width: 1rem; height: 1rem; color: #9ca3af; margin-left: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                </div>
+
+                <!-- Date Picker Dropdown -->
+                <div x-show="showDatePicker" style="display: none;" class="date-picker-dropdown">
+                    <!-- Selector de Año -->
+                    <div class="year-selector">
+                        <button wire:click="$set('currentYear', {{ $currentYear - 1 }})" class="btn-nav">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                        </button>
+                        <span class="year-display">{{ $currentYear }}</span>
+                        <button wire:click="$set('currentYear', {{ $currentYear + 1 }})" class="btn-nav">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                        </button>
+                    </div>
+
+                    <!-- Selector de Mes -->
+                    <div class="months-grid">
+                        @foreach(range(1, 12) as $m)
+                            <button 
+                                wire:click="$set('currentMonth', {{ $m }}); showDatePicker = false;"
+                                class="month-btn {{ $currentMonth == $m ? 'active' : '' }}"
+                            >
+                                {{ \Carbon\Carbon::create(null, $m, 1)->locale('es')->monthName }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
                 
+                <!-- Botones navegación simple -->
                 <div class="nav-buttons">
                     <button wire:click="previousMonth" class="btn-nav">
                         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
