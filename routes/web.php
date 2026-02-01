@@ -67,14 +67,16 @@ Route::get('/', function () {
 });
 
 // --- LINK ESPECIAL DE REGISTRO PARA ESTUDIANTES (ASPIRANTES) ---
-// Este es el link que compartirás. Muestra el formulario de registro pero con una URL dedicada.
-Route::get('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])
-    ->middleware('guest')
-    ->name('student.register.link');
+// 1. GET: Muestra el formulario personalizado (student-register.blade.php)
+Route::get('/registro-estudiantes', function () {
+    return view('auth.student-register');
+})->middleware('guest')->name('student.register.link');
 
-// CORRECCIÓN: Agregamos la ruta POST para manejar el envío del formulario desde esta misma URL
+// 2. POST: Procesa el registro usando el controlador estándar de Laravel
 Route::post('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'store'])
-    ->middleware('guest');
+    ->middleware('guest')
+    ->name('student.register.store');
+
 
 // --- RUTA PÚBLICA DE ADMISIONES (OPCIONAL / OBSOLETA) ---
 // Se mantiene por compatibilidad, pero el flujo principal ahora es vía Auth -> Portal Aspirante
