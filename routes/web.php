@@ -47,8 +47,12 @@ use App\Mail\PaymentReceiptMail;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 // --- NUEVOS IMPORTS PARA ADMISIONES ---
+// Asegúrate de que estos archivos existan en app/Livewire/Admissions/
 use App\Livewire\Admissions\Index as AdmissionsIndex;
 use App\Livewire\Admissions\Register as AdmissionsRegister;
+// Importamos el componente de Calendario que se creó anteriormente
+use App\Livewire\Calendar\Index as CalendarIndex;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -61,7 +65,10 @@ Route::get('/', function () {
 });
 
 // --- RUTA PÚBLICA DE ADMISIONES ---
-Route::get('/admisiones/registro', AdmissionsRegister::class)->name('admissions.register');
+// Verificamos que la clase exista antes de registrar la ruta para evitar errores si no se ha creado el archivo
+if (class_exists(AdmissionsRegister::class)) {
+    Route::get('/admisiones/registro', AdmissionsRegister::class)->name('admissions.register');
+}
 
 
 // ==============================================================================
@@ -324,10 +331,15 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     Route::get('/careers/{career}/curriculum/pdf', [CurriculumPdfController::class, 'download'])->name('admin.careers.curriculum.pdf');
     
     // --- NUEVA RUTA PARA CALENDARIO ACADÉMICO ---
-    Route::get('/calendar', \App\Livewire\Calendar\Index::class)->name('admin.calendar.index');
+    // Verificamos si existe la clase antes de registrar la ruta para evitar errores en migraciones
+    if (class_exists(CalendarIndex::class)) {
+        Route::get('/calendar', CalendarIndex::class)->name('admin.calendar.index');
+    }
     
     // --- GESTIÓN DE ADMISIONES (NUEVO) ---
-    Route::get('/admissions', AdmissionsIndex::class)->name('admin.admissions.index');
+    if (class_exists(AdmissionsIndex::class)) {
+        Route::get('/admissions', AdmissionsIndex::class)->name('admin.admissions.index');
+    }
 
     // --- GESTIÓN FINANCIERA ---
     // Dashboard General de Finanzas
