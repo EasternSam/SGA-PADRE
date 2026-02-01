@@ -82,7 +82,7 @@
             border: 1px solid #e5e7eb;
             border-radius: 0.75rem;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            width: 280px;
+            width: 320px; /* Un poco más ancho */
             padding: 1rem;
             z-index: 50;
             animation: fadeIn 0.2s ease-out;
@@ -97,7 +97,7 @@
             padding-bottom: 0.5rem;
             border-bottom: 1px solid #f3f4f6;
         }
-        .year-display { font-weight: 700; color: #111827; font-size: 1.125rem; }
+        .year-display { font-weight: 700; color: #111827; font-size: 1.25rem; }
 
         .months-grid {
             display: grid;
@@ -106,8 +106,8 @@
         }
         .month-btn {
             padding: 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 600;
+            font-size: 0.875rem; /* Un poco más grande */
+            font-weight: 500;
             text-align: center;
             border-radius: 0.375rem;
             cursor: pointer;
@@ -117,10 +117,11 @@
             transition: all 0.2s;
             text-transform: capitalize;
         }
-        .month-btn:hover { background-color: #f3f4f6; }
+        .month-btn:hover { background-color: #f3f4f6; color: #1f2937; }
         .month-btn.active {
             background-color: #eff6ff;
             color: #2563eb;
+            font-weight: 700;
             border-color: #dbeafe;
         }
 
@@ -391,7 +392,8 @@
     <div class="calendar-header">
         <div class="header-content">
             <!-- Título y Navegación -->
-            <div class="month-controls" @click.outside="showDatePicker = false">
+            <!-- x-data para el dropdown local -->
+            <div class="month-controls" x-data="{ showDatePicker: false }" @click.outside="showDatePicker = false">
                 <div class="month-title" @click="showDatePicker = !showDatePicker">
                     <span class="month-icon">
                         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -405,11 +407,11 @@
                 <div x-show="showDatePicker" style="display: none;" class="date-picker-dropdown">
                     <!-- Selector de Año -->
                     <div class="year-selector">
-                        <button wire:click="$set('currentYear', {{ $currentYear - 1 }})" class="btn-nav">
+                        <button wire:click.stop="$set('currentYear', {{ $currentYear - 1 }})" class="btn-nav">
                             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                         </button>
                         <span class="year-display">{{ $currentYear }}</span>
-                        <button wire:click="$set('currentYear', {{ $currentYear + 1 }})" class="btn-nav">
+                        <button wire:click.stop="$set('currentYear', {{ $currentYear + 1 }})" class="btn-nav">
                             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                         </button>
                     </div>
@@ -418,7 +420,7 @@
                     <div class="months-grid">
                         @foreach(range(1, 12) as $m)
                             <button 
-                                wire:click="$set('currentMonth', {{ $m }}); showDatePicker = false;"
+                                wire:click="$set('currentMonth', {{ $m }}); showDatePicker = false"
                                 class="month-btn {{ $currentMonth == $m ? 'active' : '' }}"
                             >
                                 {{ \Carbon\Carbon::create(null, $m, 1)->locale('es')->monthName }}
