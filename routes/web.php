@@ -72,6 +72,10 @@ Route::get('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserCo
     ->middleware('guest')
     ->name('student.register.link');
 
+// CORRECCIÓN: Agregamos la ruta POST para manejar el envío del formulario desde esta misma URL
+Route::post('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'store'])
+    ->middleware('guest');
+
 // --- RUTA PÚBLICA DE ADMISIONES (OPCIONAL / OBSOLETA) ---
 // Se mantiene por compatibilidad, pero el flujo principal ahora es vía Auth -> Portal Aspirante
 if (class_exists(AdmissionsRegister::class)) {
