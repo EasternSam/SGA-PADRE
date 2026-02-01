@@ -133,7 +133,7 @@
                                                 </span>
                                             @endif
 
-                                            {{-- Contador de Horarios/Secciones (Aquí se ve la oferta académica) --}}
+                                            {{-- Contador de Horarios/Secciones --}}
                                             @if($module->schedules->count() > 0)
                                                 <span class="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md font-medium">
                                                     <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -285,7 +285,12 @@
                                     <span class="text-xs font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">
                                         {{ $schedule->section_name }}
                                     </span>
-                                    <div class="flex gap-1">
+                                    <div class="flex gap-1 items-center">
+                                        {{-- Indicador de Cupos --}}
+                                        <span class="text-[10px] font-bold mr-1 {{ $schedule->isFull() ? 'text-red-500' : 'text-emerald-500' }}">
+                                            {{ $schedule->enrollments_count ?? 0 }} / {{ $schedule->capacity }}
+                                        </span>
+
                                         {{-- Botón eliminar sigue siendo funcional individualmente pero requiere stop propagation --}}
                                         <button wire:click.stop="deleteSchedule({{ $schedule->id }})" wire:confirm="¿Eliminar esta sección?" class="text-red-600 hover:bg-red-50 p-1 rounded" title="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                                     </div>
@@ -396,16 +401,24 @@
                             </div>
                         </div>
 
-                        <div>
-                            <x-input-label value="Aula / Espacio Físico" />
-                            <select wire:model="s_classroom_id" class="w-full mt-1 rounded-lg border-gray-300 text-sm bg-gray-50">
-                                <option value="">-- Aula Virtual / Sin Asignar --</option>
-                                @foreach($classrooms as $c)
-                                    <option value="{{ $c->id }}">{{ $c->name }} (Capacidad: {{ $c->capacity }})</option>
-                                @endforeach
-                            </select>
-                            {{-- Error agregado para el aula --}}
-                            <x-input-error :messages="$errors->get('s_classroom_id')" class="mt-1" />
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div>
+                                <x-input-label value="Aula / Espacio Físico" />
+                                <select wire:model="s_classroom_id" class="w-full mt-1 rounded-lg border-gray-300 text-sm bg-gray-50">
+                                    <option value="">-- Aula Virtual / Sin Asignar --</option>
+                                    @foreach($classrooms as $c)
+                                        <option value="{{ $c->id }}">{{ $c->name }} (Capacidad: {{ $c->capacity }})</option>
+                                    @endforeach
+                                </select>
+                                <x-input-error :messages="$errors->get('s_classroom_id')" class="mt-1" />
+                            </div>
+
+                            {{-- Campo Cupos --}}
+                            <div>
+                                <x-input-label value="Cupo Máximo" />
+                                <x-text-input type="number" min="1" wire:model="s_capacity" class="w-full mt-1" />
+                                <x-input-error :messages="$errors->get('s_capacity')" class="mt-1" />
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">

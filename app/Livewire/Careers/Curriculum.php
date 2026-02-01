@@ -45,6 +45,7 @@ class Curriculum extends Component
     public $s_teacher_id = '';
     public $s_classroom_id = '';
     public $s_modality = 'Presencial';
+    public $s_capacity = 30; // <-- Nuevo campo con valor por defecto
     public $s_start_date;
     public $s_end_date;
     public $s_section_name = 'Sec-01';
@@ -94,7 +95,9 @@ class Curriculum extends Component
         if ($this->selectedModuleId) {
             $selectedModule = Module::find($this->selectedModuleId);
             if ($selectedModule) {
+                // Incluimos count de enrollments para mostrar ocupación
                 $moduleSchedules = CourseSchedule::with(['teacher', 'classroom'])
+                    ->withCount('enrollments')
                     ->where('module_id', $this->selectedModuleId)
                     ->orderBy('start_date', 'desc')
                     ->get();
@@ -243,26 +246,25 @@ class Curriculum extends Component
     {
         $this->validate([
             's_section_name' => 'required|string|max:50',
-            's_day_of_week' => 'required|array|min:1', // Validamos que sea array y tenga al menos un día
+            's_day_of_week' => 'required|array|min:1', 
             's_start_time' => 'required',
             's_end_time' => 'required|after:s_start_time',
             's_teacher_id' => 'required|exists:users,id',
             's_start_date' => 'required|date',
             's_end_date' => 'required|date|after_or_equal:s_start_date',
+            's_capacity' => 'required|integer|min:1', // <-- Validación de cupos
         ]);
 
         // --- VALIDACIÓN DE CHOQUE DE HORARIOS ---
         foreach ($this->s_day_of_week as $day) {
             // 1. Validar choque de PROFESOR
             $teacherConflict = CourseSchedule::where('teacher_id', $this->s_teacher_id)
-                ->whereJsonContains('days_of_week', $day) // Busca si el día está en el array JSON
+                ->whereJsonContains('days_of_week', $day)
                 ->where(function ($query) {
-                    // Solapamiento de tiempo: (StartA < EndB) and (EndA > StartB)
                     $query->where('start_time', '<', $this->s_end_time)
                           ->where('end_time', '>', $this->s_start_time);
                 })
                 ->where(function ($query) {
-                    // Solapamiento de fechas: (StartA <= EndB) and (EndA >= StartB)
                     $query->where('start_date', '<=', $this->s_end_date)
                           ->where('end_date', '>=', $this->s_start_date);
                 });
@@ -276,8 +278,15 @@ class Curriculum extends Component
                 return;
             }
 
-            // 2. Validar choque de AULA (solo si se asignó un aula física)
+            // 2. Validar choque de AULA
             if ($this->s_classroom_id) {
+                // Verificar capacidad del aula vs cupo de la sección
+                $classroom = Classroom::find($this->s_classroom_id);
+                if ($classroom && $this->s_capacity > $classroom->capacity) {
+                    $this->addError('s_capacity', "El cupo ({$this->s_capacity}) excede la capacidad del aula ({$classroom->capacity}).");
+                    return;
+                }
+
                 $classroomConflict = CourseSchedule::where('classroom_id', $this->s_classroom_id)
                     ->whereJsonContains('days_of_week', $day)
                     ->where(function ($query) {
@@ -294,7 +303,6 @@ class Curriculum extends Component
                 }
 
                 if ($classroomConflict->exists()) {
-                    // Obtenemos información extra para el mensaje de error
                     $conflictInfo = $classroomConflict->first();
                     $this->addError('s_classroom_id', "El aula seleccionada ya está ocupada el día $day en este horario (Sección: {$conflictInfo->section_name}).");
                     return;
@@ -309,12 +317,12 @@ class Curriculum extends Component
                 'classroom_id' => $this->s_classroom_id ?: null,
                 'section_name' => $this->s_section_name,
                 
-                // Guardamos el array directamente, el modelo lo convertirá a JSON
                 'days_of_week' => $this->s_day_of_week, 
                 
                 'start_time' => $this->s_start_time,
                 'end_time' => $this->s_end_time,
                 'modality' => $this->s_modality,
+                'capacity' => $this->s_capacity, // <-- Guardar cupos
                 'start_date' => $this->s_start_date,
                 'end_date' => $this->s_end_date,
                 'status' => 'Activo',
@@ -344,7 +352,6 @@ class Curriculum extends Component
         $this->scheduleId = $id;
         $this->s_section_name = $schedule->section_name;
         
-        // Cargamos los días. Si es string (legacy) lo convertimos a array.
         $days = $schedule->days_of_week;
         if (is_array($days)) {
             $this->s_day_of_week = $days;
@@ -360,6 +367,7 @@ class Curriculum extends Component
         $this->s_teacher_id = $schedule->teacher_id;
         $this->s_classroom_id = $schedule->classroom_id;
         $this->s_modality = $schedule->modality;
+        $this->s_capacity = $schedule->capacity ?? 30; // <-- Cargar cupos
         
         $this->s_start_date = \Carbon\Carbon::parse($schedule->start_date)->format('Y-m-d');
         $this->s_end_date = \Carbon\Carbon::parse($schedule->end_date)->format('Y-m-d');
@@ -384,12 +392,13 @@ class Curriculum extends Component
     {
         $this->scheduleId = null;
         $this->s_section_name = 'Sec-' . str_pad(rand(1, 99), 2, '0', STR_PAD_LEFT);
-        $this->s_day_of_week = []; // Resetear a array vacío
+        $this->s_day_of_week = []; 
         $this->s_start_time = '18:00';
         $this->s_end_time = '20:00';
         $this->s_teacher_id = '';
         $this->s_classroom_id = '';
         $this->s_modality = 'Presencial';
+        $this->s_capacity = 30; // <-- Resetear a default
         $this->s_start_date = now()->format('Y-m-d');
         $this->s_end_date = now()->addMonths(4)->format('Y-m-d');
         $this->resetValidation();

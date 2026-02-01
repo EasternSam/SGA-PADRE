@@ -18,13 +18,15 @@ class CourseSchedule extends Model
         'start_date', 
         'end_date',   
         'teacher_id', 
-        'days_of_week', // Usamos el nombre plural de la BD
+        'days_of_week', 
         'section_name',
         'modality', 
+        'capacity', // <-- Nuevo campo agregado
     ];
 
     protected $casts = [
-        'days_of_week' => 'array', // Convertimos JSON/Texto a Array automáticamente
+        'days_of_week' => 'array', 
+        'capacity' => 'integer', // <-- Cast a entero
     ];
 
     /**
@@ -69,5 +71,16 @@ class CourseSchedule extends Model
     public function mapping()
     {
         return $this->hasOne(ScheduleMapping::class, 'course_schedule_id');
+    }
+    
+    // Helper para verificar cupos disponibles
+    public function getAvailableSpotsAttribute()
+    {
+        return $this->capacity - $this->enrollments()->count();
+    }
+    
+    public function isFull()
+    {
+        return $this->enrollments()->count() >= $this->capacity;
     }
 }
