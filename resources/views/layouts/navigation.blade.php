@@ -67,7 +67,6 @@
         {{-- Visible para Admin, Registro, Contabilidad y Caja --}}
         @hasanyrole('Admin|Registro|Contabilidad|Caja')
             <div class="pt-4 space-y-1">
-                <!-- CAMBIO AQUÍ: Color de texto cambiado a text-white/70 para mejor contraste -->
                 <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white/70">
                     {{ __('Gestión') }}
                 </p>
@@ -97,7 +96,7 @@
                     <!-- DESPLEGABLE ACADÉMICO -->
                     <div x-data="{ openAcademic: {{ request()->routeIs(['admin.courses.*', 'admin.careers.*']) ? 'true' : 'false' }} }">
                         <button @click="openAcademic = !openAcademic" 
-                            class="flex w-full items-center justify-between px-4 py-2 text-sm font-medium text-white transition duration-150 ease-in-out hover:bg-white/10 focus:outline-none focus:bg-white/10 rounded-md {{ request()->routeIs(['admin.courses.*', 'admin.careers.*']) ? 'bg-white/10' : '' }}">
+                            class="flex w-full items-center justify-between px-4 py-2 text-sm font-medium transition duration-150 ease-in-out rounded-md focus:outline-none {{ request()->routeIs(['admin.courses.*', 'admin.careers.*']) ? 'bg-white text-gray-900' : 'text-white hover:bg-white/10 focus:bg-white/10' }}">
                             <div class="flex items-center gap-3">
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M11.25 4.533A9.707 9.707 0 0 0 6 3a9.735 9.735 0 0 0-3.25.555.75.75 0 0 0-.5.707v14.25a.75.75 0 0 0 1 .707A8.237 8.237 0 0 1 6 18.75c1.995 0 3.823.707 5.25 1.886V4.533ZM12.75 20.636A8.214 8.214 0 0 1 18 18.75c.966 0 1.89.166 2.75.47a.75.75 0 0 0 1-.708V4.262a.75.75 0 0 0-.5-.707A9.735 9.735 0 0 0 18 3a9.707 9.707 0 0 0-5.25 1.533v16.103Z" />
@@ -112,13 +111,13 @@
                         <div x-show="openAcademic" x-collapse class="pl-10 space-y-1 mt-1">
                             <!-- Cursos (Instituto) -->
                             <a href="{{ route('admin.courses.index') }}" wire:navigate 
-                                class="block px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 rounded-md transition-colors {{ request()->routeIs('admin.courses.index') ? 'text-white bg-white/10 font-semibold' : '' }}">
+                                class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.courses.index') ? 'bg-white text-gray-900 font-bold' : 'text-white/80 hover:text-white hover:bg-white/5' }}">
                                 {{ __('Cursos') }}
                             </a>
                             
                             <!-- Carreras (Universidad) -->
                             <a href="{{ route('admin.careers.index') }}" wire:navigate 
-                                class="block px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 rounded-md transition-colors {{ request()->routeIs('admin.careers.*') ? 'text-white bg-white/10 font-semibold' : '' }}">
+                                class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.careers.*') ? 'bg-white text-gray-900 font-bold' : 'text-white/80 hover:text-white hover:bg-white/5' }}">
                                 {{ __('Carreras') }}
                             </a>
                         </div>
@@ -131,7 +130,7 @@
                         <span>{{ __('Aulas') }}</span>
                     </x-responsive-nav-link>
 
-                    {{-- --- ENLACE AL CALENDARIO --- --}}
+                    {{-- --- ENLACE AL CALENDARIO (NUEVO) --- --}}
                     <x-responsive-nav-link :href="route('admin.calendar.index')" :active="request()->routeIs('admin.calendar.index')" wire:navigate>
                         <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12.75 12.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM7.5 15.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM8.25 17.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM9.75 15.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM10.5 17.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12 15.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM12.75 17.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM14.25 15.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM15 17.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM16.5 15.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM15 12.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM16.5 13.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" />
@@ -227,7 +226,7 @@
 
                 <x-responsive-nav-link :href="route('student.requests')" :active="request()->routeIs('student.requests')" wire:navigate>
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                        <path fill-rule="evenodd" d="M1.5 5.625c0-1.036.84-1.875 1.875-1.875h17.25c1.035 0 1.875.84 1.875 1.875v12.75c0 1.035-.84 1.875-1.875 1.875H3.375A1.875 1.875 0 0 1 1.5 18.375V5.625ZM21 9.375A.375.375 0 0 0 20.625 9h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5ZM10.875 18.75a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5ZM3.375 15h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375ZM3.375 11.25h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375Z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M1.5 5.625c0-1.036.84-1.875 1.875-1.875h17.25c1.035 0 1.875.84 1.875 1.875v12.75c0 1.035-.84 1.875-1.875 1.875H3.375A1.875 1.875 0 0 1 1.5 18.375V5.625ZM21 9.375A.375.375 0 0 0 20.625 9h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5ZM10.875 18.75a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5ZM3.375 15h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375ZM3.375 11.25h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375Z" clip-rule="evenodd" />
                     </svg>
                     <span>{{ __('Mis Solicitudes') }}</span>
                 </x-responsive-nav-link>
