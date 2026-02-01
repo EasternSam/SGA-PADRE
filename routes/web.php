@@ -50,6 +50,8 @@ use Barryvdh\DomPDF\Facade\Pdf;
 // Asegúrate de que estos archivos existan en app/Livewire/Admissions/
 use App\Livewire\Admissions\Index as AdmissionsIndex;
 use App\Livewire\Admissions\Register as AdmissionsRegister;
+use App\Livewire\Applicant\Dashboard as ApplicantDashboard; // Nuevo componente Portal Aspirante
+
 // Importamos el componente de Calendario que se creó anteriormente
 use App\Livewire\Calendar\Index as CalendarIndex;
 
@@ -64,8 +66,8 @@ Route::get('/', function () {
     return view('auth.login');
 });
 
-// --- RUTA PÚBLICA DE ADMISIONES ---
-// Verificamos que la clase exista antes de registrar la ruta para evitar errores si no se ha creado el archivo
+// --- RUTA PÚBLICA DE ADMISIONES (OPCIONAL / OBSOLETA) ---
+// Se mantiene por compatibilidad, pero el flujo principal ahora es vía Auth -> Portal Aspirante
 if (class_exists(AdmissionsRegister::class)) {
     Route::get('/admisiones/registro', AdmissionsRegister::class)->name('admissions.register');
 }
@@ -299,13 +301,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
         } elseif ($user->hasRole('Profesor')) {
             return redirect()->route('teacher.dashboard');
         }
-        // Si tiene uno de los nuevos roles administrativos, mandarlo al admin dashboard por ahora
+        
+        // Si tiene uno de los nuevos roles administrativos, mandarlo al admin dashboard
         if ($user->hasAnyRole(['Registro', 'Contabilidad', 'Caja'])) {
             return redirect()->route('admin.dashboard');
         }
 
-        return redirect()->route('profile.edit');
+        // Si el usuario está autenticado pero no tiene roles (Aspirante Recién Registrado)
+        // Lo redirigimos al Portal del Aspirante
+        return redirect()->route('applicant.portal');
+
     })->name('dashboard');
+
+    // --- PORTAL DEL ASPIRANTE (NUEVO) ---
+    // Aquí es donde el usuario completa su solicitud y ve el estado
+    Route::get('/portal-aspirante', ApplicantDashboard::class)->name('applicant.portal');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -337,6 +347,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     }
     
     // --- GESTIÓN DE ADMISIONES (NUEVO) ---
+    // Panel administrativo para ver y procesar solicitudes
     if (class_exists(AdmissionsIndex::class)) {
         Route::get('/admissions', AdmissionsIndex::class)->name('admin.admissions.index');
     }
