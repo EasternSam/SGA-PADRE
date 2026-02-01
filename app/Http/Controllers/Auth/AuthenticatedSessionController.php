@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Log; // Importante para debug
 
 class AuthenticatedSessionController extends Controller
 {
@@ -24,31 +25,45 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
+        Log::info('--- INTENTO DE LOGIN ---');
+        Log::info('Email: ' . $request->email);
 
-        $request->session()->regenerate();
+        try {
+            $request->authenticate();
+            Log::info('Autenticación (User/Pass) exitosa.');
 
-        // --- ¡¡¡CORRECCIÓN!!! ---
-        // Se usan los roles en español para la redirección.
-        // "Admin" se queda igual porque coincide con el Seeder.
+            $request->session()->regenerate();
+            Log::info('Sesión regenerada.');
 
-        if ($request->user()->hasRole('Admin')) {
-            // Redirigir al dashboard de Admin
-            return redirect()->route('admin.dashboard');
+            $user = $request->user();
+            Log::info('Usuario ID: ' . $user->id . ' | Roles: ' . implode(',', $user->getRoleNames()->toArray()));
+
+            // --- TUS REDIRECCIONES ORIGINALES ---
+
+            if ($user->hasRole('Admin')) {
+                Log::info('Rol Admin detectado -> Redirigiendo a admin.dashboard');
+                return redirect()->route('admin.dashboard');
+            }
+            
+            if ($user->hasRole('Profesor')) {
+                Log::info('Rol Profesor detectado -> Redirigiendo a teacher.dashboard');
+                return redirect()->route('teacher.dashboard');
+            }
+            
+            if ($user->hasRole('Estudiante')) {
+                Log::info('Rol Estudiante detectado -> Redirigiendo a student.dashboard');
+                return redirect()->route('student.dashboard');
+            }
+
+            // Fallback por defecto (ej: Aspirantes nuevos sin rol)
+            Log::info('Sin rol específico -> Redirigiendo a dashboard (general)');
+            return redirect()->intended(route('dashboard'));
+
+        } catch (\Exception $e) {
+            Log::error('ERROR EN LOGIN: ' . $e->getMessage());
+            // Esto permite que Laravel muestre el error "Credenciales incorrectas" en el formulario
+            throw $e;
         }
-        
-        if ($request->user()->hasRole('Profesor')) { // Cambiado de 'Teacher'
-            // Redirigir al dashboard de Profesor
-            return redirect()->route('teacher.dashboard');
-        }
-        
-        if ($request->user()->hasRole('Estudiante')) { // Cambiado de 'Student'
-            // Redirigir al dashboard de Estudiante
-            return redirect()->route('student.dashboard');
-        }
-
-        // Fallback por defecto (aunque la ruta 'dashboard' ya maneja esto)
-        return redirect()->intended(route('dashboard'));
     }
 
     /**
