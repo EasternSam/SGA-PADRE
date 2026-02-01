@@ -9,7 +9,7 @@ use App\Models\Admission;
 use App\Models\Course;
 use Illuminate\Support\Facades\Auth;
 
-#[Layout('layouts.app')] // Usa el layout autenticado, no el guest
+#[Layout('layouts.dashboard')] // <-- CORREGIDO: Usar el layout existente 'layouts.dashboard'
 class Dashboard extends Component
 {
     use WithFileUploads;
@@ -17,7 +17,7 @@ class Dashboard extends Component
     public $admission; // Instancia de la admisión si existe
     public $existing_application = false;
 
-    // Campos del formulario (igual que antes)
+    // Campos del formulario
     public $first_name;
     public $last_name;
     public $identification_id;
@@ -54,13 +54,18 @@ class Dashboard extends Component
 
         if ($this->admission) {
             $this->existing_application = true;
-            // Cargar datos existentes por si necesitan verlos (modo lectura o re-envío)
             $this->course_id = $this->admission->course_id;
-            // ... cargar otros si es necesario para edición
         } else {
-            // Pre-llenar datos conocidos del usuario
-            $this->first_name = $user->name; // Asumiendo que name tiene el nombre completo o parcial
-            $this->email = $user->email;
+            // Pre-llenar datos si tenemos el perfil de estudiante (creado en el registro)
+            if ($user->student) {
+                $this->first_name = $user->student->first_name;
+                $this->last_name = $user->student->last_name;
+                $this->identification_id = $user->student->cedula; // O identification_id según tu BD
+                $this->email = $user->email;
+            } else {
+                $this->first_name = $user->name;
+                $this->email = $user->email;
+            }
         }
     }
 
@@ -98,7 +103,7 @@ class Dashboard extends Component
         ];
 
         Admission::create([
-            'user_id' => Auth::id(), // Vinculación CLAVE
+            'user_id' => Auth::id(),
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
             'email' => Auth::user()->email,
