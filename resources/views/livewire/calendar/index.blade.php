@@ -1,7 +1,7 @@
-<div class="min-h-screen bg-gray-100 pb-12" x-data="{ showDetail: @entangle('selectedDate') }">
+<div class="min-h-screen bg-gray-100 flex flex-col" x-data="{ showDetail: @entangle('selectedDate') }">
     
     {{-- Header del Calendario --}}
-    <div class="bg-white border-b border-gray-200 sticky top-16 z-20 shadow-sm">
+    <div class="bg-white border-b border-gray-200 sticky top-16 z-20 shadow-sm flex-none">
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 
@@ -51,8 +51,8 @@
     </div>
 
     {{-- Grid del Calendario (Estilo Cuadrícula Completa) --}}
-    <div class="flex-1 p-6">
-        <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col h-[calc(100vh-14rem)]">
+    <div class="flex-1 px-4 sm:px-6 lg:px-8 py-6 h-full flex flex-col">
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col flex-1">
             
             {{-- Días de la semana --}}
             <div class="grid grid-cols-7 border-b border-gray-200 bg-gray-50 flex-none">
@@ -64,22 +64,22 @@
             </div>
 
             {{-- Días del mes --}}
-            <div class="grid grid-cols-7 flex-1 auto-rows-fr bg-gray-200 gap-px border-gray-200">
+            <div class="grid grid-cols-7 bg-gray-200 gap-px border-gray-200 flex-1">
                 @foreach($calendarDays as $dayData)
                     @if(is_null($dayData))
-                        <div class="bg-gray-50/50 relative"></div>
+                        <div class="bg-gray-50 min-h-[120px]"></div>
                     @else
                         <div 
                             wire:click="selectDay({{ $dayData['day'] }})"
-                            class="bg-white p-2 relative hover:bg-gray-50 transition-colors cursor-pointer group flex flex-col gap-1 overflow-hidden
-                            {{ $dayData['isToday'] ? 'bg-blue-50/20' : '' }}"
+                            class="bg-white min-h-[120px] p-2 relative hover:bg-blue-50 transition-colors cursor-pointer group flex flex-col gap-1 overflow-hidden
+                            {{ $dayData['isToday'] ? 'bg-blue-50/40' : '' }}"
                         >
                             {{-- Número del día --}}
                             <div class="flex justify-between items-center mb-1">
                                 <span class="
-                                    text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full
+                                    text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full
                                     {{ $dayData['isToday'] 
-                                        ? 'bg-blue-600 text-white' 
+                                        ? 'bg-blue-600 text-white shadow-sm' 
                                         : 'text-gray-700' 
                                     }}
                                 ">
@@ -88,24 +88,24 @@
                             </div>
 
                             {{-- Contenedor de "Chips" de eventos (visualización compacta) --}}
-                            <div class="flex flex-col gap-1 overflow-y-auto no-scrollbar">
+                            <div class="flex flex-col gap-1 overflow-y-auto no-scrollbar max-h-[100px]">
                                 {{-- 1. Eventos del Sistema (Hitos - Verde) --}}
                                 @if($dayData['hasSystem'])
-                                    <div class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-800 truncate border-l-2 border-emerald-500">
-                                        Hitos
+                                    <div class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-800 truncate border-l-2 border-emerald-500 shadow-sm">
+                                        Hitos Académicos
                                     </div>
                                 @endif
                                 
                                 {{-- 2. Eventos Administrativos (Ámbar) --}}
                                 @if($dayData['hasEvents'])
-                                    <div class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 truncate border-l-2 border-amber-500">
+                                    <div class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 truncate border-l-2 border-amber-500 shadow-sm">
                                         Eventos
                                     </div>
                                 @endif
 
                                 {{-- 3. Clases (Azul) --}}
                                 @if($dayData['hasClasses'])
-                                    <div class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 truncate border-l-2 border-blue-500">
+                                    <div class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 truncate border-l-2 border-blue-500 shadow-sm">
                                         Clases
                                     </div>
                                 @endif
