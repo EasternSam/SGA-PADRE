@@ -67,15 +67,26 @@ Route::get('/', function () {
 });
 
 // --- LINK ESPECIAL DE REGISTRO PARA ESTUDIANTES (ASPIRANTES) ---
-// 1. GET: Muestra el formulario personalizado (student-register.blade.php)
-Route::get('/registro-estudiantes', function () {
-    return view('auth.student-register');
-})->middleware('guest')->name('student.register.link');
+// 1. GET: Muestra el formulario personalizado
+Route::get('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])
+    ->middleware('guest')
+    ->name('student.register.link');
 
-// 2. POST: Procesa el registro usando el controlador estándar de Laravel
+// 2. POST: Procesa el registro (CORRECCIÓN: Agregado el nombre de ruta)
 Route::post('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'store'])
     ->middleware('guest')
     ->name('student.register.store');
+
+// --- LINK ESPECIAL DE LOGIN PARA ESTUDIANTES (ASPIRANTES) ---
+// 1. GET: Muestra el formulario personalizado
+Route::get('/login-estudiantes', function () {
+    return view('auth.student-login');
+})->middleware('guest')->name('student.login.link');
+
+// 2. POST: Procesa el login
+Route::post('/login-estudiantes', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'store'])
+    ->middleware('guest')
+    ->name('student.login.store');
 
 
 // --- RUTA PÚBLICA DE ADMISIONES (OPCIONAL / OBSOLETA) ---
