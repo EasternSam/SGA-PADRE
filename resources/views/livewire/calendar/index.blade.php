@@ -1,47 +1,48 @@
-<div class="min-h-screen bg-white pb-12" x-data="{ showDetail: @entangle('selectedDate') }">
+<div class="min-h-screen bg-gray-100 pb-12" x-data="{ showDetail: @entangle('selectedDate') }">
     
     {{-- Header del Calendario --}}
-    <div class="bg-white border-b border-gray-200 sticky top-16 z-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div class="bg-white border-b border-gray-200 sticky top-16 z-20 shadow-sm">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 
                 {{-- Controles de Mes y Título --}}
                 <div class="flex items-center gap-4">
-                    <h1 class="text-2xl font-semibold text-gray-900 tracking-tight flex items-center gap-2">
-                        <span class="text-blue-600">
-                            <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <h1 class="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                        <span class="text-blue-600 bg-blue-50 p-1.5 rounded-lg border border-blue-100">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                         </span>
-                        <span class="capitalize">{{ \Carbon\Carbon::createFromDate($currentYear, $currentMonth, 1)->locale('es')->monthName }} <span class="text-gray-500 font-normal">{{ $currentYear }}</span></span>
+                        <span class="capitalize">{{ \Carbon\Carbon::createFromDate($currentYear, $currentMonth, 1)->locale('es')->monthName }} <span class="text-gray-400 font-normal">{{ $currentYear }}</span></span>
                     </h1>
                     
-                    <div class="flex bg-gray-100 rounded-lg p-0.5">
-                        <button wire:click="previousMonth" class="p-1.5 hover:bg-white rounded-md shadow-sm transition-all text-gray-600 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <div class="flex bg-white border border-gray-200 rounded-lg p-0.5 shadow-sm">
+                        <button wire:click="previousMonth" class="p-1.5 hover:bg-gray-50 rounded-md transition-all text-gray-500 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                         </button>
-                        <button wire:click="nextMonth" class="p-1.5 hover:bg-white rounded-md shadow-sm transition-all text-gray-600 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <div class="w-px bg-gray-200 my-1"></div>
+                        <button wire:click="nextMonth" class="p-1.5 hover:bg-gray-50 rounded-md transition-all text-gray-500 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                         </button>
                     </div>
                 </div>
 
-                {{-- Filtros Rápidos (Estilo Tags) --}}
-                <div class="flex flex-wrap items-center gap-2 text-sm font-medium">
+                {{-- Filtros Rápidos --}}
+                <div class="flex flex-wrap items-center gap-2 text-xs font-medium">
                     <label class="cursor-pointer group select-none">
                         <input type="checkbox" wire:model.live="showClasses" class="peer sr-only">
                         <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-gray-600 transition-all peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:border-blue-200 hover:bg-gray-50 shadow-sm">
-                            <span class="w-2 h-2 rounded-full bg-blue-500 ring-1 ring-white"></span> Clases
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span> Clases
                         </span>
                     </label>
                     <label class="cursor-pointer group select-none">
                         <input type="checkbox" wire:model.live="showStartsEnds" class="peer sr-only">
                         <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-gray-600 transition-all peer-checked:bg-emerald-50 peer-checked:text-emerald-700 peer-checked:border-emerald-200 hover:bg-gray-50 shadow-sm">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 ring-1 ring-white"></span> Hitos
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Hitos
                         </span>
                     </label>
                     <label class="cursor-pointer group select-none">
                         <input type="checkbox" wire:model.live="showAdmin" class="peer sr-only">
                         <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-gray-600 transition-all peer-checked:bg-amber-50 peer-checked:text-amber-700 peer-checked:border-amber-200 hover:bg-gray-50 shadow-sm">
-                            <span class="w-2 h-2 rounded-full bg-amber-500 ring-1 ring-white"></span> Admin
+                            <span class="w-2 h-2 rounded-full bg-amber-500"></span> Admin
                         </span>
                     </label>
                 </div>
@@ -49,58 +50,64 @@
         </div>
     </div>
 
-    {{-- Grid del Calendario --}}
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        <div class="bg-white rounded-2xl shadow-sm ring-1 ring-black/5 overflow-hidden">
+    {{-- Grid del Calendario (Estilo Cuadrícula Completa) --}}
+    <div class="flex-1 p-6">
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col h-[calc(100vh-14rem)]">
             
             {{-- Días de la semana --}}
-            <div class="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
-                @foreach(['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'] as $day)
-                    <div class="py-3 text-center">
-                        <span class="text-xs font-semibold uppercase tracking-widest text-gray-500">{{ $day }}</span>
+            <div class="grid grid-cols-7 border-b border-gray-200 bg-gray-50 flex-none">
+                @foreach(['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'] as $day)
+                    <div class="py-2 px-2 text-center border-r border-gray-200 last:border-r-0">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">{{ $day }}</span>
                     </div>
                 @endforeach
             </div>
 
             {{-- Días del mes --}}
-            <div class="grid grid-cols-7 bg-white">
+            <div class="grid grid-cols-7 flex-1 auto-rows-fr bg-gray-200 gap-px border-gray-200">
                 @foreach($calendarDays as $dayData)
                     @if(is_null($dayData))
-                        <div class="bg-gray-50/50 h-24 md:h-32 border-r border-b border-gray-200"></div>
+                        <div class="bg-gray-50/50 relative"></div>
                     @else
                         <div 
                             wire:click="selectDay({{ $dayData['day'] }})"
-                            class="bg-white h-24 md:h-32 p-2 border-r border-b border-gray-200 hover:bg-blue-50/50 transition-all duration-200 cursor-pointer group relative flex flex-col justify-between
-                            {{ $dayData['isToday'] ? 'bg-blue-50/30' : '' }}"
+                            class="bg-white p-2 relative hover:bg-gray-50 transition-colors cursor-pointer group flex flex-col gap-1 overflow-hidden
+                            {{ $dayData['isToday'] ? 'bg-blue-50/20' : '' }}"
                         >
                             {{-- Número del día --}}
-                            <div class="flex justify-between items-start">
+                            <div class="flex justify-between items-center mb-1">
                                 <span class="
-                                    text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full transition-all
+                                    text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full
                                     {{ $dayData['isToday'] 
-                                        ? 'bg-blue-600 text-white shadow-sm' 
-                                        : 'text-gray-700 group-hover:bg-gray-100' 
+                                        ? 'bg-blue-600 text-white' 
+                                        : 'text-gray-700' 
                                     }}
                                 ">
                                     {{ $dayData['day'] }}
                                 </span>
                             </div>
 
-                            {{-- Contenedor de Indicadores (Puntos de Colores) --}}
-                            <div class="flex gap-1 mt-2 overflow-hidden">
+                            {{-- Contenedor de "Chips" de eventos (visualización compacta) --}}
+                            <div class="flex flex-col gap-1 overflow-y-auto no-scrollbar">
                                 {{-- 1. Eventos del Sistema (Hitos - Verde) --}}
                                 @if($dayData['hasSystem'])
-                                    <div class="w-2 h-2 rounded-full bg-emerald-500" title="Hitos Académicos"></div>
+                                    <div class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-800 truncate border-l-2 border-emerald-500">
+                                        Hitos
+                                    </div>
                                 @endif
                                 
                                 {{-- 2. Eventos Administrativos (Ámbar) --}}
                                 @if($dayData['hasEvents'])
-                                    <div class="w-2 h-2 rounded-full bg-amber-500" title="Eventos"></div>
+                                    <div class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 truncate border-l-2 border-amber-500">
+                                        Eventos
+                                    </div>
                                 @endif
 
                                 {{-- 3. Clases (Azul) --}}
                                 @if($dayData['hasClasses'])
-                                    <div class="w-2 h-2 rounded-full bg-blue-500" title="Clases Programadas"></div>
+                                    <div class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 truncate border-l-2 border-blue-500">
+                                        Clases
+                                    </div>
                                 @endif
                             </div>
                         </div>
