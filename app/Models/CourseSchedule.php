@@ -21,12 +21,13 @@ class CourseSchedule extends Model
         'days_of_week', 
         'section_name',
         'modality', 
-        'capacity', // <-- Nuevo campo agregado
+        'capacity',
+        'status', // <-- Agregado status que faltaba y es vital
     ];
 
     protected $casts = [
         'days_of_week' => 'array', 
-        'capacity' => 'integer', // <-- Cast a entero
+        'capacity' => 'integer',
     ];
 
     /**

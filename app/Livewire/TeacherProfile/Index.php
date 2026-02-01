@@ -162,11 +162,12 @@ class Index extends Component
     // Helper para cargar horarios (Optimizado)
     private function loadAvailableSchedules()
     {
+        // CORRECCIÓN: Eliminamos el filtro estricto de status para asegurar que se vean todas
+        // las secciones huérfanas o creadas sin el campo status poblado correctamente.
         $this->availableSchedules = CourseSchedule::whereNull('teacher_id')
-            ->where('status', 'Activo') // OPTIMIZACIÓN: Solo activos
             ->with('module.course')
             ->orderBy('id', 'desc')
-            ->limit(300) // OPTIMIZACIÓN: Limite de seguridad para no saturar
+            ->limit(300) 
             ->get();
     }
 
@@ -176,7 +177,7 @@ class Index extends Component
         if (!empty($value)) {
             $this->modules = Module::where('course_id', $value)
                 ->where('status', 'Activo')
-                ->select('id', 'name') // OPTIMIZACIÓN: Solo columnas necesarias
+                ->select('id', 'name') 
                 ->orderBy('name')
                 ->get();
         } else {
@@ -214,12 +215,9 @@ class Index extends Component
         $this->modalView = 'create';
         $this->resetValidation();
 
-        // OPTIMIZACIÓN CLAVE: Vaciamos availableSchedules para que Livewire no envíe
-        // esa lista gigante en cada request al servidor (seleccionar curso, etc).
         $this->availableSchedules = [];
 
         if (empty($this->courses)) {
-            // OPTIMIZACIÓN: Solo columnas necesarias
             $this->courses = Course::where('status', 'Activo')
                 ->select('id', 'name')
                 ->orderBy('name')
