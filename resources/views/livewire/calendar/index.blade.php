@@ -225,9 +225,9 @@
         .event-chips-container::-webkit-scrollbar { display: none; }
 
         .event-chip {
-            padding: 0.25rem 0.5rem; /* Aumentado padding */
+            padding: 0.25rem 0.5rem; 
             border-radius: 0.25rem;
-            font-size: 0.75rem; /* Aumentado tamaño fuente */
+            font-size: 0.9rem; /* Aumentado a casi 1rem para mejor lectura dentro de la celda */
             font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
@@ -241,34 +241,37 @@
         .chip-class { background-color: #eff6ff; color: #1d4ed8; border-left-color: #3b82f6; }
 
         /* --- MODAL (CENTRAL) --- */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 50; overflow-y: auto;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem;
+        }
+
         .modal-backdrop {
             position: fixed; inset: 0;
             background-color: rgba(107, 114, 128, 0.75);
             backdrop-filter: blur(4px);
-            z-index: 40;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s ease-out;
         }
 
         .modal-panel {
-            pointer-events: auto;
-            width: 100%;
-            max-width: 32rem; /* Ancho máximo del modal */
+            position: relative;
             background-color: white;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             border-radius: 0.75rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            max-width: 32rem; /* Ancho máximo del modal */
+            width: 100%;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
-            max-height: 80vh; /* Altura máxima */
-            margin: 1.5rem;
-            overflow: hidden;
-            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+            max-height: 85vh; /* Altura máxima */
+            transform: scale(0.95);
+            opacity: 0;
+            transition: all 0.3s ease-out;
         }
         
-        /* Animación de entrada para el modal */
-        [x-show="showDetail"] .modal-panel {
+        /* Estado activo del modal */
+        .modal-open .modal-panel {
             transform: scale(1);
             opacity: 1;
         }
@@ -285,6 +288,7 @@
         .close-btn {
             background: rgba(255,255,255,0.2); border: none; border-radius: 50%;
             padding: 0.25rem; color: #bfdbfe; cursor: pointer; display: flex;
+            transition: background 0.2s;
         }
         .close-btn svg { width: 1.5rem; height: 1.5rem; }
         .close-btn:hover { color: white; background: rgba(255,255,255,0.3); }
@@ -298,7 +302,7 @@
             background-color: #f9fafb;
             display: flex;
             flex-direction: column;
-            gap: 2rem;
+            gap: 1.5rem;
         }
 
         .section-title {
@@ -326,8 +330,8 @@
         .card-l-amber { border-left: 4px solid #f59e0b; }
         .card-l-blue { border-left: 4px solid #3b82f6; }
 
-        .card-title { font-size: 0.875rem; font-weight: 600; color: #111827; margin: 0 0 0.25rem 0; }
-        .card-desc { font-size: 0.75rem; color: #6b7280; margin: 0; }
+        .card-title { font-size: 0.95rem; font-weight: 600; color: #111827; margin: 0 0 0.25rem 0; }
+        .card-desc { font-size: 0.8rem; color: #6b7280; margin: 0; }
         
         /* Utility */
         .empty-text { text-align: center; color: #9ca3af; font-size: 0.875rem; margin-top: 2rem; }
@@ -432,7 +436,8 @@
     </div>
 
     <!-- MODAL (CENTRAL) -->
-    <div x-show="showDetail" style="display: none;">
+    <div x-show="showDetail" style="display: none;" class="modal-container">
+        
         <!-- Backdrop -->
         <div 
             class="modal-backdrop"
@@ -444,106 +449,106 @@
             x-transition:leave-start="opacity-100"
             x-transition:leave-end="opacity-0"
             @click="showDetail = false; $wire.set('selectedDate', null)"
+        ></div>
+
+        <!-- Panel del Modal -->
+        <div 
+            class="modal-panel"
+            :class="{ 'modal-open': showDetail }"
+            x-show="showDetail"
+            x-transition:enter="ease-out duration-300"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="ease-in duration-200"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+            @click.stop
         >
-        
-            <!-- Panel -->
-            <div 
-                class="modal-panel"
-                x-show="showDetail"
-                x-transition:enter="transform transition ease-out duration-300"
-                x-transition:enter-start="scale-95 opacity-0"
-                x-transition:enter-end="scale-100 opacity-100"
-                x-transition:leave="transform transition ease-in duration-200"
-                x-transition:leave-start="scale-100 opacity-100"
-                x-transition:leave-end="scale-95 opacity-0"
-                @click.stop
-            >
-                <!-- Header Panel -->
-                <div class="panel-header">
-                    <div class="panel-title-row">
-                        <h2 class="panel-title">Resumen del Día</h2>
-                        <button class="close-btn" @click="showDetail = false; $wire.set('selectedDate', null)">
-                            <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
-                    </div>
-                    <p class="panel-date">{{ $selectedDayData['date_human'] ?? 'Seleccione un día' }}</p>
+            <!-- Header Panel -->
+            <div class="panel-header">
+                <div class="panel-title-row">
+                    <h2 class="panel-title">Resumen del Día</h2>
+                    <button class="close-btn" @click="showDetail = false; $wire.set('selectedDate', null)">
+                        <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
                 </div>
+                <p class="panel-date">{{ $selectedDayData['date_human'] ?? 'Seleccione un día' }}</p>
+            </div>
 
-                <!-- Contenido Panel -->
-                <div class="panel-content">
-                    
-                    <!-- 1. Hitos -->
-                    @if(!empty($selectedDayData['system_events']) && count($selectedDayData['system_events']) > 0)
-                        <section>
-                            <div class="section-title">
-                                <div class="icon-box green">
-                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            <!-- Contenido Panel -->
+            <div class="panel-content">
+                
+                <!-- 1. Hitos -->
+                @if(!empty($selectedDayData['system_events']) && count($selectedDayData['system_events']) > 0)
+                    <section>
+                        <div class="section-title">
+                            <div class="icon-box green">
+                                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                            </div>
+                            <h3 class="section-heading">Hitos Académicos</h3>
+                        </div>
+                        <div>
+                            @foreach($selectedDayData['system_events'] as $sysEvent)
+                                <div class="card card-l-green">
+                                    <p class="card-title">{{ $sysEvent['title'] }}</p>
+                                    <p class="card-desc">{{ $sysEvent['description'] }}</p>
                                 </div>
-                                <h3 class="section-heading">Hitos Académicos</h3>
-                            </div>
-                            <div>
-                                @foreach($selectedDayData['system_events'] as $sysEvent)
-                                    <div class="card card-l-green">
-                                        <p class="card-title">{{ $sysEvent['title'] }}</p>
-                                        <p class="card-desc">{{ $sysEvent['description'] }}</p>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </section>
-                    @endif
+                            @endforeach
+                        </div>
+                    </section>
+                @endif
 
-                    <!-- 2. Clases -->
-                    @if(!empty($selectedDayData['sections']) && count($selectedDayData['sections']) > 0)
-                        <section>
-                            <div class="section-title">
-                                <div class="icon-box blue">
-                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                <!-- 2. Clases -->
+                @if(!empty($selectedDayData['sections']) && count($selectedDayData['sections']) > 0)
+                    <section>
+                        <div class="section-title">
+                            <div class="icon-box blue">
+                                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                            </div>
+                            <h3 class="section-heading">Clases Programadas</h3>
+                        </div>
+                        
+                        <div>
+                            @foreach($selectedDayData['sections'] as $section)
+                                <div class="card card-l-blue">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem;">
+                                        <p class="card-title" style="margin:0;">{{ $section->module->name }}</p>
+                                        <span style="font-size:0.75rem; background:#eff6ff; padding:2px 6px; border-radius:4px; color:#1d4ed8; font-weight:600;">
+                                            {{ \Carbon\Carbon::parse($section->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($section->end_time)->format('H:i') }}
+                                        </span>
+                                    </div>
+                                    <div class="card-desc" style="display:flex; gap:1rem;">
+                                        <span>👨‍🏫 {{ $section->teacher->name ?? 'Sin Profesor' }}</span>
+                                        <span>🏫 {{ $section->classroom->name ?? 'Virtual' }}</span>
+                                    </div>
                                 </div>
-                                <h3 class="section-heading">Clases Programadas</h3>
-                            </div>
-                            
-                            <div>
-                                @foreach($selectedDayData['sections'] as $section)
-                                    <div class="card card-l-blue">
-                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem;">
-                                            <p class="card-title" style="margin:0;">{{ $section->module->name }}</p>
-                                            <span style="font-size:0.75rem; background:#eff6ff; padding:2px 6px; border-radius:4px; color:#1d4ed8; font-weight:600;">
-                                                {{ \Carbon\Carbon::parse($section->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($section->end_time)->format('H:i') }}
-                                            </span>
-                                        </div>
-                                        <div class="card-desc" style="display:flex; gap:1rem;">
-                                            <span>👨‍🏫 {{ $section->teacher->name ?? 'Sin Profesor' }}</span>
-                                            <span>🏫 {{ $section->classroom->name ?? 'Virtual' }}</span>
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </section>
-                    @elseif($showClasses)
-                        <div class="empty-text">No hay clases programadas para hoy.</div>
-                    @endif
+                            @endforeach
+                        </div>
+                    </section>
+                @elseif($showClasses)
+                    <div class="empty-text">No hay clases programadas para hoy.</div>
+                @endif
 
-                    <!-- 3. Eventos Extra -->
-                    @if(!empty($selectedDayData['events']) && count($selectedDayData['events']) > 0)
-                        <section>
-                            <div class="section-title">
-                                <div class="icon-box amber">
-                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>
+                <!-- 3. Eventos Extra -->
+                @if(!empty($selectedDayData['events']) && count($selectedDayData['events']) > 0)
+                    <section>
+                        <div class="section-title">
+                            <div class="icon-box amber">
+                                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>
+                            </div>
+                            <h3 class="section-heading">Agenda Extra</h3>
+                        </div>
+                        <div>
+                            @foreach($selectedDayData['events'] as $event)
+                                <div class="card card-l-amber">
+                                    <p class="card-title">{{ $event['title'] }}</p>
+                                    <p class="card-desc">{{ $event['description'] }}</p>
                                 </div>
-                                <h3 class="section-heading">Agenda Extra</h3>
-                            </div>
-                            <div>
-                                @foreach($selectedDayData['events'] as $event)
-                                    <div class="card card-l-amber">
-                                        <p class="card-title">{{ $event['title'] }}</p>
-                                        <p class="card-desc">{{ $event['description'] }}</p>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </section>
-                    @endif
+                            @endforeach
+                        </div>
+                    </section>
+                @endif
 
-                </div>
             </div>
         </div>
     </div>
