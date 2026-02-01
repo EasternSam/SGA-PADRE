@@ -1,4 +1,4 @@
-<div class="calendar-wrapper" x-data="{ showDetail: @entangle('selectedDate'), showDatePicker: false }">
+<div class="calendar-wrapper" x-data="{ showDetail: @entangle('selectedDate') }">
     
     <style>
         /* --- RESET Y BASE --- */
@@ -180,13 +180,23 @@
         .bg-green { background-color: #10b981; }
         .bg-amber { background-color: #f59e0b; }
 
-        /* --- GRID DEL CALENDARIO --- */
-        .calendar-body {
-            flex: 1; /* Ocupa el resto de la altura */
+        /* --- LAYOUT DE CONTENIDO (DOS COLUMNAS) --- */
+        .content-layout {
+            display: flex;
+            flex-direction: row; /* CORRECCIÓN: Horizontal */
+            flex: 1;
+            height: 100%;
+            overflow: hidden; /* Importante para que el scroll interno funcione */
+        }
+
+        /* --- GRID DEL CALENDARIO (COLUMNA IZQUIERDA) --- */
+        .calendar-section {
+            flex: 1; /* Ocupa el espacio restante */
             padding: 1.5rem;
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Evita scroll doble */
+            overflow: hidden; 
+            border-right: 1px solid #e5e7eb;
         }
 
         .calendar-container {
@@ -196,7 +206,7 @@
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
-            flex: 1; /* Se estira para llenar el body */
+            flex: 1; 
             overflow: hidden;
         }
 
@@ -310,7 +320,11 @@
             flex-direction: column;
             border-left: 1px solid #e5e7eb;
             overflow: hidden;
+            /* Transición suave al aparecer */
+            transition: width 0.3s ease;
         }
+        /* Ocultar si no hay selección */
+        [x-cloak] { display: none !important; }
 
         .panel-header {
             background-color: white;
@@ -503,11 +517,18 @@
         </div>
 
         <!-- SECCIÓN DERECHA: PANEL DE DETALLES -->
+        <!-- Usamos x-show para ocultar si no hay seleccion, o dejarlo visible siempre con un estado vacío -->
         <div class="details-panel">
             @if($selectedDate)
                 <!-- Header Panel -->
                 <div class="panel-header">
-                    <h2 class="panel-title">Detalles del Día</h2>
+                    <div class="panel-title-row">
+                        <h2 class="panel-title">Detalles del Día</h2>
+                        <!-- Botón cerrar opcional, ya que es un panel fijo, pero útil para 'deseleccionar' -->
+                        <button class="close-btn" @click="$wire.set('selectedDate', null)">
+                            <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
                     <p class="panel-date">{{ $selectedDayData['date_human'] ?? '' }}</p>
                 </div>
 
