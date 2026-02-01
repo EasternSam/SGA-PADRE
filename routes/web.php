@@ -306,6 +306,8 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     Route::get('/students', \App\Livewire\Students\Index::class)->name('admin.students.index');
     Route::get('/students/profile/{student}', \App\Livewire\StudentProfile\Index::class)->name('admin.students.profile');
     
+    // --- CALENDARIO ACADÉMICO ---
+    Route::get('/calendar', \App\Livewire\Calendar\Index::class)->name('admin.calendar.index');
     // --- GESTIÓN ACADÉMICA ---
     Route::get('/courses', \App\Livewire\Courses\Index::class)->name('admin.courses.index');
     
