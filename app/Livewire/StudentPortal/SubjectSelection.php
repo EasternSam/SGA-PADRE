@@ -15,10 +15,7 @@ class SubjectSelection extends Component
     public $student;
     public $career;
     
-    // Estructura: [ 'periodo_X' => [ modulos... ] ]
     public $groupedModules = [];
-    
-    // Estructura: [ moduleId => scheduleId ]
     public $selectedSchedules = []; 
     
     public $totalCredits = 0;
@@ -26,6 +23,7 @@ class SubjectSelection extends Component
     
     public $successMessage = '';
     public $errorMessage = '';
+    public $debugMessage = ''; // Para ayudarte a entender qué pasa
 
     public function mount()
     {
@@ -35,46 +33,46 @@ class SubjectSelection extends Component
             abort(403, 'No tienes un perfil de estudiante asociado.');
         }
 
-        // Determinar la carrera del estudiante
-        // Prioridad 1: Asignación directa en modelo Student (si existiera)
-        // Prioridad 2: Última inscripción válida
-        $lastEnrollment = Enrollment::where('student_id', $this->student->id)
-            ->with(['courseSchedule.module.course'])
-            ->latest()
-            ->first();
+        // --- DETECCIÓN DE CARRERA ---
+        
+        // 1. Intento Directo: Ver si el estudiante tiene la carrera en su tabla
+        // (Asegúrate de que el modelo Student tenga la relación 'course')
+        $this->career = $this->student->course;
 
-        if ($lastEnrollment && $lastEnrollment->courseSchedule) {
-            $this->career = $lastEnrollment->courseSchedule->module->course;
+        // 2. Intento Histórico: Si no tiene, buscar en su última inscripción
+        if (!$this->career) {
+            $lastEnrollment = Enrollment::where('student_id', $this->student->id)
+                ->with(['courseSchedule.module.course'])
+                ->latest()
+                ->first();
+
+            if ($lastEnrollment && $lastEnrollment->courseSchedule) {
+                $this->career = $lastEnrollment->courseSchedule->module->course;
+            }
         }
 
-        // Fallback: Si es nuevo ingreso y no tiene inscripciones, 
-        // deberíamos buscar su solicitud aprobada o asignación manual.
-        // Por ahora asumimos que si entra aquí ya tiene una carrera vinculada de alguna forma.
-        
         if ($this->career) {
             $this->loadAvailableOfferings();
+        } else {
+            $this->debugMessage = "No se detectó ninguna carrera asociada al estudiante (ID: {$this->student->id}). Verifica que el campo 'course_id' en la tabla 'students' tenga valor.";
         }
     }
 
-    /**
-     * Carga y procesa toda la oferta académica.
-     */
     public function loadAvailableOfferings()
     {
-        if (!$this->career) return;
-
-        // 1. Materias Aprobadas o Cursando (para filtrar y validar prerrequisitos)
+        // 1. Materias ya aprobadas o cursando
         $approvedIds = Enrollment::where('student_id', $this->student->id)
             ->whereIn('status', ['Aprobado', 'Completado', 'Equivalida', 'Cursando']) 
             ->join('course_schedules', 'enrollments.course_schedule_id', '=', 'course_schedules.id')
             ->pluck('course_schedules.module_id')
             ->toArray();
 
-        // 2. Cargar Módulos con Horarios Activos
+        // 2. Cargar Módulos y Horarios
+        // CAMBIO: Ampliamos el rango de fechas a 6 meses para que veas materias iniciadas en pruebas
         $modules = Module::where('course_id', $this->career->id)
             ->with(['prerequisites', 'schedules' => function($q) {
                 $q->where('status', 'Activo')
-                  ->where('start_date', '>=', now()->subDays(60)); // Mostrar horarios recientes/futuros
+                  ->where('start_date', '>=', now()->subMonths(6)); 
             }])
             ->orderBy('period_number')
             ->orderBy('order')
@@ -83,10 +81,10 @@ class SubjectSelection extends Component
         $grouped = [];
 
         foreach ($modules as $module) {
-            // Estado de la materia
+            // Estado
             $isApproved = in_array($module->id, $approvedIds);
             
-            // Verificar Prerrequisitos
+            // Prerrequisitos
             $missingPrereqs = [];
             if (!$isApproved) {
                 foreach ($module->prerequisites as $prereq) {
@@ -100,7 +98,7 @@ class SubjectSelection extends Component
             if ($isApproved) $status = 'aprobada';
             elseif (!empty($missingPrereqs)) $status = 'bloqueada';
 
-            // Agrupar por periodo
+            // Agrupar
             $period = $module->period_number ?? 0;
             if (!isset($grouped[$period])) {
                 $grouped[$period] = [];
@@ -113,83 +111,68 @@ class SubjectSelection extends Component
                 'credits' => $module->credits,
                 'status' => $status,
                 'missing_prereqs' => $missingPrereqs,
-                'schedules' => $module->schedules, // Colección Eloquent
+                'schedules' => $module->schedules,
             ];
         }
 
         $this->groupedModules = $grouped;
+        
+        if (empty($this->groupedModules)) {
+            $this->debugMessage = "Se encontró la carrera '{$this->career->name}', pero no tiene materias (módulos) registrados o activos.";
+        }
     }
 
-    /**
-     * Seleccionar o deseleccionar una sección
-     */
     public function toggleSection($moduleId, $scheduleId)
     {
         $this->resetMessages();
 
-        // Caso 1: Deseleccionar (click en la misma que ya tengo)
         if (isset($this->selectedSchedules[$moduleId]) && $this->selectedSchedules[$moduleId] == $scheduleId) {
             unset($this->selectedSchedules[$moduleId]);
             $this->calculateTotals();
             return;
         }
 
-        // Caso 2: Nueva Selección (o cambio de sección)
         $schedule = CourseSchedule::with('module')->find($scheduleId);
-
         if (!$schedule) return;
 
-        // Validación A: Cupos
         if ($schedule->isFull()) {
-            $this->errorMessage = "La sección {$schedule->section_name} de {$schedule->module->name} está llena.";
+            $this->errorMessage = "La sección {$schedule->section_name} está llena.";
             return;
         }
 
-        // Validación B: Cruce de Horario
         if ($conflict = $this->checkTimeConflict($schedule)) {
-            $this->errorMessage = "Conflicto de horario con {$conflict->module->name} ({$conflict->day_of_week} {$conflict->start_time}-{$conflict->end_time}).";
+            $this->errorMessage = "Conflicto de horario con {$conflict->module->name}.";
             return;
         }
 
-        // Si pasa, asignamos
         $this->selectedSchedules[$moduleId] = $scheduleId;
         $this->calculateTotals();
     }
 
-    /**
-     * Verifica conflictos de horario con las materias YA seleccionadas.
-     * Retorna el horario conflictivo o null.
-     */
     private function checkTimeConflict($newSchedule)
     {
         foreach ($this->selectedSchedules as $modId => $selSchedId) {
-            // Ignorar la misma materia (porque la estamos reemplazando)
             if ($modId == $newSchedule->module_id) continue;
 
             $existing = CourseSchedule::find($selSchedId);
             if (!$existing) continue;
 
-            // 1. Intersección de Días
             $daysNew = is_array($newSchedule->days_of_week) ? $newSchedule->days_of_week : [$newSchedule->days_of_week];
             $daysExisting = is_array($existing->days_of_week) ? $existing->days_of_week : [$existing->days_of_week];
             
             $commonDays = array_intersect($daysNew, $daysExisting);
 
-            if (empty($commonDays)) continue; // No coinciden días, no hay choque
+            if (empty($commonDays)) continue;
 
-            // 2. Solapamiento de Horas
-            // Lógica: (StartA < EndB) y (EndA > StartB)
             $startNew = Carbon::parse($newSchedule->start_time);
             $endNew = Carbon::parse($newSchedule->end_time);
-            
             $startExist = Carbon::parse($existing->start_time);
             $endExist = Carbon::parse($existing->end_time);
 
             if ($startNew < $endExist && $endNew > $startExist) {
-                return $existing; // Hay conflicto
+                return $existing;
             }
         }
-
         return null;
     }
 
@@ -202,7 +185,7 @@ class SubjectSelection extends Component
             $schedule = CourseSchedule::with('module')->find($schedId);
             if ($schedule) {
                 $this->totalCredits += $schedule->module->credits;
-                $this->totalCost += $schedule->module->price; // Sumar costo unitario
+                $this->totalCost += $schedule->module->price;
             }
         }
     }
@@ -217,7 +200,6 @@ class SubjectSelection extends Component
         DB::beginTransaction();
         try {
             foreach ($this->selectedSchedules as $modId => $schedId) {
-                // Verificar si ya existe inscripción para evitar duplicados
                 $exists = Enrollment::where('student_id', $this->student->id)
                     ->where('course_schedule_id', $schedId)
                     ->exists();
@@ -226,7 +208,7 @@ class SubjectSelection extends Component
                     Enrollment::create([
                         'student_id' => $this->student->id,
                         'course_schedule_id' => $schedId,
-                        'status' => 'Pendiente', // Estado inicial
+                        'status' => 'Pendiente',
                         'final_grade' => null,
                     ]);
                 }
@@ -235,12 +217,12 @@ class SubjectSelection extends Component
             DB::commit();
             
             $this->reset(['selectedSchedules', 'totalCredits', 'totalCost']);
-            $this->loadAvailableOfferings(); // Recargar para actualizar estados
-            $this->successMessage = "¡Selección procesada correctamente! Tus materias están en estado Pendiente.";
+            $this->loadAvailableOfferings();
+            $this->successMessage = "¡Selección procesada correctamente!";
 
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->errorMessage = "Error al guardar la selección: " . $e->getMessage();
+            $this->errorMessage = "Error: " . $e->getMessage();
         }
     }
 
