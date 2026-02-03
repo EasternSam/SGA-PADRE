@@ -27,6 +27,8 @@ use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
 use App\Livewire\StudentPortal\CourseDetail as StudentPortalCourseDetail;
 use App\Livewire\StudentPortal\Requests as StudentPortalRequests;
 use App\Livewire\StudentPortal\MyPayments as StudentPortalPayments; 
+// ===> NUEVO: IMPORTAR COMPONENTE DE SELECCIÓN <===
+use App\Livewire\StudentPortal\SubjectSelection as StudentPortalSelection;
 
 use App\Livewire\TeacherPortal\Dashboard as TeacherPortalDashboard;
 use App\Livewire\TeacherPortal\Grades as TeacherPortalGrades;
@@ -383,6 +385,8 @@ Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student
     Route::get('/requests', \App\Livewire\StudentPortal\Requests::class)->name('requests');
     Route::get('/payments', StudentPortalPayments::class)->name('payments');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    // ===> RUTA PARA SELECCIÓN DE MATERIAS <===
+    Route::get('/selection', StudentPortalSelection::class)->name('selection');
 });
 
 // --- RUTAS DE PROFESOR ---
