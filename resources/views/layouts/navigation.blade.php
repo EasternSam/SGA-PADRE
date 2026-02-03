@@ -71,7 +71,7 @@
             {{-- Visible para Admin, Registro, Contabilidad y Caja --}}
             @hasanyrole('Admin|Registro|Contabilidad|Caja')
                 <div class="pt-4 space-y-1">
-                    <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white/70">
+                    <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white">
                         {{ __('Gestión Académica') }}
                     </p>
                     
@@ -156,7 +156,7 @@
 
                     {{-- MÓDULO FINANCIERO: Admin, Contabilidad, Caja --}}
                     @hasanyrole('Admin|Contabilidad|Caja')
-                        <p class="px-3 pt-4 pb-2 text-xs font-bold uppercase tracking-wider text-white/70">
+                        <p class="px-3 pt-4 pb-2 text-xs font-bold uppercase tracking-wider text-white">
                             {{ __('Finanzas') }}
                         </p>
                         <x-responsive-nav-link :href="route('admin.finance.dashboard')" :active="request()->routeIs('admin.finance.*')"
@@ -182,7 +182,7 @@
 
                     {{-- MÓDULO REPORTES: Admin, Registro, Contabilidad --}}
                     @hasanyrole('Admin|Registro|Contabilidad')
-                        <p class="px-3 pt-4 pb-2 text-xs font-bold uppercase tracking-wider text-white/70">
+                        <p class="px-3 pt-4 pb-2 text-xs font-bold uppercase tracking-wider text-white">
                             {{ __('Reportes') }}
                         </p>
                         <x-responsive-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.index')" wire:navigate>
@@ -195,7 +195,7 @@
 
                     {{-- SOLO ADMIN: Gestión Personal, Importar, Correos --}}
                     @role('Admin')
-                        <p class="px-3 pt-4 pb-2 text-xs font-bold uppercase tracking-wider text-white/70">
+                        <p class="px-3 pt-4 pb-2 text-xs font-bold uppercase tracking-wider text-white">
                             {{ __('Configuración') }}
                         </p>
                         <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')" wire:navigate>
@@ -263,7 +263,7 @@
             <!-- Sección Estudiante -->
             @role('Estudiante')
                 <div class="pt-4 space-y-1">
-                    <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white/70">
+                    <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white">
                         {{ __('Mi Portal') }}
                     </p>
 
@@ -278,7 +278,7 @@
 
                     <x-responsive-nav-link :href="route('student.requests')" :active="request()->routeIs('student.requests')" wire:navigate>
                         <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd" d="M1.5 5.625c0-1.036.84-1.875 1.875-1.875h17.25c1.035 0 1.875.84 1.875 1.875v12.75c0 1.035-.84 1.875-1.875 1.875H3.375A1.875 1.875 0 0 1 1.5 18.375V5.625ZM21 9.375A.375.375 0 0 0 20.625 9h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5ZM10.875 18.75a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5ZM3.375 15h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0 .375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375ZM3.375 11.25h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375Z" clip-rule="evenodd" />
+                            <path fill-rule="evenodd" d="M1.5 5.625c0-1.036.84-1.875 1.875-1.875h17.25c1.035 0 1.875.84 1.875 1.875v12.75c0 1.035-.84 1.875-1.875 1.875H3.375A1.875 1.875 0 0 1 1.5 18.375V5.625ZM21 9.375A.375.375 0 0 0 20.625 9h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5ZM10.875 18.75a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5ZM3.375 15h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0 .375.375v1.5c0 .207.168.375.375.375ZM3.375 11.25h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375Z" clip-rule="evenodd" />
                         </svg>
                         <span>{{ __('Mis Solicitudes') }}</span>
                     </x-responsive-nav-link>
@@ -288,7 +288,7 @@
             <!-- Sección Solicitante (NUEVO) -->
             @role('Solicitante')
                 <div class="pt-4 space-y-1">
-                    <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white/70">
+                    <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white">
                         {{ __('Admisiones') }}
                     </p>
                     <x-responsive-nav-link :href="route('applicant.portal')" :active="request()->routeIs('applicant.portal')" wire:navigate>
@@ -304,7 +304,7 @@
             <!-- Sección Profesor -->
             @role('Profesor')
                 <div class="pt-4 space-y-1">
-                    <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white/70">
+                    <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white">
                         {{ __('Docencia') }}
                     </p>
                     
