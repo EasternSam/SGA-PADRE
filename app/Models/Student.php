@@ -16,6 +16,7 @@ class Student extends Model
      */
     protected $fillable = [
         'user_id', // Vinculación con User
+        'course_id', // <-- NUEVO: Carrera/Curso asignado
         'student_code', // Matrícula
         'first_name',
         'last_name',
@@ -58,6 +59,14 @@ class Student extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Relación con la Carrera/Curso principal.
+     */
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
     }
 
     /**
