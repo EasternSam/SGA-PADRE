@@ -6,7 +6,7 @@ use Livewire\Component;
 use App\Models\Module;
 use App\Models\CourseSchedule;
 use App\Models\Enrollment;
-use App\Models\Admission; // Importante
+use App\Models\Admission;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -36,7 +36,7 @@ class SubjectSelection extends Component
 
         // --- DETECCIÓN DE CARRERA INTELIGENTE ---
         
-        // 1. Verificar si ya tiene la carrera asignada en su perfil (Gracias a la nueva migración)
+        // 1. Verificar si ya tiene la carrera asignada en su perfil
         $this->career = $this->student->course;
 
         // 2. Si no tiene, buscar en su Admisión Aprobada (Fallback para nuevos ingresos)
@@ -48,13 +48,13 @@ class SubjectSelection extends Component
             if ($admission && $admission->course) {
                 $this->career = $admission->course;
                 
-                // AUTO-CORRECCIÓN: Guardar esta carrera en el perfil del estudiante para el futuro
+                // AUTO-CORRECCIÓN: Guardar esta carrera en el perfil del estudiante
                 $this->student->update(['course_id' => $admission->course_id]);
                 $this->debugMessage = "Carrera detectada desde Admisiones y vinculada a tu perfil: {$this->career->name}";
             }
         }
 
-        // 3. Último recurso: Historial de Inscripciones (Para estudiantes antiguos sin admission reciente)
+        // 3. Último recurso: Historial de Inscripciones
         if (!$this->career) {
             $lastEnrollment = Enrollment::where('student_id', $this->student->id)
                 ->with(['courseSchedule.module.course'])
@@ -63,7 +63,6 @@ class SubjectSelection extends Component
 
             if ($lastEnrollment && $lastEnrollment->courseSchedule) {
                 $this->career = $lastEnrollment->courseSchedule->module->course;
-                // También actualizamos el perfil
                 $this->student->update(['course_id' => $this->career->id]);
             }
         }
@@ -78,8 +77,9 @@ class SubjectSelection extends Component
     public function loadAvailableOfferings()
     {
         // 1. Materias ya aprobadas o cursando
+        // CORRECCIÓN: Especificamos 'enrollments.status' para evitar ambigüedad con 'course_schedules.status'
         $approvedIds = Enrollment::where('student_id', $this->student->id)
-            ->whereIn('status', ['Aprobado', 'Completado', 'Equivalida', 'Cursando']) 
+            ->whereIn('enrollments.status', ['Aprobado', 'Completado', 'Equivalida', 'Cursando']) 
             ->join('course_schedules', 'enrollments.course_schedule_id', '=', 'course_schedules.id')
             ->pluck('course_schedules.module_id')
             ->toArray();
