@@ -1,417 +1,541 @@
-<div class="container mx-auto p-4 md:p-6 lg:p-8" x-data="{ activeTab: 'enrollments' }">
-
-    {{-- Mensajes Flash (Toast) --}}
-    <div x-data="{ show: false, message: '', type: 'success' }"
-         x-init="
-             @if (session()->has('message'))
-                 show = true;
-                 message = '{{ session('message') }}';
-                 type = 'success';
-                 setTimeout(() => show = false, 4000);
-             @endif
-             @if (session()->has('error'))
-                 show = true;
-                 message = '{{ session('error') }}';
-                 type = 'error';
-                 setTimeout(() => show = false, 4000);
-             @endif
-             Livewire.on('flashMessage', (data) => {
-                 message = data.message;
-                 type = data.type;
-                 show = true;
-                 setTimeout(() => show = false, 4000);
-             });
-         "
-         x-show="show"
-         x-transition
-         :class="{ 'bg-green-100 border-green-400 text-green-700': type === 'success', 'bg-red-100 border-red-400 text-red-700': type === 'error' }"
-         class="fixed top-24 right-6 z-50 px-4 py-3 rounded-lg shadow-lg"
-         role="alert"
-         style="display: none;">
-      <strong class="font-bold" x-text="type === 'success' ? '¡Éxito!' : '¡Error!'"></strong>
-      <span class="block sm:inline" x-text="message"></span>
-    </div>
-
-
-    {{-- Encabezado del Perfil --}}
-    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
-        <div class="md:flex">
-            <!-- Avatar e Info Básica -->
-            <div class="md:w-1/3 p-6 bg-gray-50 border-b md:border-b-0 md:border-r border-gray-200 text-center">
-                <img class="h-32 w-32 rounded-full mx-auto shadow-md mb-4"
-                     src="https://ui-avatars.com/api/?name={{ urlencode($student->fullName) }}&background=4f46e5&color=ffffff&size=128"
-                     alt="Avatar de {{ $student->fullName }}">
-
-                <h1 class="text-2xl font-bold text-gray-900">{{ $student->fullName }}</h1>
-                <p class="text-sm text-gray-600">{{ $student->email }}</p>
-                <p class="text-sm text-gray-600">Cédula: {{ $student->cedula ?? 'N/A' }}</p>
-                <span @class([
-                        'mt-3 inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium',
-                        'bg-green-100 text-green-800' => $student->status === 'Activo',
-                        'bg-red-100 text-red-800' => $student->status !== 'Activo',
-                    ])>
-                    {{ $student->status }}
+<div class="min-h-screen bg-gray-50/50 pb-12">
+    {{-- 
+        =================================================================
+        ENCABEZADO (HEADER)
+        ================================================================= 
+    --}}
+    <x-slot name="header">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-gray-900">
+                    Hola, {{ explode(' ', $student->first_name)[0] }} 👋
+                </h1>
+                {{-- NUEVO: Mostrar carrera activa si existe --}}
+                @if($activeCareer)
+                    <p class="text-sm text-indigo-600 font-medium mt-1 flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>
+                        {{ $activeCareer->name }}
+                    </p>
+                @endif
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-full shadow-sm">
+                    <span class="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-sm font-medium text-gray-700">Estudiante Activo</span>
+                </div>
+                <span class="hidden sm:block text-sm font-medium text-gray-500 bg-white px-3 py-1.5 rounded-full border border-gray-200 shadow-sm">
+                    {{ now()->locale('es')->isoFormat('D [de] MMMM, Y') }}
                 </span>
             </div>
+        </div>
+    </x-slot>
 
-            <!-- Información Detallada y Acciones -->
-            <div class="md:w-2/3 p-6">
-                <div class="flex justify-between items-start mb-4">
-                    <h2 class="text-xl font-semibold text-gray-800">Detalles del Estudiante</h2>
+    {{-- CONTENEDOR PRINCIPAL --}}
+    <div class="mx-auto w-full max-w-[98%] px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
+
+        {{-- MENSAJES FLASH --}}
+        @if (session()->has('message'))
+            <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" class="rounded-xl border border-green-200 bg-green-50 p-4 shadow-sm transition-all duration-500">
+                <div class="flex items-center gap-3">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <p class="text-sm font-medium text-green-800">{{ session('message') }}</p>
+                </div>
+            </div>
+        @endif
+
+        {{-- ALERTA DE PAGOS --}}
+        @if($pendingPayments->count() > 0)
+            <div class="rounded-xl border border-orange-200 bg-orange-50 p-4 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-orange-100 opacity-50 blur-xl"></div>
+                <div class="flex items-start gap-4 relative z-10">
+                    <div class="flex-shrink-0 p-2 bg-orange-100 rounded-lg">
+                        <svg class="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-base font-bold text-orange-900">Tienes {{ $pendingPayments->count() }} pago(s) pendiente(s)</h3>
+                        <p class="mt-1 text-sm text-orange-800 text-opacity-90">
+                            Mantén tu cuenta al día para evitar interrupciones en el servicio.
+                        </p>
+                        <div class="mt-3">
+                            <a href="{{ route('student.payments') }}" class="inline-flex items-center text-sm font-semibold text-orange-700 hover:text-orange-900 transition-colors">
+                                Ver detalles y pagar
+                                <svg class="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- 
+            =================================================================
+            1. TARJETAS DE ESTADÍSTICAS (KPIs)
+            ================================================================= 
+        --}}
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            
+            <!-- Card: Cursos Activos (Suma de carrera y cursos técnicos) -->
+            <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 transition-all hover:shadow-md">
+                <div class="flex items-center justify-between">
                     <div>
-                        <button 
-                            type="button" 
-                            wire:click="openProfileModal"
-                            class="text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition ease-in-out duration-150">
-                            <i class="fas fa-user-edit mr-2"></i>Editar Perfil
+                        <p class="text-sm font-medium text-gray-500">Cursos Activos</p>
+                        <p class="mt-2 text-3xl font-bold text-gray-900">{{ $activeDegreeEnrollments->count() + $activeCourseEnrollments->count() }}</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-sm">
+                    <span class="flex items-center text-green-600 font-medium">
+                        <span class="h-1.5 w-1.5 rounded-full bg-green-600 mr-2"></span>
+                        En progreso
+                    </span>
+                </div>
+            </div>
+
+            <!-- Card: Histórico -->
+            <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 transition-all hover:shadow-md">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Histórico Finalizado</p>
+                        <p class="mt-2 text-3xl font-bold text-gray-900">{{ $completedEnrollments->count() }}</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-sm">
+                    <span class="text-gray-500">Cursos completados</span>
+                </div>
+            </div>
+
+            <!-- Card: Pagos Pendientes -->
+            <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 transition-all hover:shadow-md">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Facturas Pendientes</p>
+                        <p class="mt-2 text-3xl font-bold text-gray-900">{{ $pendingPayments->count() }}</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-sm">
+                    <a href="{{ route('student.payments') }}" class="text-orange-600 font-medium hover:underline">Ver pendientes &rarr;</a>
+                </div>
+            </div>
+
+            <!-- Card: Deuda Total -->
+            <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 transition-all hover:shadow-md">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Deuda Total</p>
+                        <p class="mt-2 text-3xl font-bold text-gray-900">${{ number_format($pendingPayments->sum('amount'), 0) }}</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-red-600">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-sm">
+                    <span class="text-gray-400">DOP (Pesos Dominicanos)</span>
+                </div>
+            </div>
+        </div>
+
+        {{-- 
+            =================================================================
+            2. LAYOUT PRINCIPAL (TABLA + SIDEBAR)
+            ================================================================= 
+        --}}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {{-- COLUMNA IZQUIERDA: Cursos (Ocupa 2/3) --}}
+            <div class="lg:col-span-2 space-y-8">
+                
+                {{-- 2.0 CURSOS PENDIENTES DE PAGO (NUEVO BLOQUE) --}}
+                @if($pendingEnrollments->count() > 0)
+                <div class="bg-yellow-50 rounded-2xl shadow-sm border border-yellow-200 overflow-hidden">
+                     <div class="border-b border-yellow-200 px-6 py-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-yellow-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        <h3 class="text-lg font-bold text-yellow-800">Inscripciones por Pagar</h3>
+                     </div>
+                     <div class="overflow-x-auto">
+                        <table class="min-w-full whitespace-nowrap text-left text-sm">
+                            <thead class="bg-yellow-100/50 text-yellow-900">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 font-semibold">Materia / Curso</th>
+                                    <th scope="col" class="px-6 py-3 font-semibold text-right">Monto</th>
+                                    <th scope="col" class="px-6 py-3 font-semibold text-right">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-yellow-100 bg-white">
+                                @foreach ($pendingEnrollments as $enrollment)
+                                    <tr>
+                                        <td class="px-6 py-4">
+                                            <div class="text-sm font-medium text-gray-900">{{ $enrollment->courseSchedule->module->name ?? 'N/A' }}</div>
+                                            <div class="text-xs text-gray-500">{{ $enrollment->courseSchedule->module->course->name ?? '' }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 text-right font-bold text-gray-900">
+                                            ${{ number_format($enrollment->payment->amount ?? 0, 2) }}
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <button wire:click="$dispatch('payEnrollment', { enrollmentId: {{ $enrollment->id }} })" class="text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded transition font-bold shadow-sm">
+                                                Pagar Ahora
+                                            </button>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                     </div>
+                </div>
+                @endif
+
+                {{-- 2.1 TABLA DE CURSOS ACTIVOS --}}
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="border-b border-gray-100 px-6 py-5 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">Mis Inscripciones Activas</h3>
+                            <p class="text-sm text-gray-500">Materias y cursos en progreso</p>
+                        </div>
+                        <div class="hidden sm:block">
+                            <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                                {{ $activeDegreeEnrollments->count() + $activeCourseEnrollments->count() }} Total
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full whitespace-nowrap text-left text-sm">
+                            <thead class="bg-gray-50/50 text-gray-900">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 font-semibold">Curso / Módulo</th>
+                                    {{-- COLUMNA PROFESOR ELIMINADA --}}
+                                    <th scope="col" class="px-6 py-3 font-semibold">Horario</th>
+                                    <th scope="col" class="px-6 py-3 font-semibold text-center">Tipo</th>
+                                    <th scope="col" class="px-6 py-3 font-semibold text-right"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 bg-white">
+                                {{-- 1. Materias de Carrera --}}
+                                @foreach ($activeDegreeEnrollments as $enrollment)
+                                    <tr class="hover:bg-gray-50/50 transition-colors group">
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center gap-3">
+                                                <div class="h-10 w-10 flex-shrink-0 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-lg">
+                                                    {{ substr($enrollment->courseSchedule->module->name ?? 'M', 0, 1) }}
+                                                </div>
+                                                <div class="flex flex-col">
+                                                    <span class="text-gray-900 font-semibold">{{ $enrollment->courseSchedule->module->name ?? 'N/A' }}</span>
+                                                    <span class="text-gray-500 text-xs truncate max-w-[200px]">
+                                                        {{ $enrollment->courseSchedule->section_name ?? 'Sección '.$enrollment->courseSchedule->id }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex flex-col">
+                                                <span class="text-gray-900 font-medium text-xs">
+                                                    {{ $enrollment->courseSchedule->days_of_week ? implode(', ', $enrollment->courseSchedule->days_of_week) : 'N/A' }}
+                                                </span>
+                                                <span class="text-gray-400 text-[10px]">
+                                                    {{ $enrollment->courseSchedule->start_time ? \Carbon\Carbon::parse($enrollment->courseSchedule->start_time)->format('g:i A') : '' }}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 text-center">
+                                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset bg-indigo-50 text-indigo-700 ring-indigo-600/20">
+                                                Carrera
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <a href="{{ route('student.course.detail', $enrollment->id) }}" class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                                Ver Aula
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+
+                                {{-- 2. Cursos Técnicos --}}
+                                @foreach ($activeCourseEnrollments as $enrollment)
+                                    <tr class="hover:bg-gray-50/50 transition-colors group">
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center gap-3">
+                                                <div class="h-10 w-10 flex-shrink-0 rounded-lg bg-green-50 flex items-center justify-center text-green-600 font-bold text-lg">
+                                                    {{ substr($enrollment->courseSchedule->module->course->name ?? 'C', 0, 1) }}
+                                                </div>
+                                                <div class="flex flex-col">
+                                                    <span class="text-gray-900 font-semibold">{{ $enrollment->courseSchedule->module->course->name ?? 'N/A' }}</span>
+                                                    <span class="text-gray-500 text-xs truncate max-w-[200px]">
+                                                        {{ $enrollment->courseSchedule->module->name ?? 'N/A' }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex flex-col">
+                                                <span class="text-gray-900 font-medium text-xs">
+                                                    {{ $enrollment->courseSchedule->days_of_week ? implode(', ', $enrollment->courseSchedule->days_of_week) : 'N/A' }}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 text-center">
+                                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset bg-green-50 text-green-700 ring-green-600/20">
+                                                Técnico
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <a href="{{ route('student.course.detail', $enrollment->id) }}" class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                                                Entrar
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+
+                                @if ($activeDegreeEnrollments->isEmpty() && $activeCourseEnrollments->isEmpty())
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-12 text-center">
+                                            <div class="flex flex-col items-center justify-center">
+                                                <div class="h-16 w-16 rounded-full bg-gray-50 flex items-center justify-center mb-4">
+                                                    <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                                    </svg>
+                                                </div>
+                                                <h3 class="text-base font-semibold text-gray-900">No tienes cursos activos</h3>
+                                                <p class="mt-1 text-sm text-gray-500">¿Buscas aprender algo nuevo hoy?</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endif
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {{-- 2.2 HISTORIAL ACADÉMICO (CURSOS COMPLETADOS) --}}
+                @if($completedEnrollments->count() > 0)
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="border-b border-gray-100 px-6 py-5 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">Historial Académico</h3>
+                            <p class="text-sm text-gray-500">Cursos finalizados satisfactoriamente</p>
+                        </div>
+                        <div class="hidden sm:block">
+                            <span class="inline-flex items-center rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">
+                                {{ $completedEnrollments->count() }} Completados
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full whitespace-nowrap text-left text-sm">
+                            <thead class="bg-gray-50/50 text-gray-900">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 font-semibold">Curso / Módulo</th>
+                                    <th scope="col" class="px-6 py-3 font-semibold text-center">Calificación</th>
+                                    <th scope="col" class="px-6 py-3 font-semibold text-center">Fecha Fin</th>
+                                    <th scope="col" class="px-6 py-3 font-semibold text-right"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 bg-white">
+                                @foreach ($completedEnrollments as $enrollment)
+                                    <tr class="hover:bg-gray-50/50 transition-colors group">
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center gap-3">
+                                                <div class="h-10 w-10 flex-shrink-0 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 font-bold text-lg">
+                                                    {{ substr($enrollment->courseSchedule->module->course->name ?? 'C', 0, 1) }}
+                                                </div>
+                                                <div class="flex flex-col">
+                                                    <span class="text-gray-900 font-semibold">{{ $enrollment->courseSchedule->module->course->name ?? 'N/A' }}</span>
+                                                    <span class="text-gray-500 text-xs truncate max-w-[200px]" title="{{ $enrollment->courseSchedule->module->name ?? '' }}">
+                                                        {{ $enrollment->courseSchedule->module->name ?? 'N/A' }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 text-center">
+                                            @if($enrollment->final_grade)
+                                                <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-sm font-bold text-gray-700 ring-1 ring-inset ring-gray-500/10">
+                                                    {{ number_format($enrollment->final_grade, 1) }}
+                                                </span>
+                                            @else
+                                                <span class="text-gray-400 text-xs">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4 text-center text-gray-500 text-xs">
+                                            {{ $enrollment->updated_at->format('d/m/Y') }}
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <a href="{{ route('student.course.detail', $enrollment->id) }}" class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                                                Ver Detalles
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                @endif
+            </div>
+
+            {{-- COLUMNA DERECHA: Perfil + Sidebar --}}
+            <div class="space-y-8">
+                
+                {{-- CARD DE PERFIL (Estilo ID Card) --}}
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
+                    
+                    <div class="relative flex flex-col items-center">
+                        <div class="h-24 w-24 rounded-full ring-4 ring-white shadow-lg overflow-hidden bg-white mb-3">
+                            <img class="h-full w-full object-cover"
+                                 src="https://ui-avatars.com/api/?name={{ urlencode($student->fullName) }}&color=7F9CF5&background=EBF4FF"
+                                 alt="Avatar">
+                        </div>
+                        <h2 class="text-lg font-bold text-gray-900">{{ $student->fullName }}</h2>
+                        <p class="text-sm text-gray-500 mb-4">{{ $student->email }}</p>
+                        
+                        <div class="w-full grid grid-cols-2 gap-2 text-center text-xs text-gray-600 bg-gray-50 rounded-lg p-3 border border-gray-100">
+                            <div>
+                                <span class="block font-bold text-gray-900">{{ $student->mobile_phone ?? $student->phone ?? '-' }}</span>
+                                <span class="text-gray-400">Teléfono</span>
+                            </div>
+                            <div>
+                                <span class="block font-bold text-gray-900">{{ $student->city ?? '-' }}</span>
+                                <span class="text-gray-400">Ciudad</span>
+                            </div>
+                        </div>
+
+                        <button wire:click="openProfileModal" class="mt-4 w-full flex justify-center items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            Editar Perfil
                         </button>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                        <strong class="text-gray-500 block">Matrícula (Student Code):</strong>
-                        <span class="text-gray-900 font-semibold">{{ $student->student_code ?? 'Pendiente' }}</span>
-                    </div>
-                    <div>
-                        <strong class="text-gray-500 block">Carrera / Programa:</strong>
-                        @if($activeCareer)
-                             <span class="text-indigo-700 font-bold">{{ $activeCareer->name }}</span>
-                        @else
-                             <span class="text-gray-500 italic">Cursos Técnicos</span>
-                        @endif
-                    </div>
-                    <div>
-                        <strong class="text-gray-500 block">Teléfono Móvil:</strong>
-                        <span class="text-gray-900">{{ $student->mobile_phone ?? $student->phone ?? 'N/A' }}</span>
-                    </div>
-                    <div>
-                        <strong class="text-gray-500 block">Fecha de Nacimiento:</strong>
-                        <span class="text-gray-900">{{ $student->birth_date ? $student->birth_date->format('d/m/Y') : 'N/A' }}</span>
-                    </div>
-                    <div>
-                        <strong class="text-gray-500 block">Dirección:</strong>
-                        <span class="text-gray-900">{{ $student->address ?? 'N/A' }}</span>
-                    </div>
-                    <div>
-                        <strong class="text-gray-500 block">Ciudad/Sector:</strong>
-                        <span class="text-gray-900">{{ $student->city ?? '' }} {{ $student->sector ? '- '.$student->sector : '' }}</span>
-                    </div>
-                </div>
+                {{-- ACCESOS RÁPIDOS --}}
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 text-xs">Accesos Directos</h3>
+                    <div class="space-y-3">
+                        <a href="{{ route('student.requests') }}" class="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 transition-all group border border-transparent hover:border-indigo-100">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 rounded-lg bg-white text-gray-500 group-hover:text-indigo-600 shadow-sm transition-colors">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </div>
+                                <span class="font-medium text-sm">Solicitar Servicios</span>
+                            </div>
+                            <svg class="h-4 w-4 text-gray-300 group-hover:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                        </a>
 
-                <hr class="my-6 border-gray-200">
-
-                <div class="flex flex-wrap gap-2">
-                    <button wire:click="openEnrollmentModal" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
-                        <i class="fas fa-plus-circle mr-2"></i>Inscribir a Curso
-                    </button>
-                    
-                    <button wire:click="$dispatch('openPaymentModal')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
-                        <i class="fas fa-dollar-sign mr-2"></i>Registrar Pago
-                    </button>
+                        <a href="{{ route('student.payments') }}" class="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-emerald-50 hover:text-emerald-600 transition-all group border border-transparent hover:border-emerald-100">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 rounded-lg bg-white text-gray-500 group-hover:text-emerald-600 shadow-sm transition-colors">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                    </svg>
+                                </div>
+                                <span class="font-medium text-sm">Gestionar Pagos</span>
+                            </div>
+                            <svg class="h-4 w-4 text-gray-300 group-hover:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- Pestañas y contenido --}}
-    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-        <!-- Pestañas -->
-        <div class="border-b border-gray-200">
-            <nav class="-mb-px flex space-x-6 px-6" aria-label="Tabs">
-                <button @click="activeTab = 'enrollments'"
-                        :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'enrollments', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'enrollments' }"
-                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                    Cursos Inscritos
-                </button>
-                <button @click="activeTab = 'payments'"
-                        :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'payments', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'payments' }"
-                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                    Historial de Pagos
-                </button>
-                <button @click="activeTab = 'communication'"
-                        :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'communication', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'communication' }"
-                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                    Comunicación
-                </button>
-            </nav>
-        </div>
-
-        <div class="p-6 space-y-8" x-show="activeTab === 'enrollments'" x-cloak>
-            
-            {{-- 1. Inscripciones Pendientes de Pago (SI EXISTEN) --}}
-            @if($pendingEnrollments->count() > 0)
-            <div>
-                <h3 class="text-lg font-semibold text-yellow-700 mb-4">
-                    <i class="fas fa-exclamation-triangle mr-2"></i> Inscripciones Pendientes de Pago
-                </h3>
-                <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Materia / Curso</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @foreach ($pendingEnrollments as $enrollment)
-                                <tr>
-                                    <td class="px-6 py-4">
-                                        <div class="text-sm font-medium text-gray-900">{{ $enrollment->courseSchedule->module->name ?? 'N/A' }}</div>
-                                        <div class="text-sm text-gray-600">{{ $enrollment->courseSchedule->module->course->name ?? '' }}</div>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-900">${{ number_format($enrollment->payment->amount ?? 0, 2) }}</td>
-                                    <td class="px-6 py-4">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                            Pendiente Pago
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 text-right">
-                                        <button wire:click="$dispatch('payEnrollment', { enrollmentId: {{ $enrollment->id }} })" class="text-yellow-600 hover:text-yellow-900 font-bold">
-                                            Pagar
-                                        </button>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            @endif
-
-            {{-- 2. Materias de Carrera (SI EXISTEN) --}}
-            @if($activeDegreeEnrollments->count() > 0)
-            <div>
-                <h3 class="text-lg font-semibold text-indigo-800 mb-4 flex items-center">
-                    <i class="fas fa-university mr-2"></i> Materias en Curso ({{ $activeCareer->name ?? 'Universidad' }})
-                </h3>
-                <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Materia / Módulo</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Profesor</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Horario</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @foreach ($activeDegreeEnrollments as $enrollment)
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4">
-                                        <div class="text-sm font-medium text-gray-900">{{ $enrollment->courseSchedule->module->name ?? 'N/A' }}</div>
-                                        <div class="text-xs text-gray-500">{{ $enrollment->courseSchedule->section_name ?? 'Sección '.$enrollment->courseSchedule->id }}</div>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-700">{{ $enrollment->courseSchedule->teacher->name ?? 'No asignado' }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-700">
-                                        {{ implode(', ', $enrollment->courseSchedule->days_of_week ?? []) }} <br>
-                                        <span class="text-xs text-gray-500">{{ $enrollment->courseSchedule->start_time }}</span>
-                                    </td>
-                                    <td class="px-6 py-4 text-right">
-                                        <a href="{{ route('student.course.detail', $enrollment->id) }}" class="text-indigo-600 hover:text-indigo-900 font-bold text-sm">Ver Aula</a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            @endif
-
-            {{-- 3. Cursos Técnicos (SI EXISTEN) --}}
-            @if($activeCourseEnrollments->count() > 0)
-            <div>
-                <h3 class="text-lg font-semibold text-green-800 mb-4 flex items-center">
-                    <i class="fas fa-book-open mr-2"></i> Cursos Técnicos y Educación Continua
-                </h3>
-                <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Curso / Módulo</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Profesor</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Horario</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @foreach ($activeCourseEnrollments as $enrollment)
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4">
-                                        <div class="text-sm font-medium text-gray-900">{{ $enrollment->courseSchedule->module->name ?? 'N/A' }}</div>
-                                        <div class="text-xs text-gray-500">{{ $enrollment->courseSchedule->module->course->name ?? '' }}</div>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-700">{{ $enrollment->courseSchedule->teacher->name ?? 'No asignado' }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-700">
-                                        {{ implode(', ', $enrollment->courseSchedule->days_of_week ?? []) }}
-                                    </td>
-                                    <td class="px-6 py-4 text-right">
-                                        <a href="{{ route('student.course.detail', $enrollment->id) }}" class="text-green-600 hover:text-green-900 font-bold text-sm">Entrar</a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            @endif
-
-            {{-- 4. Mensaje Vacío --}}
-            @if($activeDegreeEnrollments->isEmpty() && $activeCourseEnrollments->isEmpty() && $pendingEnrollments->isEmpty())
-                <div class="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                    <p class="text-gray-500">No tienes inscripciones activas actualmente.</p>
-                    <button wire:click="openEnrollmentModal" class="mt-4 text-indigo-600 hover:underline">Inscribirse ahora</button>
-                </div>
-            @endif
-
-            {{-- 5. Cursos Completados (Historial) --}}
-            @if($completedEnrollments->count() > 0)
-            <div>
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">
-                    <i class="fas fa-graduation-cap mr-2"></i> Cursos Completados
-                </h3>
-                <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Módulo / Sección</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Calificación Final</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @foreach ($completedEnrollments as $enrollment)
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4">
-                                        <div class="text-sm font-medium text-gray-900">{{ $enrollment->courseSchedule->module->name ?? 'N/A' }}</div>
-                                        <div class="text-sm text-gray-600">{{ $enrollment->courseSchedule->module->course->name ?? '' }}</div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                            Completado
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 text-center font-bold text-gray-900">{{ $enrollment->final_grade ?? 'N/A' }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            @endif
-        </div>
-
-        {{-- Historial de Pagos --}}
-        <div class="p-6" x-show="activeTab === 'payments'" x-cloak>
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold text-gray-800">Historial de Pagos</h3>
-                <button wire:click="$dispatch('openPaymentModal')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow">
-                    <i class="fas fa-plus-circle mr-2"></i>Registrar Pago
-                </button>
-            </div>
-            <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Concepto</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Monto</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @forelse ($paymentHistory as $payment)
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 text-sm text-gray-700">{{ $payment->created_at->format('d/m/Y') }}</td>
-                                <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $payment->paymentConcept->name ?? $payment->description ?? 'N/A' }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900 text-right">${{ number_format($payment->amount, 2) }}</td>
-                                <td class="px-6 py-4">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                        {{ $payment->status === 'Completado' ? 'bg-green-100 text-green-800' : 
-                                           ($payment->status === 'Pendiente' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
-                                        {{ $payment->status }}
-                                    </span>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="px-6 py-12 text-center text-gray-500">No hay pagos registrados.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        {{-- Próximamente --}}
-        <div class="p-6" x-show="activeTab === 'communication'" x-cloak>
-            <div class="bg-white shadow-sm rounded-lg p-6 text-center text-gray-500">
-                Esta función estará disponible próximamente.
-            </div>
-        </div>
-    </div>
-
-    {{-- MODALES --}}
-    @livewire('finance.payment-modal', ['student' => $student], key('payment-modal-'.$student->id))
-
-    <x-modal name="enroll-student-modal" maxWidth="3xl">
-        <form wire:submit.prevent="enrollStudent" class="p-6">
-             <h2 class="text-lg font-medium text-gray-900 mb-4">Nueva Inscripción</h2>
-             <div class="mb-4">
-                <x-input-label value="Buscar Curso o Materia" />
-                <x-text-input wire:model.live.debounce.300ms="searchAvailableCourse" class="w-full" placeholder="Escribe el nombre..." />
-             </div>
-             
-             @if(count($availableSchedules) > 0)
-                 <ul class="border border-gray-200 rounded-md divide-y divide-gray-200 max-h-60 overflow-y-auto">
-                     @foreach($availableSchedules as $schedule)
-                         <li class="p-3 hover:bg-gray-50 flex items-center justify-between cursor-pointer" wire:click="$set('selectedScheduleId', {{ $schedule->id }})">
-                             <div>
-                                 <p class="font-bold text-sm text-gray-900">{{ $schedule->module->name }}</p>
-                                 <p class="text-xs text-gray-500">{{ $schedule->module->course->name }} - {{ $schedule->teacher->name ?? 'Sin profesor' }}</p>
-                                 <p class="text-xs text-gray-400">Horario: {{ implode(',', $schedule->days_of_week ?? []) }}</p>
-                             </div>
-                             <div class="flex items-center">
-                                 <input type="radio" name="schedule" value="{{ $schedule->id }}" wire:model.live="selectedScheduleId" class="text-indigo-600">
-                             </div>
-                         </li>
-                     @endforeach
-                 </ul>
-             @elseif(strlen($searchAvailableCourse) > 2)
-                 <p class="text-sm text-gray-500 text-center py-4">No se encontraron resultados.</p>
-             @endif
-
-             <div class="mt-6 flex justify-end gap-3">
-                 <x-secondary-button x-on:click="$dispatch('close')">Cancelar</x-secondary-button>
-                 <x-primary-button disabled="{{ !$selectedScheduleId }}">Inscribir</x-primary-button>
-             </div>
-        </form>
-    </x-modal>
-
+    {{-- MODAL DE COMPLETAR PERFIL --}}
     <x-modal name="complete-profile-modal" :show="$showProfileModal" focusable>
         <div class="p-6">
-            <h2 class="text-xl font-bold text-gray-900 mb-2">📝 Completa tu Perfil</h2>
+            <h2 class="text-xl font-bold text-gray-900 mb-2">
+                📝 Completa tu Perfil
+            </h2>
+            <p class="text-sm text-gray-600 mb-6">
+                Para brindarte un mejor servicio y generar tus certificados correctamente, por favor actualiza tu información.
+            </p>
+
             <form wire:submit.prevent="saveProfile" class="space-y-4">
-                {{-- Campos del formulario (igual al original) --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Teléfono Móvil -->
                     <div>
                         <x-input-label for="mobile_phone" value="Teléfono Móvil" />
-                        <x-text-input id="mobile_phone" type="text" class="mt-1 block w-full" wire:model="mobile_phone" />
+                        <x-text-input id="mobile_phone" type="text" class="mt-1 block w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" 
+                                      wire:model="mobile_phone" 
+                                      placeholder="809-555-5555" />
+                        @error('mobile_phone') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
+
+                    <!-- Fecha de Nacimiento -->
                     <div>
                         <x-input-label for="birth_date" value="Fecha de Nacimiento" />
-                        <x-text-input id="birth_date" type="date" class="mt-1 block w-full" wire:model="birth_date" />
+                        <x-text-input id="birth_date" type="date" class="mt-1 block w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" 
+                                      wire:model="birth_date" />
+                        @error('birth_date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
+
+                    <!-- Género -->
+                    <div>
+                        <x-input-label for="gender" value="Género" />
+                        <select id="gender" wire:model="gender" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="">Seleccionar...</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Femenino">Femenino</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                        @error('gender') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+
+                    <!-- Ciudad -->
+                    <div>
+                        <x-input-label for="city" value="Ciudad" />
+                        <x-text-input id="city" type="text" class="mt-1 block w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" 
+                                      wire:model="city" placeholder="Ej: Santo Domingo" />
+                        @error('city') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+
+                    <!-- Sector -->
+                    <div>
+                        <x-input-label for="sector" value="Sector" />
+                        <x-text-input id="sector" type="text" class="mt-1 block w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" 
+                                      wire:model="sector" placeholder="Ej: Gazcue" />
+                        @error('sector') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+
+                    <!-- Dirección -->
                     <div class="md:col-span-2">
-                        <x-input-label for="address" value="Dirección" />
-                        <x-text-input id="address" type="text" class="mt-1 block w-full" wire:model="address" />
+                        <x-input-label for="address" value="Dirección Completa" />
+                        <x-text-input id="address" type="text" class="mt-1 block w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" 
+                                      wire:model="address" placeholder="Calle, Número, Edificio..." />
+                        @error('address') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
                 </div>
-                <div class="mt-6 flex justify-end gap-3">
-                    <x-secondary-button wire:click="closeProfileModal">Más tarde</x-secondary-button>
-                    <x-primary-button>Guardar</x-primary-button>
+
+                <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-100">
+                    <x-secondary-button wire:click="closeProfileModal">
+                        Más tarde
+                    </x-secondary-button>
+
+                    <x-primary-button class="bg-indigo-600 hover:bg-indigo-700 rounded-lg">
+                        Guardar Información
+                    </x-primary-button>
                 </div>
             </form>
         </div>
