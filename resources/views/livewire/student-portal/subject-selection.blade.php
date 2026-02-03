@@ -1,257 +1,565 @@
-<div class="min-h-screen bg-gray-50 py-8">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <!-- Header Principal -->
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-900">Selección de Materias</h1>
-            <p class="mt-2 text-gray-600">
-                Planifica tu próximo ciclo académico. Selecciona las materias disponibles para tu carrera:
-                <span class="font-semibold text-indigo-600">{{ $career->name ?? 'Carrera General' }}</span>
-            </p>
-        </div>
+<div>
+    {{-- Bloque de Estilos CSS Puro --}}
+    <style>
+        /* Reset básico y variables para este componente */
+        .selection-wrapper {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            min-height: 100vh;
+            padding: 40px 20px;
+            box-sizing: border-box;
+        }
 
-        <!-- Mensajes de Estado -->
-        <div class="space-y-4 mb-6">
+        .container-custom {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Encabezado */
+        .header-section {
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 20px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 0 0 10px 0;
+        }
+
+        .page-subtitle {
+            font-size: 16px;
+            color: #6c757d;
+            margin: 0;
+        }
+
+        .highlight-career {
+            color: #3498db; /* Azul institucional */
+            font-weight: 600;
+        }
+
+        /* Alertas y Mensajes */
+        .alert-box {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 5px solid;
+            display: flex;
+            align-items: center;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .alert-error {
+            border-color: #e74c3c;
+            color: #c0392b;
+            background-color: #fadbd8;
+        }
+
+        .alert-success {
+            border-color: #2ecc71;
+            color: #27ae60;
+            background-color: #d5f5e3;
+        }
+
+        .alert-warning {
+            border-color: #f1c40f;
+            color: #d35400;
+            background-color: #fdebd0;
+        }
+
+        /* Tarjetas de Periodo */
+        .period-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            overflow: hidden;
+            border: 1px solid #e1e4e8;
+        }
+
+        .period-header {
+            background-color: #f1f3f5;
+            padding: 15px 25px;
+            border-bottom: 1px solid #e1e4e8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .period-badge {
+            background-color: #34495e;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .period-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 0;
+            margin-left: 10px;
+        }
+
+        /* Filas de Materias */
+        .module-row {
+            padding: 25px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            transition: background-color 0.2s ease;
+        }
+
+        .module-row:last-child {
+            border-bottom: none;
+        }
+
+        .module-row:hover {
+            background-color: #fcfcfc;
+        }
+
+        .module-row.approved {
+            background-color: rgba(46, 204, 113, 0.05); /* Verde muy sutil */
+        }
+
+        /* Columna Izquierda: Detalles de Materia */
+        .module-info {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .module-header-line {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .code-tag {
+            font-family: 'Courier New', monospace;
+            background-color: #e9ecef;
+            color: #495057;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: bold;
+            border: 1px solid #ced4da;
+        }
+
+        .status-badge {
+            font-size: 12px;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .status-approved { background-color: #d5f5e3; color: #27ae60; }
+        .status-blocked { background-color: #fadbd8; color: #c0392b; }
+
+        .module-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 5px 0;
+            line-height: 1.3;
+        }
+
+        .module-meta {
+            color: #7f8c8d;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+        }
+
+        .prereq-alert {
+            margin-top: 12px;
+            font-size: 13px;
+            color: #c0392b;
+            background-color: #fff5f5;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #feb2b2;
+            display: inline-block;
+        }
+
+        /* Columna Derecha: Secciones */
+        .module-sections {
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .section-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #95a5a6;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .no-sections-box {
+            border: 2px dashed #dfe6e9;
+            padding: 15px;
+            text-align: center;
+            border-radius: 6px;
+            color: #b2bec3;
+            font-style: italic;
+            font-size: 14px;
+        }
+
+        /* Botones de Sección */
+        .section-btn {
+            display: block;
+            width: 100%;
+            background: white;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            outline: none;
+        }
+
+        .section-btn:hover:not(:disabled) {
+            border-color: #3498db;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.15);
+        }
+
+        .section-btn:disabled {
+            background-color: #f8f9fa;
+            color: #b2bec3;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .section-btn.selected {
+            background-color: #ebf5fb; /* Azul muy claro */
+            border-color: #3498db;
+            border-width: 2px;
+            padding: 11px 14px; /* Ajuste por borde */
+        }
+
+        .section-btn-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .sec-name {
+            font-weight: 700;
+            font-size: 15px;
+            color: #34495e;
+        }
+        .section-btn.selected .sec-name { color: #2980b9; }
+
+        /* Badges de Cupo */
+        .quota-badge {
+            font-size: 11px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+        .quota-full { background-color: #fadbd8; color: #e74c3c; }
+        .quota-selected { background-color: #d6eaf8; color: #2980b9; }
+        .quota-open { background-color: #e8f8f5; color: #27ae60; border: 1px solid #a9dfbf; }
+
+        .sec-details {
+            font-size: 13px;
+            color: #7f8c8d;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .sec-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Iconos SVG sencillos */
+        .icon-svg { width: 14px; height: 14px; fill: currentColor; opacity: 0.7; }
+
+        /* Barra Inferior Fija */
+        .fixed-bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-top: 1px solid #dcdcdc;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+            padding: 15px 0;
+            z-index: 1000;
+            transform: translateY(120%);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .fixed-bottom-bar.is-visible {
+            transform: translateY(0);
+        }
+
+        .bar-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .summary-stats {
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 5px 15px;
+            border-radius: 6px;
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .stat-label { font-size: 10px; text-transform: uppercase; color: #95a5a6; font-weight: bold; display: block; }
+        .stat-number { font-size: 20px; font-weight: 700; color: #2c3e50; display: block; }
+        .stat-number.money { color: #27ae60; }
+
+        .btn-confirm {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(52, 152, 219, 0.3);
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-confirm:hover { background-color: #2980b9; }
+        .btn-confirm:disabled { background-color: #bdc3c7; cursor: not-allowed; box-shadow: none; }
+
+        .spinner {
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 2px solid white;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Responsivo */
+        @media (max-width: 768px) {
+            .module-row { flex-direction: column; }
+            .module-sections { max-width: 100%; }
+            .bar-content { flex-direction: column; gap: 15px; }
+            .summary-stats { width: 100%; justify-content: space-between; }
+            .btn-confirm { width: 100%; justify-content: center; }
+            .stat-item { flex: 1; }
+        }
+    </style>
+
+    <div class="selection-wrapper">
+        <div class="container-custom">
+            
+            <!-- Header -->
+            <div class="header-section">
+                <h1 class="page-title">Selección de Materias</h1>
+                <p class="page-subtitle">
+                    Ciclo Académico Actual • Carrera: 
+                    <span class="highlight-career">{{ $career->name ?? 'Carrera General' }}</span>
+                </p>
+            </div>
+
+            <!-- Mensajes -->
             @if ($errorMessage)
-                <div class="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-md shadow-sm animate-fade-in-down">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium">{{ $errorMessage }}</p>
-                        </div>
-                    </div>
+                <div class="alert-box alert-error">
+                    <strong>Error:</strong>&nbsp; {{ $errorMessage }}
                 </div>
             @endif
 
             @if ($successMessage)
-                <div class="p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-r-md shadow-sm animate-fade-in-down">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium">{{ $successMessage }}</p>
-                        </div>
-                    </div>
+                <div class="alert-box alert-success">
+                    <strong>¡Éxito!</strong>&nbsp; {{ $successMessage }}
                 </div>
             @endif
 
             @if ($debugMessage)
-                <div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 rounded-r-md shadow-sm">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-bold">Diagnóstico del Sistema:</p>
-                            <p class="text-sm">{{ $debugMessage }}</p>
-                        </div>
-                    </div>
+                <div class="alert-box alert-warning">
+                    <strong>Diagnóstico:</strong>&nbsp; {{ $debugMessage }}
                 </div>
             @endif
-        </div>
 
-        <!-- Lista de Materias por Cuatrimestre -->
-        @if(empty($groupedModules))
-            <div class="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-100">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+            <!-- Contenido Principal -->
+            @if(empty($groupedModules))
+                <div class="no-sections-box" style="padding: 50px;">
+                    <h3>No hay oferta académica disponible</h3>
+                    <p>No se encontraron materias habilitadas para tu perfil en este momento.</p>
                 </div>
-                <h3 class="text-lg font-medium text-gray-900">Sin oferta académica visible</h3>
-                <p class="mt-1 text-gray-500 max-w-sm mx-auto">No encontramos materias disponibles para seleccionar en este momento para tu perfil.</p>
-            </div>
-        @else
-            <div class="space-y-8 pb-32">
-                @foreach($groupedModules as $period => $modules)
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        <!-- Cabecera de Cuatrimestre -->
-                        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <span class="bg-indigo-600 text-white text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">
-                                    Periodo {{ $period }}
-                                </span>
-                                <h3 class="text-lg font-semibold text-gray-800">Materias del Nivel</h3>
+            @else
+                <div style="padding-bottom: 80px;"> <!-- Espacio para la barra flotante -->
+                    @foreach($groupedModules as $period => $modules)
+                        <div class="period-card">
+                            <div class="period-header">
+                                <div style="display: flex; align-items: center;">
+                                    <span class="period-badge">Periodo {{ $period }}</span>
+                                    <h3 class="period-title">Materias del Nivel</h3>
+                                </div>
+                                <span style="font-size: 13px; color: #7f8c8d;">{{ count($modules) }} asignaturas</span>
                             </div>
-                            <span class="text-sm text-gray-500">{{ count($modules) }} asignaturas</span>
-                        </div>
 
-                        <div class="divide-y divide-gray-100">
-                            @foreach($modules as $module)
-                                <div class="p-6 transition hover:bg-gray-50 {{ $module['status'] === 'aprobada' ? 'bg-green-50/30' : '' }}">
-                                    <div class="flex flex-col lg:flex-row gap-6">
+                            <div>
+                                @foreach($modules as $module)
+                                    <div class="module-row {{ $module['status'] === 'aprobada' ? 'approved' : '' }}">
                                         
-                                        <!-- Columna Izquierda: Info de la Materia -->
-                                        <div class="flex-1 min-w-0">
-                                            <div class="flex items-start justify-between">
-                                                <div>
-                                                    <div class="flex items-center gap-2 mb-1">
-                                                        <span class="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
-                                                            {{ $module['code'] }}
-                                                        </span>
-                                                        @if($module['status'] === 'aprobada')
-                                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path> Aprobada
-                                                            </span>
-                                                        @elseif($module['status'] === 'bloqueada')
-                                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                                                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"></path> Prerrequisito Pendiente
-                                                            </span>
-                                                        @endif
-                                                    </div>
-                                                    
-                                                    <h4 class="text-lg font-bold text-gray-900 leading-tight">
-                                                        {{ $module['name'] }}
-                                                    </h4>
-                                                    
-                                                    <div class="mt-2 flex items-center gap-4 text-sm text-gray-600">
-                                                        <span class="flex items-center gap-1" title="Créditos Académicos">
-                                                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
-                                                            {{ $module['credits'] }} Créditos
-                                                        </span>
-                                                    </div>
-
-                                                    @if($module['status'] === 'bloqueada')
-                                                        <div class="mt-3 text-sm bg-red-50 text-red-600 p-2 rounded border border-red-100 inline-block">
-                                                            <span class="font-semibold">Debes aprobar primero:</span> 
-                                                            {{ implode(', ', $module['missing_prereqs']) }}
-                                                        </div>
-                                                    @endif
-                                                </div>
+                                        <!-- Info Materia -->
+                                        <div class="module-info">
+                                            <div class="module-header-line">
+                                                <span class="code-tag">{{ $module['code'] }}</span>
+                                                
+                                                @if($module['status'] === 'aprobada')
+                                                    <span class="status-badge status-approved">
+                                                        ✓ Aprobada
+                                                    </span>
+                                                @elseif($module['status'] === 'bloqueada')
+                                                    <span class="status-badge status-blocked">
+                                                        ⚠ Bloqueada
+                                                    </span>
+                                                @endif
                                             </div>
+                                            
+                                            <h4 class="module-name">{{ $module['name'] }}</h4>
+                                            
+                                            <div class="module-meta">
+                                                <span>{{ $module['credits'] }} Créditos Académicos</span>
+                                            </div>
+
+                                            @if($module['status'] === 'bloqueada')
+                                                <div class="prereq-alert">
+                                                    <strong>Requisito pendiente:</strong> {{ implode(', ', $module['missing_prereqs']) }}
+                                                </div>
+                                            @endif
                                         </div>
 
-                                        <!-- Columna Derecha: Secciones -->
+                                        <!-- Secciones Disponibles -->
                                         @if($module['status'] === 'disponible')
-                                            <div class="lg:w-[450px] w-full">
+                                            <div class="module-sections">
                                                 @if($module['schedules']->isEmpty())
-                                                    <div class="h-full flex items-center justify-center p-4 bg-gray-50 rounded border border-dashed border-gray-300 text-gray-400 text-sm italic">
+                                                    <div class="no-sections-box">
                                                         No hay secciones abiertas
                                                     </div>
                                                 @else
-                                                    <div class="space-y-2">
-                                                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 pl-1">Elige una sección:</p>
-                                                        
-                                                        @foreach($module['schedules'] as $schedule)
-                                                            @php
-                                                                $isSelected = isset($selectedSchedules[$module['id']]) && $selectedSchedules[$module['id']] == $schedule->id;
-                                                                $isFull = $schedule->isFull();
-                                                                $days = is_array($schedule->days_of_week) ? implode(', ', $schedule->days_of_week) : $schedule->days_of_week;
-                                                            @endphp
+                                                    <span class="section-label">Secciones Disponibles</span>
+                                                    
+                                                    @foreach($module['schedules'] as $schedule)
+                                                        @php
+                                                            $isSelected = isset($selectedSchedules[$module['id']]) && $selectedSchedules[$module['id']] == $schedule->id;
+                                                            $isFull = $schedule->isFull();
+                                                            $days = is_array($schedule->days_of_week) ? implode(', ', $schedule->days_of_week) : $schedule->days_of_week;
+                                                        @endphp
 
-                                                            <button 
-                                                                wire:click="toggleSection({{ $module['id'] }}, {{ $schedule->id }})"
-                                                                @if($isFull && !$isSelected) disabled @endif
-                                                                class="group w-full relative flex items-center justify-between p-3 rounded-lg border text-left transition-all duration-200
-                                                                    {{ $isSelected 
-                                                                        ? 'bg-indigo-50 border-indigo-500 ring-1 ring-indigo-500 shadow-sm z-10' 
-                                                                        : ($isFull 
-                                                                            ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed' 
-                                                                            : 'bg-white border-gray-200 hover:border-indigo-300 hover:shadow-sm') 
-                                                                    }}
-                                                                ">
+                                                        <button 
+                                                            wire:click="toggleSection({{ $module['id'] }}, {{ $schedule->id }})"
+                                                            @if($isFull && !$isSelected) disabled @endif
+                                                            class="section-btn {{ $isSelected ? 'selected' : '' }}"
+                                                        >
+                                                            <div class="section-btn-header">
+                                                                <span class="sec-name">Sección {{ $schedule->section_name }}</span>
                                                                 
-                                                                <!-- Indicador de Selección -->
-                                                                @if($isSelected)
-                                                                    <div class="absolute -left-1 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-indigo-500 rounded-r"></div>
+                                                                @if($isFull && !$isSelected)
+                                                                    <span class="quota-badge quota-full">Agotada</span>
+                                                                @elseif($isSelected)
+                                                                    <span class="quota-badge quota-selected">Seleccionada</span>
+                                                                @else
+                                                                    <span class="quota-badge quota-open">{{ $schedule->available_spots }} cupos</span>
                                                                 @endif
-
-                                                                <div class="flex-1">
-                                                                    <div class="flex items-center justify-between mb-1">
-                                                                        <span class="font-bold text-sm {{ $isSelected ? 'text-indigo-900' : 'text-gray-800' }}">
-                                                                            Sección {{ $schedule->section_name }}
-                                                                        </span>
-                                                                        
-                                                                        <!-- Badges de Disponibilidad -->
-                                                                        @if($isFull && !$isSelected)
-                                                                            <span class="bg-red-100 text-red-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Agotada</span>
-                                                                        @elseif($isSelected)
-                                                                            <span class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase flex items-center gap-1">
-                                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                                                                Seleccionada
-                                                                            </span>
-                                                                        @else
-                                                                            <span class="bg-green-50 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded border border-green-100">
-                                                                                {{ $schedule->available_spots }} cupos
-                                                                            </span>
-                                                                        @endif
-                                                                    </div>
-                                                                    
-                                                                    <!-- Detalles de Horario y Profesor -->
-                                                                    <div class="text-xs text-gray-500 space-y-0.5">
-                                                                        <div class="flex items-center gap-1">
-                                                                            <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                                                            <span class="font-medium text-gray-700">{{ $days }}</span>
-                                                                            <span>•</span>
-                                                                            <span>{{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }}</span>
-                                                                        </div>
-                                                                        <div class="flex items-center gap-1">
-                                                                            <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                                                                            <span>{{ Str::limit($schedule->teacher->name ?? 'Profesor por asignar', 25) }}</span>
-                                                                        </div>
-                                                                    </div>
+                                                            </div>
+                                                            
+                                                            <div class="sec-details">
+                                                                <div class="sec-row">
+                                                                    <span>📅 {{ $days }}</span>
+                                                                    <span>⏰ {{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }}</span>
                                                                 </div>
-                                                            </button>
-                                                        @endforeach
-                                                    </div>
+                                                                <div class="sec-row" style="margin-top:2px;">
+                                                                    <span>👨‍🏫 {{ Str::limit($schedule->teacher->name ?? 'Por asignar', 25) }}</span>
+                                                                </div>
+                                                            </div>
+                                                        </button>
+                                                    @endforeach
                                                 @endif
                                             </div>
                                         @endif
                                     </div>
-                                </div>
-                            @endforeach
+                                @endforeach
+                            </div>
                         </div>
-                    </div>
-                @endforeach
-            </div>
-        @endif
+                    @endforeach
+                </div>
+            @endif
+        </div>
     </div>
 
-    <!-- Barra de Confirmación Flotante -->
-    <div class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] transition-transform duration-300 transform {{ empty($selectedSchedules) ? 'translate-y-full' : 'translate-y-0' }}">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                
-                <div class="flex items-center gap-6">
-                    <div class="hidden sm:block">
-                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wide">Resumen de Selección</p>
-                        <p class="text-sm text-gray-600">Revisa tus horarios antes de confirmar.</p>
-                    </div>
-                    
-                    <div class="flex gap-4">
-                        <div class="px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
-                            <span class="block text-xs text-gray-500 uppercase">Materias</span>
-                            <span class="block text-xl font-bold text-gray-900 leading-none">{{ count($selectedSchedules) }}</span>
-                        </div>
-                        <div class="px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
-                            <span class="block text-xs text-gray-500 uppercase">Créditos</span>
-                            <span class="block text-xl font-bold text-indigo-600 leading-none">{{ $totalCredits }}</span>
-                        </div>
-                        @if($totalCost > 0)
-                        <div class="px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
-                            <span class="block text-xs text-gray-500 uppercase">Total</span>
-                            <span class="block text-xl font-bold text-gray-900 leading-none">${{ number_format($totalCost, 0) }}</span>
-                        </div>
-                        @endif
-                    </div>
+    <!-- Barra Inferior Fija -->
+    <div class="fixed-bottom-bar {{ !empty($selectedSchedules) ? 'is-visible' : '' }}">
+        <div class="bar-content">
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="display: none; @media(min-width:768px){display:block;}">
+                    <strong style="color: #2c3e50; display: block;">Resumen de Selección</strong>
+                    <span style="font-size: 13px; color: #7f8c8d;">Confirma antes de salir</span>
                 </div>
-
-                <button 
-                    wire:click="confirmSelection"
-                    wire:loading.attr="disabled"
-                    class="w-full sm:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
-                    <svg wire:loading.remove wire:target="confirmSelection" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    <svg wire:loading wire:target="confirmSelection" class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    <span>Confirmar Inscripción</span>
-                </button>
+                
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Materias</span>
+                        <span class="stat-number">{{ count($selectedSchedules) }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Créditos</span>
+                        <span class="stat-number">{{ $totalCredits }}</span>
+                    </div>
+                    @if($totalCost > 0)
+                    <div class="stat-item">
+                        <span class="stat-label">Total</span>
+                        <span class="stat-number money">${{ number_format($totalCost, 0) }}</span>
+                    </div>
+                    @endif
+                </div>
             </div>
+
+            <button 
+                wire:click="confirmSelection"
+                wire:loading.attr="disabled"
+                class="btn-confirm"
+            >
+                <span wire:loading.remove wire:target="confirmSelection">Confirmar Inscripción</span>
+                <span wire:loading wire:target="confirmSelection"><div class="spinner"></div> Procesando...</span>
+            </button>
         </div>
     </div>
 </div>
