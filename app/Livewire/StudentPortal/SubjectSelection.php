@@ -6,6 +6,7 @@ use Livewire\Component;
 use App\Models\Module;
 use App\Models\CourseSchedule;
 use App\Models\Enrollment;
+use App\Models\Admission; // Importante
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,7 @@ class SubjectSelection extends Component
     
     public $successMessage = '';
     public $errorMessage = '';
-    public $debugMessage = ''; // Para ayudarte a entender qué pasa
+    public $debugMessage = '';
 
     public function mount()
     {
@@ -33,13 +34,27 @@ class SubjectSelection extends Component
             abort(403, 'No tienes un perfil de estudiante asociado.');
         }
 
-        // --- DETECCIÓN DE CARRERA ---
+        // --- DETECCIÓN DE CARRERA INTELIGENTE ---
         
-        // 1. Intento Directo: Ver si el estudiante tiene la carrera en su tabla
-        // (Asegúrate de que el modelo Student tenga la relación 'course')
+        // 1. Verificar si ya tiene la carrera asignada en su perfil (Gracias a la nueva migración)
         $this->career = $this->student->course;
 
-        // 2. Intento Histórico: Si no tiene, buscar en su última inscripción
+        // 2. Si no tiene, buscar en su Admisión Aprobada (Fallback para nuevos ingresos)
+        if (!$this->career && $this->student->user_id) {
+            $admission = Admission::where('user_id', $this->student->user_id)
+                                  ->latest()
+                                  ->first();
+            
+            if ($admission && $admission->course) {
+                $this->career = $admission->course;
+                
+                // AUTO-CORRECCIÓN: Guardar esta carrera en el perfil del estudiante para el futuro
+                $this->student->update(['course_id' => $admission->course_id]);
+                $this->debugMessage = "Carrera detectada desde Admisiones y vinculada a tu perfil: {$this->career->name}";
+            }
+        }
+
+        // 3. Último recurso: Historial de Inscripciones (Para estudiantes antiguos sin admission reciente)
         if (!$this->career) {
             $lastEnrollment = Enrollment::where('student_id', $this->student->id)
                 ->with(['courseSchedule.module.course'])
@@ -48,13 +63,15 @@ class SubjectSelection extends Component
 
             if ($lastEnrollment && $lastEnrollment->courseSchedule) {
                 $this->career = $lastEnrollment->courseSchedule->module->course;
+                // También actualizamos el perfil
+                $this->student->update(['course_id' => $this->career->id]);
             }
         }
 
         if ($this->career) {
             $this->loadAvailableOfferings();
         } else {
-            $this->debugMessage = "No se detectó ninguna carrera asociada al estudiante (ID: {$this->student->id}). Verifica que el campo 'course_id' en la tabla 'students' tenga valor.";
+            $this->debugMessage = "⚠️ No se pudo determinar tu carrera. Por favor contacta a Registro para que asignen tu carrera manualmente.";
         }
     }
 
@@ -67,8 +84,7 @@ class SubjectSelection extends Component
             ->pluck('course_schedules.module_id')
             ->toArray();
 
-        // 2. Cargar Módulos y Horarios
-        // CAMBIO: Ampliamos el rango de fechas a 6 meses para que veas materias iniciadas en pruebas
+        // 2. Cargar Módulos y Horarios (Rango ampliado para pruebas)
         $modules = Module::where('course_id', $this->career->id)
             ->with(['prerequisites', 'schedules' => function($q) {
                 $q->where('status', 'Activo')
@@ -81,10 +97,8 @@ class SubjectSelection extends Component
         $grouped = [];
 
         foreach ($modules as $module) {
-            // Estado
             $isApproved = in_array($module->id, $approvedIds);
             
-            // Prerrequisitos
             $missingPrereqs = [];
             if (!$isApproved) {
                 foreach ($module->prerequisites as $prereq) {
@@ -98,7 +112,6 @@ class SubjectSelection extends Component
             if ($isApproved) $status = 'aprobada';
             elseif (!empty($missingPrereqs)) $status = 'bloqueada';
 
-            // Agrupar
             $period = $module->period_number ?? 0;
             if (!isset($grouped[$period])) {
                 $grouped[$period] = [];
@@ -118,7 +131,7 @@ class SubjectSelection extends Component
         $this->groupedModules = $grouped;
         
         if (empty($this->groupedModules)) {
-            $this->debugMessage = "Se encontró la carrera '{$this->career->name}', pero no tiene materias (módulos) registrados o activos.";
+            $this->debugMessage = "Tu carrera es '{$this->career->name}', pero no tiene materias (módulos) configurados en el sistema.";
         }
     }
 
