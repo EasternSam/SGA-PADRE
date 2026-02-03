@@ -6,8 +6,9 @@ use Livewire\Component;
 use App\Models\Student;
 use App\Models\Enrollment;
 use App\Models\Payment;
-use App\Models\Course; // Importar modelo Course
-use App\Models\Admission; // Importar modelo Admission
+use App\Models\Admission;
+use App\Models\Course;
+use App\Models\CourseSchedule;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Collection;
@@ -18,16 +19,16 @@ class Dashboard extends Component
 {
     public ?Student $student;
     
-    // Colecciones separadas por tipo
-    public Collection $activeDegreeEnrollments;  // Materias de Carrera
-    public Collection $activeCourseEnrollments;  // Cursos Técnicos
+    // Colecciones separadas para diferenciar tipos de estudios
+    public Collection $activeDegreeEnrollments; 
+    public Collection $activeCourseEnrollments; 
     
     public Collection $pendingEnrollments;   
     public Collection $completedEnrollments; 
     public Collection $pendingPayments;      
     public Collection $paymentHistory;       
 
-    public ?Course $activeCareer = null; // Carrera activa del estudiante
+    public ?Course $activeCareer = null;
 
     public bool $showProfileModal = false;
     
@@ -39,11 +40,10 @@ class Dashboard extends Component
     public $city;         
     public $sector;       
 
-    // Variables para el modal de inscripción (necesarias para la vista)
+    // Variables para el modal de inscripción
     public $searchAvailableCourse = '';
     public $selectedScheduleId = null;
     public $availableSchedules = [];
-    public $selectedScheduleInfo = null;
 
     public function mount()
     {
@@ -135,7 +135,7 @@ class Dashboard extends Component
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Pendientes de Pago (General)
+        // Pendientes de Pago (General) - Lo mantenemos separado
         $this->pendingEnrollments = (clone $baseQuery)
             ->whereIn('status', ['Pendiente', 'pendiente', 'Enrolled', 'enrolled', 'Pendiente Pago'])
             ->get();
@@ -223,10 +223,58 @@ class Dashboard extends Component
         session()->put('profile_onboarding_seen', true);
     }
 
-    // Métodos para el modal de inscripción (stubs necesarios para que la vista no falle)
-    public function openEnrollmentModal() { $this->dispatch('open-modal', 'enroll-student-modal'); }
-    public function enrollStudent() { /* Lógica de inscripción */ }
-    public function confirmUnenroll($id) { /* Lógica de anulación */ }
+    // --- Lógica del Modal de Inscripción ---
+    public function openEnrollmentModal()
+    {
+        $this->reset('searchAvailableCourse', 'selectedScheduleId', 'availableSchedules');
+        $this->dispatch('open-modal', 'enroll-student-modal');
+    }
+
+    public function updatedSearchAvailableCourse()
+    {
+        if (strlen($this->searchAvailableCourse) > 2) {
+            $this->availableSchedules = CourseSchedule::with(['module.course', 'teacher'])
+                ->where('status', 'Activo')
+                ->where(function($q) {
+                    $q->whereHas('module', function($q2) {
+                        $q2->where('name', 'like', '%' . $this->searchAvailableCourse . '%')
+                           ->orWhere('code', 'like', '%' . $this->searchAvailableCourse . '%');
+                    })
+                    ->orWhereHas('module.course', function($q3) {
+                        $q3->where('name', 'like', '%' . $this->searchAvailableCourse . '%');
+                    });
+                })
+                ->take(10)
+                ->get();
+        } else {
+            $this->availableSchedules = [];
+        }
+    }
+
+    public function enrollStudent()
+    {
+        $this->validate(['selectedScheduleId' => 'required|exists:course_schedules,id']);
+        
+        // Aquí iría tu lógica de inscripción (puedes copiarla de tu servicio o usar un evento)
+        // Por ahora simulamos
+        $schedule = CourseSchedule::find($this->selectedScheduleId);
+        
+        Enrollment::create([
+            'student_id' => $this->student->id,
+            'course_schedule_id' => $schedule->id,
+            'status' => 'Pendiente', // Asumiendo flujo de pago
+            'enrollment_date' => now(),
+        ]);
+        
+        session()->flash('message', 'Solicitud de inscripción creada. Proceda al pago si es necesario.');
+        $this->dispatch('close-modal', 'enroll-student-modal');
+        $this->loadStudentData();
+    }
+    
+    public function confirmUnenroll($id)
+    {
+         // Aquí tu lógica para anular
+    }
 
     public function render()
     {
