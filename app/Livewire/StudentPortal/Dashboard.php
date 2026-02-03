@@ -6,6 +6,8 @@ use Livewire\Component;
 use App\Models\Student;
 use App\Models\Enrollment;
 use App\Models\Payment;
+use App\Models\Course; // Importar modelo Course
+use App\Models\Admission; // Importar modelo Admission
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Collection;
@@ -16,14 +18,20 @@ class Dashboard extends Component
 {
     public ?Student $student;
     
-    public Collection $activeEnrollments;    
+    // Colecciones separadas por tipo
+    public Collection $activeDegreeEnrollments;  // Materias de Carrera
+    public Collection $activeCourseEnrollments;  // Cursos Técnicos
+    
     public Collection $pendingEnrollments;   
     public Collection $completedEnrollments; 
     public Collection $pendingPayments;      
     public Collection $paymentHistory;       
 
+    public ?Course $activeCareer = null; // Carrera activa del estudiante
+
     public bool $showProfileModal = false;
     
+    // Datos perfil
     public $mobile_phone; 
     public $birth_date;   
     public $address;      
@@ -31,9 +39,16 @@ class Dashboard extends Component
     public $city;         
     public $sector;       
 
+    // Variables para el modal de inscripción (necesarias para la vista)
+    public $searchAvailableCourse = '';
+    public $selectedScheduleId = null;
+    public $availableSchedules = [];
+    public $selectedScheduleInfo = null;
+
     public function mount()
     {
-        $student = Auth::user()?->student; 
+        $this->user = Auth::user();
+        $student = $this->user?->student; 
 
         if (!$student) {
             if (!request()->routeIs('profile.edit')) {
@@ -47,6 +62,20 @@ class Dashboard extends Component
 
         $this->student = $student;
         
+        // --- Detectar Carrera Activa ---
+        // Buscamos la última admisión aprobada que sea de tipo carrera ('degree')
+        $admission = Admission::where('user_id', $this->user->id)
+            ->where('status', 'approved')
+            ->whereHas('course', function($q) {
+                $q->where('program_type', 'degree');
+            })
+            ->latest()
+            ->first();
+
+        if ($admission) {
+            $this->activeCareer = $admission->course;
+        }
+        
         // --- Cargar datos actuales ---
         $this->mobile_phone = $this->student->mobile_phone ?? $this->student->phone; 
         $this->birth_date = $this->student->birth_date ? $this->student->birth_date->format('Y-m-d') : null;
@@ -56,7 +85,6 @@ class Dashboard extends Component
         $this->sector = $this->student->sector;
 
         // --- Lógica de Apertura Automática (ONBOARDING) ---
-        // 1. Verificamos si falta información (Vacío o N/A)
         $hasIncompleteData = (
             $this->isIncomplete($this->mobile_phone) || 
             $this->isIncomplete($this->address) ||
@@ -64,7 +92,6 @@ class Dashboard extends Component
             $this->isIncomplete($this->city)
         );
 
-        // 2. Solo abrimos automáticamente si hay datos incompletos Y NO se ha mostrado ya en esta sesión.
         if ($hasIncompleteData && !session()->has('profile_onboarding_seen')) {
             $this->showProfileModal = true;
         }
@@ -74,7 +101,8 @@ class Dashboard extends Component
 
     private function initEmptyCollections()
     {
-        $this->activeEnrollments = collect();
+        $this->activeDegreeEnrollments = collect();
+        $this->activeCourseEnrollments = collect();
         $this->pendingEnrollments = collect();
         $this->completedEnrollments = collect();
         $this->pendingPayments = collect();
@@ -89,48 +117,53 @@ class Dashboard extends Component
             ])
             ->where('student_id', $this->student->id);
 
-        // CORRECCIÓN PRINCIPAL:
-        // Agregamos 'Pendiente' y 'pendiente' aquí para que aparezcan en la lista principal de cursos.
-        $this->activeEnrollments = (clone $baseQuery)
-            ->whereIn('status', ['Cursando', 'cursando', 'Activo', 'activo', 'Pendiente', 'pendiente']) 
+        // 1. Materias de Carrera (program_type = degree)
+        $this->activeDegreeEnrollments = (clone $baseQuery)
+            ->whereIn('status', ['Cursando', 'cursando', 'Activo', 'activo'])
+            ->whereHas('courseSchedule.module.course', function($q) {
+                $q->where('program_type', 'degree');
+            })
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Mantenemos esta colección por si la usas en otro lugar para lógica específica de inscripción
-        // pero quitamos 'Pendiente' para no duplicar si iteraras ambas, o lo dejamos como referencia.
-        $this->pendingEnrollments = (clone $baseQuery)
-            ->whereIn('status', ['Enrolled', 'enrolled'])
+        // 2. Cursos Técnicos / Educación Continua (program_type != degree o null)
+        $this->activeCourseEnrollments = (clone $baseQuery)
+            ->whereIn('status', ['Cursando', 'cursando', 'Activo', 'activo'])
+            ->whereHas('courseSchedule.module.course', function($q) {
+                $q->where('program_type', '!=', 'degree')->orWhereNull('program_type');
+            })
+            ->orderBy('created_at', 'desc')
             ->get();
 
+        // Pendientes de Pago (General)
+        $this->pendingEnrollments = (clone $baseQuery)
+            ->whereIn('status', ['Pendiente', 'pendiente', 'Enrolled', 'enrolled', 'Pendiente Pago'])
+            ->get();
+
+        // Completados
         $this->completedEnrollments = (clone $baseQuery)
-            ->whereIn('status', ['Completado', 'completado'])
+            ->whereIn('status', ['Completado', 'completado', 'Aprobado', 'aprobado'])
             ->get();
 
         // Pagos Pendientes (Deudas)
         $this->pendingPayments = Payment::with(['paymentConcept', 'enrollment.courseSchedule.module.course'])
             ->where('student_id', $this->student->id)
-            ->whereIn('status', ['Pendiente', 'pendiente']) // Asegurar mayúsculas/minúsculas
+            ->whereIn('status', ['Pendiente', 'pendiente'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Historial completo (incluye deudas para mostrarlas en la lista de recientes)
+        // Historial completo
         $this->paymentHistory = Payment::with(['paymentConcept', 'enrollment.courseSchedule.module.course'])
             ->where('student_id', $this->student->id)
             ->orderBy('created_at', 'desc')
             ->get();
     }
 
-    /**
-     * Verifica si el campo está incompleto.
-     */
     private function isIncomplete($value)
     {
         return empty($value) || strtoupper(trim($value)) === 'N/A';
     }
 
-    /**
-     * Convierte "N/A" o vacíos a NULL para limpiar la base de datos.
-     */
     private function sanitizeInput($value)
     {
         if (is_string($value)) {
@@ -170,7 +203,6 @@ class Dashboard extends Component
         ];
 
         if ($this->student) {
-            // Sincronizar teléfono principal si está vacío o sucio
             if ($this->isIncomplete($this->student->phone) || empty($this->student->phone)) {
                 $dataToUpdate['phone'] = $dataToUpdate['mobile_phone'];
             }
@@ -188,9 +220,13 @@ class Dashboard extends Component
     {
         $this->showProfileModal = false;
         $this->dispatch('close-modal', 'complete-profile-modal');
-        
         session()->put('profile_onboarding_seen', true);
     }
+
+    // Métodos para el modal de inscripción (stubs necesarios para que la vista no falle)
+    public function openEnrollmentModal() { $this->dispatch('open-modal', 'enroll-student-modal'); }
+    public function enrollStudent() { /* Lógica de inscripción */ }
+    public function confirmUnenroll($id) { /* Lógica de anulación */ }
 
     public function render()
     {
