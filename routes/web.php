@@ -78,12 +78,6 @@ Route::post('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserC
     ->name('student.register.store');
 
 
-// --- RUTA PÚBLICA DE SOLICITUD DE ADMISIÓN (FORMULARIO LARGO) ---
-// Esta ruta carga el componente Livewire con el formulario de admisión completo (register.blade.php)
-Route::get('/admisiones/registro', AdmissionsRegister::class)
-    ->name('admissions.register');
-
-
 // ==============================================================================
 // RUTAS DE CARDNET (DEFINIDAS EXPLÍCITAMENTE COMO PÚBLICAS Y SIN CSRF)
 // ==============================================================================
@@ -321,6 +315,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // --- PORTAL DEL ASPIRANTE/SOLICITANTE ---
     // Aquí es donde el usuario 'Solicitante' completa su solicitud y ve el estado
     Route::get('/portal-aspirante', ApplicantDashboard::class)->name('applicant.portal');
+    
+    // === NUEVA RUTA: FORMULARIO DE ADMISIÓN DENTRO DEL PORTAL ===
+    Route::get('/portal-aspirante/solicitud', AdmissionsRegister::class)->name('applicant.admission-form');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
