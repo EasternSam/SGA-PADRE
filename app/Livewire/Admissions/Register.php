@@ -18,7 +18,7 @@ class Register extends Component
     public $last_name;
     public $identification_id;
     public $birth_date;
-    public $nationality; // Nuevo campo sugerido por el texto
+    public $nationality;
     
     // Contacto
     public $address;

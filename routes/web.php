@@ -67,25 +67,21 @@ Route::get('/', function () {
     return view('auth.login');
 });
 
-// --- LINK ESPECIAL DE REGISTRO PARA ESTUDIANTES (ASPIRANTES) ---
-// 1. GET: Muestra el formulario personalizado
+// --- LINK DE REGISTRO PARA ESTUDIANTES (ASPIRANTES - CUENTA DE USUARIO) ---
+// Este crea el usuario en el sistema
 Route::get('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])
     ->middleware('guest')
     ->name('student.register.link');
 
-// 2. POST: Procesa el registro (Crea usuario con rol 'Solicitante')
 Route::post('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'store'])
     ->middleware('guest')
     ->name('student.register.store');
 
-// NOTA: Se eliminaron las rutas de login específicas (/login-estudiantes).
-// Ahora todos usan /login principal.
 
-
-// --- RUTA PÚBLICA DE ADMISIONES (OPCIONAL / OBSOLETA) ---
-if (class_exists(AdmissionsRegister::class)) {
-    Route::get('/admisiones/registro', AdmissionsRegister::class)->name('admissions.register');
-}
+// --- RUTA PÚBLICA DE SOLICITUD DE ADMISIÓN (FORMULARIO LARGO) ---
+// Esta ruta carga el componente Livewire con el formulario de admisión completo (register.blade.php)
+Route::get('/admisiones/registro', AdmissionsRegister::class)
+    ->name('admissions.register');
 
 
 // ==============================================================================
