@@ -161,10 +161,6 @@
         <!-- 3. Cambio de clases solicitado en el contenedor de la tarjeta -->
         <div class="w-full sm:max-w-md mt-6 px-6 py-6 rounded-lg login-card"> 
             
-            <!-- Logo -->
-            <div class="brand-logo">
-                <x-application-logo class="fill-current text-indigo-600" />
-            </div>
 
             <!-- Texto de Bienvenida -->
             <div class="welcome-text">
