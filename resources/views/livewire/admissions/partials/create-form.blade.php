@@ -69,7 +69,10 @@
                     <select wire:model="course_id" id="course_id" class="block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-lg bg-gray-50 focus:bg-white transition-colors cursor-pointer">
                         <option value="">-- Seleccione una carrera --</option>
                         @foreach($courses as $course)
-                            <option value="{{ $course->id }}">{{ $course->name }}</option>
+                            {{-- Filtrar solo Carreras Universitarias (Grados) --}}
+                            @if($course->program_type === 'degree')
+                                <option value="{{ $course->id }}">{{ $course->name }}</option>
+                            @endif
                         @endforeach
                     </select>
                 </div>
