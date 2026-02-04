@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Models; // Corregido (tu namespace estaba bien, el del contexto tenía un punto)
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany; // <-- AÑADIDO (para attendances)
-use Illuminate\Database\Eloquent\Relations\HasOne;  // <-- AÑADIDO (para payment)
-use App\Models\Attendance; // <-- AÑADIDO (para la relación)
-use App\Models\Payment; // <-- AÑADIDO (para la relación)
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Models\Attendance;
+use App\Models\Payment;
 
 class Enrollment extends Model
 {
@@ -22,6 +22,7 @@ class Enrollment extends Model
     protected $fillable = [
         'student_id',
         'course_schedule_id',
+        'payment_id', // <-- NUEVO: Vinculación a pago agrupado
         'status', // Ej. Pendiente, Cursando, Completado
         'final_grade',
     ];
@@ -44,7 +45,6 @@ class Enrollment extends Model
 
     /**
      * Define la relación con las asistencias.
-     * (Esta relación venía en tu archivo)
      */
     public function attendances(): HasMany
     {
@@ -52,11 +52,11 @@ class Enrollment extends Model
     }
 
     /**
-     * Una inscripción puede tener un pago asociado (si se pagó por inscripción).
-     * (Esta es la actualización que faltaba)
+     * Relación con el Pago Global (si aplica).
+     * Un enrollment pertenece a un pago (cuando es agrupado).
      */
-    public function payment(): HasOne
+    public function payment(): BelongsTo
     {
-        return $this->hasOne(Payment::class);
+        return $this->belongsTo(Payment::class);
     }
 }

@@ -7,6 +7,8 @@ use App\Models\Module;
 use App\Models\CourseSchedule;
 use App\Models\Enrollment;
 use App\Models\Admission;
+use App\Models\Payment; // Importante
+use App\Models\PaymentConcept; // Importante
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -35,31 +37,21 @@ class SubjectSelection extends Component
         }
 
         // --- DETECCIÓN DE CARRERA INTELIGENTE ---
-        
-        // 1. Verificar si ya tiene la carrera asignada en su perfil
         $this->career = $this->student->course;
 
-        // 2. Si no tiene, buscar en su Admisión Aprobada (Fallback para nuevos ingresos)
         if (!$this->career && $this->student->user_id) {
-            $admission = Admission::where('user_id', $this->student->user_id)
-                                  ->latest()
-                                  ->first();
-            
+            $admission = Admission::where('user_id', $this->student->user_id)->latest()->first();
             if ($admission && $admission->course) {
                 $this->career = $admission->course;
-                
-                // AUTO-CORRECCIÓN: Guardar esta carrera en el perfil del estudiante
                 $this->student->update(['course_id' => $admission->course_id]);
-                $this->debugMessage = "Carrera detectada desde Admisiones y vinculada a tu perfil: {$this->career->name}";
+                $this->debugMessage = "Carrera detectada y vinculada: {$this->career->name}";
             }
         }
 
-        // 3. Último recurso: Historial de Inscripciones
         if (!$this->career) {
             $lastEnrollment = Enrollment::where('student_id', $this->student->id)
                 ->with(['courseSchedule.module.course'])
-                ->latest()
-                ->first();
+                ->latest()->first();
 
             if ($lastEnrollment && $lastEnrollment->courseSchedule) {
                 $this->career = $lastEnrollment->courseSchedule->module->course;
@@ -70,21 +62,19 @@ class SubjectSelection extends Component
         if ($this->career) {
             $this->loadAvailableOfferings();
         } else {
-            $this->debugMessage = "⚠️ No se pudo determinar tu carrera. Por favor contacta a Registro para que asignen tu carrera manualmente.";
+            $this->debugMessage = "⚠️ No se pudo determinar tu carrera. Por favor contacta a Registro.";
         }
     }
 
     public function loadAvailableOfferings()
     {
-        // 1. Materias ya aprobadas o cursando
-        // CORRECCIÓN: Especificamos 'enrollments.status' para evitar ambigüedad con 'course_schedules.status'
+        // CORRECCIÓN: 'enrollments.status' para evitar ambigüedad
         $approvedIds = Enrollment::where('student_id', $this->student->id)
             ->whereIn('enrollments.status', ['Aprobado', 'Completado', 'Equivalida', 'Cursando']) 
             ->join('course_schedules', 'enrollments.course_schedule_id', '=', 'course_schedules.id')
             ->pluck('course_schedules.module_id')
             ->toArray();
 
-        // 2. Cargar Módulos y Horarios (Rango ampliado para pruebas)
         $modules = Module::where('course_id', $this->career->id)
             ->with(['prerequisites', 'schedules' => function($q) {
                 $q->where('status', 'Activo')
@@ -125,14 +115,11 @@ class SubjectSelection extends Component
                 'status' => $status,
                 'missing_prereqs' => $missingPrereqs,
                 'schedules' => $module->schedules,
+                'price' => $module->price,
             ];
         }
 
         $this->groupedModules = $grouped;
-        
-        if (empty($this->groupedModules)) {
-            $this->debugMessage = "Tu carrera es '{$this->career->name}', pero no tiene materias (módulos) configurados en el sistema.";
-        }
     }
 
     public function toggleSection($moduleId, $scheduleId)
@@ -212,7 +199,26 @@ class SubjectSelection extends Component
 
         DB::beginTransaction();
         try {
+            // 1. Crear concepto si no existe (para reinscripción/selección)
+            $concept = PaymentConcept::firstOrCreate(
+                ['name' => 'Selección de Materias'],
+                ['price' => 0, 'is_tuition' => false]
+            );
+
+            // 2. Crear LA DEUDA UNIFICADA (Pago Pendiente)
+            $payment = Payment::create([
+                'user_id' => $this->student->user_id,
+                'student_id' => $this->student->id,
+                'payment_concept_id' => $concept->id,
+                'amount' => $this->totalCost,
+                'status' => 'Pendiente', // Pendiente de pago
+                'notes' => 'Selección de materias Ciclo Actual. Total materias: ' . count($this->selectedSchedules),
+                'due_date' => Carbon::now()->addDays(7),
+            ]);
+
+            // 3. Crear las inscripciones vinculadas a ese pago
             foreach ($this->selectedSchedules as $modId => $schedId) {
+                // Verificar duplicados
                 $exists = Enrollment::where('student_id', $this->student->id)
                     ->where('course_schedule_id', $schedId)
                     ->exists();
@@ -221,7 +227,8 @@ class SubjectSelection extends Component
                     Enrollment::create([
                         'student_id' => $this->student->id,
                         'course_schedule_id' => $schedId,
-                        'status' => 'Pendiente',
+                        'payment_id' => $payment->id, // <-- Vinculación clave
+                        'status' => 'Pendiente', 
                         'final_grade' => null,
                     ]);
                 }
@@ -231,7 +238,8 @@ class SubjectSelection extends Component
             
             $this->reset(['selectedSchedules', 'totalCredits', 'totalCost']);
             $this->loadAvailableOfferings();
-            $this->successMessage = "¡Selección procesada correctamente!";
+            
+            return redirect()->route('student.payments')->with('message', 'Selección confirmada. Se ha generado una deuda única por el total.');
 
         } catch (\Exception $e) {
             DB::rollBack();

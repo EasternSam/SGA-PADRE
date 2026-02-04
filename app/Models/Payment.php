@@ -11,7 +11,7 @@ class Payment extends Model
 
     protected $fillable = [
         'student_id',
-        'enrollment_id',
+        'enrollment_id', // Mantenido para cursos individuales (Legacy/Directo)
         'payment_concept_id',
         'user_id',
         'amount',
@@ -20,7 +20,7 @@ class Payment extends Model
         'gateway',
         'transaction_id',
         'due_date',
-        'notes', // Asegurar que notes también sea fillable
+        'notes',
         
         // --- Campos e-CF (Facturación Electrónica) ---
         'ncf',
@@ -30,11 +30,10 @@ class Payment extends Model
         'dgii_track_id',
         'dgii_status',
         
-        // --- Campos NCF Cliente (NUEVOS) ---
-        // Necesarios para guardar la solicitud del estudiante
+        // --- Campos NCF Cliente ---
         'rnc_client',   
         'company_name',
-        'ncf_type_requested' // Opcional si decides usar una columna separada para lo solicitado vs lo emitido
+        'ncf_type_requested'
     ];
 
     protected $casts = [
@@ -48,9 +47,22 @@ class Payment extends Model
         return $this->belongsTo(Student::class);
     }
 
+    /**
+     * Relación 1 a 1 (Cursos Individuales / Legacy).
+     * Se usa cuando el pago es por UN curso específico directo.
+     */
     public function enrollment()
     {
         return $this->belongsTo(Enrollment::class);
+    }
+
+    /**
+     * NUEVA: Relación 1 a Muchos (Carreras/Selección de Materias).
+     * Se usa cuando el pago agrupa VARIAS materias (un cuatrimestre).
+     */
+    public function enrollments()
+    {
+        return $this->hasMany(Enrollment::class);
     }
 
     public function paymentConcept()
@@ -68,10 +80,8 @@ class Payment extends Model
      */
     public function getDgiiQrUrlAttribute()
     {
-        // RNC del Emisor (CENTU) - Debe venir de config
-        $rncEmisor = '101000000'; 
+        $rncEmisor = '101000000'; // Debería venir de config('ecf.rnc_emisor')
         
-        // Si no hay NCF o código de seguridad, no se puede generar un QR válido de e-CF
         if (!$this->ncf || !$this->security_code) {
             return null;
         }
