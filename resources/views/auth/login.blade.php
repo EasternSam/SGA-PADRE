@@ -24,37 +24,44 @@
             z-index: -1;
         }
 
-        /* Contenedor principal centrado */
+        /* 1. Ajuste solicitado para .login-wrapper */
         .login-wrapper {
-            min-height: 100vh;
+            min-height: 38px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 0;
+        }
+
+        /* 2. Definición solicitada para .bg-sga-card */
+        .bg-sga-card {
+            --tw-bg-opacity: 1;
+            background-color: rgb(30 58 138);
         }
 
         .login-card {
-            background: white;
+            background: white; /* Mantenemos blanco por defecto para que sea legible */
             padding: 40px;
+            /* Se aplican clases de Tailwind en el HTML, pero mantenemos estilos base aquí por si acaso */
             border-radius: 16px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); /* Sombra suave Tailwind-like */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); 
             max-width: 450px;
             width: 100%;
-            position: relative; /* Para z-index */
+            position: relative; 
             z-index: 10;
         }
 
-        /* 1. LOGO CENTRADO */
+        /* LOGO CENTRADO */
         .brand-logo {
             display: flex;
-            justify-content: center; /* Centrado horizontal Flexbox */
+            justify-content: center; 
             margin-bottom: 25px;
         }
         
         .brand-logo svg {
-            height: 80px; /* Un poco más grande */
+            height: 80px; 
             width: auto;
-            color: #4f46e5; /* Indigo 600 */
+            color: #4f46e5; 
         }
 
         .welcome-text {
@@ -65,13 +72,13 @@
         .welcome-text h2 {
             font-size: 26px;
             font-weight: 800;
-            color: #111827; /* Gray 900 */
+            color: #111827; 
             margin-bottom: 8px;
             letter-spacing: -0.5px;
         }
 
         .welcome-text p {
-            color: #6b7280; /* Gray 500 */
+            color: #6b7280; 
             font-size: 15px;
         }
 
@@ -82,7 +89,7 @@
         /* Botón primario personalizado */
         .btn-primary-custom {
             width: 100%;
-            display: flex; /* Para centrar texto si es necesario */
+            display: flex; 
             justify-content: center;
             align-items: center;
             padding: 12px;
@@ -131,8 +138,8 @@
             gap: 8px;
             width: 100%;
             padding: 12px;
-            background-color: #f9fafb; /* Gray 50 */
-            color: #374151; /* Gray 700 */
+            background-color: #f9fafb; 
+            color: #374151; 
             border-radius: 8px;
             font-weight: 600;
             text-decoration: none;
@@ -141,8 +148,8 @@
         }
 
         .register-link:hover {
-            background-color: #f3f4f6; /* Gray 100 */
-            color: #111827; /* Gray 900 */
+            background-color: #f3f4f6; 
+            color: #111827; 
             border-color: #d1d5db;
         }
     </style>
@@ -151,8 +158,10 @@
     <div class="overlay"></div>
 
     <div class="login-wrapper">
-        <div class="login-card"> <!-- 3. FONDO BLANCO PURO (background: white) -->
-            <!-- 1. Logo -->
+        <!-- 3. Cambio de clases solicitado en el contenedor de la tarjeta -->
+        <div class="w-full sm:max-w-md mt-6 px-6 py-6 rounded-lg login-card"> 
+            
+            <!-- Logo -->
             <div class="brand-logo">
                 <x-application-logo class="fill-current text-indigo-600" />
             </div>
