@@ -200,9 +200,10 @@ class SubjectSelection extends Component
         DB::beginTransaction();
         try {
             // 1. Crear concepto si no existe (para reinscripción/selección)
+            // UPDATED: Changed 'price' to 'amount' to match database schema based on error
             $concept = PaymentConcept::firstOrCreate(
                 ['name' => 'Selección de Materias'],
-                ['price' => 0, 'is_tuition' => false]
+                ['amount' => 0, 'is_tuition' => false] 
             );
 
             // 2. Crear LA DEUDA UNIFICADA (Pago Pendiente)
