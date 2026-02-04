@@ -89,7 +89,7 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">Inscripción: ${{ number_format($career->registration_fee, 2) }}</div>
-                                    <div class="text-xs text-gray-500">Mensual: ${{ number_format($career->monthly_fee, 2) }}</div>
+                                    <div class="text-xs text-gray-500">Crédito: ${{ number_format($career->credit_price, 2) }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                     <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ $career->status === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
@@ -189,7 +189,7 @@ Al eliminar esta carrera, se borrarán PERMANENTEMENTE:
                 </div>
 
                 {{-- Costos --}}
-                <div class="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                <div class="grid grid-cols-3 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
                     <div>
                         <x-input-label for="registration_fee" value="Inscripción ($)" />
                         <x-text-input id="registration_fee" type="number" step="0.01" class="mt-1 w-full" wire:model="registration_fee" />
@@ -199,6 +199,12 @@ Al eliminar esta carrera, se borrarán PERMANENTEMENTE:
                         <x-input-label for="monthly_fee" value="Mensualidad ($)" />
                         <x-text-input id="monthly_fee" type="number" step="0.01" class="mt-1 w-full" wire:model="monthly_fee" />
                         <x-input-error :messages="$errors->get('monthly_fee')" class="mt-1" />
+                    </div>
+                    <!-- Campo Nuevo: Precio por Crédito -->
+                    <div>
+                        <x-input-label for="credit_price" value="Precio Crédito ($)" />
+                        <x-text-input id="credit_price" type="number" step="0.01" class="mt-1 w-full" wire:model="credit_price" placeholder="0.00" />
+                        <x-input-error :messages="$errors->get('credit_price')" class="mt-1" />
                     </div>
                 </div>
                 

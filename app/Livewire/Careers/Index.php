@@ -28,6 +28,7 @@ class Index extends Component
     public $degree_title;
     public $registration_fee;
     public $monthly_fee;
+    public $credit_price; // <-- NUEVO: Precio por crédito
     public $is_sequential = false;
     public $status = 'Activo';
 
@@ -79,6 +80,7 @@ class Index extends Component
         $this->degree_title = $career->degree_title;
         $this->registration_fee = $career->registration_fee;
         $this->monthly_fee = $career->monthly_fee;
+        $this->credit_price = $career->credit_price; // <-- Cargar valor
         $this->is_sequential = (bool)$career->is_sequential;
         $this->status = $career->status;
 
@@ -98,6 +100,7 @@ class Index extends Component
             'degree_title' => 'required|string|max:255',
             'registration_fee' => 'required|numeric|min:0',
             'monthly_fee' => 'required|numeric|min:0',
+            'credit_price' => 'required|numeric|min:0', // <-- Validación
             'status' => 'required|in:Activo,Inactivo',
         ];
 
@@ -113,6 +116,7 @@ class Index extends Component
             'degree_title' => $this->degree_title,
             'registration_fee' => $this->registration_fee,
             'monthly_fee' => $this->monthly_fee,
+            'credit_price' => $this->credit_price, // <-- Guardar valor
             'is_sequential' => $this->is_sequential, // Generalmente true para carreras
             'status' => $this->status,
         ];
@@ -182,6 +186,7 @@ class Index extends Component
         $this->degree_title = '';
         $this->registration_fee = 0;
         $this->monthly_fee = 0;
+        $this->credit_price = 0; // <-- Reset
         $this->is_sequential = true;
         $this->status = 'Activo';
         $this->modalTitle = '';
