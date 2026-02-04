@@ -50,7 +50,8 @@
         </div>
 
         <div class="flex items-center justify-between mt-8 border-t border-gray-100 pt-6">
-            <a class="underline text-sm text-gray-600 hover:text-gray-900" href="{{ route('student.login.link') }}">
+            {{-- CORRECCIÓN: Se cambió la ruta inexistente student.login.link por la ruta estándar 'login' --}}
+            <a class="underline text-sm text-gray-600 hover:text-gray-900" href="{{ route('login') }}">
                 ¿Ya tienes cuenta?
             </a>
 
