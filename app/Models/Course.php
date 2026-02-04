@@ -22,6 +22,7 @@ class Course extends Model
         'is_sequential',
         'registration_fee',
         'monthly_fee',
+        'credit_price', // <-- NUEVO: Precio por crédito configurable
         // Nuevos campos Universidad
         'program_type', // 'technical' o 'degree'
         'total_credits',
@@ -39,6 +40,7 @@ class Course extends Model
         'is_sequential' => 'boolean',
         'registration_fee' => 'decimal:2',
         'monthly_fee' => 'decimal:2',
+        'credit_price' => 'decimal:2', // <-- NUEVO: Cast para decimal
         // Nuevos casts
         'total_credits' => 'integer',
         'duration_periods' => 'integer',

@@ -7,8 +7,8 @@ use App\Models\Module;
 use App\Models\CourseSchedule;
 use App\Models\Enrollment;
 use App\Models\Admission;
-use App\Models\Payment; // Importante
-use App\Models\PaymentConcept; // Importante
+use App\Models\Payment; 
+use App\Models\PaymentConcept; 
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -68,13 +68,14 @@ class SubjectSelection extends Component
 
     public function loadAvailableOfferings()
     {
-        // CORRECCIÓN: 'enrollments.status' para evitar ambigüedad
+        // 1. Materias ya aprobadas o cursando (Especificando tabla para evitar ambigüedad)
         $approvedIds = Enrollment::where('student_id', $this->student->id)
             ->whereIn('enrollments.status', ['Aprobado', 'Completado', 'Equivalida', 'Cursando']) 
             ->join('course_schedules', 'enrollments.course_schedule_id', '=', 'course_schedules.id')
             ->pluck('course_schedules.module_id')
             ->toArray();
 
+        // 2. Cargar Módulos y Horarios
         $modules = Module::where('course_id', $this->career->id)
             ->with(['prerequisites', 'schedules' => function($q) {
                 $q->where('status', 'Activo')
@@ -181,11 +182,24 @@ class SubjectSelection extends Component
         $this->totalCredits = 0;
         $this->totalCost = 0;
 
+        // --- PRECIO DINÁMICO ---
+        // Obtenemos el precio por crédito de la carrera configurada en BD
+        $costoPorCredito = $this->career->credit_price ?? 0;
+
         foreach ($this->selectedSchedules as $modId => $schedId) {
             $schedule = CourseSchedule::with('module')->find($schedId);
             if ($schedule) {
                 $this->totalCredits += $schedule->module->credits;
-                $this->totalCost += $schedule->module->price;
+                
+                // LÓGICA HÍBRIDA DE COBRO:
+                // 1. Si la materia tiene un precio fijo manual mayor a 0 (ej. Laboratorio), usa ese.
+                // 2. Si no, calcula: Créditos * CostoPorCredito de la carrera.
+                
+                if ($schedule->module->price > 0) {
+                    $this->totalCost += $schedule->module->price;
+                } else {
+                    $this->totalCost += ($schedule->module->credits * $costoPorCredito);
+                }
             }
         }
     }
@@ -199,9 +213,8 @@ class SubjectSelection extends Component
 
         DB::beginTransaction();
         try {
-            // 1. Crear concepto si no existe (para reinscripción/selección)
-            // UPDATED: Removed 'is_tuition' since it doesn't exist in the table schema
-            // UPDATED: 'price' to 'amount' to match schema
+            // 1. Crear concepto si no existe. Usamos 'amount' en lugar de 'price'.
+            // Quitamos 'is_tuition' ya que no existe en tu tabla.
             $concept = PaymentConcept::firstOrCreate(
                 ['name' => 'Selección de Materias'],
                 ['amount' => 0] 
@@ -213,8 +226,8 @@ class SubjectSelection extends Component
                 'student_id' => $this->student->id,
                 'payment_concept_id' => $concept->id,
                 'amount' => $this->totalCost,
-                'status' => 'Pendiente', // Pendiente de pago
-                'gateway' => 'pending', // <--- FIX: Added default gateway value for pending payments
+                'status' => 'Pendiente', 
+                'gateway' => 'pending', // <-- Valor por defecto para evitar error NOT NULL
                 'notes' => 'Selección de materias Ciclo Actual. Total materias: ' . count($this->selectedSchedules),
                 'due_date' => Carbon::now()->addDays(7),
             ]);
@@ -230,7 +243,7 @@ class SubjectSelection extends Component
                     Enrollment::create([
                         'student_id' => $this->student->id,
                         'course_schedule_id' => $schedId,
-                        'payment_id' => $payment->id, // <-- Vinculación clave
+                        'payment_id' => $payment->id, // <-- Vinculación al pago global
                         'status' => 'Pendiente', 
                         'final_grade' => null,
                     ]);
