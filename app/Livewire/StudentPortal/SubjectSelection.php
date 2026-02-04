@@ -214,6 +214,7 @@ class SubjectSelection extends Component
                 'payment_concept_id' => $concept->id,
                 'amount' => $this->totalCost,
                 'status' => 'Pendiente', // Pendiente de pago
+                'gateway' => 'pending', // <--- FIX: Added default gateway value for pending payments
                 'notes' => 'Selección de materias Ciclo Actual. Total materias: ' . count($this->selectedSchedules),
                 'due_date' => Carbon::now()->addDays(7),
             ]);
