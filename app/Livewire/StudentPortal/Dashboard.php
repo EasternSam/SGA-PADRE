@@ -18,6 +18,7 @@ use Carbon\Carbon;
 class Dashboard extends Component
 {
     public ?Student $student;
+    public $user; // Definir la propiedad user que faltaba explícitamente
     
     // Colecciones separadas para diferenciar tipos de estudios
     public Collection $activeDegreeEnrollments; 
@@ -118,8 +119,10 @@ class Dashboard extends Component
             ->where('student_id', $this->student->id);
 
         // 1. Materias de Carrera (program_type = degree)
+        // MODIFICACIÓN: Incluimos 'Pendiente' y 'Pendiente Pago' como activas para Carreras,
+        // ya que la inscripción habilita el cursado y la deuda se maneja aparte.
         $this->activeDegreeEnrollments = (clone $baseQuery)
-            ->whereIn('status', ['Cursando', 'cursando', 'Activo', 'activo'])
+            ->whereIn('status', ['Cursando', 'cursando', 'Activo', 'activo', 'Pendiente', 'pendiente', 'Pendiente Pago'])
             ->whereHas('courseSchedule.module.course', function($q) {
                 $q->where('program_type', 'degree');
             })
@@ -127,6 +130,7 @@ class Dashboard extends Component
             ->get();
 
         // 2. Cursos Técnicos / Educación Continua (program_type != degree o null)
+        // Lógica original: Solo se muestran si están Cursando/Activos.
         $this->activeCourseEnrollments = (clone $baseQuery)
             ->whereIn('status', ['Cursando', 'cursando', 'Activo', 'activo'])
             ->whereHas('courseSchedule.module.course', function($q) {
@@ -135,9 +139,13 @@ class Dashboard extends Component
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Pendientes de Pago (General) - Lo mantenemos separado
+        // Pendientes de Pago (General) 
+        // Solo incluimos cursos técnicos aquí, ya que las carreras se muestran arriba.
         $this->pendingEnrollments = (clone $baseQuery)
             ->whereIn('status', ['Pendiente', 'pendiente', 'Enrolled', 'enrolled', 'Pendiente Pago'])
+            ->whereHas('courseSchedule.module.course', function($q) {
+                $q->where('program_type', '!=', 'degree')->orWhereNull('program_type');
+            })
             ->get();
 
         // Completados
@@ -146,13 +154,14 @@ class Dashboard extends Component
             ->get();
 
         // Pagos Pendientes (Deudas)
+        // Aseguramos cargar la relación completa para evitar montos en cero si dependen del concepto
         $this->pendingPayments = Payment::with(['paymentConcept', 'enrollment.courseSchedule.module.course'])
             ->where('student_id', $this->student->id)
             ->whereIn('status', ['Pendiente', 'pendiente'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Historial completo
+        // Historial completo de pagos
         $this->paymentHistory = Payment::with(['paymentConcept', 'enrollment.courseSchedule.module.course'])
             ->where('student_id', $this->student->id)
             ->orderBy('created_at', 'desc')
@@ -255,18 +264,30 @@ class Dashboard extends Component
     {
         $this->validate(['selectedScheduleId' => 'required|exists:course_schedules,id']);
         
-        // Aquí iría tu lógica de inscripción (puedes copiarla de tu servicio o usar un evento)
-        // Por ahora simulamos
-        $schedule = CourseSchedule::find($this->selectedScheduleId);
+        $schedule = CourseSchedule::with('module.course')->find($this->selectedScheduleId);
         
-        Enrollment::create([
+        // Determinar estado inicial según tipo de programa
+        // Carreras: Cursando (La deuda se maneja aparte)
+        // Cursos: Pendiente (Requiere pago para activar)
+        $isDegree = $schedule->module->course->program_type === 'degree';
+        $initialStatus = $isDegree ? 'Cursando' : 'Pendiente';
+
+        $enrollment = Enrollment::create([
             'student_id' => $this->student->id,
             'course_schedule_id' => $schedule->id,
-            'status' => 'Pendiente', // Asumiendo flujo de pago
+            'status' => $initialStatus,
             'enrollment_date' => now(),
         ]);
         
-        session()->flash('message', 'Solicitud de inscripción creada. Proceda al pago si es necesario.');
+        // Aquí deberías generar el registro de Deuda (Payment con status 'Pendiente')
+        // Si tu sistema usa observadores para esto, asegúrate que manejen el monto correcto.
+        
+        if ($isDegree) {
+             session()->flash('message', 'Materia inscrita correctamente. Se ha agregado a tu carga académica.');
+        } else {
+             session()->flash('message', 'Solicitud de inscripción creada. Proceda al pago para activar el curso.');
+        }
+        
         $this->dispatch('close-modal', 'enroll-student-modal');
         $this->loadStudentData();
     }
