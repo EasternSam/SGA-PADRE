@@ -168,14 +168,19 @@
             {{-- COLUMNA IZQUIERDA: Cursos (Ocupa 2/3) --}}
             <div class="lg:col-span-2 space-y-8">
                 
-                {{-- 2.0 CURSOS PENDIENTES DE PAGO (NUEVO BLOQUE) --}}
-                @if($pendingEnrollments->count() > 0)
+                {{-- 2.0 CURSOS PENDIENTES DE PAGO (CORREGIDO: Usando pendingPayments) --}}
+                @php
+                    // Filtramos solo los pagos pendientes que son de inscripciones
+                    $enrollmentPayments = $pendingPayments->whereNotNull('enrollment_id');
+                @endphp
+
+                @if($enrollmentPayments->count() > 0)
                 <div class="bg-yellow-50 rounded-2xl shadow-sm border border-yellow-200 overflow-hidden">
-                     <div class="border-b border-yellow-200 px-6 py-4 flex items-center gap-2">
+                      <div class="border-b border-yellow-200 px-6 py-4 flex items-center gap-2">
                         <svg class="w-5 h-5 text-yellow-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                         <h3 class="text-lg font-bold text-yellow-800">Inscripciones por Pagar</h3>
-                     </div>
-                     <div class="overflow-x-auto">
+                      </div>
+                      <div class="overflow-x-auto">
                         <table class="min-w-full whitespace-nowrap text-left text-sm">
                             <thead class="bg-yellow-100/50 text-yellow-900">
                                 <tr>
@@ -185,17 +190,20 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-yellow-100 bg-white">
-                                @foreach ($pendingEnrollments as $enrollment)
+                                @foreach ($enrollmentPayments as $payment)
                                     <tr>
                                         <td class="px-6 py-4">
-                                            <div class="text-sm font-medium text-gray-900">{{ $enrollment->courseSchedule->module->name ?? 'N/A' }}</div>
-                                            <div class="text-xs text-gray-500">{{ $enrollment->courseSchedule->module->course->name ?? '' }}</div>
+                                            <div class="text-sm font-medium text-gray-900">{{ $payment->paymentConcept->name ?? 'Concepto de Pago' }}</div>
+                                            <div class="text-xs text-gray-500">
+                                                {{ $payment->enrollment->courseSchedule->module->name ?? 'Módulo' }} 
+                                                ({{ $payment->enrollment->courseSchedule->module->course->name ?? 'Curso' }})
+                                            </div>
                                         </td>
                                         <td class="px-6 py-4 text-right font-bold text-gray-900">
-                                            ${{ number_format($enrollment->payment->amount ?? 0, 2) }}
+                                            ${{ number_format($payment->amount, 2) }}
                                         </td>
                                         <td class="px-6 py-4 text-right">
-                                            <button wire:click="$dispatch('payEnrollment', { enrollmentId: {{ $enrollment->id }} })" class="text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded transition font-bold shadow-sm">
+                                            <button wire:click="$dispatch('payEnrollment', { enrollmentId: {{ $payment->enrollment_id }} })" class="text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded transition font-bold shadow-sm">
                                                 Pagar Ahora
                                             </button>
                                         </td>
@@ -203,7 +211,7 @@
                                 @endforeach
                             </tbody>
                         </table>
-                     </div>
+                      </div>
                 </div>
                 @endif
 
