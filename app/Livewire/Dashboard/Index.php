@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache; // Importar Cache
 use Spatie\Permission\Models\Role;
 
 #[Layout('layouts.dashboard')]
@@ -28,8 +29,8 @@ class Index extends Component
     // Estado del Filtro de Inscripciones
     public $enrollmentFilter = 'all'; 
 
-    // Colección para actividades
-    public Collection $recentActivities;
+    // Colección para actividades (Inicializada vacía)
+    public $recentActivities;
 
     // Datos para el gráfico
     public $chartLabels = [];
@@ -42,59 +43,63 @@ class Index extends Component
     // VARIABLE DE DEBUG
     public $debugTrace = [];
 
-    /**
-     * Carga inicial de datos estáticos (Ligeros).
-     */
     public function mount()
     {
-        // Inicializar como colección vacía por defecto
-        $this->recentActivities = new Collection();
-        $this->addTrace('Inicio del componente Dashboard');
+        $this->recentActivities = collect(); // Colección vacía inicial
+        $this->addTrace('Inicio del componente Dashboard (Mount)');
 
-        try {
-            // Optimizaciones de conteo: count() es ligero
-            $this->totalStudents = Student::count();
-            $this->totalCourses = Course::count();
-            $this->totalEnrollments = Enrollment::count();
-            
-            // Verificación de roles segura
-            if (class_exists(\Spatie\Permission\Models\Role::class)) {
-                $this->totalTeachers = 0;
-                // Verificar existencia antes de contar
-                if (Role::where('name', 'teacher')->exists()) {
-                    $this->totalTeachers = User::role('teacher')->count();
-                } elseif (Role::where('name', 'Profesor')->exists()) {
-                    $this->totalTeachers = User::role('Profesor')->count();
-                }
-            } else {
-                 $this->totalTeachers = 0; 
-            }
+        // Carga de contadores LIGERA (con caché corto de 5 minutos para evitar queries repetitivas en F5)
+        // Esto es opcional, pero ayuda si hay muchos usuarios concurrentes.
+        $stats = Cache::remember('dashboard_stats_counts', 300, function () {
+            return [
+                'students' => Student::count(),
+                'courses' => Course::count(),
+                'enrollments' => Enrollment::count(),
+                'teachers' => $this->countTeachers(),
+            ];
+        });
 
-            // Cargar actividades recientes optimizado - Solo campos necesarios
-            if (class_exists(ActivityLog::class)) {
-                $this->recentActivities = ActivityLog::with('causer:id,name') 
-                    ->latest()
-                    ->take(5)
-                    ->get(['id', 'description', 'causer_id', 'created_at']);
-            }
-
-            // NOTA: El gráfico ya no se carga aquí para evitar lentitud.
-            // Se cargará en loadStats().
-
-        } catch (\Exception $e) {
-            $this->addTrace('ERROR CRÍTICO EN MOUNT: ' . $e->getMessage());
-            Log::error("Dashboard Error: " . $e->getMessage());
-        }
+        $this->totalStudents = $stats['students'];
+        $this->totalCourses = $stats['courses'];
+        $this->totalEnrollments = $stats['enrollments'];
+        $this->totalTeachers = $stats['teachers'];
     }
 
     /**
-     * Método invocado por wire:init para cargar datos pesados (API).
+     * Cuenta profesores de manera segura verificando la existencia de la tabla/rol.
+     */
+    private function countTeachers()
+    {
+        if (!class_exists(\Spatie\Permission\Models\Role::class)) {
+            return 0;
+        }
+
+        try {
+            // Intentar buscar por nombre de rol en una sola query optimizada
+            // Asumiendo que la relación users() en Role existe y es correcta.
+            $roleName = Role::whereIn('name', ['teacher', 'Profesor'])->first()?->name;
+            
+            if ($roleName) {
+                return User::role($roleName)->count();
+            }
+        } catch (\Exception $e) {
+            Log::error('Error contando profesores: ' . $e->getMessage());
+        }
+
+        return 0;
+    }
+
+    /**
+     * Método invocado por wire:init para cargar datos pesados (API, Gráficos, Logs).
      */
     public function loadStats(WordpressApiService $wpService)
     {
         $this->readyToLoad = true;
         
-        // Preparar gráfico (Llamada API pesada)
+        // 1. Cargar Actividades Recientes (Ahora es Lazy)
+        $this->loadRecentActivities();
+
+        // 2. Preparar gráfico (Llamada API pesada con Caché)
         $this->prepareChartData($wpService);
 
         // Disparar evento para que el JS renderice el gráfico
@@ -103,6 +108,17 @@ class Index extends Component
             'system' => $this->chartDataSystem,
             'labels' => $this->chartLabels
         ]);
+    }
+
+    private function loadRecentActivities()
+    {
+        if (class_exists(ActivityLog::class)) {
+            // Traemos solo las columnas necesarias para pintar la lista
+            $this->recentActivities = ActivityLog::with('causer:id,name') 
+                ->latest()
+                ->take(5)
+                ->get(['id', 'description', 'causer_id', 'created_at', 'properties']); // Agregué properties por si acaso
+        }
     }
 
     /**
@@ -121,11 +137,12 @@ class Index extends Component
         $entry = Carbon::now()->toTimeString() . ' - ' . $message;
         $this->debugTrace[] = $entry;
         
-        Log::info('[DASHBOARD_DEBUG] ' . $message, is_array($dataPreview) ? $dataPreview : []);
+        // Log::info('[DASHBOARD_DEBUG] ' . $message, is_array($dataPreview) ? $dataPreview : []);
     }
 
     /**
      * Prepara los datos para el gráfico de inscripciones.
+     * AHORA CON CACHÉ DE 1 HORA PARA LA API DE WORDPRESS.
      */
     private function prepareChartData(WordpressApiService $wpService)
     {
@@ -133,15 +150,16 @@ class Index extends Component
         $this->chartDataWeb = [];
         $this->chartDataSystem = [];
 
-        $this->addTrace('Solicitando datos a WordPress API (Lazy Loading)...');
-        
-        try {
-            $wpStats = $wpService->getEnrollmentStats();
-            $this->addTrace('Respuesta cruda de WP recibida'); 
-        } catch (\Exception $e) {
-            $this->addTrace('Excepción al conectar con WP: ' . $e->getMessage());
-            $wpStats = ['labels' => [], 'data' => []];
-        }
+        // Cacheamos la respuesta de WP por 1 hora (3600 seg) para no saturar la API externa
+        $wpStats = Cache::remember('dashboard_wp_stats', 3600, function () use ($wpService) {
+            $this->addTrace('Cache Miss: Solicitando datos a WordPress API...');
+            try {
+                return $wpService->getEnrollmentStats();
+            } catch (\Exception $e) {
+                $this->addTrace('Excepción al conectar con WP: ' . $e->getMessage());
+                return ['labels' => [], 'data' => []];
+            }
+        });
 
         // Mapa de datos normalizado de la Web (API)
         $wpDataMap = [];
@@ -154,6 +172,19 @@ class Index extends Component
             }
         }
 
+        // Optimización SQL: Obtener conteos agrupados por mes en una sola consulta
+        // En lugar de hacer 12 consultas dentro del bucle for.
+        $endDate = Carbon::now();
+        $startDate = Carbon::now()->subMonths(11)->startOfMonth();
+
+        $systemEnrollmentsByMonth = Enrollment::selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, count(*) as total')
+            ->where('created_at', '>=', $startDate)
+            ->groupBy('year', 'month')
+            ->get()
+            ->keyBy(function($item) {
+                return $item->year . '-' . str_pad($item->month, 2, '0', STR_PAD_LEFT);
+            });
+
         // 2. Construir datos de los últimos 12 meses
         for ($i = 11; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
@@ -164,12 +195,15 @@ class Index extends Component
             
             $this->chartLabels[] = $monthLabel;
 
-            // --- 1. Obtener TOTAL REAL de inscripciones del mes ---
-            $totalEnrollmentsInMonth = Enrollment::whereYear('created_at', $date->year)
-                ->whereMonth('created_at', $date->month)
-                ->count();
+            // Key para buscar en la colección agrupada (YYYY-MM)
+            $lookupKey = $date->format('Y-m');
 
-            // --- 2. Obtener inscripciones WEB (Desde la API de WP) ---
+            // --- 1. Obtener TOTAL REAL de inscripciones del mes (Desde la colección, 0 DB queries aquí) ---
+            $totalEnrollmentsInMonth = isset($systemEnrollmentsByMonth[$lookupKey]) 
+                ? $systemEnrollmentsByMonth[$lookupKey]->total 
+                : 0;
+
+            // --- 2. Obtener inscripciones WEB (Desde la API de WP cacheada) ---
             $searchKey = $this->normalizeLabel($monthNameShort);
             $webCount = (int) ($wpDataMap[$searchKey] ?? 0);
             
@@ -180,10 +214,7 @@ class Index extends Component
             $this->chartDataSystem[] = $systemCount;
         }
         
-        $this->addTrace('Datos Finales Calculados', [
-            'Web_Count' => array_sum($this->chartDataWeb),
-            'System_Count' => array_sum($this->chartDataSystem)
-        ]);
+        $this->addTrace('Datos Finales Calculados');
     }
 
     private function normalizeLabel($label)
@@ -198,27 +229,32 @@ class Index extends Component
 
     public function render()
     {
-        // Consulta base optimizada con Eager Loading selectivo para la TABLA
-        // Solo traemos los campos necesarios para pintar la tabla
-        $query = Enrollment::with([
-            'student:id,name,last_name,email,user_id,first_name', 
-            'student.user:id,name,email,first_name,last_name',
-            'courseSchedule:id,module_id,teacher_id', 
-            'courseSchedule.module:id,course_id,name', 
-            'courseSchedule.module.course:id,name', 
-            'courseSchedule.teacher:id,name' 
-        ])->latest();
+        $recentEnrollments = collect();
 
-        if ($this->enrollmentFilter !== 'all') {
-            $query->where('status', $this->enrollmentFilter);
+        // Solo cargamos la tabla si el componente está listo (Lazy Loading visual)
+        // O si ya se cargó previamente.
+        if ($this->readyToLoad) {
+            // Consulta base optimizada con Eager Loading selectivo para la TABLA
+            // Solo traemos los campos necesarios para pintar la tabla
+            $query = Enrollment::with([
+                'student:id,user_id,first_name,last_name,email', // Optimizado
+                'student.user:id,name,email', // Optimizado
+                'courseSchedule:id,module_id,teacher_id,section_name', // Optimizado
+                'courseSchedule.module:id,course_id,name', 
+                'courseSchedule.module.course:id,name', 
+                'courseSchedule.teacher:id,name' 
+            ])->latest();
+
+            if ($this->enrollmentFilter !== 'all') {
+                $query->where('status', $this->enrollmentFilter);
+            }
+
+            // Limitamos los campos de la tabla principal también
+            $recentEnrollments = $query->take(5)->get();
         }
-
-        // Limitamos los campos de la tabla principal también
-        $recentEnrollments = $query->take(5)->get();
 
         return view('livewire.dashboard.index', [
             'recentEnrollments' => $recentEnrollments,
-            // Las variables del gráfico se pasan, pero estarán vacías hasta que loadStats termine
             'chartLabels' => $this->chartLabels,
             'chartDataWeb' => $this->chartDataWeb,
             'chartDataSystem' => $this->chartDataSystem,
