@@ -8,15 +8,34 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     /**
-     * Helper para verificar si un índice existe (SQLite/MySQL compatible)
+     * Helper para verificar si un índice existe de forma segura.
      */
-    protected function indexExists($table, $indexName)
+    protected function hasIndex($table, $indexName)
     {
         $conn = Schema::getConnection();
-        $dbSchemaManager = $conn->getDoctrineSchemaManager();
-        $indexes = $dbSchemaManager->listTableIndexes($table);
+        $driver = $conn->getDriverName();
 
-        return array_key_exists($indexName, $indexes);
+        if ($driver === 'sqlite') {
+            $result = DB::select("SELECT name FROM sqlite_master WHERE type='index' AND name=?", [$indexName]);
+            return count($result) > 0;
+        }
+
+        // Para MySQL/MariaDB y otros
+        // Laravel suele prefijar los índices. Si no usamos un nombre manual, Laravel genera uno.
+        // Aquí asumimos que los nombres pasados son los que Laravel generaría o los manuales.
+        // Una forma segura en MySQL es intentar y capturar, pero para verificar:
+        if ($driver === 'mysql') {
+            $dbName = $conn->getDatabaseName();
+            $result = DB::select("SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?", [$dbName, $table, $indexName]);
+            return count($result) > 0;
+        }
+        
+        // Fallback: intentar usar Doctrine si está disponible, o asumir false para intentar crear
+        try {
+            return $conn->getDoctrineSchemaManager()->listTableIndexes($table)[$indexName] ?? false;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**
@@ -24,78 +43,64 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Nombres de índices estándar que Laravel genera: table_column_index
+        
         // 1. Optimización tabla Students
         Schema::table('students', function (Blueprint $table) {
-            // Verificar antes de crear para evitar error "index already exists"
-            $sm = Schema::getConnection()->getDoctrineSchemaManager();
-            $indexes = $sm->listTableIndexes('students');
-
-            if (!array_key_exists('students_student_code_index', $indexes)) {
-                $table->index('student_code');
+            if (!$this->hasIndex('students', 'students_student_code_index')) {
+                $table->index('student_code', 'students_student_code_index');
             }
-            if (!array_key_exists('students_user_id_index', $indexes)) {
-                $table->index('user_id');
+            if (!$this->hasIndex('students', 'students_user_id_index')) {
+                $table->index('user_id', 'students_user_id_index');
             }
-            if (!array_key_exists('students_first_name_last_name_index', $indexes)) {
-                $table->index(['first_name', 'last_name']);
+            if (!$this->hasIndex('students', 'students_first_name_last_name_index')) {
+                $table->index(['first_name', 'last_name'], 'students_first_name_last_name_index');
             }
         });
 
         // 2. Optimización tabla Enrollments
         Schema::table('enrollments', function (Blueprint $table) {
-            $sm = Schema::getConnection()->getDoctrineSchemaManager();
-            $indexes = $sm->listTableIndexes('enrollments');
-
-            if (!array_key_exists('enrollments_student_id_status_index', $indexes)) {
-                $table->index(['student_id', 'status']);
+            if (!$this->hasIndex('enrollments', 'enrollments_student_id_status_index')) {
+                $table->index(['student_id', 'status'], 'enrollments_student_id_status_index');
             }
-            if (!array_key_exists('enrollments_course_schedule_id_index', $indexes)) {
-                $table->index('course_schedule_id');
+            if (!$this->hasIndex('enrollments', 'enrollments_course_schedule_id_index')) {
+                $table->index('course_schedule_id', 'enrollments_course_schedule_id_index');
             }
-            if (!array_key_exists('enrollments_payment_id_index', $indexes)) {
-                $table->index('payment_id');
+            if (!$this->hasIndex('enrollments', 'enrollments_payment_id_index')) {
+                $table->index('payment_id', 'enrollments_payment_id_index');
             }
         });
 
         // 3. Optimización tabla Payments
         Schema::table('payments', function (Blueprint $table) {
-            $sm = Schema::getConnection()->getDoctrineSchemaManager();
-            $indexes = $sm->listTableIndexes('payments');
-
-            if (!array_key_exists('payments_student_id_status_index', $indexes)) {
-                $table->index(['student_id', 'status']);
+            if (!$this->hasIndex('payments', 'payments_student_id_status_index')) {
+                $table->index(['student_id', 'status'], 'payments_student_id_status_index');
             }
-            if (!array_key_exists('payments_created_at_index', $indexes)) {
-                $table->index('created_at');
+            if (!$this->hasIndex('payments', 'payments_created_at_index')) {
+                $table->index('created_at', 'payments_created_at_index');
             }
-            if (!array_key_exists('payments_due_date_index', $indexes)) {
-                $table->index('due_date');
+            if (!$this->hasIndex('payments', 'payments_due_date_index')) {
+                $table->index('due_date', 'payments_due_date_index');
             }
-            if (!array_key_exists('payments_ncf_index', $indexes)) {
-                $table->index('ncf');
+            if (!$this->hasIndex('payments', 'payments_ncf_index')) {
+                $table->index('ncf', 'payments_ncf_index');
             }
         });
 
         // 4. Optimización tabla Course Schedules
         Schema::table('course_schedules', function (Blueprint $table) {
-            $sm = Schema::getConnection()->getDoctrineSchemaManager();
-            $indexes = $sm->listTableIndexes('course_schedules');
-
-            if (!array_key_exists('course_schedules_module_id_status_index', $indexes)) {
-                $table->index(['module_id', 'status']);
+            if (!$this->hasIndex('course_schedules', 'course_schedules_module_id_status_index')) {
+                $table->index(['module_id', 'status'], 'course_schedules_module_id_status_index');
             }
-            if (!array_key_exists('course_schedules_teacher_id_index', $indexes)) {
-                $table->index('teacher_id');
+            if (!$this->hasIndex('course_schedules', 'course_schedules_teacher_id_index')) {
+                $table->index('teacher_id', 'course_schedules_teacher_id_index');
             }
         });
         
         // 5. Optimización tabla Users
         Schema::table('users', function (Blueprint $table) {
-            $sm = Schema::getConnection()->getDoctrineSchemaManager();
-            $indexes = $sm->listTableIndexes('users');
-
-            if (!array_key_exists('users_name_index', $indexes)) {
-                $table->index('name');
+            if (!$this->hasIndex('users', 'users_name_index')) {
+                $table->index('name', 'users_name_index');
             }
         });
     }
@@ -105,35 +110,25 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // En el rollback, usamos dropIndex con un array, Laravel maneja la verificación interna mejor,
-        // pero por seguridad envolvemos en try-catch si es necesario, aunque dropIndex suele ser seguro si existe.
+        // En rollback simplemente intentamos borrar. Si no existe, no pasa nada grave en la mayoría de drivers o podemos capturar.
         
-        Schema::table('students', function (Blueprint $table) {
-            $table->dropIndex(['student_code']);
-            $table->dropIndex(['user_id']);
-            $table->dropIndex(['first_name', 'last_name']);
-        });
+        $tables = [
+            'students' => ['students_student_code_index', 'students_user_id_index', 'students_first_name_last_name_index'],
+            'enrollments' => ['enrollments_student_id_status_index', 'enrollments_course_schedule_id_index', 'enrollments_payment_id_index'],
+            'payments' => ['payments_student_id_status_index', 'payments_created_at_index', 'payments_due_date_index', 'payments_ncf_index'],
+            'course_schedules' => ['course_schedules_module_id_status_index', 'course_schedules_teacher_id_index'],
+            'users' => ['users_name_index']
+        ];
 
-        Schema::table('enrollments', function (Blueprint $table) {
-            $table->dropIndex(['student_id', 'status']);
-            $table->dropIndex(['course_schedule_id']);
-            $table->dropIndex(['payment_id']);
-        });
-
-        Schema::table('payments', function (Blueprint $table) {
-            $table->dropIndex(['student_id', 'status']);
-            $table->dropIndex(['created_at']);
-            $table->dropIndex(['due_date']);
-            $table->dropIndex(['ncf']);
-        });
-
-        Schema::table('course_schedules', function (Blueprint $table) {
-            $table->dropIndex(['module_id', 'status']);
-            $table->dropIndex(['teacher_id']);
-        });
-        
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropIndex(['name']);
-        });
+        foreach ($tables as $tableName => $indexes) {
+            Schema::table($tableName, function (Blueprint $table) use ($tableName, $indexes) {
+                foreach ($indexes as $index) {
+                    // Solo intentamos borrar si existe para evitar errores en rollback
+                    if ($this->hasIndex($tableName, $index)) {
+                        $table->dropIndex($index);
+                    }
+                }
+            });
+        }
     }
 };
