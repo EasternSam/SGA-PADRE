@@ -70,12 +70,11 @@ class Dashboard extends Component
         $this->user = Auth::user();
         $this->student = $this->user?->student;
 
-        // Inicializar colecciones vacías para evitar errores en la vista antes de cargar
+        // Inicializar colecciones vacías para evitar errores
         $this->initEmptyCollections();
 
         if ($this->student) {
-            // CARGA INMEDIATA DE DATOS DE PERFIL (Restaurado de la versión funcional)
-            // Esto asegura que el sidebar y el header tengan datos al instante
+            // Carga de datos de perfil
             $this->mobile_phone = $this->student->mobile_phone ?? $this->student->phone; 
             $this->birth_date = $this->student->birth_date ? $this->student->birth_date->format('Y-m-d') : null;
             $this->address = $this->student->address;
@@ -83,7 +82,7 @@ class Dashboard extends Component
             $this->city = $this->student->city;
             $this->sector = $this->student->sector;
 
-            // Verificar si faltan datos para el modal de onboarding
+            // Verificar onboarding
             $hasIncompleteData = (
                 $this->isIncomplete($this->mobile_phone) || 
                 $this->isIncomplete($this->address) ||
@@ -94,10 +93,14 @@ class Dashboard extends Component
             if ($hasIncompleteData && !session()->has('profile_onboarding_seen')) {
                 $this->showProfileModal = true;
             }
+
+            // CORRECCIÓN: Llamamos a la carga de datos aquí mismo.
+            // Al ser #[Lazy], mount() se ejecuta en el segundo request, por lo que no bloqueará la vista inicial.
+            $this->loadData();
         }
     }
 
-    // Se ejecuta asíncronamente después del render inicial
+    // Método para coordinar la carga de datos
     public function loadData()
     {
         if (!$this->student) return;
@@ -307,12 +310,6 @@ class Dashboard extends Component
 
     public function render()
     {
-        // Forzar carga de datos si aún no se ha hecho (fallback para Lazy)
-        // Verificamos si pendingPayments (una de las colecciones) está vacía pero no inicializada
-        // Nota: initEmptyCollections las inicializa como empty collection, no null.
-        // Usamos una bandera o verificamos si se ha ejecutado loadData
-        
-        // Livewire Lazy llama a loadData automáticamente en el frontend.
         return view('livewire.student-portal.dashboard');
     }
 }
