@@ -142,7 +142,7 @@ class Index extends Component
 
     /**
      * Prepara los datos para el gráfico de inscripciones.
-     * AHORA CON CACHÉ DE 1 HORA PARA LA API DE WORDPRESS.
+     * AHORA CON CACHÉ DE 1 HORA PARA LA API DE WORDPRESS Y COMPATIBILIDAD SQLITE.
      */
     private function prepareChartData(WordpressApiService $wpService)
     {
@@ -172,16 +172,26 @@ class Index extends Component
             }
         }
 
-        // Optimización SQL: Obtener conteos agrupados por mes en una sola consulta
-        // En lugar de hacer 12 consultas dentro del bucle for.
-        $endDate = Carbon::now();
+        // Optimización SQL Compatible: Obtener conteos agrupados por mes
         $startDate = Carbon::now()->subMonths(11)->startOfMonth();
+        $driver = DB::connection()->getDriverName();
 
-        $systemEnrollmentsByMonth = Enrollment::selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, count(*) as total')
+        // Selección de sintaxis según driver (SQLite vs MySQL)
+        if ($driver === 'sqlite') {
+            $selectRaw = "strftime('%Y', created_at) as year, strftime('%m', created_at) as month, count(*) as total";
+            $groupBy = ['year', 'month'];
+        } else {
+            // MySQL / MariaDB / PostgreSQL (generalmente compatible con YEAR/MONTH o extract)
+            $selectRaw = 'YEAR(created_at) as year, MONTH(created_at) as month, count(*) as total';
+            $groupBy = ['year', 'month'];
+        }
+
+        $systemEnrollmentsByMonth = Enrollment::selectRaw($selectRaw)
             ->where('created_at', '>=', $startDate)
-            ->groupBy('year', 'month')
+            ->groupBy(...$groupBy) // Desempaquetar array para groupBy
             ->get()
             ->keyBy(function($item) {
+                // Normalizar keys para búsqueda rápida
                 return $item->year . '-' . str_pad($item->month, 2, '0', STR_PAD_LEFT);
             });
 
@@ -229,10 +239,10 @@ class Index extends Component
 
     public function render()
     {
+        // Inicializar como colección vacía para evitar errores si readyToLoad es falso
         $recentEnrollments = collect();
 
         // Solo cargamos la tabla si el componente está listo (Lazy Loading visual)
-        // O si ya se cargó previamente.
         if ($this->readyToLoad) {
             // Consulta base optimizada con Eager Loading selectivo para la TABLA
             // Solo traemos los campos necesarios para pintar la tabla
