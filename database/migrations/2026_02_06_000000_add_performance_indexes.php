@@ -3,52 +3,100 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
+    /**
+     * Helper para verificar si un índice existe (SQLite/MySQL compatible)
+     */
+    protected function indexExists($table, $indexName)
+    {
+        $conn = Schema::getConnection();
+        $dbSchemaManager = $conn->getDoctrineSchemaManager();
+        $indexes = $dbSchemaManager->listTableIndexes($table);
+
+        return array_key_exists($indexName, $indexes);
+    }
+
     /**
      * Run the migrations.
      */
     public function up(): void
     {
         // 1. Optimización tabla Students
-        // Acelera el buscador global y los modals de pago
         Schema::table('students', function (Blueprint $table) {
-            $table->index('student_code'); 
-            $table->index('user_id');
-            // Índice compuesto para búsquedas por nombre completo
-            $table->index(['first_name', 'last_name']);
+            // Verificar antes de crear para evitar error "index already exists"
+            $sm = Schema::getConnection()->getDoctrineSchemaManager();
+            $indexes = $sm->listTableIndexes('students');
+
+            if (!array_key_exists('students_student_code_index', $indexes)) {
+                $table->index('student_code');
+            }
+            if (!array_key_exists('students_user_id_index', $indexes)) {
+                $table->index('user_id');
+            }
+            if (!array_key_exists('students_first_name_last_name_index', $indexes)) {
+                $table->index(['first_name', 'last_name']);
+            }
         });
 
         // 2. Optimización tabla Enrollments
-        // CRÍTICO para el Dashboard (filtra por status y estudiante miles de veces)
         Schema::table('enrollments', function (Blueprint $table) {
-            $table->index(['student_id', 'status']); 
-            $table->index('course_schedule_id');
-            $table->index('payment_id'); // Para la relación inversa rápida
+            $sm = Schema::getConnection()->getDoctrineSchemaManager();
+            $indexes = $sm->listTableIndexes('enrollments');
+
+            if (!array_key_exists('enrollments_student_id_status_index', $indexes)) {
+                $table->index(['student_id', 'status']);
+            }
+            if (!array_key_exists('enrollments_course_schedule_id_index', $indexes)) {
+                $table->index('course_schedule_id');
+            }
+            if (!array_key_exists('enrollments_payment_id_index', $indexes)) {
+                $table->index('payment_id');
+            }
         });
 
         // 3. Optimización tabla Payments
-        // Acelera el historial de pagos y reportes financieros
         Schema::table('payments', function (Blueprint $table) {
-            $table->index(['student_id', 'status']);
-            $table->index('created_at'); // Para filtros de fecha en reportes
-            $table->index('due_date');   // Para detectar mora rápidamente
-            $table->index('ncf');        // Para búsquedas fiscales
+            $sm = Schema::getConnection()->getDoctrineSchemaManager();
+            $indexes = $sm->listTableIndexes('payments');
+
+            if (!array_key_exists('payments_student_id_status_index', $indexes)) {
+                $table->index(['student_id', 'status']);
+            }
+            if (!array_key_exists('payments_created_at_index', $indexes)) {
+                $table->index('created_at');
+            }
+            if (!array_key_exists('payments_due_date_index', $indexes)) {
+                $table->index('due_date');
+            }
+            if (!array_key_exists('payments_ncf_index', $indexes)) {
+                $table->index('ncf');
+            }
         });
 
         // 4. Optimización tabla Course Schedules
-        // Acelera la carga del detalle del curso
         Schema::table('course_schedules', function (Blueprint $table) {
-            $table->index(['module_id', 'status']);
-            $table->index('teacher_id');
+            $sm = Schema::getConnection()->getDoctrineSchemaManager();
+            $indexes = $sm->listTableIndexes('course_schedules');
+
+            if (!array_key_exists('course_schedules_module_id_status_index', $indexes)) {
+                $table->index(['module_id', 'status']);
+            }
+            if (!array_key_exists('course_schedules_teacher_id_index', $indexes)) {
+                $table->index('teacher_id');
+            }
         });
         
         // 5. Optimización tabla Users
-        // Acelera el login y búsqueda por email
         Schema::table('users', function (Blueprint $table) {
-            // email ya suele ser unique (indexado), pero si agregamos búsqueda por nombre:
-            $table->index('name');
+            $sm = Schema::getConnection()->getDoctrineSchemaManager();
+            $indexes = $sm->listTableIndexes('users');
+
+            if (!array_key_exists('users_name_index', $indexes)) {
+                $table->index('name');
+            }
         });
     }
 
@@ -57,6 +105,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // En el rollback, usamos dropIndex con un array, Laravel maneja la verificación interna mejor,
+        // pero por seguridad envolvemos en try-catch si es necesario, aunque dropIndex suele ser seguro si existe.
+        
         Schema::table('students', function (Blueprint $table) {
             $table->dropIndex(['student_code']);
             $table->dropIndex(['user_id']);
