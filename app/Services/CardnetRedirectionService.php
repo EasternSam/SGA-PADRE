@@ -46,7 +46,7 @@ class CardnetRedirectionService
         $formattedTax = str_pad('000', 12, '0', STR_PAD_LEFT);
 
         // 3. TRANSACTION ID: Debe ser NUMÉRICO de 6 dígitos.
-        // CORRECCIÓN 2: Usar mt_rand para garantizar números, time() puede tener problemas
+        // Usamos mt_rand para evitar caracteres no numéricos o longitudes erróneas
         $transactionId = str_pad(mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
 
         // 4. URLs de retorno
@@ -58,37 +58,43 @@ class CardnetRedirectionService
             $cancelUrl = str_replace('http://', 'https://', $cancelUrl);
         }
         
-        // CORRECCIÓN 3: Limpiar IP (Cardnet a veces rechaza IPs locales o formatos extraños)
+        // Limpiar IP (Cardnet requiere formato estándar, sin puertos ni ipv6 local)
         $cleanIp = ($ipAddress == '::1') ? '127.0.0.1' : substr($ipAddress, 0, 15);
 
         // Datos estrictos según documentación "Integración con Pantalla (POST)"
         $data = [
             'TransactionType' => '0200', 
             'CurrencyCode'    => $this->currency,
-            'AcquirerId'      => '349',
-            'MerchantType'    => '5311',
+            
+            // CORRECCIÓN CRÍTICA: Nombre exacto según documentación
+            'AcquiringInstitutionCode' => '349', 
+            
+            'MerchantType'    => '5311', // Código genérico de educación/servicios
             'MerchantNumber'  => $this->merchantId,
             'MerchantTerminal' => $this->terminalId, 
             'ReturnUrl'       => $returnUrl, 
             'CancelUrl'       => $cancelUrl,
-            'PageLanguaje'    => 'ESP', 
+            'PageLanguaje'    => 'ESP', // "Languaje" con J, tal como en la doc
             'OrdenId'         => (string)$orderId,
             'TransactionId'   => $transactionId,
             'Amount'          => $formattedAmount,
             'Tax'             => $formattedTax,
             'MerchantName'    => 'CENTU GESTION ACADEMICA DO',
-            'Ipclient'        => $cleanIp, 
+            'Ipclient'        => $cleanIp,
+            
+            // CORRECCIÓN: Agregar campos de lote por defecto requeridos en Sandbox
+            'loteid'          => '001',
+            'seqid'           => '001',
         ];
 
-        // Mapeo adicional por inconsistencias en documentación (enviamos ambos por seguridad)
+        // Mapeo de seguridad (aunque la doc pide MerchantTerminal, a veces el sistema busca TerminalId también)
         $data['TerminalId'] = $this->terminalId;
 
-        Log::info("Cardnet Form Data Generado (Fix TF)", [
+        Log::info("Cardnet Form Data Generado (Fix Final)", [
             'TransactionId' => $transactionId,
             'Amount' => $formattedAmount,
             'OrdenId' => $orderId,
-            'Currency' => $this->currency,
-            'Ipclient' => $data['Ipclient']
+            'AcquiringInstitutionCode' => '349' // Confirmación de cambio
         ]);
 
         return [
