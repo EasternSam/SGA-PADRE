@@ -18,7 +18,10 @@ class CardnetRedirectionService
         // Cargar credenciales
         $this->merchantId = config('services.cardnet.merchant_id', env('CARDNET_MERCHANT_ID', ''));
         $this->terminalId = config('services.cardnet.terminal_id', env('CARDNET_TERMINAL_ID', ''));
-        $this->currency = config('services.cardnet.currency', '214'); // 214 = DOP
+        
+        // CORRECCIÓN 1: Asegurar código numérico ISO 4217 para DOP (214)
+        $this->currency = '214'; 
+
         $this->environment = config('services.cardnet.environment', 'sandbox');
         
         // URLs OFICIALES
@@ -35,15 +38,16 @@ class CardnetRedirectionService
     public function prepareFormData($amount, $orderId, $ipAddress = '127.0.0.1')
     {
         // 1. MONTO: 12 dígitos, ceros a la izquierda, sin puntos.
+        // Ejemplo: 100.00 -> 000000010000
         $amountClean = number_format($amount, 2, '', ''); 
         $formattedAmount = str_pad($amountClean, 12, '0', STR_PAD_LEFT);
 
         // 2. IMPUESTOS: 12 dígitos (0.00)
         $formattedTax = str_pad('000', 12, '0', STR_PAD_LEFT);
 
-        // 3. TRANSACTION ID: Debe ser EXACTAMENTE de 6 dígitos.
-        // Usamos los últimos 6 dígitos del timestamp para variar, o un random.
-        $transactionId = substr((string)time(), -6);
+        // 3. TRANSACTION ID: Debe ser NUMÉRICO de 6 dígitos.
+        // CORRECCIÓN 2: Usar mt_rand para garantizar números, time() puede tener problemas
+        $transactionId = str_pad(mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
 
         // 4. URLs de retorno
         $returnUrl = route('cardnet.response');
@@ -53,6 +57,9 @@ class CardnetRedirectionService
             $returnUrl = str_replace('http://', 'https://', $returnUrl);
             $cancelUrl = str_replace('http://', 'https://', $cancelUrl);
         }
+        
+        // CORRECCIÓN 3: Limpiar IP (Cardnet a veces rechaza IPs locales o formatos extraños)
+        $cleanIp = ($ipAddress == '::1') ? '127.0.0.1' : substr($ipAddress, 0, 15);
 
         // Datos estrictos según documentación "Integración con Pantalla (POST)"
         $data = [
@@ -61,27 +68,26 @@ class CardnetRedirectionService
             'AcquirerId'      => '349',
             'MerchantType'    => '5311',
             'MerchantNumber'  => $this->merchantId,
-            'MerchantTerminal' => $this->terminalId, // OJO: Doc dice MerchantTerminal, no TerminalId
+            'MerchantTerminal' => $this->terminalId, 
             'ReturnUrl'       => $returnUrl, 
             'CancelUrl'       => $cancelUrl,
-            'PageLanguaje'    => 'ESP', // Ojo: Doc dice PageLanguaje (con J) en algunos lados, verificar si falla.
+            'PageLanguaje'    => 'ESP', 
             'OrdenId'         => (string)$orderId,
-            'TransactionId'   => $transactionId, // CORREGIDO: 6 dígitos
+            'TransactionId'   => $transactionId,
             'Amount'          => $formattedAmount,
             'Tax'             => $formattedTax,
             'MerchantName'    => 'CENTU GESTION ACADEMICA DO',
-            'Ipclient'        => substr($ipAddress, 0, 15), // CORREGIDO: Nombre Ipclient, max 15 chars
+            'Ipclient'        => $cleanIp, 
         ];
 
         // Mapeo adicional por inconsistencias en documentación (enviamos ambos por seguridad)
-        // La doc dice 'MerchantTerminal', el código anterior usaba 'TerminalId'
-        // Enviamos ambos para asegurar compatibilidad.
         $data['TerminalId'] = $this->terminalId;
 
-        Log::info("Cardnet Form Data Generado (Fix 96)", [
+        Log::info("Cardnet Form Data Generado (Fix TF)", [
             'TransactionId' => $transactionId,
             'Amount' => $formattedAmount,
             'OrdenId' => $orderId,
+            'Currency' => $this->currency,
             'Ipclient' => $data['Ipclient']
         ]);
 
