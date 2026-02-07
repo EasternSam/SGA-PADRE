@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB; // Importante para la transacción
 use Carbon\Carbon;
 
 class RegisteredUserController extends Controller
@@ -22,7 +23,6 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
-        // Usamos la vista personalizada de registro de estudiantes/solicitantes
         return view('auth.student-register'); 
     }
 
@@ -34,73 +34,59 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         Log::info('--- INTENTO DE REGISTRO NUEVO INGRESO (SOLICITANTE) ---');
-        Log::info('Datos recibidos:', $request->except(['password', 'password_confirmation']));
+        
+        $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users', 'unique:students'],
+            'cedula' => ['required', 'string', 'max:20', 'unique:students'],
+        ]);
 
         try {
-            $request->validate([
-                'first_name' => ['required', 'string', 'max:255'],
-                'last_name' => ['required', 'string', 'max:255'],
-                'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users', 'unique:students'],
-                'cedula' => ['required', 'string', 'max:20', 'unique:students'],
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('FALLO VALIDACIÓN REGISTRO:', $e->errors());
-            throw $e;
-        }
+            // Usamos DB::transaction para asegurar atomicidad: O se crea todo, o no se crea nada.
+            $user = DB::transaction(function () use ($request) {
+                
+                // 1. Crear el Usuario
+                $user = User::create([
+                    'name' => $request->first_name . ' ' . $request->last_name,
+                    'email' => $request->email,
+                    'password' => Hash::make($request->cedula), // Contraseña inicial es la cédula
+                    'access_expires_at' => Carbon::now()->addMonths(3),
+                    'must_change_password' => true,
+                ]);
 
-        Log::info('Validación exitosa. Procediendo a crear Usuario y Solicitante...');
-
-        try {
-            // 1. Crear el Usuario con acceso temporal
-            // La contraseña será la cédula del usuario
-            $user = User::create([
-                'name' => $request->first_name . ' ' . $request->last_name,
-                'email' => $request->email,
-                'password' => Hash::make($request->cedula), 
-                'access_expires_at' => Carbon::now()->addMonths(3), // Acceso temporal para completar admisión
-                'must_change_password' => true,
-            ]);
-
-            Log::info('Usuario base creado ID: ' . $user->id);
-
-            // 2. Asignar rol de Solicitante (NUEVO ROL)
-            if (method_exists($user, 'assignRole')) {
+                // 2. Asignar rol
                 $user->assignRole('Solicitante');
-            } else {
-                Log::warning('No se pudo asignar rol: método assignRole no existe en User.');
-            }
 
-            // 3. Crear el perfil de Estudiante asociado (como Prospecto)
-            Student::create([
-                'user_id' => $user->id,
-                'first_name' => $request->first_name,
-                'last_name' => $request->last_name,
-                'email' => $request->email,
-                'cedula' => $request->cedula, 
-                'status' => 'Prospecto', // Estado inicial
-            ]);
+                // 3. Crear el perfil de Estudiante
+                Student::create([
+                    'user_id' => $user->id,
+                    'first_name' => $request->first_name,
+                    'last_name' => $request->last_name,
+                    'email' => $request->email,
+                    'cedula' => $request->cedula, 
+                    'status' => 'Prospecto',
+                ]);
 
-            Log::info('Perfil de prospecto creado exitosamente.');
+                return $user;
+            });
+
+            Log::info('Registro completado exitosamente para Usuario ID: ' . $user->id);
 
             event(new Registered($user));
 
             Auth::login($user);
 
-            Log::info('Usuario autenticado. Redirigiendo a portal de solicitante.');
-
-            // Redirigir directamente al portal de aspirante
             return redirect()->route('applicant.portal');
 
         } catch (\Exception $e) {
-            Log::error('ERROR CRÍTICO EN PROCESO DE REGISTRO: ' . $e->getMessage());
-            Log::error($e->getTraceAsString());
+            // Si algo falla dentro de la transacción, Laravel hace rollback automático.
+            // No quedan usuarios "basura" en la BD.
             
-            if (isset($user) && $user->exists) {
-                $user->delete();
-                Log::info('Usuario huérfano eliminado por fallo en creación de estudiante.');
-            }
+            Log::error('ERROR CRÍTICO EN TRANSACCIÓN DE REGISTRO: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
 
-            return back()->with('error', 'Ocurrió un error al procesar tu registro. Por favor intenta nuevamente.');
+            return back()->with('error', 'Ocurrió un error interno al procesar tu registro. Por favor intenta nuevamente o contacta soporte.');
         }
     }
 }
