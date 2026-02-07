@@ -183,17 +183,12 @@ class SubjectSelection extends Component
         $this->totalCost = 0;
 
         // --- PRECIO DINÁMICO ---
-        // Obtenemos el precio por crédito de la carrera configurada en BD
         $costoPorCredito = $this->career->credit_price ?? 0;
 
         foreach ($this->selectedSchedules as $modId => $schedId) {
             $schedule = CourseSchedule::with('module')->find($schedId);
             if ($schedule) {
                 $this->totalCredits += $schedule->module->credits;
-                
-                // LÓGICA HÍBRIDA DE COBRO:
-                // 1. Si la materia tiene un precio fijo manual mayor a 0 (ej. Laboratorio), usa ese.
-                // 2. Si no, calcula: Créditos * CostoPorCredito de la carrera.
                 
                 if ($schedule->module->price > 0) {
                     $this->totalCost += $schedule->module->price;
@@ -213,26 +208,26 @@ class SubjectSelection extends Component
 
         DB::beginTransaction();
         try {
-            // 1. Crear concepto si no existe. Usamos 'amount' en lugar de 'price'.
-            // Quitamos 'is_tuition' ya que no existe en tu tabla.
+            // 1. Crear concepto de deuda
             $concept = PaymentConcept::firstOrCreate(
-                ['name' => 'Selección de Materias'],
+                ['name' => 'Colegiatura Ciclo Actual'],
                 ['amount' => 0] 
             );
 
-            // 2. Crear LA DEUDA UNIFICADA (Pago Pendiente)
+            // 2. Crear DEUDA (Pendiente) - No bloquea, solo registra cobro
             $payment = Payment::create([
                 'user_id' => $this->student->user_id,
                 'student_id' => $this->student->id,
                 'payment_concept_id' => $concept->id,
                 'amount' => $this->totalCost,
                 'status' => 'Pendiente', 
-                'gateway' => 'pending', // <-- Valor por defecto para evitar error NOT NULL
-                'notes' => 'Selección de materias Ciclo Actual. Total materias: ' . count($this->selectedSchedules),
-                'due_date' => Carbon::now()->addDays(7),
+                'gateway' => 'Sistema', 
+                'notes' => 'Selección de materias. Total: ' . count($this->selectedSchedules),
+                'due_date' => Carbon::now()->addDays(30), // 30 días para pagar la primera cuota/total
             ]);
 
-            // 3. Crear las inscripciones vinculadas a ese pago
+            // 3. Crear INSCRIPCIONES (Activas/Cursando de inmediato)
+            // Lógica crítica para Carreras: Status = 'Cursando'
             foreach ($this->selectedSchedules as $modId => $schedId) {
                 // Verificar duplicados
                 $exists = Enrollment::where('student_id', $this->student->id)
@@ -243,9 +238,10 @@ class SubjectSelection extends Component
                     Enrollment::create([
                         'student_id' => $this->student->id,
                         'course_schedule_id' => $schedId,
-                        'payment_id' => $payment->id, // <-- Vinculación al pago global
-                        'status' => 'Pendiente', 
+                        'payment_id' => $payment->id, 
+                        'status' => 'Cursando', // <-- CAMBIO CLAVE: Ya están activos
                         'final_grade' => null,
+                        'enrollment_date' => now(),
                     ]);
                 }
             }
@@ -255,7 +251,8 @@ class SubjectSelection extends Component
             $this->reset(['selectedSchedules', 'totalCredits', 'totalCost']);
             $this->loadAvailableOfferings();
             
-            return redirect()->route('student.payments')->with('message', 'Selección confirmada. Se ha generado una deuda única por el total.');
+            // Redirigir al dashboard en lugar de pagos, porque ya están "Cursando"
+            return redirect()->route('student.dashboard')->with('message', '¡Materias inscritas correctamente! Ya aparecen en tu carga académica.');
 
         } catch (\Exception $e) {
             DB::rollBack();

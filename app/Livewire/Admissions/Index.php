@@ -8,9 +8,12 @@ use Livewire\Attributes\Layout;
 use App\Models\Admission;
 use App\Models\User;
 use App\Models\Student;
+use App\Models\Payment;          // <-- Importar
+use App\Models\PaymentConcept;   // <-- Importar
+use App\Models\Course;           // <-- Importar
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Str;
 
 #[Layout('layouts.dashboard')]
 class Index extends Component
@@ -64,16 +67,17 @@ class Index extends Component
 
         DB::transaction(function () use ($admission) {
             $user = User::find($admission->user_id) ?? User::where('email', $admission->email)->first();
-            
+            $student = null;
+
             if ($user) {
                 // Actualizar rol
                 $user->removeRole('Solicitante');
                 $user->assignRole('Estudiante');
 
                 // Crear Estudiante si no existe
-                $existingStudent = Student::where('user_id', $user->id)->first();
-                if (!$existingStudent) {
-                    Student::create([
+                $student = Student::where('user_id', $user->id)->first();
+                if (!$student) {
+                    $student = Student::create([
                         'user_id' => $user->id,
                         'first_name' => $admission->first_name,
                         'last_name' => $admission->last_name,
@@ -84,19 +88,59 @@ class Index extends Component
                         'birth_date' => $admission->birth_date,
                         'address' => $admission->address,
                         'enrollment_date' => now(),
-                        'student_code' => 'EST-' . date('Y') . '-' . str_pad($user->id, 4, '0', STR_PAD_LEFT),
+                        'course_id' => $admission->course_id, // <-- Asignar carrera
+                        // Matrícula temporal hasta que pague inscripción
+                        'student_code' => 'PRE-' . date('Y') . '-' . str_pad($user->id, 4, '0', STR_PAD_LEFT),
                     ]);
+                } else {
+                    // Si ya existe, actualizamos la carrera
+                    $student->update(['course_id' => $admission->course_id]);
+                }
+            }
+
+            // --- GENERAR DEUDA DE INSCRIPCIÓN ---
+            if ($student && $admission->course_id) {
+                $course = Course::find($admission->course_id);
+                
+                // Solo si es carrera (grado) y tiene costo de inscripción
+                if ($course && $course->program_type === 'degree' && $course->registration_fee > 0) {
+                    
+                    // Buscar o crear concepto de pago "Inscripción"
+                    $concept = PaymentConcept::firstOrCreate(
+                        ['name' => 'Inscripción'],
+                        ['description' => 'Pago único de admisión a la carrera']
+                    );
+
+                    // Verificar si ya tiene deuda de inscripción pendiente para no duplicar
+                    $exists = Payment::where('student_id', $student->id)
+                        ->where('payment_concept_id', $concept->id)
+                        ->where('status', 'Pendiente')
+                        ->exists();
+
+                    if (!$exists) {
+                        Payment::create([
+                            'user_id' => $user->id,
+                            'student_id' => $student->id,
+                            'payment_concept_id' => $concept->id,
+                            'amount' => $course->registration_fee,
+                            'currency' => 'DOP',
+                            'status' => 'Pendiente',
+                            'gateway' => 'Sistema',
+                            'due_date' => now()->addDays(3), // 3 días para pagar
+                            'notes' => 'Generado automáticamente al aprobar admisión.',
+                        ]);
+                    }
                 }
             }
 
             // Actualizar admisión a aprobado
             $admission->status = 'approved';
-            $admission->document_status = $this->tempDocStatus; // Guardar estado actual de documentos
+            $admission->document_status = $this->tempDocStatus; 
             $admission->notes = $this->admissionNotes . "\n[Sistema] Aprobado manualmente por administración.";
             $admission->save();
         });
 
-        session()->flash('message', 'Solicitud APROBADA manualmente. Estudiante inscrito.');
+        session()->flash('message', 'Solicitud APROBADA. Se ha generado la deuda de inscripción.');
         $this->showProcessModal = false;
         $this->reset(['selectedAdmission', 'tempDocStatus']);
     }
