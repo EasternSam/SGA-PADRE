@@ -56,6 +56,11 @@ use App\Livewire\Applicant\Dashboard as ApplicantDashboard; // Nuevo componente 
 // Importamos el componente de Calendario
 use App\Livewire\Calendar\Index as CalendarIndex;
 
+// ===> IMPLEMENTACIÓN SISTEMA DE ACTUALIZACIÓN REMOTA (SaaS) <===
+use App\Http\Controllers\Api\RemoteAgentController;
+use App\Http\Middleware\VerifyRemoteToken;
+use App\Livewire\Central\Dashboard as CentralDashboard;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -369,6 +374,10 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     Route::get('/users', \App\Livewire\Admin\Users\Index::class)->name('admin.users.index');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
+    
+    // ===> RUTA PANEL CENTRAL (PARA QUE EL MASTER CONTROLE OTRAS ESCUELAS) <===
+    // Solo accesible por Admins
+    Route::get('/central-distribution', CentralDashboard::class)->name('admin.central.dashboard');
 });
 
 // --- RUTAS DE ESTUDIANTE ---
@@ -413,5 +422,18 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/force-password-change', [\App\Http\Controllers\Auth\ForcePasswordChangeController::class, 'update'])
         ->name('password.force_update');
 });
+
+// ==============================================================================
+// RUTAS DE AGENTE REMOTO (SaaS - SLAVE MODE)
+// ==============================================================================
+// Estas rutas permiten que el Panel Central envíe comandos a esta instalación
+// Se saltan la protección CSRF y usan un Token personalizado en el Header
+Route::prefix('remote-agent')
+    ->middleware([VerifyRemoteToken::class]) 
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+    ->group(function () {
+        Route::get('/status', [RemoteAgentController::class, 'status']);
+        Route::post('/deploy', [RemoteAgentController::class, 'deploy']);
+    });
 
 require __DIR__.'/auth.php';
