@@ -15,67 +15,85 @@ class CardnetRedirectionService
 
     public function __construct()
     {
+        // Cargar credenciales
         $this->merchantId = config('services.cardnet.merchant_id', env('CARDNET_MERCHANT_ID', ''));
         $this->terminalId = config('services.cardnet.terminal_id', env('CARDNET_TERMINAL_ID', ''));
-        $this->currency = '214'; 
+        $this->currency = '214'; // 214 = DOP (ISO 4217)
         $this->environment = config('services.cardnet.environment', 'sandbox');
         
+        // URLs OFICIALES
         $urlSandbox = 'https://labservicios.cardnet.com.do/authorize'; 
         $urlProduction = 'https://ecommerce.cardnet.com.do/authorize';
         
-        $this->url = ($this->environment === 'production') ? $urlProduction : $urlSandbox;
+        if ($this->environment === 'production') {
+            $this->url = config('services.cardnet.url_production', $urlProduction);
+        } else {
+            $this->url = config('services.cardnet.url_sandbox', $urlSandbox);
+        }
     }
 
     public function prepareFormData($amount, $orderId, $ipAddress = '127.0.0.1')
     {
-        // MONTO: 12 dígitos
+        // 1. MONTO: 12 dígitos, ceros a la izquierda, sin puntos.
+        // Ejemplo: 100.00 -> 000000010000
         $amountClean = number_format($amount, 2, '', ''); 
         $formattedAmount = str_pad($amountClean, 12, '0', STR_PAD_LEFT);
 
-        // IMPUESTOS: 12 dígitos (0.00)
+        // 2. IMPUESTOS: 12 dígitos (0.00)
         $formattedTax = str_pad('000', 12, '0', STR_PAD_LEFT);
 
-        // TRANSACTION ID: 6 dígitos numéricos aleatorios
+        // 3. TRANSACTION ID: Debe ser EXACTAMENTE de 6 dígitos numéricos.
+        // Usamos mt_rand para garantizar que sea numérico (time() puede dar problemas de unicidad o longitud)
         $transactionId = str_pad(mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
 
-        // URLs
+        // 4. URLs de retorno
         $returnUrl = route('cardnet.response');
         $cancelUrl = route('cardnet.cancel');
 
+        // Forzar HTTPS en producción o si la config lo dicta
         if (app()->environment('production') || str_contains(config('app.url'), 'https')) {
             $returnUrl = str_replace('http://', 'https://', $returnUrl);
             $cancelUrl = str_replace('http://', 'https://', $cancelUrl);
         }
         
-        // IP
-        $cleanIp = (in_array($ipAddress, ['::1', '127.0.0.1'])) ? '172.16.0.1' : substr($ipAddress, 0, 15);
+        // 5. Limpiar IP del cliente (Max 15 caracteres)
+        $cleanIp = (in_array($ipAddress, ['::1', '127.0.0.1', 'localhost'])) ? '172.16.0.1' : substr($ipAddress, 0, 15);
 
-        // --- DATOS MÍNIMOS OBLIGATORIOS (Según Doc "Integración con Pantalla") ---
-        // Eliminamos campos opcionales que podrían causar ruido (loteid, seqid, TerminalId duplicado)
+        // --- CONSTRUCCIÓN DEL PAYLOAD SEGÚN DOCUMENTACIÓN OFICIAL ---
         $data = [
-            'TransactionType' => '0200', 
-            'CurrencyCode'    => $this->currency,
-            'AcquiringInstitutionCode' => '349',
-            'MerchantType'    => '5440', // Código de comercio de pruebas
-            'MerchantNumber'  => $this->merchantId,
-            'MerchantTerminal' => $this->terminalId, 
-            'ReturnUrl'       => $returnUrl, 
-            'CancelUrl'       => $cancelUrl,
-            'PageLanguaje'    => 'ENG', // Probemos con ENG por si ESP no está soportado en este sandbox específico
-            'OrdenId'         => (string)$orderId,
-            'TransactionId'   => $transactionId,
-            'Amount'          => $formattedAmount,
-            'Tax'             => $formattedTax,
-            'MerchantName'    => 'CENTU GESTION ACADEMICA DO',
-            'Ipclient'        => $cleanIp,
-            // 'KeyEncriptionKey' => '', // Si tienes la clave MD5, ponla aquí. Si no, déjalo comentado.
+            'TransactionType'           => '0200', 
+            'CurrencyCode'              => $this->currency,
+            'AcquiringInstitutionCode'  => '349', // CORREGIDO: Según doc (era AcquirerId)
+            'MerchantType'              => '5440', // CORREGIDO: Código estándar pruebas (era 5311)
+            'MerchantNumber'            => $this->merchantId,
+            'MerchantTerminal'          => $this->terminalId,
+            'ReturnUrl'                 => $returnUrl, 
+            'CancelUrl'                 => $cancelUrl,
+            'PageLanguaje'              => 'ESP', // Ojo con la 'j' en Languaje
+            'OrdenId'                   => (string)$orderId,
+            'TransactionId'             => $transactionId,
+            'Amount'                    => $formattedAmount,
+            'Tax'                       => $formattedTax,
+            'MerchantName'              => 'CENTU GESTION ACADEMICA DO',
+            'Ipclient'                  => $cleanIp,
+            // Campos opcionales recomendados para sandbox
+            'loteid'                    => '001',
+            'seqid'                     => '001',
         ];
 
-        Log::channel('single')->info('--------------------------------------------------');
-        Log::channel('single')->info('CARDNET DEBUG V3: Datos Limpios');
-        Log::channel('single')->info('URL Destino: ' . $this->url);
-        Log::channel('single')->info('Datos Enviados:', $data); 
-        Log::channel('single')->info('--------------------------------------------------');
+        // Campo de seguridad redundante (a veces requerido por versiones legacy del gateway)
+        $data['TerminalId'] = $this->terminalId;
+
+        // --- DEBUG COMPLETO (LOGS) ---
+        // Esto escribirá en storage/logs/laravel.log
+        Log::channel('single')->info('==================================================');
+        Log::channel('single')->info('CARDNET: INICIO PREPARACIÓN DE FORMULARIO');
+        Log::channel('single')->info('URL ENDPOINT: ' . $this->url);
+        Log::channel('single')->info('DATOS ENVIADOS (PAYLOAD):', $data);
+        Log::channel('single')->info('MONTO ORIGINAL: ' . $amount);
+        Log::channel('single')->info('MONTO FORMATEADO: ' . $formattedAmount);
+        Log::channel('single')->info('IP CLIENTE: ' . $cleanIp);
+        Log::channel('single')->info('==================================================');
 
         return [
             'url' => $this->url,
