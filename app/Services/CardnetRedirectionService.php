@@ -12,23 +12,15 @@ class CardnetRedirectionService
     protected $currency;
     protected $url;
     protected $environment;
-    protected $secretKey; // Clave para generar hash si es necesario
 
     public function __construct()
     {
         // Cargar credenciales
         $this->merchantId = config('services.cardnet.merchant_id', env('CARDNET_MERCHANT_ID', ''));
         $this->terminalId = config('services.cardnet.terminal_id', env('CARDNET_TERMINAL_ID', ''));
-        
-        // Asegurar código numérico ISO 4217 para DOP (214)
-        $this->currency = '214'; 
-
+        $this->currency = config('services.cardnet.currency', '214'); // 214 = DOP
         $this->environment = config('services.cardnet.environment', 'sandbox');
         
-        // Clave secreta para Hash (KeyEncriptionKey) - Asegúrate de tener esto en tu .env si aplica
-        // Si no tienes una, déjala vacía, pero si el terminal es estricto la necesitarás.
-        $this->secretKey = config('services.cardnet.secret_key', env('CARDNET_SECRET_KEY', '')); 
-
         // URLs OFICIALES
         $urlSandbox = 'https://labservicios.cardnet.com.do/authorize'; 
         $urlProduction = 'https://ecommerce.cardnet.com.do/authorize';
@@ -41,89 +33,61 @@ class CardnetRedirectionService
     }
 
     public function prepareFormData($amount, $orderId, $ipAddress = '127.0.0.1')
-{
-    // ================= MONTO =================
-    $amountClean = number_format($amount, 2, '', '');
-    $formattedAmount = str_pad($amountClean, 12, '0', STR_PAD_LEFT);
+    {
+        // 1. MONTO: 12 dígitos, ceros a la izquierda, sin puntos.
+        $amountClean = number_format($amount, 2, '', ''); 
+        $formattedAmount = str_pad($amountClean, 12, '0', STR_PAD_LEFT);
 
-    $formattedTax = str_pad('0', 12, '0', STR_PAD_LEFT);
+        // 2. IMPUESTOS: 12 dígitos (0.00)
+        $formattedTax = str_pad('000', 12, '0', STR_PAD_LEFT);
 
-    // ================= IDS =================
-    // TransactionId EXACTO 6 dígitos
-    $transactionId = str_pad((string)random_int(1, 999999), 6, '0', STR_PAD_LEFT);
+        // 3. TRANSACTION ID: Debe ser EXACTAMENTE de 6 dígitos.
+        // Usamos los últimos 6 dígitos del timestamp para variar, o un random.
+        $transactionId = substr((string)time(), -6);
 
-    // ORDEN ID DEBE SER ÚNICO EN SANDBOX
-    $orderId = $orderId . '-' . now()->format('His');
+        // 4. URLs de retorno
+        $returnUrl = route('cardnet.response');
+        $cancelUrl = route('cardnet.cancel');
 
-    // ================= URLs =================
-    $returnUrl = route('cardnet.response');
-    $cancelUrl = route('cardnet.cancel');
+        if (app()->environment('production') || str_contains(config('app.url'), 'https')) {
+            $returnUrl = str_replace('http://', 'https://', $returnUrl);
+            $cancelUrl = str_replace('http://', 'https://', $cancelUrl);
+        }
 
-    $returnUrl = str_replace('http://', 'https://', $returnUrl);
-    $cancelUrl = str_replace('http://', 'https://', $cancelUrl);
+        // Datos estrictos según documentación "Integración con Pantalla (POST)"
+        $data = [
+            'TransactionType' => '0200', 
+            'CurrencyCode'    => $this->currency,
+            'AcquirerId'      => '349',
+            'MerchantType'    => '5311',
+            'MerchantNumber'  => $this->merchantId,
+            'MerchantTerminal' => $this->terminalId, // OJO: Doc dice MerchantTerminal, no TerminalId
+            'ReturnUrl'       => $returnUrl, 
+            'CancelUrl'       => $cancelUrl,
+            'PageLanguaje'    => 'ESP', // Ojo: Doc dice PageLanguaje (con J) en algunos lados, verificar si falla.
+            'OrdenId'         => (string)$orderId,
+            'TransactionId'   => $transactionId, // CORREGIDO: 6 dígitos
+            'Amount'          => $formattedAmount,
+            'Tax'             => $formattedTax,
+            'MerchantName'    => 'CENTU GESTION ACADEMICA DO',
+            'Ipclient'        => substr($ipAddress, 0, 15), // CORREGIDO: Nombre Ipclient, max 15 chars
+        ];
 
-    // ================= IP =================
-    $cleanIp = in_array($ipAddress, ['127.0.0.1', '::1'])
-        ? '200.88.167.233'
-        : substr($ipAddress, 0, 15);
+        // Mapeo adicional por inconsistencias en documentación (enviamos ambos por seguridad)
+        // La doc dice 'MerchantTerminal', el código anterior usaba 'TerminalId'
+        // Enviamos ambos para asegurar compatibilidad.
+        $data['TerminalId'] = $this->terminalId;
 
-    // ================= TRANSACTION TYPE =================
-    // SANDBOX SOLO FUNCIONA BIEN CON 0100
-    $transactionType = $this->environment === 'production'
-        ? '0200'
-        : '0100';
+        Log::info("Cardnet Form Data Generado (Fix 96)", [
+            'TransactionId' => $transactionId,
+            'Amount' => $formattedAmount,
+            'OrdenId' => $orderId,
+            'Ipclient' => $data['Ipclient']
+        ]);
 
-    // ================= PAYLOAD =================
-    $data = [
-        'TransactionType'          => $transactionType,
-        'CurrencyCode'             => '214',
-        'AcquiringInstitutionCode' => '349',
-        'MerchantType'             => '5440',
-        'MerchantNumber'           => $this->merchantId,
-        'MerchantTerminal'         => $this->terminalId,
-        'TerminalId'               => $this->terminalId,
-
-        'OrdenId'                  => (string)$orderId,
-        'TransactionId'            => $transactionId,
-        'Amount'                   => $formattedAmount,
-        'Tax'                      => $formattedTax,
-
-        'ReturnUrl'                => $returnUrl,
-        'CancelUrl'                => $cancelUrl,
-        'PageLanguaje'             => 'ESP',
-
-        'MerchantName'             => 'CENTU GESTION ACADEMICA DO',
-        'Ipclient'                 => $cleanIp,
-
-        // ===== 3DS (mínimo viable para sandbox) =====
-        '3DS_email'            => 'sandbox@centu.edu.do',
-        '3DS_mobilePhone'      => '8095555555',
-        '3DS_billAddr_line1'   => 'Calle Principal',
-        '3DS_billAddr_city'    => 'Santo Domingo',
-        '3DS_billAddr_country' => 'DOP',
-        '3DS_billAddr_postCode'=> '10101',
-    ];
-
-    // ================= HASH =================
-    // EN SANDBOX SIEMPRE ENVIARLO
-    $secret = $this->secretKey ?: 'SANDBOXKEY';
-
-    $hashString = $this->merchantId
-        . $this->terminalId
-        . $transactionId
-        . $formattedAmount
-        . $secret;
-
-    $data['KeyEncriptionKey'] = md5($hashString);
-
-    // ================= LOG =================
-    Log::info('========== CARDNET SANDBOX FIX ==========');
-    Log::info('PAYLOAD:', $data);
-    Log::info('=========================================');
-
-    return [
-        'url' => $this->url,
-        'fields' => $data
-    ];
-}
+        return [
+            'url' => $this->url,
+            'fields' => $data
+        ];
+    }
 }
