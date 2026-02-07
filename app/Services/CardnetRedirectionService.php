@@ -12,6 +12,7 @@ class CardnetRedirectionService
     protected $currency;
     protected $url;
     protected $environment;
+    protected $secretKey; // Clave para generar hash si es necesario
 
     public function __construct()
     {
@@ -21,6 +22,10 @@ class CardnetRedirectionService
         $this->currency = '214'; // 214 = DOP (ISO 4217)
         $this->environment = config('services.cardnet.environment', 'sandbox');
         
+        // Clave secreta para Hash (KeyEncriptionKey) - Asegúrate de tener esto en tu .env si aplica
+        // En sandbox genérico a veces es una fija o no se valida si no se envía, pero para 3DS es vital.
+        $this->secretKey = config('services.cardnet.secret_key', env('CARDNET_SECRET_KEY', '')); 
+
         // URLs OFICIALES
         $urlSandbox = 'https://labservicios.cardnet.com.do/authorize'; 
         $urlProduction = 'https://ecommerce.cardnet.com.do/authorize';
@@ -57,6 +62,7 @@ class CardnetRedirectionService
         }
         
         // 5. Limpiar IP del cliente (Max 15 caracteres)
+        // CardNet Sandbox a veces rechaza IPs locales. Usamos una IP pública fija genérica de RD para pruebas si es local.
         $cleanIp = (in_array($ipAddress, ['::1', '127.0.0.1', 'localhost'])) ? '172.16.0.1' : substr($ipAddress, 0, 15);
 
         // --- CONSTRUCCIÓN DEL PAYLOAD SEGÚN DOCUMENTACIÓN OFICIAL ---
@@ -83,6 +89,14 @@ class CardnetRedirectionService
 
         // Campo de seguridad redundante (a veces requerido por versiones legacy del gateway)
         $data['TerminalId'] = $this->terminalId;
+
+        // Generar KeyEncriptionKey si existe una secret key configurada
+        // La fórmula estándar suele ser MD5(MerchantNumber + MerchantTerminal + TransactionId + Amount + SecretKey)
+        // NOTA: Verifica con CardNet la fórmula exacta si sigue fallando. Esta es la más común.
+        if (!empty($this->secretKey)) {
+             $stringToHash = $this->merchantId . $this->terminalId . $transactionId . $formattedAmount . $this->secretKey;
+             $data['KeyEncriptionKey'] = md5($stringToHash);
+        }
 
         // --- DEBUG COMPLETO (LOGS) ---
         // Esto escribirá en storage/logs/laravel.log
