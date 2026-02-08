@@ -72,37 +72,133 @@
         </div>
 
         {{-- MODAL DE REVISIÓN --}}
-        {{-- CORRECCIÓN: Quitamos :show="$showProcessModal" y usamos solo name para eventos --}}
         <x-modal name="process-modal" focusable>
             @if($selectedAdmission)
                 <div class="p-6">
-                    <h2 class="text-lg font-medium text-gray-900 mb-4">
-                        Revisión de Documentos: {{ $selectedAdmission->first_name }} {{ $selectedAdmission->last_name }}
-                    </h2>
+                    <div class="flex justify-between items-center mb-6 border-b pb-4">
+                        <h2 class="text-xl font-bold text-gray-900">
+                            Solicitud #{{ $selectedAdmission->id }} - {{ $selectedAdmission->first_name }} {{ $selectedAdmission->last_name }}
+                        </h2>
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full 
+                            @if($selectedAdmission->status == 'approved') bg-green-100 text-green-800 
+                            @elseif($selectedAdmission->status == 'rejected') bg-red-100 text-red-800 
+                            @else bg-yellow-100 text-yellow-800 @endif">
+                            {{ ucfirst($selectedAdmission->status) }}
+                        </span>
+                    </div>
+
+                    {{-- SECCIÓN DE INFORMACIÓN COMPLETA --}}
+                    <div class="bg-gray-50 rounded-lg p-5 mb-6 border border-gray-200">
+                        <h3 class="text-sm font-bold text-indigo-700 uppercase tracking-wider mb-4 border-b border-gray-200 pb-2">Información del Aspirante</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-sm">
+                            {{-- Columna 1: Personal --}}
+                            <div class="space-y-3">
+                                <div>
+                                    <span class="block text-xs font-medium text-gray-500 uppercase">Cédula / Pasaporte</span>
+                                    <span class="block text-gray-900 font-semibold">{{ $selectedAdmission->identification_id }}</span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs font-medium text-gray-500 uppercase">Fecha de Nacimiento</span>
+                                    <span class="block text-gray-900">{{ \Carbon\Carbon::parse($selectedAdmission->birth_date)->format('d/m/Y') }} ({{ \Carbon\Carbon::parse($selectedAdmission->birth_date)->age }} años)</span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs font-medium text-gray-500 uppercase">Email</span>
+                                    <span class="block text-gray-900">{{ $selectedAdmission->email }}</span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs font-medium text-gray-500 uppercase">Teléfono</span>
+                                    <span class="block text-gray-900">{{ $selectedAdmission->phone }}</span>
+                                </div>
+                            </div>
+
+                            {{-- Columna 2: Académico y Dirección --}}
+                            <div class="space-y-3">
+                                <div>
+                                    <span class="block text-xs font-medium text-gray-500 uppercase">Carrera Solicitada</span>
+                                    <span class="block text-indigo-700 font-bold text-base">{{ $selectedAdmission->course->name ?? 'No especificada' }}</span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs font-medium text-gray-500 uppercase">Escuela de Procedencia</span>
+                                    <span class="block text-gray-900">{{ $selectedAdmission->previous_school }}</span>
+                                </div>
+                                @if($selectedAdmission->previous_gpa)
+                                <div>
+                                    <span class="block text-xs font-medium text-gray-500 uppercase">Promedio Anterior</span>
+                                    <span class="block text-gray-900">{{ $selectedAdmission->previous_gpa }}</span>
+                                </div>
+                                @endif
+                                <div>
+                                    <span class="block text-xs font-medium text-gray-500 uppercase">Dirección / Nacionalidad</span>
+                                    <span class="block text-gray-900">{{ $selectedAdmission->address }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Información Adicional (Trabajo/Salud) --}}
+                        @if($selectedAdmission->work_place || $selectedAdmission->disease)
+                            <div class="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                @if($selectedAdmission->work_place)
+                                    <div>
+                                        <span class="block text-xs font-medium text-gray-500 uppercase">Lugar de Trabajo</span>
+                                        <span class="block text-gray-900">{{ $selectedAdmission->work_place }}</span>
+                                    </div>
+                                @endif
+                                @if($selectedAdmission->disease)
+                                    <div>
+                                        <span class="block text-xs font-medium text-gray-500 uppercase">Condición Médica / Riesgo</span>
+                                        <span class="block text-red-600 font-semibold">{{ $selectedAdmission->disease }}</span>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+
+                    {{-- SECCIÓN DE DOCUMENTOS --}}
+                    @php
+                        $docLabels = [
+                            'birth_certificate' => 'Acta de Nacimiento',
+                            'id_card' => 'Cédula de Identidad',
+                            'high_school_record' => 'Récord de Notas',
+                            'medical_certificate' => 'Certificado Médico',
+                            'payment_receipt' => 'Recibo de Pago',
+                            'bachelor_certificate' => 'Certificado de Bachiller',
+                            'photo' => 'Fotografía 2x2',
+                        ];
+                    @endphp
+
+                    <h3 class="text-md font-bold text-gray-800 mb-4 px-1 border-l-4 border-indigo-500 pl-3">Revisión de Documentación</h3>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         @foreach($selectedAdmission->documents as $key => $path)
-                            <div class="border rounded-lg p-3 {{ ($tempDocStatus[$key] ?? '') == 'rejected' ? 'bg-red-50 border-red-200' : 'bg-gray-50' }}">
-                                <div class="flex justify-between items-start mb-2">
-                                    <span class="font-medium text-sm text-gray-700 capitalize">{{ str_replace('_', ' ', $key) }}</span>
-                                    
-                                    @if($path)
-                                        <a href="{{ route('admissions.document', ['admission' => $selectedAdmission->id, 'key' => $key]) }}" target="_blank" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-200">
-                                            Ver Archivo
-                                        </a>
-                                    @else
-                                        <span class="text-xs text-red-500">No subido</span>
-                                    @endif
+                            <div class="border rounded-lg p-3 flex flex-col justify-between h-full shadow-sm {{ ($tempDocStatus[$key] ?? '') == 'rejected' ? 'bg-red-50 border-red-200' : (($tempDocStatus[$key] ?? '') == 'approved' ? 'bg-green-50 border-green-200' : 'bg-white') }}">
+                                
+                                <div class="mb-3">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="font-bold text-sm text-gray-700">
+                                            {{ $docLabels[$key] ?? ucwords(str_replace('_', ' ', $key)) }}
+                                        </span>
+                                        
+                                        @if($path)
+                                            <a href="{{ route('admissions.document', ['admission' => $selectedAdmission->id, 'key' => $key]) }}" target="_blank" class="text-xs bg-white text-indigo-700 border border-indigo-200 px-3 py-1 rounded-full hover:bg-indigo-50 transition font-medium flex items-center gap-1">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                Ver
+                                            </a>
+                                        @else
+                                            <span class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">No subido</span>
+                                        @endif
+                                    </div>
+                                    <p class="text-xs text-gray-500 truncate" title="{{ basename($path) }}">{{ basename($path) }}</p>
                                 </div>
 
-                                <div class="flex gap-2 mt-2">
+                                <div class="flex gap-2 mt-auto">
                                     <button type="button" wire:click="setDocStatus('{{ $key }}', 'approved')" 
-                                        class="flex-1 text-xs py-1 rounded border {{ ($tempDocStatus[$key] ?? '') == 'approved' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-700 hover:bg-gray-100' }}">
-                                        Aceptar
+                                        class="flex-1 text-xs font-semibold py-2 rounded transition-colors {{ ($tempDocStatus[$key] ?? '') == 'approved' ? 'bg-green-600 text-white shadow-inner' : 'bg-white text-gray-600 border hover:bg-green-50 hover:text-green-700 hover:border-green-300' }}">
+                                        @if(($tempDocStatus[$key] ?? '') == 'approved') ✓ Aceptado @else Aceptar @endif
                                     </button>
                                     <button type="button" wire:click="setDocStatus('{{ $key }}', 'rejected')" 
-                                        class="flex-1 text-xs py-1 rounded border {{ ($tempDocStatus[$key] ?? '') == 'rejected' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 hover:bg-gray-100' }}">
-                                        Rechazar
+                                        class="flex-1 text-xs font-semibold py-2 rounded transition-colors {{ ($tempDocStatus[$key] ?? '') == 'rejected' ? 'bg-red-600 text-white shadow-inner' : 'bg-white text-gray-600 border hover:bg-red-50 hover:text-red-700 hover:border-red-300' }}">
+                                        @if(($tempDocStatus[$key] ?? '') == 'rejected') ✕ Rechazado @else Rechazar @endif
                                     </button>
                                 </div>
                             </div>
@@ -110,23 +206,22 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700">Notas / Feedback para el aspirante</label>
-                        <textarea wire:model="admissionNotes" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" rows="3" placeholder="Indica qué documentos corregir si aplica..."></textarea>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Notas / Feedback para el aspirante</label>
+                        <textarea wire:model="admissionNotes" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" rows="3" placeholder="Ej: La foto debe tener fondo blanco, el acta no es legible..."></textarea>
                     </div>
 
-                    <div class="mt-6 flex justify-end gap-3">
-                        {{-- CORRECCIÓN: Usar método closeProcessModal en lugar de $set --}}
+                    <div class="mt-6 pt-4 border-t border-gray-200 flex justify-end gap-3">
                         <x-secondary-button wire:click="closeProcessModal">
                             Cancelar
                         </x-secondary-button>
                         
-                        <x-primary-button wire:click="saveReview">
-                            Guardar Revisión
+                        <x-primary-button wire:click="saveReview" class="bg-indigo-600 hover:bg-indigo-700">
+                            Guardar Decisión
                         </x-primary-button>
                     </div>
                 </div>
             @else
-                <div class="p-6 text-center text-gray-500">Cargando información...</div>
+                <div class="p-12 text-center text-gray-500">Cargando información...</div>
             @endif
         </x-modal>
 
