@@ -72,7 +72,8 @@
         </div>
 
         {{-- MODAL DE REVISIÓN --}}
-        <x-modal name="process-modal" :show="$showProcessModal" focusable>
+        {{-- CORRECCIÓN: Quitamos :show="$showProcessModal" y usamos solo name para eventos --}}
+        <x-modal name="process-modal" focusable>
             @if($selectedAdmission)
                 <div class="p-6">
                     <h2 class="text-lg font-medium text-gray-900 mb-4">
@@ -85,7 +86,6 @@
                                 <div class="flex justify-between items-start mb-2">
                                     <span class="font-medium text-sm text-gray-700 capitalize">{{ str_replace('_', ' ', $key) }}</span>
                                     
-                                    {{-- ENLACE SEGURO AQUI --}}
                                     @if($path)
                                         <a href="{{ route('admissions.document', ['admission' => $selectedAdmission->id, 'key' => $key]) }}" target="_blank" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-200">
                                             Ver Archivo
@@ -115,7 +115,8 @@
                     </div>
 
                     <div class="mt-6 flex justify-end gap-3">
-                        <x-secondary-button wire:click="$set('showProcessModal', false)">
+                        {{-- CORRECCIÓN: Usar método closeProcessModal en lugar de $set --}}
+                        <x-secondary-button wire:click="closeProcessModal">
                             Cancelar
                         </x-secondary-button>
                         
@@ -124,6 +125,8 @@
                         </x-primary-button>
                     </div>
                 </div>
+            @else
+                <div class="p-6 text-center text-gray-500">Cargando información...</div>
             @endif
         </x-modal>
 
