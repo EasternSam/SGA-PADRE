@@ -98,11 +98,25 @@ class MoodleApiService
         ]);
 
         if ($newUser && isset($newUser[0]['id'])) {
-            // Opcional: Enviar correo con credenciales aquí o en el controlador
             return $newUser[0]['id'];
         }
 
         return null;
+    }
+
+    /**
+     * Actualiza la contraseña de un usuario en Moodle (Plan B para SSO)
+     */
+    public function updateUserPassword($moodleUserId, $newPassword)
+    {
+        return $this->makeRequest('core_user_update_users', [
+            'users' => [
+                [
+                    'id' => $moodleUserId,
+                    'password' => $newPassword
+                ]
+            ]
+        ]);
     }
 
     /**
@@ -123,11 +137,10 @@ class MoodleApiService
 
     /**
      * Generar URL de acceso directo (SSO)
-     * Requiere configurar el plugin 'auth_userkey' en Moodle
+     * Requiere plugin 'auth_userkey'. Si falla, retorna null.
      */
     public function getLoginUrl($userEmail)
     {
-        // Primero obtenemos el usuario de Moodle para asegurar el ID
         $users = $this->makeRequest('core_user_get_users_by_field', [
             'field' => 'email',
             'values' => [$userEmail]
@@ -137,9 +150,6 @@ class MoodleApiService
         
         $moodleUser = $users[0];
 
-        // Llamada para obtener la "login key" (requiere configuración especial en Moodle)
-        // Nota: Esta función 'auth_userkey_request_login_url' es un ejemplo, 
-        // depende del plugin de web service externo habilitado en Moodle.
         $keyData = $this->makeRequest('auth_userkey_request_login_url', [
             'user' => [
                 'id' => $moodleUser['id']
@@ -150,7 +160,16 @@ class MoodleApiService
             return $keyData['loginurl'];
         }
         
-        // Fallback: URL normal de login
-        return $this->baseUrl . '/login/index.php';
+        return null; // Retornamos null para activar el Plan B en el controlador
+    }
+    
+    public function getMoodleUserByEmail($email)
+    {
+        $users = $this->makeRequest('core_user_get_users_by_field', [
+            'field' => 'email',
+            'values' => [$email]
+        ]);
+
+        return !empty($users) ? $users[0] : null;
     }
 }
