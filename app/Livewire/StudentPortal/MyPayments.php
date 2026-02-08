@@ -31,7 +31,7 @@ class MyPayments extends Component
     public $transferReference;
 
     // --- Comprobante Fiscal ---
-    public $ncfType = 'B02'; // Selección visual (B01/B02)
+    public $ncfType = 'B02'; 
     public $rnc = '';
     public $companyName = '';
 
@@ -81,6 +81,12 @@ class MyPayments extends Component
             return;
         }
 
+        // SEGURIDAD: Verificar que no esté pagado ya
+        if ($payment->status === 'Completado') {
+            $this->dispatch('notify', message: 'Este pago ya ha sido completado.', type: 'info');
+            return;
+        }
+
         $this->selectedEnrollment = $payment->enrollment;
         $this->amountToPay = $payment->amount;
         $this->showPaymentModal = true;
@@ -95,24 +101,18 @@ class MyPayments extends Component
     {
         $this->validate();
 
-        // 1. Mapeo de NCF para la base de datos (varchar 2)
-        // B01 -> 31 (Crédito Fiscal)
-        // B02 -> 32 (Consumo)
         $ncfDbCode = ($this->ncfType === 'B01') ? '31' : '32';
 
-        // 2. Preparar datos fiscales
         $fiscalData = [
-            'ncf_type' => $ncfDbCode, // Guardamos '31' o '32'
+            'ncf_type' => $ncfDbCode, 
             'rnc_client' => ($this->ncfType === 'B01') ? $this->rnc : null,
             'company_name' => ($this->ncfType === 'B01') ? $this->companyName : null,
         ];
         
-        // Agregar nota fiscal para referencia rápida
         $fiscalNote = ($this->ncfType === 'B01') 
             ? " | Solicita NCF Crédito (31) - RNC: {$this->rnc}" 
             : "";
 
-        // CASO 1: TARJETA
         if ($this->paymentMethod === 'card') {
             try {
                 $payment = Payment::find($this->selectedPaymentId);
@@ -122,7 +122,12 @@ class MyPayments extends Component
                     return;
                 }
 
-                // Guardar datos fiscales ANTES de ir a Cardnet
+                // SEGURIDAD: Doble verificación antes de ir a pasarela
+                if ($payment->status === 'Completado') {
+                    $this->addError('general', 'El pago ya fue completado previamente.');
+                    return;
+                }
+
                 $payment->update(array_merge([
                     'gateway' => 'Tarjeta',
                     'status' => 'Pendiente', 
@@ -145,7 +150,6 @@ class MyPayments extends Component
                 $this->addError('general', 'Error al conectar con pasarela.');
             }
         } 
-        // CASO 2: TRANSFERENCIA
         else {
             $this->processManualPayment($matriculaService, 'Transferencia Bancaria', $this->transferReference, 'Pendiente', $fiscalData, $fiscalNote);
         }
@@ -158,8 +162,8 @@ class MyPayments extends Component
         try {
             DB::transaction(function () use ($matriculaService, $gateway, $transactionId, $status, $fiscalData, $fiscalNote) {
                 $payment = Payment::find($this->selectedPaymentId);
-                if ($payment) {
-                    // Actualizar pago con datos fiscales
+                
+                if ($payment && $payment->status !== 'Completado') {
                     $payment->update(array_merge([
                         'status' => $status,
                         'gateway' => $gateway,

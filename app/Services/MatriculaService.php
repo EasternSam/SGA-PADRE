@@ -56,7 +56,7 @@ class MatriculaService
                     $emailExists = User::where('email', $newEmail)->where('id', '!=', $user->id)->exists();
                     
                     if ($emailExists) {
-                         $matricula = $this->generateUniqueStudentCode(); // Regenerar si hay colisión
+                         $matricula = $this->generateUniqueStudentCode(); 
                          $newEmail = $matricula . '@centu.edu.do';
                          $newPassword = Hash::make($matricula);
                          $student->student_code = $matricula; 
@@ -69,6 +69,8 @@ class MatriculaService
                 }
 
                 $student->save();
+                
+                // Llamamos a la activación explícitamente dentro de la transacción
                 $this->activarInscripcion($payment);
 
             }); 
@@ -81,12 +83,14 @@ class MatriculaService
     /**
      * Cambia el estado de la inscripción asociada al pago.
      * Pasa de 'Pendiente' a 'Cursando'.
+     * AHORA PÚBLICO para ser usado desde PaymentModal (Admin).
      */
-    private function activarInscripcion(Payment $payment)
+    public function activarInscripcion(Payment $payment)
     {
         $activated = 0;
 
-        // ESTRATEGIA 1: Pagos Agrupados (Carreras/Selección de Materias)
+        // ESTRATEGIA 1: Pagos Agrupados (Carreras/Selección de Materias - Relación hasMany)
+        // Esto cubre el caso de "Pago de Cuatrimestre" que agrupa varias materias
         $groupedEnrollments = Enrollment::where('payment_id', $payment->id)->get();
 
         foreach ($groupedEnrollments as $enrollment) {
@@ -97,7 +101,7 @@ class MatriculaService
             }
         }
 
-        // ESTRATEGIA 2: Pagos Individuales (Cursos Libres/Diplomados)
+        // ESTRATEGIA 2: Pagos Individuales (Cursos Libres/Diplomados - Relación legacy belongsTo)
         if ($payment->enrollment_id) {
             $enrollment = Enrollment::find($payment->enrollment_id);
             if ($enrollment && $enrollment->payment_id !== $payment->id) {
@@ -110,13 +114,14 @@ class MatriculaService
             }
         }
 
-        Log::info("MatriculaService: Pago {$payment->id} procesado. Se activaron {$activated} inscripciones.");
+        if ($activated > 0) {
+            Log::info("MatriculaService: Pago {$payment->id} procesado. Se activaron {$activated} inscripciones.");
+        }
     }
 
     private function generateUniqueStudentCode(): string
     {
         $yearPrefix = date('y'); 
-        // Usamos lockForUpdate para evitar condiciones de carrera en generación de IDs
         $lastStudent = Student::where('student_code', 'like', $yearPrefix . '%')
             ->orderByRaw('LENGTH(student_code) DESC')
             ->orderBy('student_code', 'desc')
@@ -129,7 +134,6 @@ class MatriculaService
             $nextSequence = intval($lastSequenceStr) + 1;
         }
 
-        // Bucle de seguridad por si acaso
         do {
             $paddedSequence = str_pad($nextSequence, 7, '0', STR_PAD_LEFT);
             $candidateCode = $yearPrefix . $paddedSequence;

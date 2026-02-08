@@ -9,7 +9,6 @@ use App\Models\Payment;
 use App\Models\Enrollment;
 use App\Services\MatriculaService;
 use App\Services\EcfService;
-// Se elimina CardnetService ya que admin no usa pasarela
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
@@ -340,44 +339,36 @@ class PaymentModal extends Component
                     // 1. Emitir e-CF (Factura Electrónica)
                     $ecfService->emitirComprobante($payment);
 
-                    // 2. Matrícula
+                    // 2. Matrícula (Si es nuevo ingreso)
                     if ($isNewStudent && $payment->paymentConcept && stripos($payment->paymentConcept->name, 'Inscripción') !== false) {
                         $matriculaService->generarMatricula($payment);
-                    } 
-                    
-                    // 3. Activar inscripción
-                    if ($payment->enrollment) {
-                        $payment->enrollment->status = 'Cursando';
-                        $payment->enrollment->save();
+                    } else {
+                        // 3. Activar inscripciones (Para pagos recurrentes/mensuales)
+                        // IMPORTANTE: Usamos el servicio centralizado que maneja pagos agrupados (Fase 2)
+                        $matriculaService->activarInscripcion($payment);
                     }
                 }
                 
                 return $payment;
             });
 
-            // LOGICA DE ENVIO DE CORREO DESPUES DE TRANSACCION (Modificada para incluir Pendientes y Base64)
+            // LOGICA DE ENVIO DE CORREO
             if ($payment && $this->student && $this->student->email) {
-                // Notificar si es Completado O Pendiente
                 if ($payment->status === 'Completado' || $payment->status === 'Pendiente') {
                     try {
-                        // Cargar relaciones necesarias para la vista PDF
                         $payment->load('student', 'paymentConcept', 'enrollment.courseSchedule.module');
-                        
-                        // Generar PDF y convertir a BASE64 para evitar errores de UTF-8
                         $pdfOutput = Pdf::loadView('reports.thermal-invoice', ['payment' => $payment])->output();
                         $pdfBase64 = base64_encode($pdfOutput);
                         
-                        // Enviar correo (SIN COLA) usando el base64
                         Mail::to($this->student->email)->send(new PaymentReceiptMail($payment, $pdfBase64));
-                        
                     } catch (\Exception $e) {
-                        Log::error("Error enviando recibo/deuda por correo: " . $e->getMessage());
+                        Log::error("Error enviando recibo: " . $e->getMessage());
                     }
                 }
             }
 
             $msg = ($this->status === 'Pendiente') 
-                ? 'Deuda registrada correctamente en la cuenta del estudiante.' 
+                ? 'Deuda registrada correctamente.' 
                 : 'Pago procesado exitosamente.';
 
             if ($this->status === 'Completado' && $this->gateway === 'Efectivo') {
@@ -390,7 +381,6 @@ class PaymentModal extends Component
             $this->dispatch('paymentAdded'); 
             $this->dispatch('$refresh');
             
-            // Abrir ticket automáticamente si es completado
             if ($payment && $payment->status === 'Completado') {
                 $this->dispatch('printTicket', url: route('finance.ticket', $payment->id));
             }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class NcfSequence extends Model
 {
@@ -17,25 +18,35 @@ class NcfSequence extends Model
     ];
 
     /**
-     * Obtiene el siguiente NCF formateado y avanza la secuencia.
+     * Obtiene el siguiente NCF formateado y avanza la secuencia de forma atómica.
      * Ej: E3100000001
      */
     public function getNextNcf()
     {
-        if ($this->current_sequence >= $this->limit_sequence) {
-            return null; // Secuencia agotada
-        }
+        // Usamos una transacción manual para bloquear la fila
+        return DB::transaction(function () {
+            // Bloqueamos la fila para lectura/escritura hasta que termine la transacción
+            $sequence = NcfSequence::where('id', $this->id)->lockForUpdate()->first();
 
-        if ($this->expiration_date < now()) {
-            return null; // Secuencia vencida
-        }
+            if (!$sequence || !$sequence->is_active) {
+                return null;
+            }
 
-        $this->increment('current_sequence');
-        
-        // Formato estándar DGII: Serie (1) + Tipo (2) + Secuencia (10) = 13 caracteres (para e-CF)
-        // Nota: e-CF usa E + Tipo (2) + Secuencia (10) = 13 caracteres.
-        // Formato: E310000000001
-        
-        return $this->series . $this->type_code . str_pad($this->current_sequence, 10, '0', STR_PAD_LEFT);
+            if ($sequence->current_sequence >= $sequence->limit_sequence) {
+                return null; // Secuencia agotada
+            }
+
+            if ($sequence->expiration_date < now()) {
+                return null; // Secuencia vencida
+            }
+
+            // Incrementamos
+            $sequence->current_sequence++;
+            $sequence->save(); // Guardamos inmediatamente dentro del lock
+
+            // Formato e-CF estándar: Serie (1) + Tipo (2) + Secuencia (10)
+            // Ejemplo: E + 31 + 0000000001
+            return $sequence->series . $sequence->type_code . str_pad($sequence->current_sequence, 10, '0', STR_PAD_LEFT);
+        });
     }
 }
