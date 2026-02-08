@@ -53,6 +53,22 @@ class MoodleApiService
     }
 
     /**
+     * Obtener listado de cursos de Moodle
+     */
+    public function getCourses()
+    {
+        // core_course_get_courses devuelve la lista de cursos disponibles
+        $courses = $this->makeRequest('core_course_get_courses');
+
+        // Moodle a veces devuelve un array directo, verifica si es válido
+        if (is_array($courses)) {
+            return $courses;
+        }
+
+        return [];
+    }
+
+    /**
      * Busca un usuario por email, si no existe, lo crea.
      */
     public function syncUser(User $user, $password)
