@@ -43,14 +43,43 @@ class Index extends Component
     // VARIABLE DE DEBUG
     public $debugTrace = [];
 
+    // Listeners para actualizar caché si ocurre algo en otro lado
+    protected $listeners = [
+        'studentAdded' => 'refreshStats', 
+        'courseAdded' => 'refreshStats', 
+        'enrollmentUpdated' => 'refreshStats',
+        '$refresh'
+    ];
+
     public function mount()
     {
-        $this->recentActivities = collect(); // Colección vacía inicial
+        $this->recentActivities = collect(); 
         $this->addTrace('Inicio del componente Dashboard (Mount)');
 
-        // Carga de contadores LIGERA (con caché corto de 5 minutos para evitar queries repetitivas en F5)
-        // Esto es opcional, pero ayuda si hay muchos usuarios concurrentes.
-        $stats = Cache::remember('dashboard_stats_counts', 300, function () {
+        $this->loadCachedStats();
+    }
+
+    public function refreshStats()
+    {
+        // Forzar recálculo
+        Cache::forget('dashboard_stats_counts_v' . Cache::get('dashboard_version', 'init'));
+        $this->loadCachedStats();
+    }
+
+    /**
+     * Carga estadísticas usando caché inteligente basado en versión.
+     */
+    private function loadCachedStats()
+    {
+        // 1. Obtener versión global del dashboard (gestionada por Observers)
+        // Si no existe, usamos 'init'.
+        $version = Cache::get('dashboard_version', 'init');
+
+        // 2. Clave única por versión.
+        $cacheKey = "dashboard_stats_counts_v{$version}";
+
+        // 3. Cachear por 24 horas (o hasta que cambie la versión)
+        $stats = Cache::remember($cacheKey, 60 * 60 * 24, function () {
             return [
                 'students' => Student::count(),
                 'courses' => Course::count(),
@@ -75,8 +104,6 @@ class Index extends Component
         }
 
         try {
-            // Intentar buscar por nombre de rol en una sola query optimizada
-            // Asumiendo que la relación users() en Role existe y es correcta.
             $roleName = Role::whereIn('name', ['teacher', 'Profesor'])->first()?->name;
             
             if ($roleName) {
@@ -96,13 +123,9 @@ class Index extends Component
     {
         $this->readyToLoad = true;
         
-        // 1. Cargar Actividades Recientes (Ahora es Lazy)
         $this->loadRecentActivities();
-
-        // 2. Preparar gráfico (Llamada API pesada con Caché)
         $this->prepareChartData($wpService);
 
-        // Disparar evento para que el JS renderice el gráfico
         $this->dispatch('stats-loaded', [
             'web' => $this->chartDataWeb,
             'system' => $this->chartDataSystem,
@@ -113,55 +136,45 @@ class Index extends Component
     private function loadRecentActivities()
     {
         if (class_exists(ActivityLog::class)) {
-            // Traemos solo las columnas necesarias para pintar la lista
-            $this->recentActivities = ActivityLog::with('causer:id,name') 
-                ->latest()
-                ->take(5)
-                ->get(['id', 'description', 'causer_id', 'created_at', 'properties']); // Agregué properties por si acaso
+            // Cache corto para actividades (1 min) o versión
+            $this->recentActivities = Cache::remember('dashboard_recent_activities', 60, function() {
+                 return ActivityLog::with('causer:id,name') 
+                    ->latest()
+                    ->take(5)
+                    ->get(['id', 'description', 'causer_id', 'created_at', 'properties']);
+            });
         }
     }
 
-    /**
-     * Helper para añadir trazas de debug
-     */
     private function addTrace($message, $data = null)
     {
-        // Limitamos el tamaño de la data logueada para ahorrar memoria
+        // (Lógica de traza mantenida igual)
         $dataPreview = $data;
         if (is_array($data) && count($data) > 20) {
-            $dataPreview = array_slice($data, 0, 20) + ['...' => 'truncated (ahorro de memoria)'];
+            $dataPreview = array_slice($data, 0, 20) + ['...' => 'truncated'];
         } elseif (is_string($data) && strlen($data) > 500) {
-            $dataPreview = substr($data, 0, 500) . '... (truncated)';
+            $dataPreview = substr($data, 0, 500) . '...';
         }
-
         $entry = Carbon::now()->toTimeString() . ' - ' . $message;
         $this->debugTrace[] = $entry;
-        
-        // Log::info('[DASHBOARD_DEBUG] ' . $message, is_array($dataPreview) ? $dataPreview : []);
     }
 
-    /**
-     * Prepara los datos para el gráfico de inscripciones.
-     * AHORA CON CACHÉ DE 1 HORA PARA LA API DE WORDPRESS Y COMPATIBILIDAD SQLITE.
-     */
     private function prepareChartData(WordpressApiService $wpService)
     {
         $this->chartLabels = [];
         $this->chartDataWeb = [];
         $this->chartDataSystem = [];
 
-        // Cacheamos la respuesta de WP por 1 hora (3600 seg) para no saturar la API externa
+        // Cache para WP API (1 hora) - Independiente de la versión del sistema local
         $wpStats = Cache::remember('dashboard_wp_stats', 3600, function () use ($wpService) {
             $this->addTrace('Cache Miss: Solicitando datos a WordPress API...');
             try {
                 return $wpService->getEnrollmentStats();
             } catch (\Exception $e) {
-                $this->addTrace('Excepción al conectar con WP: ' . $e->getMessage());
                 return ['labels' => [], 'data' => []];
             }
         });
 
-        // Mapa de datos normalizado de la Web (API)
         $wpDataMap = [];
         if (!empty($wpStats['labels']) && !empty($wpStats['data'])) {
             foreach ($wpStats['labels'] as $index => $label) {
@@ -172,52 +185,47 @@ class Index extends Component
             }
         }
 
-        // Optimización SQL Compatible: Obtener conteos agrupados por mes
-        $startDate = Carbon::now()->subMonths(11)->startOfMonth();
-        $driver = DB::connection()->getDriverName();
+        // Cache para Gráfico Local (Vinculado a versión Dashboard)
+        // Usamos la misma versión que los contadores para invalidar si entra un alumno
+        $version = Cache::get('dashboard_version', 'init');
+        $cacheKey = "dashboard_chart_system_v{$version}";
 
-        // Selección de sintaxis según driver (SQLite vs MySQL)
-        if ($driver === 'sqlite') {
-            $selectRaw = "strftime('%Y', created_at) as year, strftime('%m', created_at) as month, count(*) as total";
-            $groupBy = ['year', 'month'];
-        } else {
-            // MySQL / MariaDB / PostgreSQL (generalmente compatible con YEAR/MONTH o extract)
-            $selectRaw = 'YEAR(created_at) as year, MONTH(created_at) as month, count(*) as total';
-            $groupBy = ['year', 'month'];
-        }
+        $systemData = Cache::remember($cacheKey, 60 * 60 * 24, function() {
+             // ... Lógica pesada de agrupación por meses ...
+             $startDate = Carbon::now()->subMonths(11)->startOfMonth();
+             $driver = DB::connection()->getDriverName();
+             
+             if ($driver === 'sqlite') {
+                $selectRaw = "strftime('%Y', created_at) as year, strftime('%m', created_at) as month, count(*) as total";
+                $groupBy = ['year', 'month'];
+             } else {
+                $selectRaw = 'YEAR(created_at) as year, MONTH(created_at) as month, count(*) as total';
+                $groupBy = ['year', 'month'];
+             }
 
-        $systemEnrollmentsByMonth = Enrollment::selectRaw($selectRaw)
-            ->where('created_at', '>=', $startDate)
-            ->groupBy(...$groupBy) // Desempaquetar array para groupBy
-            ->get()
-            ->keyBy(function($item) {
-                // Normalizar keys para búsqueda rápida
-                return $item->year . '-' . str_pad($item->month, 2, '0', STR_PAD_LEFT);
-            });
+             return Enrollment::selectRaw($selectRaw)
+                ->where('created_at', '>=', $startDate)
+                ->groupBy(...$groupBy)
+                ->get()
+                ->keyBy(function($item) {
+                    return $item->year . '-' . str_pad($item->month, 2, '0', STR_PAD_LEFT);
+                });
+        });
 
-        // 2. Construir datos de los últimos 12 meses
+        // Construir datos finales (Combinación rápida en memoria)
         for ($i = 11; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
-            
-            // Generar etiqueta local
             $monthNameShort = $date->locale('es')->isoFormat('MMM'); 
             $monthLabel = ucfirst(str_replace('.', '', $monthNameShort)); 
             
             $this->chartLabels[] = $monthLabel;
-
-            // Key para buscar en la colección agrupada (YYYY-MM)
             $lookupKey = $date->format('Y-m');
 
-            // --- 1. Obtener TOTAL REAL de inscripciones del mes (Desde la colección, 0 DB queries aquí) ---
-            $totalEnrollmentsInMonth = isset($systemEnrollmentsByMonth[$lookupKey]) 
-                ? $systemEnrollmentsByMonth[$lookupKey]->total 
-                : 0;
+            // Leer de la colección cacheada
+            $totalEnrollmentsInMonth = isset($systemData[$lookupKey]) ? $systemData[$lookupKey]->total : 0;
 
-            // --- 2. Obtener inscripciones WEB (Desde la API de WP cacheada) ---
             $searchKey = $this->normalizeLabel($monthNameShort);
             $webCount = (int) ($wpDataMap[$searchKey] ?? 0);
-            
-            // --- 3. Calcular inscripciones SISTEMA (Físico) ---
             $systemCount = max(0, $totalEnrollmentsInMonth - $webCount);
 
             $this->chartDataWeb[] = $webCount;
@@ -239,17 +247,16 @@ class Index extends Component
 
     public function render()
     {
-        // Inicializar como colección vacía para evitar errores si readyToLoad es falso
         $recentEnrollments = collect();
 
-        // Solo cargamos la tabla si el componente está listo (Lazy Loading visual)
         if ($this->readyToLoad) {
-            // Consulta base optimizada con Eager Loading selectivo para la TABLA
-            // Solo traemos los campos necesarios para pintar la tabla
+            // Lista reciente NO se cachea por versión larga, 
+            // ya que necesitamos ver el último registro al instante.
+            // Podríamos usar un caché muy corto (10s) o dejarlo directo.
             $query = Enrollment::with([
-                'student:id,user_id,first_name,last_name,email', // Optimizado
-                'student.user:id,name,email', // Optimizado
-                'courseSchedule:id,module_id,teacher_id,section_name', // Optimizado
+                'student:id,user_id,first_name,last_name,email', 
+                'student.user:id,name,email', 
+                'courseSchedule:id,module_id,teacher_id,section_name', 
                 'courseSchedule.module:id,course_id,name', 
                 'courseSchedule.module.course:id,name', 
                 'courseSchedule.teacher:id,name' 
@@ -259,7 +266,6 @@ class Index extends Component
                 $query->where('status', $this->enrollmentFilter);
             }
 
-            // Limitamos los campos de la tabla principal también
             $recentEnrollments = $query->take(5)->get();
         }
 
