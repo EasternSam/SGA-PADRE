@@ -7,6 +7,7 @@ use Livewire\Attributes\Layout;
 use Carbon\Carbon;
 use App\Models\CourseSchedule;
 use App\Models\AcademicEvent;
+use Illuminate\Support\Facades\Cache;
 
 #[Layout('layouts.dashboard')]
 class Index extends Component
@@ -28,7 +29,7 @@ class Index extends Component
     public $newEventDate = '';
     public $newEventStartTime = '';
     public $newEventEndTime = '';
-    public $newEventType = 'academic'; // academic, administrative, holiday
+    public $newEventType = 'academic'; 
 
     public function mount()
     {
@@ -59,6 +60,7 @@ class Index extends Component
         $dateString = $date->format('Y-m-d');
         $this->selectedDate = $dateString;
 
+        // Carga diferida solo al seleccionar el día (No cacheamos esto porque es interacción puntual)
         $this->selectedDayData = [
             'date_human' => ucfirst($date->isoFormat('dddd D [de] MMMM, YYYY')),
             'sections' => $this->getSectionsForDate($date),
@@ -68,11 +70,9 @@ class Index extends Component
     }
 
     // --- MÉTODOS PARA GESTIÓN DE EVENTOS ---
-
     public function openEventModal()
     {
         $this->resetEventForm();
-        // Si hay un día seleccionado, pre-llenar la fecha
         if ($this->selectedDate) {
             $this->newEventDate = $this->selectedDate;
         } else {
@@ -107,9 +107,11 @@ class Index extends Component
             'type' => $this->newEventType,
         ]);
 
+        // Invalidar caché de eventos del mes afectado
+        Cache::forget("calendar_events_{$this->currentYear}_{$this->currentMonth}");
+
         $this->closeEventModal();
         
-        // Refrescar la selección si el evento creado es para el día seleccionado actualmente
         if ($this->selectedDate && $this->newEventDate == $this->selectedDate) {
             $day = Carbon::parse($this->selectedDate)->day;
             $this->selectDay($day);
@@ -129,38 +131,92 @@ class Index extends Component
         $this->resetValidation();
     }
 
-    // --- LÓGICA DE DATOS ---
+    // --- LÓGICA DE DATOS OPTIMIZADA ---
 
     public function getCalendarDaysProperty()
     {
-        $date = Carbon::createFromDate($this->currentYear, $this->currentMonth, 1);
-        $daysInMonth = $date->daysInMonth;
-        $startDayOfWeek = $date->dayOfWeek; 
+        // Cachear la estructura del mes completo para evitar recálculos en cada render
+        $cacheKey = "calendar_structure_{$this->currentYear}_{$this->currentMonth}_" . 
+                    ($this->showClasses ? '1' : '0') . 
+                    ($this->showStartsEnds ? '1' : '0') . 
+                    ($this->showAdmin ? '1' : '0');
 
-        $calendar = [];
+        return Cache::remember($cacheKey, 60, function () { // Cache corto de 1 min para agilidad
+            $date = Carbon::createFromDate($this->currentYear, $this->currentMonth, 1);
+            $daysInMonth = $date->daysInMonth;
+            $startDayOfWeek = $date->dayOfWeek; 
 
-        for ($i = 0; $i < $startDayOfWeek; $i++) {
-            $calendar[] = null;
-        }
+            $calendar = [];
+            for ($i = 0; $i < $startDayOfWeek; $i++) {
+                $calendar[] = null;
+            }
 
-        for ($i = 1; $i <= $daysInMonth; $i++) {
-            $currentDate = Carbon::createFromDate($this->currentYear, $this->currentMonth, $i);
+            // Precargar datos del mes en una sola consulta
+            $monthStart = $date->copy()->startOfMonth();
+            $monthEnd = $date->copy()->endOfMonth();
+
+            // 1. Eventos Académicos del Mes
+            $eventsInMonth = AcademicEvent::whereBetween('date', [$monthStart, $monthEnd])
+                ->pluck('date')
+                ->map(fn($d) => Carbon::parse($d)->format('Y-m-d'))
+                ->toArray();
+
+            // 2. Hitos del Sistema (Inicio/Fin)
+            $startsInMonth = $this->showStartsEnds 
+                ? CourseSchedule::whereBetween('start_date', [$monthStart, $monthEnd])->pluck('start_date')->toArray()
+                : [];
+            $endsInMonth = $this->showStartsEnds 
+                ? CourseSchedule::whereBetween('end_date', [$monthStart, $monthEnd])->pluck('end_date')->toArray()
+                : [];
             
-            $hasClasses = $this->showClasses ? $this->hasSectionsOnDate($currentDate) : false;
-            $hasEvents = $this->hasEventsOnDate($currentDate);
-            $hasSystem = $this->showStartsEnds ? $this->hasSystemEventsOnDate($currentDate) : false;
+            // 3. Clases (Días Activos) - Esto es lo más pesado, optimizamos
+            // En lugar de query por día, traemos los rangos activos que se cruzan con este mes
+            $activeSchedules = $this->showClasses 
+                ? CourseSchedule::where('start_date', '<=', $monthEnd)
+                    ->where('end_date', '>=', $monthStart)
+                    ->get(['days_of_week', 'start_date', 'end_date']) // Solo columnas necesarias
+                : collect();
 
-            $calendar[] = [
-                'day' => $i,
-                'date' => $currentDate->format('Y-m-d'),
-                'isToday' => $currentDate->isToday(),
-                'hasClasses' => $hasClasses,
-                'hasEvents' => $hasEvents,
-                'hasSystem' => $hasSystem,
-            ];
-        }
+            for ($i = 1; $i <= $daysInMonth; $i++) {
+                $currentDate = Carbon::createFromDate($this->currentYear, $this->currentMonth, $i);
+                $dateStr = $currentDate->format('Y-m-d');
+                
+                // Verificaciones en memoria (mucho más rápido que DB)
+                $hasEvents = in_array($dateStr, $eventsInMonth);
+                
+                $hasSystem = false;
+                if ($this->showStartsEnds) {
+                    // Check simple de strings en array
+                    $hasSystem = collect($startsInMonth)->contains(fn($d) => substr($d, 0, 10) === $dateStr) ||
+                                 collect($endsInMonth)->contains(fn($d) => substr($d, 0, 10) === $dateStr);
+                }
+                if ($this->showAdmin && $i === 28) $hasSystem = true;
 
-        return $calendar;
+                $hasClasses = false;
+                if ($this->showClasses) {
+                    $dayName = $this->translateDay($currentDate->dayName);
+                    // Verificación en memoria sobre la colección precargada
+                    $hasClasses = $activeSchedules->contains(function ($schedule) use ($currentDate, $dayName) {
+                        $start = Carbon::parse($schedule->start_date);
+                        $end = Carbon::parse($schedule->end_date);
+                        return $currentDate->between($start, $end) && 
+                               (is_array($schedule->days_of_week) 
+                                ? in_array($dayName, $schedule->days_of_week) 
+                                : str_contains($schedule->days_of_week, $dayName));
+                    });
+                }
+
+                $calendar[] = [
+                    'day' => $i,
+                    'date' => $dateStr,
+                    'isToday' => $currentDate->isToday(),
+                    'hasClasses' => $hasClasses,
+                    'hasEvents' => $hasEvents,
+                    'hasSystem' => $hasSystem,
+                ];
+            }
+            return $calendar;
+        });
     }
 
     // --- HELPERS DE BÚSQUEDA ---
@@ -171,7 +227,13 @@ class Index extends Component
 
         $dayName = $this->translateDay($date->dayName); 
 
-        return CourseSchedule::with(['module.course', 'teacher', 'classroom'])
+        // Eager Loading Selectivo
+        return CourseSchedule::with([
+                'module:id,name,course_id', 
+                'module.course:id,name', 
+                'teacher:id,name', 
+                'classroom:id,name'
+            ])
             ->where('start_date', '<=', $date->format('Y-m-d'))
             ->where('end_date', '>=', $date->format('Y-m-d'))
             ->whereJsonContains('days_of_week', $dayName)
@@ -181,28 +243,32 @@ class Index extends Component
 
     private function getEventsForDate(Carbon $date)
     {
-        return AcademicEvent::whereDate('date', $date->format('Y-m-d'))->get();
+        // Cachear eventos por día (útil si muchos usuarios ven el mismo día hoy)
+        return Cache::remember("events_day_" . $date->format('Y-m-d'), 300, function() use ($date) {
+            return AcademicEvent::whereDate('date', $date->format('Y-m-d'))->get();
+        });
     }
 
     private function getSystemEventsForDate(Carbon $date)
     {
         $events = [];
+        $dateStr = $date->format('Y-m-d');
 
         if ($this->showStartsEnds) {
-            $starts = CourseSchedule::with('module')->whereDate('start_date', $date->format('Y-m-d'))->get();
+            $starts = CourseSchedule::with('module:id,name')->whereDate('start_date', $dateStr)->get(['id', 'module_id', 'section_name']);
             foreach($starts as $s) {
                 $events[] = [
-                    'title' => 'Inicio de Clases: ' . $s->section_name,
+                    'title' => 'Inicio: ' . $s->section_name,
                     'description' => $s->module->name,
                     'type' => 'start',
                     'color' => 'bg-emerald-100 text-emerald-700 border-emerald-200'
                 ];
             }
 
-            $ends = CourseSchedule::with('module')->whereDate('end_date', $date->format('Y-m-d'))->get();
+            $ends = CourseSchedule::with('module:id,name')->whereDate('end_date', $dateStr)->get(['id', 'module_id', 'section_name']);
             foreach($ends as $s) {
                 $events[] = [
-                    'title' => 'Fin de Clases: ' . $s->section_name,
+                    'title' => 'Fin: ' . $s->section_name,
                     'description' => $s->module->name,
                     'type' => 'end',
                     'color' => 'bg-rose-100 text-rose-700 border-rose-200'
@@ -224,6 +290,8 @@ class Index extends Component
 
     private function hasSectionsOnDate(Carbon $date)
     {
+        // Este método ya no se usa directamente en el loop principal optimizado,
+        // pero se mantiene por compatibilidad si se llama individualmente.
         $dayName = $this->translateDay($date->dayName);
         return CourseSchedule::where('start_date', '<=', $date->format('Y-m-d'))
             ->where('end_date', '>=', $date->format('Y-m-d'))
@@ -241,7 +309,6 @@ class Index extends Component
         if (CourseSchedule::whereDate('start_date', $date->format('Y-m-d'))->exists()) return true;
         if (CourseSchedule::whereDate('end_date', $date->format('Y-m-d'))->exists()) return true;
         if ($this->showAdmin && $date->day === 28) return true;
-
         return false;
     }
 
