@@ -12,10 +12,22 @@ class GradesPdfController extends Controller
 {
     public function download(CourseSchedule $section)
     {
-        // 1. SEGURIDAD (IDOR Protection)
         $user = Auth::user();
-        if ($user->hasRole('Profesor') && $section->teacher_id !== $user->id) {
-            abort(403, 'No tienes permiso para descargar el reporte de esta sección.');
+
+        // 1. SEGURIDAD: Jerarquía de Permisos
+        // CASO A: Roles Administrativos (Acceso Total)
+        if ($user->hasAnyRole(['Admin', 'Registro', 'Dirección'])) {
+            // Acceso concedido automáticamente
+        }
+        // CASO B: Profesores (Solo sus secciones)
+        elseif ($user->hasRole('Profesor')) {
+            if ($section->teacher_id !== $user->id) {
+                abort(403, 'No tienes permiso para descargar el reporte de esta sección.');
+            }
+        }
+        // CASO C: Otros (Estudiantes, invitados) -> Bloqueado
+        else {
+            abort(403, 'No tienes permisos para acceder a reportes de calificaciones generales.');
         }
 
         // 2. Cargar relaciones
@@ -31,7 +43,7 @@ class GradesPdfController extends Controller
             ->select('enrollments.*')
             ->get();
 
-        // 4. Calcular Estadísticas (Opcional, útil para el reporte)
+        // 4. Calcular Estadísticas
         $stats = [
             'total' => $enrollments->count(),
             'aprobados' => $enrollments->where('final_grade', '>=', 70)->count(),

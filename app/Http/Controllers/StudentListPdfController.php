@@ -12,10 +12,22 @@ class StudentListPdfController extends Controller
 {
     public function download(CourseSchedule $section)
     {
-        // 1. SEGURIDAD (IDOR Protection)
         $user = Auth::user();
-        if ($user->hasRole('Profesor') && $section->teacher_id !== $user->id) {
-            abort(403, 'No tienes permiso para generar la lista de esta sección.');
+
+        // 1. SEGURIDAD: Jerarquía de Permisos
+        // CASO A: Roles Administrativos (Acceso Total)
+        if ($user->hasAnyRole(['Admin', 'Registro', 'Dirección'])) {
+            // Acceso concedido
+        }
+        // CASO B: Profesores (Solo sus secciones)
+        elseif ($user->hasRole('Profesor')) {
+            if ($section->teacher_id !== $user->id) {
+                abort(403, 'No tienes permiso para generar la lista de esta sección.');
+            }
+        }
+        // CASO C: Bloqueo por defecto
+        else {
+            abort(403, 'Acceso denegado.');
         }
 
         $section->load(['module.course', 'teacher']);

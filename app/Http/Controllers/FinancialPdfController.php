@@ -19,13 +19,24 @@ class FinancialPdfController extends Controller
             $dateTo = $request->input('date_to', Carbon::now()->endOfYear()->toDateString());
             $specificStudentId = $studentId;
             
-            // Seguridad: Estudiante solo ve lo suyo
-            if (auth()->user()->hasRole('Estudiante')) {
-                 $loggedStudent = auth()->user()->student;
+            $user = auth()->user();
+
+            // Seguridad: Control de acceso
+            // Si es Estudiante, solo puede ver su propio reporte.
+            if ($user->hasRole('Estudiante')) {
+                 $loggedStudent = $user->student;
                  if (!$loggedStudent || $loggedStudent->id != $studentId) {
-                     abort(403, 'No autorizado.');
+                     abort(403, 'No autorizado para ver este reporte.');
                  }
             }
+            // Si NO es estudiante (es decir, es Admin, Registro, Contabilidad, etc.), 
+            // permitimos el acceso sin restricciones de ID, asumiendo que el middleware de rol ya protegió la ruta padre
+            // o que estos roles tienen permiso de "ver todo".
+            elseif (!$user->hasAnyRole(['Admin', 'Registro', 'Contabilidad', 'Caja'])) {
+                // Si no tiene ninguno de los roles administrativos permitidos, bloqueamos.
+                abort(403, 'No tienes permisos administrativos para ver reportes financieros.');
+            }
+
         } 
         // === MODO 2: REPORTE GENERAL ===
         else {
