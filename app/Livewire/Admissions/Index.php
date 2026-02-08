@@ -15,8 +15,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Str;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\RequestApprovedMail;
+use Illuminate\Support\Facades\Notification; // Facade de Notificaciones
+use App\Notifications\SystemNotification; // Nuestra nueva notificación
 
 #[Layout('layouts.dashboard')]
 class Index extends Component
@@ -56,8 +56,6 @@ class Index extends Component
         
         $this->tempDocStatus = $currentStatus;
         $this->showProcessModal = true;
-
-        // CORRECCIÓN: Disparar evento para abrir el modal en el frontend
         $this->dispatch('open-modal', 'process-modal');
     }
 
@@ -65,8 +63,6 @@ class Index extends Component
     {
         $this->showProcessModal = false;
         $this->reset(['selectedAdmission', 'tempDocStatus', 'admissionNotes']);
-        
-        // CORRECCIÓN: Disparar evento para cerrar el modal
         $this->dispatch('close-modal', 'process-modal');
     }
 
@@ -75,6 +71,7 @@ class Index extends Component
         $this->tempDocStatus[$key] = $status;
     }
 
+    // Método para APROBAR MANUALMENTE la admisión
     public function approveAdmission()
     {
         $admission = $this->selectedAdmission;
@@ -101,7 +98,6 @@ class Index extends Component
                         'access_expires_at' => now()->addMonths(3),
                         'must_change_password' => true,
                     ]);
-                    Log::info("Usuario creado autom para admisión ID {$admission->id}");
                 }
 
                 // 2. ASIGNAR ROL
@@ -175,11 +171,16 @@ class Index extends Component
                 $admission->notes = $this->admissionNotes . "\n[Sistema] Aprobado el " . now()->format('d/m/Y');
                 $admission->user_id = $user->id;
                 $admission->save();
+
+                // 6. NOTIFICAR AL USUARIO (Campanita + Email)
+                $notificacionTitulo = '¡Admisión Aprobada!';
+                $notificacionMensaje = 'Felicidades, tu solicitud ha sido aprobada. Se ha generado tu orden de pago de inscripción. Bienvenido a SGA PADRE.';
+                $urlDestino = route('student.dashboard'); // O student.payments
+
+                $user->notify(new SystemNotification($notificacionTitulo, $notificacionMensaje, 'success', $urlDestino));
             });
 
-            session()->flash('message', 'Solicitud APROBADA. Usuario y deuda generados.');
-            
-            // Cerrar modal
+            session()->flash('message', 'Solicitud APROBADA y usuario notificado.');
             $this->closeProcessModal();
 
         } catch (\Exception $e) {
@@ -196,7 +197,7 @@ class Index extends Component
         $admission->document_status = $this->tempDocStatus;
         $admission->notes = $this->admissionNotes;
 
-        // 2. Lógica de estado
+        // 2. Lógica de estado y Notificaciones
         $allApproved = !in_array('pending', $this->tempDocStatus) && !in_array('rejected', $this->tempDocStatus);
         $hasRejection = in_array('rejected', $this->tempDocStatus);
 
@@ -206,14 +207,36 @@ class Index extends Component
         } elseif ($hasRejection) {
             $admission->status = 'rejected';
             $admission->save();
-            session()->flash('message', 'Solicitud marcada para correcciones.');
+            
+            // --- NOTIFICAR RECHAZO DE DOCUMENTOS ---
+            // Identificar qué documentos fallaron para ser específicos
+            $rejectedDocs = [];
+            foreach($this->tempDocStatus as $key => $status) {
+                if($status === 'rejected') {
+                    $rejectedDocs[] = ucwords(str_replace('_', ' ', $key));
+                }
+            }
+            $listaDocs = implode(', ', $rejectedDocs);
+
+            $mensaje = "Tu solicitud requiere correcciones. Los siguientes documentos fueron rechazados: {$listaDocs}. Observaciones: {$this->admissionNotes}";
+            
+            // Enviar notificación (si el usuario existe, se usa $user->notify; si no, Notification::route)
+            if ($admission->user) {
+                $admission->user->notify(new SystemNotification('Acción Requerida: Admisión', $mensaje, 'danger', route('applicant.portal')));
+            } else {
+                // Notificar solo por email si es guest
+                Notification::route('mail', $admission->email)
+                    ->notify(new SystemNotification('Acción Requerida: Admisión', $mensaje, 'danger', route('applicant.portal')));
+            }
+
+            session()->flash('message', 'Solicitud marcada para correcciones y aspirante notificado.');
+
         } else {
             $admission->status = 'pending';
             $admission->save();
             session()->flash('message', 'Revisión guardada (Parcial).');
         }
 
-        // Cerrar modal
         $this->closeProcessModal();
     }
 

@@ -7,23 +7,18 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class SystemNotification extends Notification
+class SystemNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
     public $title;
     public $message;
     public $type; // 'info', 'success', 'warning', 'danger'
-    public $icon; // Icono FontAwesome o SVG path
+    public $icon; // Icono FontAwesome sin prefijo (ej: 'check-circle')
     public $actionUrl;
 
     /**
      * Create a new notification instance.
-     *
-     * @param string $title Título corto
-     * @param string $message Mensaje detallado
-     * @param string $type Tipo para color (info, success, warning)
-     * @param string|null $actionUrl URL para redirigir al hacer clic
      */
     public function __construct($title, $message, $type = 'info', $actionUrl = null)
     {
@@ -32,29 +27,44 @@ class SystemNotification extends Notification
         $this->type = $type;
         $this->actionUrl = $actionUrl;
         
-        // Asignar icono según tipo
+        // Asignar icono visual según tipo
         $this->icon = match($type) {
-            'success' => 'check-circle', // Inscripciones
-            'warning' => 'exclamation-triangle', // Fechas próximas
-            'danger'  => 'times-circle', // Errores/Vencidos
-            default   => 'info-circle',
+            'success' => 'check-circle',
+            'warning' => 'exclamation-triangle',
+            'danger', 'error' => 'times-circle',
+            default => 'info-circle',
         };
     }
 
     /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
+     * Determina los canales de envío.
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        // Enviar siempre a base de datos (campanita) Y correo
+        return ['database', 'mail'];
     }
 
     /**
-     * Get the array representation of the notification.
-     *
-     * @return array<string, mixed>
+     * Representación para Correo Electrónico.
+     */
+    public function toMail(object $notifiable): MailMessage
+    {
+        $mail = (new MailMessage)
+            ->subject('SGA: ' . $this->title) // Asunto del correo
+            ->greeting('¡Hola!')
+            ->line($this->message); // El cuerpo del mensaje
+
+        // Si hay una acción/URL, añadir el botón
+        if ($this->actionUrl) {
+            $mail->action('Ver Detalles', $this->actionUrl);
+        }
+
+        return $mail->line('Gracias por ser parte de nuestra comunidad educativa.');
+    }
+
+    /**
+     * Representación para Base de Datos (Campanita).
      */
     public function toArray(object $notifiable): array
     {

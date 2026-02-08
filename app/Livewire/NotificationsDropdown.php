@@ -9,7 +9,8 @@ class NotificationsDropdown extends Component
 {
     public $unreadCount = 0;
 
-    protected $listeners = ['notificationReceived' => 'refreshNotifications'];
+    // Escuchar eventos para actualizar sin recargar (ej: cuando llega push notification)
+    protected $listeners = ['notificationReceived' => 'refreshNotifications', '$refresh'];
 
     public function mount()
     {
@@ -25,8 +26,10 @@ class NotificationsDropdown extends Component
 
     public function getNotificationsProperty()
     {
-        // Traemos las últimas 10 notificaciones (leídas y no leídas)
-        return Auth::user()->notifications()->latest()->take(10)->get();
+        // Traemos las últimas 10 notificaciones para mostrar en el dropdown
+        return Auth::check() 
+            ? Auth::user()->notifications()->latest()->take(10)->get() 
+            : collect();
     }
 
     public function markAsRead($notificationId)
@@ -36,7 +39,7 @@ class NotificationsDropdown extends Component
         if ($notification) {
             $notification->markAsRead();
             
-            // Si tiene URL, redirigir
+            // Si la notificación tiene una URL de acción, redirigimos
             if (isset($notification->data['url']) && $notification->data['url']) {
                 return redirect($notification->data['url']);
             }
@@ -47,8 +50,10 @@ class NotificationsDropdown extends Component
 
     public function markAllAsRead()
     {
-        Auth::user()->unreadNotifications->markAsRead();
-        $this->refreshNotifications();
+        if (Auth::check()) {
+            Auth::user()->unreadNotifications->markAsRead();
+            $this->refreshNotifications();
+        }
     }
 
     public function render()
