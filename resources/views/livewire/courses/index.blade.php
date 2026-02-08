@@ -91,8 +91,8 @@
                                             </span>
                                         @endif
                                         @if($course->moodle_course_id)
-                                            <span class="block text-xs text-orange-600 mt-1 truncate" title="ID Moodle: {{ $course->moodle_course_id }}">
-                                                <i class="fas fa-graduation-cap mr-1"></i>Enlazado Moodle
+                                            <span class="block text-xs text-orange-600 mt-1 truncate" title="Moodle ID: {{ $course->moodle_course_id }}">
+                                                <i class="fas fa-graduation-cap mr-1"></i>Moodle
                                             </span>
                                         @endif
                                     </div>
@@ -101,8 +101,8 @@
                                         <button wire:click.stop="openLinkModal({{ $course->id }})" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Enlazar con WordPress">
                                             <i class="fas fa-link text-xs"></i>
                                         </button>
-                                        <!-- Enlace Moodle (NUEVO) -->
-                                        <button wire:click.stop="openMoodleLinkModal({{ $course->id }})" class="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors" title="Enlazar con Moodle">
+                                        <!-- Enlace Moodle (NUEVO: Nivel Curso) -->
+                                        <button wire:click.stop="openMoodleLinkModal('course', {{ $course->id }})" class="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors" title="Enlazar con Moodle">
                                             <i class="fas fa-graduation-cap text-xs"></i>
                                         </button>
                                         
@@ -156,8 +156,18 @@
                                     <div class="flex justify-between items-center">
                                         <div>
                                             <span class="block font-medium text-gray-900 {{ $selectedModule == $module->id ? 'text-indigo-700' : '' }}">{{ $module->name }}</span>
+                                            @if($module->moodle_course_id)
+                                                <span class="block text-xs text-orange-600 mt-1 truncate" title="Moodle ID: {{ $module->moodle_course_id }}">
+                                                    <i class="fas fa-graduation-cap mr-1"></i>Moodle
+                                                </span>
+                                            @endif
                                         </div>
                                         <div class="flex items-center space-x-1">
+                                            <!-- Enlace Moodle (NUEVO: Nivel Módulo) -->
+                                            <button wire:click.stop="openMoodleLinkModal('module', {{ $module->id }})" class="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors" title="Enlazar con Moodle">
+                                                <i class="fas fa-graduation-cap text-xs"></i>
+                                            </button>
+
                                             <button wire:click.stop="editModule({{ $module->id }})" class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors">
                                                 <i class="fas fa-pencil-alt text-xs"></i>
                                             </button>
@@ -224,12 +234,24 @@
                                             
                                             @if($schedule->mapping)
                                                 <span class="block text-xs text-green-600 mt-1" title="WP Horario: {{ $schedule->mapping->wp_schedule_data }}">
-                                                    <i class="fas fa-check-circle mr-1"></i> Enlazado
+                                                    <i class="fas fa-check-circle mr-1"></i> WP Enlazado
+                                                </span>
+                                            @endif
+
+                                            @if($schedule->moodle_course_id)
+                                                <span class="block text-xs text-orange-600 mt-1 truncate" title="Moodle ID: {{ $schedule->moodle_course_id }}">
+                                                    <i class="fas fa-graduation-cap mr-1"></i> Moodle
                                                 </span>
                                             @endif
                                         </div>
                                         
                                         <div class="flex items-center space-x-1 pl-2">
+                                            <!-- Enlace Moodle (NUEVO: Nivel Sección) -->
+                                            <button wire:click.stop="openMoodleLinkModal('schedule', {{ $schedule->id }})" class="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors" title="Enlazar con Moodle">
+                                                <i class="fas fa-graduation-cap text-xs"></i>
+                                            </button>
+
+                                            <!-- Enlace WP (Existente) -->
                                             @if($selectedCourseObject?->mapping)
                                                 @php
                                                     $scheduleMapping = $schedule->mapping; 
@@ -551,21 +573,20 @@
         </div>
     </x-modal>
 
-    <!-- Modal Enlace Moodle (NUEVO) -->
+    <!-- Modal Enlace Moodle (FLEXIBLE) -->
     <x-modal name="link-moodle-modal" maxWidth="lg">
         <div class="p-6">
-            <h2 class="text-lg font-medium text-gray-900 mb-2">Enlazar Curso con Moodle</h2>
-            @if($currentLinkingCourse)
-                <p class="text-sm text-gray-600 mb-4">Estás enlazando el curso: <strong class="text-gray-900">{{ $currentLinkingCourse->name }}</strong></p>
-            @endif
-            <div wire:loading wire:target="openMoodleLinkModal, saveMoodleLink" class="w-full">
-                <div class="flex items-center p-3 text-sm text-orange-700 bg-orange-50 rounded-lg" role="alert">
-                    <svg class="w-4 h-4 mr-2 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    <span class="font-medium">Cargando cursos de Moodle...</span>
+            <h2 class="text-lg font-medium text-gray-900 mb-2">Enlazar con Moodle</h2>
+            <p class="text-sm text-gray-600 mb-4">Estás configurando: <strong class="text-gray-900">{{ $moodleLinkingTitle }}</strong></p>
+            
+            <div wire:loading wire:target="openMoodleLinkModal, saveMoodleLink" class="w-full mb-4">
+                <div class="flex items-center p-3 text-sm text-orange-700 bg-orange-50 rounded-lg">
+                    <svg class="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    <span>Cargando cursos de Moodle...</span>
                 </div>
             </div>
-            @if($moodleLinkFeedbackMessage) <div class="p-3 text-sm text-green-700 bg-green-50 rounded-lg mb-4" role="alert">{{ $moodleLinkFeedbackMessage }}</div> @endif
-            @if($moodleLinkErrorMessage) <div class="p-3 text-sm text-red-700 bg-red-50 rounded-lg mb-4" role="alert"><span class="font-medium">Error:</span> {{ $moodleLinkErrorMessage }}</div> @endif
+
+            @if($moodleLinkErrorMessage) <div class="p-3 text-sm text-red-700 bg-red-50 rounded-lg mb-4">Error: {{ $moodleLinkErrorMessage }}</div> @endif
             
             <div wire:loading.remove wire:target="openMoodleLinkModal">
                 @if(!$moodleLinkErrorMessage && !empty($moodleCourses))
@@ -577,6 +598,13 @@
                                 <option value="{{ $moodleCourse['id'] }}">{{ $moodleCourse['fullname'] ?? $moodleCourse['shortname'] }} (ID: {{ $moodleCourse['id'] }})</option>
                             @endforeach
                         </select>
+                        <p class="text-xs text-gray-500 mt-2">
+                            @if($moodleLinkingType === 'schedule')
+                                Nota: Este enlace tiene prioridad sobre los enlaces de Módulo y Curso.
+                            @elseif($moodleLinkingType === 'module')
+                                Nota: Este enlace tiene prioridad sobre el enlace del Curso, pero puede ser sobreescrito por una Sección.
+                            @endif
+                        </p>
                     </div>
                 @elseif(!$moodleLinkErrorMessage)
                     <p class="mt-4 text-sm text-gray-500 italic">No se encontraron cursos en Moodle.</p>
@@ -584,11 +612,8 @@
             </div>
             
             <div class="flex justify-end mt-6">
-                <button type="button" x-on:click="$dispatch('close-modal', 'link-moodle-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
-                <button type="button" wire:click="saveMoodleLink()" wire:loading.attr="disabled" wire:target="saveMoodleLink" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
-                    <svg wire:loading wire:target="saveMoodleLink" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    Guardar Enlace
-                </button>
+                <button x-on:click="$dispatch('close-modal', 'link-moodle-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
+                <button wire:click="saveMoodleLink()" wire:loading.attr="disabled" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg">Guardar Enlace</button>
             </div>
         </div>
     </x-modal>

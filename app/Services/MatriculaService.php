@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use App\Services\MoodleApiService; // Importamos el servicio
+use App\Services\MoodleApiService;
 
 /**
  * Servicio para manejar la lógica de generación de matrícula
@@ -85,14 +85,12 @@ class MatriculaService
     /**
      * Cambia el estado de la inscripción asociada al pago.
      * Pasa de 'Pendiente' a 'Cursando'.
-     * AHORA PÚBLICO para ser usado desde PaymentModal (Admin).
      */
     public function activarInscripcion(Payment $payment)
     {
         $activated = 0;
 
-        // ESTRATEGIA 1: Pagos Agrupados (Carreras/Selección de Materias - Relación hasMany)
-        // Esto cubre el caso de "Pago de Cuatrimestre" que agrupa varias materias
+        // ESTRATEGIA 1: Pagos Agrupados
         $groupedEnrollments = Enrollment::where('payment_id', $payment->id)->get();
 
         foreach ($groupedEnrollments as $enrollment) {
@@ -101,22 +99,19 @@ class MatriculaService
                 $enrollment->save();
                 $activated++;
                 
-                // Intento de matriculación en Moodle
                 $this->syncWithMoodle($enrollment);
             }
         }
 
-        // ESTRATEGIA 2: Pagos Individuales (Cursos Libres/Diplomados - Relación legacy belongsTo)
+        // ESTRATEGIA 2: Pagos Individuales
         if ($payment->enrollment_id) {
             $enrollment = Enrollment::find($payment->enrollment_id);
             if ($enrollment && $enrollment->payment_id !== $payment->id) {
-                // Verificar estado actual para no re-procesar
                 if ($enrollment->status === 'Pendiente' || $enrollment->status === 'Reservado') {
                     $enrollment->status = 'Cursando';
                     $enrollment->save();
                     $activated++;
 
-                    // Intento de matriculación en Moodle
                     $this->syncWithMoodle($enrollment);
                 }
             }
@@ -128,17 +123,32 @@ class MatriculaService
     }
 
     /**
-     * Sincroniza la inscripción con Moodle si corresponde.
+     * Sincroniza la inscripción con Moodle con lógica de CASCADA.
+     * Prioridad: Sección > Módulo > Curso
      */
     private function syncWithMoodle(Enrollment $enrollment)
     {
         try {
-            // Navegar relaciones para encontrar el ID del curso en Moodle
-            // Enrollment -> CourseSchedule -> Module -> Course -> moodle_course_id
-            $course = $enrollment->courseSchedule->module->course ?? null;
+            $schedule = $enrollment->courseSchedule;
+            if (!$schedule) return;
 
-            if (!$course || empty($course->moodle_course_id)) {
-                return; // No es un curso de Moodle o no está configurado
+            // --- LÓGICA DE CASCADA ---
+            // 1. Verificar si la SECCIÓN tiene un ID de Moodle
+            $moodleCourseId = $schedule->moodle_course_id;
+
+            // 2. Si no, verificar si el MÓDULO tiene un ID de Moodle
+            if (empty($moodleCourseId)) {
+                $moodleCourseId = $schedule->module->moodle_course_id ?? null;
+            }
+
+            // 3. Si no, verificar si el CURSO padre tiene un ID de Moodle
+            if (empty($moodleCourseId)) {
+                $moodleCourseId = $schedule->module->course->moodle_course_id ?? null;
+            }
+
+            // Si después de todo esto no hay ID, salimos
+            if (empty($moodleCourseId)) {
+                return;
             }
 
             $student = $enrollment->student;
@@ -149,29 +159,26 @@ class MatriculaService
                 return;
             }
 
-            // Resolvemos el servicio aquí para evitar problemas de inyección en constructores antiguos
+            // Resolvemos el servicio
             $moodleService = app(MoodleApiService::class);
 
-            // Contraseña inicial para Moodle (usamos la matrícula o una por defecto)
+            // Contraseña inicial
             $moodlePassword = $student->student_code ?? 'Centu' . date('Y');
 
-            // 1. Sincronizar Usuario (Crear u obtener ID)
+            // 1. Sincronizar Usuario
             $moodleUserId = $moodleService->syncUser($user, $moodlePassword);
 
             if ($moodleUserId) {
-                // Guardar el ID de Moodle en local si es nuevo/diferente
+                // Guardar el ID de Moodle localmente
                 if ($user->moodle_user_id !== $moodleUserId) {
                     $user->moodle_user_id = $moodleUserId;
-                    $user->saveQuietly(); // Evitar disparar observadores innecesarios
+                    $user->saveQuietly();
                 }
 
-                // 2. Matricular en el curso
-                $moodleService->enrollUser($moodleUserId, $course->moodle_course_id);
+                // 2. Matricular en el curso específico encontrado
+                $moodleService->enrollUser($moodleUserId, $moodleCourseId);
                 
-                Log::info("Moodle Sync: Usuario {$user->email} matriculado en curso Moodle ID {$course->moodle_course_id}.");
-
-                // Aquí podrías disparar un evento o enviar el correo con las credenciales
-                // Mail::to($user->email)->send(new MoodleWelcomeMail($user, $moodlePassword, $course));
+                Log::info("Moodle Sync: Usuario {$user->email} matriculado en Moodle ID {$moodleCourseId} (Origen: Cascada).");
             }
 
         } catch (\Exception $e) {

@@ -17,7 +17,7 @@ use Illuminate\Validation\Rule;
 use Carbon\Carbon; 
 use App\Models\CourseMapping;
 use App\Services\WordpressApiService;
-use App\Services\MoodleApiService; // Importamos el servicio de Moodle
+use App\Services\MoodleApiService;
 use App\Models\ScheduleMapping;
 
 #[Layout('layouts.dashboard')]
@@ -55,13 +55,18 @@ class Index extends Component
     public $linkFeedbackMessage = '';
     public $linkErrorMessage = '';
 
-    // --- Propiedades para Enlace Moodle (NUEVO) ---
+    // --- Propiedades para Enlace Moodle (FLEXIBLE) ---
     public $moodleCourses = [];
     public $selectedMoodleCourseId = '';
     public $moodleLinkErrorMessage = '';
     public $moodleLinkFeedbackMessage = '';
+    
+    // Variables para controlar qué entidad estamos enlazando
+    public $moodleLinkingType = ''; // 'course', 'module', 'schedule'
+    public $moodleLinkingId = null;
+    public $moodleLinkingTitle = '';
 
-    // --- Propiedades para Enlace Sección ---
+    // --- Propiedades para Enlace Sección (Legacy WP) ---
     public $currentLinkingSection;
     public $wpSchedules = [];
     public $selectedWpScheduleId = '';
@@ -99,7 +104,7 @@ class Index extends Component
             });
         }
 
-        // AGREGADO: 'moodle_course_id' al select para que esté disponible en la vista
+        // Añadimos moodle_course_id
         $courses = $coursesQuery->select('id', 'name', 'code', 'is_sequential', 'registration_fee', 'monthly_fee', 'moodle_course_id')
                                 ->with('mapping')
                                 ->paginate(10); 
@@ -114,8 +119,9 @@ class Index extends Component
                 ->find($this->selectedCourse);
             
             if ($selectedCourseObject) {
+                // Añadimos moodle_course_id
                 $modules = Module::where('course_id', $this->selectedCourse)
-                    ->select('id', 'course_id', 'name')
+                    ->select('id', 'course_id', 'name', 'moodle_course_id')
                     ->withCount('schedules')
                     ->paginate(20, ['*'], 'modules-page'); 
             } else {
@@ -133,8 +139,9 @@ class Index extends Component
             if ($currentModule) {
                 $selectedModuleName = $currentModule->name;
                 
+                // Añadimos moodle_course_id
                 $schedules = CourseSchedule::where('module_id', $this->selectedModule)
-                    ->select('id', 'module_id', 'teacher_id', 'classroom_id', 'days_of_week', 'section_name', 'modality', 'start_time', 'end_time', 'start_date', 'end_date')
+                    ->select('id', 'module_id', 'teacher_id', 'classroom_id', 'days_of_week', 'section_name', 'modality', 'start_time', 'end_time', 'start_date', 'end_date', 'moodle_course_id')
                     ->with(['teacher:id,name', 'mapping', 'classroom']) 
                     ->orderBy('start_time')
                     ->paginate(50, ['*'], 'schedules-page');
@@ -604,32 +611,43 @@ class Index extends Component
         }
     }
 
-    // --- MÉTODOS PARA ENLACE CON MOODLE (NUEVO) ---
+    // --- ENLACE MOODLE (FLEXIBLE) ---
     public function closeMoodleLinkModal() { 
-        $this->reset(['currentLinkingCourse', 'selectedMoodleCourseId', 'moodleLinkFeedbackMessage', 'moodleLinkErrorMessage']);
+        $this->reset(['moodleLinkingType', 'moodleLinkingId', 'moodleLinkingTitle', 'selectedMoodleCourseId', 'moodleLinkFeedbackMessage', 'moodleLinkErrorMessage']);
     }
 
-    public function openMoodleLinkModal($courseId, MoodleApiService $moodleService) { 
-        $this->reset(['currentLinkingCourse', 'selectedMoodleCourseId', 'moodleLinkFeedbackMessage', 'moodleLinkErrorMessage']); 
+    public function openMoodleLinkModal($type, $id, MoodleApiService $moodleService) { 
+        $this->closeMoodleLinkModal();
+        $this->moodleLinkingType = $type;
+        $this->moodleLinkingId = $id;
+
         try {
-            $this->currentLinkingCourse = Course::findOrFail($courseId);
+            if ($type === 'course') {
+                $entity = Course::findOrFail($id);
+                $this->moodleLinkingTitle = "Curso: " . $entity->name;
+                $this->selectedMoodleCourseId = $entity->moodle_course_id;
+            } elseif ($type === 'module') {
+                $entity = Module::findOrFail($id);
+                $this->moodleLinkingTitle = "Módulo: " . $entity->name;
+                $this->selectedMoodleCourseId = $entity->moodle_course_id;
+            } elseif ($type === 'schedule') {
+                $entity = CourseSchedule::findOrFail($id);
+                $this->moodleLinkingTitle = "Sección: " . ($entity->section_name ?? 'ID '.$entity->id);
+                $this->selectedMoodleCourseId = $entity->moodle_course_id;
+            }
         } catch (\Exception $e) {
-            session()->flash('error', 'No se encontró el curso.');
+            session()->flash('error', 'Entidad no encontrada.');
             return;
         }
         
-        $this->selectedMoodleCourseId = $this->currentLinkingCourse->moodle_course_id ?? '';
-        
         if (empty($this->moodleCourses)) {
             try {
-                // Asumimos que MoodleApiService tiene un método getCourses()
-                // Si no existe, deberá implementarse retornando array [['id' => 1, 'fullname' => 'Curso 1'], ...]
                 $this->moodleCourses = $moodleService->getCourses();
                 if (empty($this->moodleCourses)) { 
-                    $this->moodleLinkErrorMessage = 'No se pudieron cargar los cursos de Moodle.'; 
+                    $this->moodleLinkErrorMessage = 'No se encontraron cursos en Moodle.'; 
                 }
             } catch (\Exception $e) {
-                Log::error('Error al llamar a MoodleApiService', ['exception' => $e->getMessage()]);
+                Log::error('Moodle API Error', ['exception' => $e->getMessage()]);
                 $this->moodleLinkErrorMessage = 'Error al conectar con Moodle.';
             }
         }
@@ -640,20 +658,31 @@ class Index extends Component
         $this->reset(['moodleLinkFeedbackMessage', 'moodleLinkErrorMessage']);
         
         try {
-            // Guardamos directamente en la tabla courses
-            $this->currentLinkingCourse->moodle_course_id = $this->selectedMoodleCourseId ?: null;
-            $this->currentLinkingCourse->save();
-            
-            session()->flash('message', 'Curso enlazado con Moodle exitosamente.');
-            $this->currentLinkingCourse->refresh(); 
-            $this->dispatch('close-modal', 'link-moodle-modal'); 
-            $this->closeMoodleLinkModal(); 
+            if ($this->moodleLinkingType === 'course') {
+                $entity = Course::findOrFail($this->moodleLinkingId);
+            } elseif ($this->moodleLinkingType === 'module') {
+                $entity = Module::findOrFail($this->moodleLinkingId);
+            } elseif ($this->moodleLinkingType === 'schedule') {
+                $entity = CourseSchedule::findOrFail($this->moodleLinkingId);
+            }
+
+            if (isset($entity)) {
+                $entity->moodle_course_id = $this->selectedMoodleCourseId ?: null;
+                $entity->save();
+                
+                $msg = ucfirst($this->moodleLinkingType) . ' enlazado correctamente.';
+                session()->flash('message', $msg);
+                
+                $this->dispatch('close-modal', 'link-moodle-modal'); 
+                $this->closeMoodleLinkModal(); 
+            }
         } catch (\Exception $e) {
-            Log::error('Error al guardar el enlace Moodle', ['exception' => $e->getMessage()]);
-            $this->moodleLinkErrorMessage = 'Error al guardar el enlace.';
+            Log::error('Error guardando enlace Moodle', ['exception' => $e->getMessage()]);
+            $this->moodleLinkErrorMessage = 'Error al guardar.';
         }
     }
 
+    // --- ENLACE SECCION WP (LEGACY) ---
     public function closeSectionLinkModal() { $this->reset(['currentLinkingSection', 'wpSchedules', 'selectedWpScheduleId', 'sectionLinkErrorMessage']); }
     
     public function openMapSectionModal($scheduleId, WordpressApiService $wpService) { 
