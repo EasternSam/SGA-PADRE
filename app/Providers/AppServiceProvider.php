@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\URL;
 // Imports Añadidos
 use App\Models\Enrollment;
 use App\Observers\EnrollmentObserver;
+use App\Models\Payment; // Importar Modelo
+use App\Observers\PaymentObserver; // Importar Observador
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -37,5 +39,8 @@ class AppServiceProvider extends ServiceProvider
 
         // 4. REGISTRAR OBSERVER DE INSCRIPCIONES (NUEVO)
         Enrollment::observe(EnrollmentObserver::class);
+        
+        // --- NUEVO: Registrar el observador de pagos ---
+        Payment::observe(PaymentObserver::class);
     }
 }
