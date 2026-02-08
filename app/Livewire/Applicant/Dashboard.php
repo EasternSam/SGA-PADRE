@@ -76,7 +76,7 @@ class Dashboard extends Component
         'previous_school' => 'required|string|max:255',
         'previous_gpa' => 'nullable|numeric|between:0,100',
         
-        // Validación de Archivos BLINDADA (Max 5MB = 5120KB)
+        // VALIDACIÓN ESTRICTA: Solo PDF e Imágenes, Máximo 5MB (5120 KB)
         'file_birth_certificate' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
         'file_id_card' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
         'file_high_school_record' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
@@ -104,8 +104,8 @@ class Dashboard extends Component
     {
         $this->validate();
 
-        // Subir archivos a DISCO PRIVADO ('local')
-        // Esto los guarda en /storage/app/admissions/... y NO son accesibles por URL pública
+        // ALMACENAMIENTO SEGURO: Usamos 'local' (privado) en lugar de 'public'
+        // Estos archivos NO serán accesibles vía URL directa, solo mediante el controlador seguro.
         $documents = [
             'birth_certificate' => $this->file_birth_certificate->store('admissions/birth_certificates', 'local'),
             'id_card' => $this->file_id_card->store('admissions/id_cards', 'local'),
@@ -135,7 +135,7 @@ class Dashboard extends Component
         $this->admission = $admission;
         $this->existing_application = true;
         
-        session()->flash('message', 'Solicitud enviada correctamente. Tus documentos están seguros y en revisión.');
+        session()->flash('message', 'Solicitud enviada correctamente. Tus documentos están resguardados de forma segura.');
     }
 
     public function render()

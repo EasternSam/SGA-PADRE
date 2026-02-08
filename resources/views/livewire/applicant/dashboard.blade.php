@@ -88,6 +88,20 @@
             {{-- FORMULARIO DE SOLICITUD --}}
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 bg-white border-b border-gray-200">
+                    
+                    {{-- SCRIPT DE VALIDACIÓN DE TAMAÑO --}}
+                    <script>
+                        function validateFile(input) {
+                            if (input.files && input.files[0]) {
+                                const fileSize = input.files[0].size / 1024 / 1024; // in MB
+                                if (fileSize > 5) {
+                                    alert('El archivo excede el tamaño máximo permitido de 5MB.');
+                                    input.value = ''; // Limpiar el input para prevenir la subida
+                                }
+                            }
+                        }
+                    </script>
+
                     <form wire:submit.prevent="save" class="space-y-6">
                         
                         {{-- Datos Personales --}}
@@ -172,6 +186,7 @@
                                     <x-input-label value="Acta de Nacimiento" />
                                     <input type="file" wire:model="file_birth_certificate" 
                                            accept=".pdf,.jpg,.jpeg,.png"
+                                           onchange="validateFile(this)"
                                            class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
                                     @error('file_birth_certificate') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                                 </div>
@@ -181,6 +196,7 @@
                                     <x-input-label value="Cédula de Identidad" />
                                     <input type="file" wire:model="file_id_card" 
                                            accept=".pdf,.jpg,.jpeg,.png"
+                                           onchange="validateFile(this)"
                                            class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
                                     @error('file_id_card') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                                 </div>
@@ -190,6 +206,7 @@
                                     <x-input-label value="Récord de Notas" />
                                     <input type="file" wire:model="file_high_school_record" 
                                            accept=".pdf,.jpg,.jpeg,.png"
+                                           onchange="validateFile(this)"
                                            class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
                                     @error('file_high_school_record') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                                 </div>
@@ -199,6 +216,7 @@
                                     <x-input-label value="Foto 2x2" />
                                     <input type="file" wire:model="file_photo" 
                                            accept="image/png, image/jpeg, image/jpg"
+                                           onchange="validateFile(this)"
                                            class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
                                     @error('file_photo') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                                 </div>
