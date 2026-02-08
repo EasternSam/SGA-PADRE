@@ -58,6 +58,9 @@ use App\Livewire\Applicant\Dashboard as ApplicantDashboard; // Nuevo componente 
 // Importamos el componente de Calendario
 use App\Livewire\Calendar\Index as CalendarIndex;
 
+// Importar componente de Inventario
+use App\Livewire\Admin\Inventory\Index as InventoryIndex;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -345,6 +348,14 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     
     if (class_exists(CalendarIndex::class)) {
         Route::get('/calendar', CalendarIndex::class)->name('admin.calendar.index');
+    }
+
+    // --- GESTIÓN DE INVENTARIO ---
+    if (class_exists(InventoryIndex::class)) {
+        Route::get('/inventory', InventoryIndex::class)->name('admin.inventory.index');
+    } else {
+        // Fallback por si la clase no se encuentra
+        Route::get('/inventory', function() { return 'Módulo de inventario no instalado'; })->name('admin.inventory.index');
     }
     
     // --- GESTIÓN DE ADMISIONES ---
