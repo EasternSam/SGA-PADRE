@@ -23,7 +23,9 @@ use App\Livewire\Admin\EmailTester;
 // Importar el nuevo controlador para PDF de Pensum
 use App\Http\Controllers\CurriculumPdfController;
 // IMPORTAMOS EL CONTROLADOR DE DOCUMENTOS (Agregado)
-use App\Http\Controllers\AdmissionDocumentController; 
+use App\Http\Controllers\AdmissionDocumentController;
+// IMPORTAMOS EL CONTROLADOR DE MOODLE (Agregado)
+use App\Http\Controllers\MoodleController;
 
 use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
 use App\Livewire\StudentPortal\CourseDetail as StudentPortalCourseDetail;
@@ -397,6 +399,8 @@ Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     // ===> RUTA PARA SELECCIÓN DE MATERIAS <===
     Route::get('/selection', StudentPortalSelection::class)->name('selection');
+    // ===> RUTA PARA MOODLE SSO <===
+    Route::get('/moodle-auth', [MoodleController::class, 'sso'])->name('moodle.auth');
 });
 
 // --- RUTAS DE PROFESOR ---

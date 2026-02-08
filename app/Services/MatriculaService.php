@@ -9,6 +9,8 @@ use App\Models\Enrollment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Services\MoodleApiService; // Importamos el servicio
 
 /**
  * Servicio para manejar la lógica de generación de matrícula
@@ -98,6 +100,9 @@ class MatriculaService
                 $enrollment->status = 'Cursando';
                 $enrollment->save();
                 $activated++;
+                
+                // Intento de matriculación en Moodle
+                $this->syncWithMoodle($enrollment);
             }
         }
 
@@ -110,12 +115,67 @@ class MatriculaService
                     $enrollment->status = 'Cursando';
                     $enrollment->save();
                     $activated++;
+
+                    // Intento de matriculación en Moodle
+                    $this->syncWithMoodle($enrollment);
                 }
             }
         }
 
         if ($activated > 0) {
             Log::info("MatriculaService: Pago {$payment->id} procesado. Se activaron {$activated} inscripciones.");
+        }
+    }
+
+    /**
+     * Sincroniza la inscripción con Moodle si corresponde.
+     */
+    private function syncWithMoodle(Enrollment $enrollment)
+    {
+        try {
+            // Navegar relaciones para encontrar el ID del curso en Moodle
+            // Enrollment -> CourseSchedule -> Module -> Course -> moodle_course_id
+            $course = $enrollment->courseSchedule->module->course ?? null;
+
+            if (!$course || empty($course->moodle_course_id)) {
+                return; // No es un curso de Moodle o no está configurado
+            }
+
+            $student = $enrollment->student;
+            $user = $student->user;
+
+            if (!$user) {
+                Log::warning("Moodle Sync: El estudiante ID {$student->id} no tiene usuario de sistema asociado.");
+                return;
+            }
+
+            // Resolvemos el servicio aquí para evitar problemas de inyección en constructores antiguos
+            $moodleService = app(MoodleApiService::class);
+
+            // Contraseña inicial para Moodle (usamos la matrícula o una por defecto)
+            $moodlePassword = $student->student_code ?? 'Centu' . date('Y');
+
+            // 1. Sincronizar Usuario (Crear u obtener ID)
+            $moodleUserId = $moodleService->syncUser($user, $moodlePassword);
+
+            if ($moodleUserId) {
+                // Guardar el ID de Moodle en local si es nuevo/diferente
+                if ($user->moodle_user_id !== $moodleUserId) {
+                    $user->moodle_user_id = $moodleUserId;
+                    $user->saveQuietly(); // Evitar disparar observadores innecesarios
+                }
+
+                // 2. Matricular en el curso
+                $moodleService->enrollUser($moodleUserId, $course->moodle_course_id);
+                
+                Log::info("Moodle Sync: Usuario {$user->email} matriculado en curso Moodle ID {$course->moodle_course_id}.");
+
+                // Aquí podrías disparar un evento o enviar el correo con las credenciales
+                // Mail::to($user->email)->send(new MoodleWelcomeMail($user, $moodlePassword, $course));
+            }
+
+        } catch (\Exception $e) {
+            Log::error("Moodle Sync Error (Enrollment {$enrollment->id}): " . $e->getMessage());
         }
     }
 

@@ -17,6 +17,7 @@ use Illuminate\Validation\Rule;
 use Carbon\Carbon; 
 use App\Models\CourseMapping;
 use App\Services\WordpressApiService;
+use App\Services\MoodleApiService; // Importamos el servicio de Moodle
 use App\Models\ScheduleMapping;
 
 #[Layout('layouts.dashboard')]
@@ -53,6 +54,12 @@ class Index extends Component
     public $selectedWpCourseId = '';
     public $linkFeedbackMessage = '';
     public $linkErrorMessage = '';
+
+    // --- Propiedades para Enlace Moodle (NUEVO) ---
+    public $moodleCourses = [];
+    public $selectedMoodleCourseId = '';
+    public $moodleLinkErrorMessage = '';
+    public $moodleLinkFeedbackMessage = '';
 
     // --- Propiedades para Enlace Sección ---
     public $currentLinkingSection;
@@ -92,7 +99,8 @@ class Index extends Component
             });
         }
 
-        $courses = $coursesQuery->select('id', 'name', 'code', 'is_sequential', 'registration_fee', 'monthly_fee')
+        // AGREGADO: 'moodle_course_id' al select para que esté disponible en la vista
+        $courses = $coursesQuery->select('id', 'name', 'code', 'is_sequential', 'registration_fee', 'monthly_fee', 'moodle_course_id')
                                 ->with('mapping')
                                 ->paginate(10); 
 
@@ -593,6 +601,56 @@ class Index extends Component
         } catch (\Exception $e) {
             Log::error('Error al guardar el CourseMapping', ['exception' => $e->getMessage()]);
             $this->linkErrorMessage = 'Error al guardar el enlace.';
+        }
+    }
+
+    // --- MÉTODOS PARA ENLACE CON MOODLE (NUEVO) ---
+    public function closeMoodleLinkModal() { 
+        $this->reset(['currentLinkingCourse', 'selectedMoodleCourseId', 'moodleLinkFeedbackMessage', 'moodleLinkErrorMessage']);
+    }
+
+    public function openMoodleLinkModal($courseId, MoodleApiService $moodleService) { 
+        $this->reset(['currentLinkingCourse', 'selectedMoodleCourseId', 'moodleLinkFeedbackMessage', 'moodleLinkErrorMessage']); 
+        try {
+            $this->currentLinkingCourse = Course::findOrFail($courseId);
+        } catch (\Exception $e) {
+            session()->flash('error', 'No se encontró el curso.');
+            return;
+        }
+        
+        $this->selectedMoodleCourseId = $this->currentLinkingCourse->moodle_course_id ?? '';
+        
+        if (empty($this->moodleCourses)) {
+            try {
+                // Asumimos que MoodleApiService tiene un método getCourses()
+                // Si no existe, deberá implementarse retornando array [['id' => 1, 'fullname' => 'Curso 1'], ...]
+                $this->moodleCourses = $moodleService->getCourses();
+                if (empty($this->moodleCourses)) { 
+                    $this->moodleLinkErrorMessage = 'No se pudieron cargar los cursos de Moodle.'; 
+                }
+            } catch (\Exception $e) {
+                Log::error('Error al llamar a MoodleApiService', ['exception' => $e->getMessage()]);
+                $this->moodleLinkErrorMessage = 'Error al conectar con Moodle.';
+            }
+        }
+        $this->dispatch('open-modal', 'link-moodle-modal');
+    }
+
+    public function saveMoodleLink() { 
+        $this->reset(['moodleLinkFeedbackMessage', 'moodleLinkErrorMessage']);
+        
+        try {
+            // Guardamos directamente en la tabla courses
+            $this->currentLinkingCourse->moodle_course_id = $this->selectedMoodleCourseId ?: null;
+            $this->currentLinkingCourse->save();
+            
+            session()->flash('message', 'Curso enlazado con Moodle exitosamente.');
+            $this->currentLinkingCourse->refresh(); 
+            $this->dispatch('close-modal', 'link-moodle-modal'); 
+            $this->closeMoodleLinkModal(); 
+        } catch (\Exception $e) {
+            Log::error('Error al guardar el enlace Moodle', ['exception' => $e->getMessage()]);
+            $this->moodleLinkErrorMessage = 'Error al guardar el enlace.';
         }
     }
 

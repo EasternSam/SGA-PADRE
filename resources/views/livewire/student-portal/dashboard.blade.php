@@ -441,6 +441,21 @@
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                     <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 text-xs">Accesos Directos</h3>
                     <div class="space-y-3">
+                        {{-- BOTÓN MOODLE (NUEVO) --}}
+                        {{-- Asegúrate de crear la ruta 'student.moodle.auth' en web.php --}}
+                        <a href="{{ route('student.moodle.auth') }}" target="_blank" class="flex items-center justify-between p-3 rounded-xl bg-orange-50 hover:bg-orange-100 hover:text-orange-700 transition-all group border border-transparent hover:border-orange-200">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 rounded-lg bg-white text-orange-500 group-hover:text-orange-600 shadow-sm transition-colors">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                        <path d="M12 14l9-5-9-5-9 5 9 5z" stroke-linecap="round" stroke-linejoin="round" />
+                                        <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                </div>
+                                <span class="font-medium text-sm">Aula Virtual (Moodle)</span>
+                            </div>
+                            <svg class="h-4 w-4 text-orange-300 group-hover:text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                        </a>
+
                         <a href="{{ route('student.requests') }}" class="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 transition-all group border border-transparent hover:border-indigo-100">
                             <div class="flex items-center gap-3">
                                 <div class="p-2 rounded-lg bg-white text-gray-500 group-hover:text-indigo-600 shadow-sm transition-colors">
