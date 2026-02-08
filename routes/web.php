@@ -22,6 +22,8 @@ use App\Livewire\Admin\FinanceDashboard;
 use App\Livewire\Admin\EmailTester;
 // Importar el nuevo controlador para PDF de Pensum
 use App\Http\Controllers\CurriculumPdfController;
+// IMPORTAMOS EL CONTROLADOR DE DOCUMENTOS (Agregado)
+use App\Http\Controllers\AdmissionDocumentController; 
 
 use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
 use App\Livewire\StudentPortal\CourseDetail as StudentPortalCourseDetail;
@@ -322,6 +324,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // --- NUEVO: Descarga Segura de Documentos de Admisión (AGREGADO AQUI) ---
+    Route::get('/admissions/document/{admission}/{key}', [AdmissionDocumentController::class, 'show'])
+        ->name('admissions.document');
 });
 
 

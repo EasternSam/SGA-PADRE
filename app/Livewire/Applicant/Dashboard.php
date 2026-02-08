@@ -49,17 +49,14 @@ class Dashboard extends Component
 
         if ($this->admission) {
             $this->existing_application = true;
-            // Cargar datos para visualización si es necesario
             $this->course_id = $this->admission->course_id;
         } else {
             // Pre-llenar datos disponibles del usuario
             if ($user->student) {
                 $this->first_name = $user->student->first_name;
                 $this->last_name = $user->student->last_name;
-                // Asumiendo que el modelo Student tiene campo 'cedula' o 'identification'
                 $this->identification_id = $user->student->cedula ?? ''; 
             } else {
-                // Intentar separar el nombre del User
                 $parts = explode(' ', $user->name, 2);
                 $this->first_name = $parts[0];
                 $this->last_name = $parts[1] ?? '';
@@ -79,14 +76,13 @@ class Dashboard extends Component
         'previous_school' => 'required|string|max:255',
         'previous_gpa' => 'nullable|numeric|between:0,100',
         
-        // Validación de Archivos (max 5MB c/u)
-        'file_birth_certificate' => 'required|file|mimes:pdf,jpg,png,jpeg|max:5120',
-        'file_id_card' => 'required|file|mimes:pdf,jpg,png,jpeg|max:5120',
-        'file_high_school_record' => 'required|file|mimes:pdf,jpg,png,jpeg|max:5120',
-        'file_photo' => 'required|image|max:5120', // Solo imagen para la foto
+        // Validación de Archivos BLINDADA (Max 5MB = 5120KB)
+        'file_birth_certificate' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        'file_id_card' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        'file_high_school_record' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        'file_photo' => 'required|image|mimes:jpg,jpeg,png|max:5120', 
     ];
 
-    // Traducción de atributos para mensajes de error
     protected $validationAttributes = [
         'first_name' => 'nombres',
         'last_name' => 'apellidos',
@@ -108,18 +104,17 @@ class Dashboard extends Component
     {
         $this->validate();
 
-        // Subir archivos
+        // Subir archivos a DISCO PRIVADO ('local')
+        // Esto los guarda en /storage/app/admissions/... y NO son accesibles por URL pública
         $documents = [
-            'birth_certificate' => $this->file_birth_certificate->store('admissions/birth_certificates', 'public'),
-            'id_card' => $this->file_id_card->store('admissions/id_cards', 'public'),
-            'high_school_record' => $this->file_high_school_record->store('admissions/records', 'public'),
-            'photo' => $this->file_photo->store('admissions/photos', 'public'),
+            'birth_certificate' => $this->file_birth_certificate->store('admissions/birth_certificates', 'local'),
+            'id_card' => $this->file_id_card->store('admissions/id_cards', 'local'),
+            'high_school_record' => $this->file_high_school_record->store('admissions/records', 'local'),
+            'photo' => $this->file_photo->store('admissions/photos', 'local'),
         ];
 
-        // Crear registros de estado para documentos
         $docStatus = array_fill_keys(array_keys($documents), 'pending');
 
-        // Crear la admisión
         $admission = Admission::create([
             'user_id' => Auth::id(),
             'first_name' => $this->first_name,
@@ -137,11 +132,10 @@ class Dashboard extends Component
             'status' => 'pending',
         ]);
 
-        // Actualizar estado del componente
         $this->admission = $admission;
         $this->existing_application = true;
         
-        session()->flash('message', 'Solicitud enviada correctamente. Estaremos revisando tus documentos.');
+        session()->flash('message', 'Solicitud enviada correctamente. Tus documentos están seguros y en revisión.');
     }
 
     public function render()
