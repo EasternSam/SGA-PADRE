@@ -17,10 +17,10 @@ class Index extends Component
     public $search = '';
     public $categoryFilter = '';
     public $statusFilter = '';
-    public $locationFilter = ''; // 'warehouse' o ID de aula
+    public $locationFilter = ''; 
 
     // Modal Properties
-    public $showModal = false;
+    public $showModal = false; // Mantenemos por compatibilidad, pero usaremos eventos
     public $itemId = null;
     
     // Form Fields
@@ -40,7 +40,6 @@ class Index extends Component
             ->when($this->categoryFilter, fn($q) => $q->where('category', $this->categoryFilter))
             ->when($this->statusFilter, fn($q) => $q->where('status', $this->statusFilter));
 
-        // Lógica de filtro de ubicación
         if ($this->locationFilter === 'warehouse') {
             $query->whereNull('classroom_id');
         } elseif ($this->locationFilter) {
@@ -49,7 +48,6 @@ class Index extends Component
 
         $items = $query->orderBy('created_at', 'desc')->paginate(10);
 
-        // Estadísticas Rápidas para los KPIs
         $stats = [
             'total' => InventoryItem::count(),
             'warehouse' => InventoryItem::whereNull('classroom_id')->count(),
@@ -68,7 +66,8 @@ class Index extends Component
     public function create()
     {
         $this->resetInput();
-        $this->showModal = true;
+        // Disparar evento para abrir modal
+        $this->dispatch('open-modal', 'inventory-modal');
     }
 
     public function edit($id)
@@ -87,7 +86,8 @@ class Index extends Component
         $this->purchase_date = $item->purchase_date?->format('Y-m-d');
         $this->cost = $item->cost;
 
-        $this->showModal = true;
+        // Disparar evento para abrir modal
+        $this->dispatch('open-modal', 'inventory-modal');
     }
 
     public function save()
@@ -108,7 +108,7 @@ class Index extends Component
             'asset_tag' => $this->asset_tag,
             'category' => $this->category,
             'status' => $this->status,
-            'classroom_id' => $this->classroom_id ?: null, // Asegurar NULL si está vacío
+            'classroom_id' => $this->classroom_id ?: null,
             'notes' => $this->notes,
             'purchase_date' => $this->purchase_date,
             'cost' => $this->cost,
@@ -117,7 +117,15 @@ class Index extends Component
         InventoryItem::updateOrCreate(['id' => $this->itemId], $data);
 
         session()->flash('message', 'Inventario actualizado correctamente.');
-        $this->showModal = false;
+        
+        // Disparar evento para cerrar modal
+        $this->dispatch('close-modal', 'inventory-modal');
+        $this->resetInput();
+    }
+    
+    public function closeModal()
+    {
+        $this->dispatch('close-modal', 'inventory-modal');
         $this->resetInput();
     }
 
