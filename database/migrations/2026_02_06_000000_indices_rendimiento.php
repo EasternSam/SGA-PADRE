@@ -187,8 +187,8 @@ return new class extends Migration
             ]
         ];
 
-        foreach ($tables as $table => $indexes) {
-            Schema::table($table, function (Blueprint $table) use ($indexes, $table as $tableName) { // $table is Blueprint, $tableName is string
+        foreach ($tables as $tableName => $indexes) {
+            Schema::table($tableName, function (Blueprint $table) use ($indexes) {
                  foreach ($indexes as $index) {
                      // Verificamos antes de intentar borrar para evitar error "Index not found"
                      // Usamos una verificación simple aquí ya que estamos en rollback
