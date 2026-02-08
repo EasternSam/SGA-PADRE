@@ -67,7 +67,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         @foreach($admission->documents as $key => $path)
                             @if($path)
-                                <div class="border rounded-lg p-4 flex items-center space-x-3 hover:bg-gray-50">
+                                <div class="border rounded-lg p-4 flex items-center space-x-3 bg-gray-50">
                                     <div class="flex-shrink-0">
                                         <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                     </div>
@@ -75,10 +75,7 @@
                                         <p class="text-sm font-medium text-gray-900 truncate">
                                             {{ ucwords(str_replace('_', ' ', $key)) }}
                                         </p>
-                                        <p class="text-xs text-green-600">Recibido</p>
-                                    </div>
-                                    <div>
-                                        <a href="{{ asset('storage/'.$path) }}" target="_blank" class="text-indigo-600 hover:text-indigo-900 text-sm">Ver</a>
+                                        <p class="text-xs text-green-600">Almacenado Seguro</p>
                                     </div>
                                 </div>
                             @endif
@@ -88,7 +85,7 @@
                 </div>
             </div>
         @else
-            {{-- FORMULARIO DE SOLICITUD (COPIA DEL ANTERIOR PERO ADAPTADO) --}}
+            {{-- FORMULARIO DE SOLICITUD --}}
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 bg-white border-b border-gray-200">
                     <form wire:submit.prevent="save" class="space-y-6">
@@ -164,32 +161,52 @@
                         {{-- Carga de Documentos --}}
                         <div class="mt-8">
                             <h3 class="text-lg font-medium leading-6 text-gray-900 border-b pb-2 mb-4">Documentación Requerida</h3>
+                            <div class="text-xs text-indigo-600 mb-4 bg-indigo-50 p-3 rounded border border-indigo-100">
+                                <p><strong>Nota:</strong> Solo se permiten archivos en formato <strong>PDF, JPG, PNG</strong>. Tamaño máximo: 5MB.</p>
+                            </div>
+
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                
+                                {{-- Acta de Nacimiento --}}
                                 <div>
                                     <x-input-label value="Acta de Nacimiento" />
-                                    <input type="file" wire:model="file_birth_certificate" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
-                                    <x-input-error :messages="$errors->get('file_birth_certificate')" class="mt-2" />
+                                    <input type="file" wire:model="file_birth_certificate" 
+                                           accept=".pdf,.jpg,.jpeg,.png"
+                                           class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                                    @error('file_birth_certificate') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                                 </div>
+
+                                {{-- Cédula --}}
                                 <div>
                                     <x-input-label value="Cédula de Identidad" />
-                                    <input type="file" wire:model="file_id_card" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
-                                    <x-input-error :messages="$errors->get('file_id_card')" class="mt-2" />
+                                    <input type="file" wire:model="file_id_card" 
+                                           accept=".pdf,.jpg,.jpeg,.png"
+                                           class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                                    @error('file_id_card') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                                 </div>
+
+                                {{-- Récord de Notas --}}
                                 <div>
                                     <x-input-label value="Récord de Notas" />
-                                    <input type="file" wire:model="file_high_school_record" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
-                                    <x-input-error :messages="$errors->get('file_high_school_record')" class="mt-2" />
+                                    <input type="file" wire:model="file_high_school_record" 
+                                           accept=".pdf,.jpg,.jpeg,.png"
+                                           class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                                    @error('file_high_school_record') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                                 </div>
+
+                                {{-- Foto 2x2 --}}
                                 <div>
                                     <x-input-label value="Foto 2x2" />
-                                    <input type="file" wire:model="file_photo" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
-                                    <x-input-error :messages="$errors->get('file_photo')" class="mt-2" />
+                                    <input type="file" wire:model="file_photo" 
+                                           accept="image/png, image/jpeg, image/jpg"
+                                           class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                                    @error('file_photo') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                                 </div>
                             </div>
                         </div>
 
                         <div class="flex items-center justify-end mt-6">
-                            <div wire:loading class="mr-4 text-gray-600">Subiendo archivos...</div>
+                            <div wire:loading class="mr-4 text-gray-600">Subiendo archivos de forma segura...</div>
                             <x-primary-button wire:loading.attr="disabled">
                                 Enviar Solicitud
                             </x-primary-button>
