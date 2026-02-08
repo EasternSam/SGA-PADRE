@@ -8,6 +8,7 @@ use App\Models\Enrollment;
 use App\Models\Attendance as AttendanceModel;
 use Illuminate\Contracts\View\View;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 
 class Attendance extends Component
@@ -15,18 +16,14 @@ class Attendance extends Component
     public CourseSchedule $section;
     public $enrollments = [];
     public $attendanceDate;
-    public $attendanceData = []; // ['enrollment_id' => 'status']
+    public $attendanceData = []; 
 
     public $isLocked = false; 
+    public $errorMessage = '';
 
-    /**
-     * Carga la sección y los estudiantes.
-     */
     public function mount(CourseSchedule $section)
     {
-        // Cargar sección y estudiantes, PERO filtrando los que no han pagado
         $this->section = $section->load(['module.course', 'enrollments' => function($query) {
-            // EXCLUIMOS estudiantes con estado 'Pendiente' (sin pagar)
             $query->whereNotIn('status', ['Pendiente', 'pendiente'])
                   ->with('student');
         }]);
@@ -34,58 +31,74 @@ class Attendance extends Component
         $this->enrollments = $this->section->enrollments;
         $this->attendanceDate = now()->format('Y-m-d');
         
+        $this->checkLockStatus();
         $this->loadAttendance();
     }
 
-    /**
-     * Carga la asistencia guardada para la fecha seleccionada.
-     */
+    private function checkLockStatus()
+    {
+        $this->isLocked = false;
+        $this->errorMessage = '';
+        $date = Carbon::parse($this->attendanceDate);
+        
+        // 1. No permitir fechas futuras
+        if ($date->isFuture()) {
+            $this->isLocked = true;
+            $this->errorMessage = 'No puedes tomar asistencia en fechas futuras.';
+            return;
+        }
+
+        // 2. Bloqueo de días pasados (Ej: 48 horas) - Salvo Admins
+        if (!Auth::user()->hasRole('Admin') && !Auth::user()->hasRole('Registro')) {
+            if ($date->diffInHours(now()) > 48) {
+                // Verificamos si YA se tomó asistencia ese día. Si ya existe, se bloquea la edición.
+                // Si NO existe, se permite (caso de profesor que olvidó marcarla ayer).
+                $exists = AttendanceModel::where('course_schedule_id', $this->section->id)
+                    ->whereDate('attendance_date', $date)
+                    ->exists();
+                
+                if ($exists) {
+                    $this->isLocked = true;
+                    $this->errorMessage = 'El periodo de edición para esta fecha ha expirado.';
+                }
+            }
+        }
+    }
+
     public function loadAttendance()
     {
         $date = Carbon::parse($this->attendanceDate);
-        $this->attendanceData = []; // Reset
+        $this->attendanceData = []; 
 
-        // Usamos el alias
         $attendances = AttendanceModel::where('course_schedule_id', $this->section->id)
             ->whereDate('attendance_date', $date)
             ->get()
             ->keyBy('enrollment_id');
 
-        // Si se encontraron asistencias, bloquea la edición
-        $this->isLocked = $attendances->isNotEmpty();
-
         foreach ($this->enrollments as $enrollment) {
-            // 1. Obtenemos la asistencia existente. Puede ser 'null' si no hay registro para hoy.
             $existingAttendance = $attendances->get($enrollment->id);
-
-            // 2. Asignamos estado. Si es null, por defecto 'Presente' (o vacío si prefieres que seleccionen)
             $this->attendanceData[$enrollment->id] = $existingAttendance?->status ?? 'Presente';
         }
     }
 
-    /**
-     * Detecta cuando cambia la fecha y recarga la asistencia.
-     */
     public function updatedAttendanceDate()
     {
+        $this->checkLockStatus();
         $this->loadAttendance();
     }
 
-    /**
-     * Guarda la asistencia del día.
-     */
     public function saveAttendance()
     {
-        // Si por alguna razón trata de guardar en un día bloqueado, lo evitamos.
+        // Re-validar al guardar por seguridad
+        $this->checkLockStatus();
         if ($this->isLocked) {
-             session()->flash('error', 'La asistencia para este día ya está guardada y bloqueada.');
+             session()->flash('error', $this->errorMessage);
              return;
         }
 
         $date = Carbon::parse($this->attendanceDate);
 
         foreach ($this->attendanceData as $enrollmentId => $status) {
-            
             AttendanceModel::updateOrCreate(
                 [
                     'enrollment_id' => $enrollmentId,
@@ -99,17 +112,9 @@ class Attendance extends Component
         }
 
         session()->flash('message', 'Asistencia guardada para el ' . $date->format('d/m/Y'));
-        
-        // Recargamos la asistencia, lo que ahora también la bloqueará
-        $this->loadAttendance();
-        
-        // Limpiamos la caché de la lista de fechas completadas
         unset($this->completedDates);
     }
 
-    /**
-     * Obtiene la lista de fechas donde ya se pasó lista.
-     */
     #[Computed(persist: true)] 
     public function completedDates()
     {
@@ -121,15 +126,9 @@ class Attendance extends Component
             ->pluck('attendance_date'); 
     }
 
-    /**
-     * Prepara y emite el evento para abrir el reporte en el modal.
-     */
     public function generateReport()
     {
-        // CAMBIO CRUCIAL AQUÍ:
-        // Apuntar a la ruta del PDF que hemos definido, NO a reports.index
         $url = route('reports.attendance.pdf', ['section' => $this->section->id]);
-        
         $this->dispatch('open-pdf-modal', url: $url);
     }
 

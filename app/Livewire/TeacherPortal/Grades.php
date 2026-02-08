@@ -5,126 +5,156 @@ namespace App\Livewire\TeacherPortal;
 use Livewire\Component;
 use App\Models\CourseSchedule;
 use App\Models\Enrollment;
+use App\Models\AcademicEvent;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
-use App\Mail\GradePostedMail; // Importar Mailable
-use Illuminate\Validation\Rule;
+use App\Mail\GradePostedMail;
 use Livewire\Attributes\Layout;
+use Carbon\Carbon;
 
 #[Layout('layouts.dashboard')]
 class Grades extends Component
 {
     public CourseSchedule $section;
     public $enrollments = [];
-
-    /**
-     * @var array<int, float|null>
-     * Almacenará las calificaciones, ej: [enrollment_id => 95.5]
-     */
     public $grades = [];
+    public $isLocked = false;
+    public $lockReason = '';
 
-    /**
-     * Reglas de validación para el array de calificaciones.
-     * Valida cada entrada en el array 'grades'.
-     */
     protected $rules = [
         'grades.*' => 'nullable|numeric|min:0|max:100',
     ];
 
-    /**
-     * Mensajes de validación personalizados.
-     */
     protected $messages = [
         'grades.*.numeric' => 'La calificación debe ser un número.',
         'grades.*.min' => 'La calificación no puede ser menor que 0.',
         'grades.*.max' => 'La calificación no puede ser mayor que 100.',
     ];
 
-    /**
-     * Carga la sección y prepara el array de calificaciones.
-     */
     public function mount(CourseSchedule $section): void
     {
-        // Validar que el profesor (o admin) pueda ver esta sección
-        // (Esto asume que un admin también puede entrar)
+        // 1. Seguridad de Propiedad
         if (Auth::user()->hasRole('Profesor') && $section->teacher_id !== Auth::id()) {
             abort(403, 'No tienes permiso para ver esta sección.');
         }
 
         $this->section = $section->load('module.course', 'enrollments.student');
         
-        // Ordenar a los estudiantes por nombre para la lista
+        // 2. Validación de Fechas (Regla de Negocio)
+        $this->checkGradingAvailability();
+
         $this->enrollments = $this->section->enrollments->sortBy('student.fullName');
 
-        // Llenar el array $grades con las calificaciones existentes
         $this->grades = $this->enrollments->mapWithKeys(function ($enrollment) {
             return [$enrollment->id => $enrollment->final_grade];
         })->toArray();
     }
 
     /**
-     * Guarda todas las calificaciones de la sección.
+     * Verifica si el periodo de digitación está activo.
      */
+    private function checkGradingAvailability()
+    {
+        // Admin siempre puede editar
+        if (Auth::user()->hasRole('Admin') || Auth::user()->hasRole('Registro')) {
+            return;
+        }
+
+        $now = Carbon::now();
+        $endDate = Carbon::parse($this->section->end_date);
+        
+        // REGLA 1: No se puede calificar antes de que termine la materia (Opcional, a veces se permite)
+        // if ($now->lt($endDate->subDays(7))) { // Ejemplo: Permitir solo la última semana
+        //     $this->isLocked = true;
+        //     $this->lockReason = 'El periodo de calificación inicia al finalizar el curso.';
+        //     return;
+        // }
+
+        // REGLA 2: Plazo estándar de 15 días después de finalizar
+        $deadline = $endDate->copy()->addDays(15);
+
+        // REGLA 3: Excepción por Evento Académico (Prórroga)
+        $isExtensionActive = AcademicEvent::isActionActive('grading_extension');
+
+        if ($now->gt($deadline) && !$isExtensionActive) {
+            $this->isLocked = true;
+            $this->lockReason = 'El periodo de calificación cerró el ' . $deadline->format('d/m/Y') . '.';
+        }
+    }
+
     public function saveGrades(): void
     {
+        if ($this->isLocked) {
+            session()->flash('error', $this->lockReason);
+            return;
+        }
+
         $this->validate();
 
         try {
-            // Recolectar estudiantes a notificar fuera de la transacción para no bloquear
             $enrollmentsToNotify = [];
 
-            // Usar una transacción para asegurar que todas las notas se guarden
             DB::transaction(function () use (&$enrollmentsToNotify) {
                 foreach ($this->grades as $enrollmentId => $grade) {
                     $enrollment = Enrollment::with('student', 'courseSchedule.module')->find($enrollmentId);
                     
-                    // Asegurarse de que la inscripción pertenece a esta sección
                     if ($enrollment && $enrollment->course_schedule_id === $this->section->id) {
                         
-                        // Llenar el modelo con el nuevo valor
-                        $enrollment->fill([
-                            'final_grade' => $grade ? round($grade, 2) : null
-                        ]);
+                        // Detectar cambio
+                        $oldGrade = $enrollment->final_grade;
+                        $newGrade = $grade !== '' && $grade !== null ? round($grade, 2) : null;
 
-                        // Verificar si la nota ha cambiado y no es nula para notificar
-                        // Nota: isDirty() debe verificarse antes de save()
-                        if ($enrollment->isDirty('final_grade') && !is_null($enrollment->final_grade)) {
-                            $enrollmentsToNotify[] = $enrollment;
+                        if ($oldGrade !== $newGrade) {
+                            $enrollment->final_grade = $newGrade;
+                            
+                            // --- AUTOMATIZACIÓN DE ESTADO ---
+                            if (!is_null($newGrade)) {
+                                // Nota mínima aprobatoria (Configurable, aquí hardcoded 70)
+                                if ($newGrade >= 70) {
+                                    $enrollment->status = 'Aprobado';
+                                } else {
+                                    $enrollment->status = 'Reprobado';
+                                }
+                            } else {
+                                // Si borran la nota, vuelve a cursando
+                                $enrollment->status = 'Cursando';
+                            }
+
+                            $enrollment->save();
+
+                            // Solo notificar si hay nota real
+                            if (!is_null($newGrade)) {
+                                $enrollmentsToNotify[] = $enrollment;
+                            }
                         }
-
-                        $enrollment->save();
                     }
                 }
             });
 
-            // Enviar correos
+            // Enviar correos (Queue o directo)
             foreach ($enrollmentsToNotify as $enrollment) {
                 if ($enrollment->student && $enrollment->student->email) {
                     try {
                         Mail::to($enrollment->student->email)->send(new GradePostedMail($enrollment));
                     } catch (\Exception $e) {
-                        Log::error("Error enviando notificación de nota al estudiante {$enrollment->student->id}: " . $e->getMessage());
+                        Log::error("Error mail notas: " . $e->getMessage());
                     }
                 }
             }
 
-            session()->flash('message', 'Calificaciones guardadas exitosamente.');
+            session()->flash('message', 'Calificaciones y estatus académicos actualizados correctamente.');
             
-            // Refrescar los datos en la página después de guardar
             $this->section->refresh();
             $this->enrollments = $this->section->enrollments->sortBy('student.fullName');
 
         } catch (\Exception $e) {
-            session()->flash('error', 'Ocurrió un error al guardar las calificaciones: ' . $e->getMessage());
+            session()->flash('error', 'Error al guardar: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Renderiza la vista.
-     */
     public function render(): View
     {
         return view('livewire.teacher-portal.grades', [
