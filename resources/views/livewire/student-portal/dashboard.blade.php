@@ -413,13 +413,13 @@
                         </div>
 
                         {{-- Botón (Input Oculto + Label) --}}
-                        {{-- IMPORTANTE: 'onchange' llama a la función JS pura abajo --}}
                         <label for="photo-input" class="absolute bottom-0 right-0 bg-indigo-600 text-white p-2.5 rounded-full cursor-pointer hover:bg-indigo-700 shadow-lg transition-transform hover:scale-110" title="Cambiar Foto">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
-                            <input type="file" id="photo-input" class="hidden" accept="image/png, image/jpeg, image/jpg, image/webp" onchange="startCrop(this)">
+                            {{-- Input oculto SIN Alpine y SIN wire:model para no disparar subida automática --}}
+                            <input type="file" id="photo-input" class="hidden" accept="image/png, image/jpeg, image/jpg, image/webp">
                         </label>
                         
                         {{-- Spinner de Carga Livewire --}}
@@ -513,68 +513,80 @@
     @push('scripts')
         <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
         <script>
-            let cropper;
-            const modal = document.getElementById('crop-modal');
-            const image = document.getElementById('image-to-crop');
-            const input = document.getElementById('photo-input');
+            document.addEventListener('DOMContentLoaded', function () {
+                let cropper;
+                const modal = document.getElementById('crop-modal');
+                const image = document.getElementById('image-to-crop');
+                const input = document.getElementById('photo-input');
+                const saveBtn = document.getElementById('btn-save-crop');
+                const cancelBtn = document.getElementById('btn-cancel-crop');
 
-            // Función llamada por el input onchange
-            function startCrop(inputElement) {
-                if (inputElement.files && inputElement.files[0]) {
-                    const file = inputElement.files[0];
-                    
-                    // Validar tipo
-                    if (!['image/jpeg', 'image/png', 'image/webp', 'image/jpg'].includes(file.type)) {
-                        alert('Formato no válido. Usa JPG o PNG.');
-                        return;
+                // Listener para el input file
+                input.addEventListener('change', function (e) {
+                    if (this.files && this.files[0]) {
+                        const file = this.files[0];
+                        
+                        // Validar tipo
+                        if (!['image/jpeg', 'image/png', 'image/webp', 'image/jpg'].includes(file.type)) {
+                            alert('Formato no válido. Usa JPG o PNG.');
+                            return;
+                        }
+
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            image.src = e.target.result;
+                            
+                            // Mostrar modal (quitando clase hidden)
+                            modal.classList.remove('hidden');
+
+                            // Iniciar Cropper
+                            if (cropper) { cropper.destroy(); }
+                            
+                            cropper = new Cropper(image, {
+                                aspectRatio: 1, // Cuadrado 1:1
+                                viewMode: 1,
+                                autoCropArea: 1,
+                                background: false,
+                            });
+                        };
+                        reader.readAsDataURL(file);
                     }
+                });
 
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        image.src = e.target.result;
-                        
-                        // Mostrar modal (quitando clase hidden)
-                        modal.classList.remove('hidden');
+                // Botón Cancelar
+                cancelBtn.addEventListener('click', function() {
+                    modal.classList.add('hidden');
+                    if (cropper) { cropper.destroy(); cropper = null; }
+                    input.value = ''; // Limpiar input
+                });
 
-                        // Iniciar Cropper
-                        if (cropper) { cropper.destroy(); }
-                        
-                        cropper = new Cropper(image, {
-                            aspectRatio: 1, // Cuadrado 1:1
-                            viewMode: 1,
-                            autoCropArea: 1,
-                            background: false,
+                // Botón Guardar
+                saveBtn.addEventListener('click', function() {
+                    if (!cropper) return;
+
+                    // Deshabilitar botón para evitar doble clic
+                    saveBtn.disabled = true;
+                    saveBtn.innerText = 'Subiendo...';
+
+                    // Obtener blob
+                    cropper.getCroppedCanvas({
+                        width: 500, height: 500, // Calidad final
+                    }).toBlob((blob) => {
+                        // Subir a Livewire usando la API global de @this
+                        @this.upload('photo', blob, (uploadedFilename) => {
+                            // Éxito: Cerrar modal
+                            modal.classList.add('hidden');
+                            if (cropper) { cropper.destroy(); cropper = null; }
+                            input.value = ''; 
+                            saveBtn.disabled = false;
+                            saveBtn.innerText = 'Recortar y Subir';
+                        }, () => {
+                            alert('Error al subir la imagen.');
+                            saveBtn.disabled = false;
+                            saveBtn.innerText = 'Recortar y Subir';
                         });
-                    };
-                    reader.readAsDataURL(file);
-                }
-            }
-
-            // Botón Cancelar
-            document.getElementById('btn-cancel-crop').addEventListener('click', function() {
-                modal.classList.add('hidden');
-                if (cropper) { cropper.destroy(); cropper = null; }
-                input.value = ''; // Limpiar input
-            });
-
-            // Botón Guardar
-            document.getElementById('btn-save-crop').addEventListener('click', function() {
-                if (!cropper) return;
-
-                // Obtener blob
-                cropper.getCroppedCanvas({
-                    width: 500, height: 500, // Calidad final
-                }).toBlob((blob) => {
-                    // Subir a Livewire usando la API global de @this
-                    @this.upload('photo', blob, (uploadedFilename) => {
-                        // Éxito: Cerrar modal
-                        modal.classList.add('hidden');
-                        if (cropper) { cropper.destroy(); cropper = null; }
-                        input.value = ''; 
-                    }, () => {
-                        alert('Error al subir la imagen.');
-                    });
-                }, 'image/jpeg', 0.9);
+                    }, 'image/jpeg', 0.9);
+                });
             });
         </script>
     @endpush
