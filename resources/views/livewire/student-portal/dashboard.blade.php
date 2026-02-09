@@ -96,6 +96,7 @@
             ================================================================= 
         --}}
         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            
             <!-- Card: Cursos Activos -->
             <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 transition-all hover:shadow-md">
                 <div class="flex items-center justify-between">
@@ -309,13 +310,15 @@
                     <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
                     
                     <div class="relative flex flex-col items-center">
-                         {{-- IMAGEN DE PERFIL PRINCIPAL: Usamos object-cover y aspect-square para garantizar 1:1 --}}
+                         {{-- IMAGEN DE PERFIL PRINCIPAL --}}
                         <div class="h-28 w-28 rounded-full ring-4 ring-white shadow-lg overflow-hidden bg-white mb-3 group relative cursor-pointer" wire:click="openProfileModal">
+                            {{-- Se usa object-cover y aspect-square para asegurar 1:1 --}}
                             <img class="h-full w-full object-cover aspect-square"
                                  src="{{ $student->profile_photo_url }}" 
                                  alt="{{ $student->fullName }}">
                             
-                             <div class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                            {{-- Overlay de editar al pasar mouse --}}
+                            <div class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
                                 <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -398,7 +401,7 @@
     <x-modal name="complete-profile-modal" :show="$showProfileModal" focusable>
         
         {{-- INICIALIZACIÓN DE ALPINE PARA CROPPER - PASAMOS $wire --}}
-        <div x-data="profileCropper()" class="p-6">
+        <div x-data="profileCropper(@this)" class="p-6">
             <h2 class="text-xl font-bold text-gray-900 mb-2">📝 Tu Perfil de Estudiante</h2>
             <p class="text-sm text-gray-600 mb-6">Mantén tu información actualizada.</p>
 
@@ -526,12 +529,13 @@
     @push('scripts')
         <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
         <script>
-            // Definir profileCropper en el ámbito global
-            function profileCropper() {
-                return {
+            // Definir profileCropper en el ámbito global usando el evento alpine:init
+            document.addEventListener('alpine:init', () => {
+                Alpine.data('profileCropper', (wireComponent) => ({
                     cropping: false,
                     cropper: null,
                     file: null,
+                    wire: wireComponent, // Referencia al componente Livewire
 
                     init() {
                         console.log('ProfileCropper debug: Iniciado');
@@ -620,13 +624,18 @@
                                 alert('Error al subir la imagen. Intenta de nuevo.');
                             };
 
-                            // Usar @this para la subida directa al componente Livewire
-                            @this.upload('photo', blob, uploadCallback, errorCallback);
+                            // Usar el objeto wire inyectado para la subida
+                            if (this.wire && this.wire.upload) {
+                                this.wire.upload('photo', blob, uploadCallback, errorCallback);
+                            } else {
+                                // Fallback a @this si por alguna razón no se inyectó
+                                @this.upload('photo', blob, uploadCallback, errorCallback);
+                            }
 
                         }, 'image/jpeg', 0.9); // Calidad 90%
                     }
-                }
-            }
+                }));
+            });
         </script>
     @endpush
 </div>
