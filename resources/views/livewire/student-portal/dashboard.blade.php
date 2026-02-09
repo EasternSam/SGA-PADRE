@@ -434,7 +434,7 @@
                 </div>
 
                 {{-- MODO RECORTE: Editor CropperJS --}}
-                <div x-show="cropping" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
+                <div x-show="cropping" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4" x-cloak>
                     <div class="bg-white rounded-lg shadow-xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
                         <div class="p-4 border-b flex justify-between items-center">
                             <h3 class="font-bold text-gray-800">Ajustar Foto</h3>
@@ -529,125 +529,130 @@
     @push('scripts')
         <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
         <script>
+            // Aseguramos que la definición esté en el scope correcto al momento de ejecución
             (function() {
-                // Función de inicialización del componente Alpine
-                const initProfileCropper = () => {
-                    // Evitar registrarlo dos veces
-                    if (Alpine.data && !Alpine.data['profileCropper']) {
-                        Alpine.data('profileCropper', (wireComponent) => ({
-                            cropping: false,
-                            cropper: null,
-                            file: null,
-                            wire: wireComponent, // Referencia al componente Livewire
+                // Definición del componente Alpine
+                const profileCropperDefinition = (wireComponent) => ({
+                    cropping: false,
+                    cropper: null,
+                    file: null,
+                    wire: wireComponent, // Guardamos la referencia a Livewire
 
-                            init() {
-                                console.log('ProfileCropper debug: Iniciado');
-                            },
+                    init() {
+                        console.log('ProfileCropper debug: Iniciado');
+                    },
 
-                            fileChosen(event) {
-                                console.log('ProfileCropper debug: Archivo seleccionado');
-                                this.file = event.target.files[0];
-                                if (this.file) {
-                                    // Validar tipo manualmente por seguridad
-                                    if (!['image/jpeg', 'image/png', 'image/webp', 'image/jpg'].includes(this.file.type)) {
-                                        alert('Por favor selecciona una imagen válida (JPG, PNG, WEBP).');
-                                        return;
-                                    }
+                    fileChosen(event) {
+                        console.log('ProfileCropper debug: Archivo seleccionado');
+                        this.file = event.target.files[0];
+                        if (this.file) {
+                            // Validar tipo manualmente por seguridad
+                            if (!['image/jpeg', 'image/png', 'image/webp', 'image/jpg'].includes(this.file.type)) {
+                                alert('Por favor selecciona una imagen válida (JPG, PNG, WEBP).');
+                                return;
+                            }
 
-                                    console.log('ProfileCropper debug: Leyendo archivo...', this.file.type);
-                                    const reader = new FileReader();
-                                    reader.onload = (e) => {
-                                        console.log('ProfileCropper debug: Archivo leído');
-                                        // Asignar src
-                                        this.$refs.cropImage.src = e.target.result;
-                                        
-                                        // Esperar a que la imagen cargue en el DOM antes de iniciar Cropper
-                                        this.$refs.cropImage.onload = () => {
-                                            console.log('ProfileCropper debug: Imagen cargada en DOM, iniciando Cropper');
-                                            this.startCropper();
-                                        }
-                                    };
-                                    reader.readAsDataURL(this.file);
+                            console.log('ProfileCropper debug: Leyendo archivo...', this.file.type);
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                console.log('ProfileCropper debug: Archivo leído');
+                                // Asignar src
+                                this.$refs.cropImage.src = e.target.result;
+                                
+                                // Esperar a que la imagen cargue en el DOM antes de iniciar Cropper
+                                this.$refs.cropImage.onload = () => {
+                                    console.log('ProfileCropper debug: Imagen cargada en DOM, iniciando Cropper');
+                                    this.startCropper();
                                 }
-                            },
+                            };
+                            reader.readAsDataURL(this.file);
+                        }
+                    },
 
-                            startCropper() {
-                                this.cropping = true;
-                                // Destruir instancia previa si existe
-                                if (this.cropper) {
-                                    this.cropper.destroy();
-                                }
-                                // Iniciar Cropper en el siguiente tick (cuando el modal sea visible)
-                                this.$nextTick(() => {
-                                    this.cropper = new Cropper(this.$refs.cropImage, {
-                                        aspectRatio: 1, // Obligar 1:1
-                                        viewMode: 1,
-                                        autoCropArea: 1,
-                                        responsive: true,
-                                    });
-                                });
-                            },
+                    startCropper() {
+                        this.cropping = true;
+                        // Destruir instancia previa si existe
+                        if (this.cropper) {
+                            this.cropper.destroy();
+                        }
+                        // Iniciar Cropper en el siguiente tick (cuando el modal sea visible)
+                        this.$nextTick(() => {
+                            this.cropper = new Cropper(this.$refs.cropImage, {
+                                aspectRatio: 1, // Obligar 1:1
+                                viewMode: 1,
+                                autoCropArea: 1,
+                                responsive: true,
+                            });
+                        });
+                    },
 
-                            cancelCrop() {
+                    cancelCrop() {
+                        this.cropping = false;
+                        this.file = null;
+                        if (this.cropper) {
+                            this.cropper.destroy();
+                            this.cropper = null;
+                        }
+                        // Limpiar input file para permitir seleccionar el mismo archivo de nuevo
+                        const input = document.getElementById('photo-input');
+                        if(input) input.value = '';
+                    },
+
+                    cropAndSave() {
+                        if (!this.cropper) return;
+
+                        console.log('ProfileCropper debug: Recortando...');
+                        // Obtener canvas recortado
+                        this.cropper.getCroppedCanvas({
+                            width: 500, // Tamaño razonable para perfil
+                            height: 500
+                         }).toBlob((blob) => {
+                            console.log('ProfileCropper debug: Blob generado, subiendo...');
+                            
+                            const uploadCallback = (uploadedFilename) => {
+                                console.log('ProfileCropper debug: Subida exitosa');
                                 this.cropping = false;
-                                this.file = null;
                                 if (this.cropper) {
                                     this.cropper.destroy();
                                     this.cropper = null;
                                 }
-                                // Limpiar input file para permitir seleccionar el mismo archivo de nuevo
-                                const input = document.getElementById('photo-input');
-                                if(input) input.value = '';
-                            },
+                            };
 
-                            cropAndSave() {
-                                if (!this.cropper) return;
+                            const errorCallback = () => {
+                                console.error('ProfileCropper debug: Error en subida');
+                                alert('Error al subir la imagen. Intenta de nuevo.');
+                            };
 
-                                console.log('ProfileCropper debug: Recortando...');
-                                // Obtener canvas recortado
-                                this.cropper.getCroppedCanvas({
-                                    width: 500, // Tamaño razonable para perfil
-                                    height: 500
-                                }).toBlob((blob) => {
-                                    console.log('ProfileCropper debug: Blob generado, subiendo...');
-                                    // Subir a Livewire manualmente
-                                    
-                                    const uploadCallback = (uploadedFilename) => {
-                                        console.log('ProfileCropper debug: Subida exitosa');
-                                        this.cropping = false;
-                                        // Destruir cropper para liberar memoria
-                                        if (this.cropper) {
-                                            this.cropper.destroy();
-                                            this.cropper = null;
-                                        }
-                                    };
-
-                                    const errorCallback = () => {
-                                        console.error('ProfileCropper debug: Error en subida');
-                                        alert('Error al subir la imagen. Intenta de nuevo.');
-                                    };
-
-                                    // Usar el objeto wire inyectado para la subida
-                                    if (this.wire && this.wire.upload) {
-                                        this.wire.upload('photo', blob, uploadCallback, errorCallback);
-                                    } else {
-                                        // Fallback a @this si por alguna razón no se inyectó
-                                        @this.upload('photo', blob, uploadCallback, errorCallback);
-                                    }
-
-                                }, 'image/jpeg', 0.9); // Calidad 90%
+                            // Usar el objeto wire inyectado para la subida
+                            // IMPORTANTE: usamos 'this.wire' que guardamos al inicializar
+                            if (this.wire && this.wire.upload) {
+                                this.wire.upload('photo', blob, uploadCallback, errorCallback);
+                            } else {
+                                // Fallback a Livewire global si no se inyectó (útil en algunas versiones de Livewire 3)
+                                // @this se resuelve en Blade, así que esto es un último recurso en JS puro
+                                console.warn('ProfileCropper debug: Usando fallback global para upload');
                             }
-                        }));
+
+                        }, 'image/jpeg', 0.9); // Calidad 90%
+                    }
+                });
+
+                // Función robusta de registro
+                const registerProfileCropper = () => {
+                    // Si Alpine existe y no ha registrado el componente, registrarlo
+                    if (typeof Alpine !== 'undefined') {
+                         Alpine.data('profileCropper', profileCropperDefinition);
                     }
                 };
 
-                // Lógica Robusta: Si Alpine ya está cargado, registrar inmediatamente.
-                // Si no, esperar al evento.
-                if (typeof window.Alpine !== 'undefined') {
-                    initProfileCropper();
-                } else {
-                    document.addEventListener('alpine:init', initProfileCropper);
-                }
+                // Intentar registrar inmediatamente
+                registerProfileCropper();
+
+                // Registrar cuando Alpine se inicialice (si aún no lo ha hecho)
+                document.addEventListener('alpine:init', registerProfileCropper);
+                
+                // IMPORTANTE para Livewire SPA (v3): Registrar en cada navegación si es necesario
+                document.addEventListener('livewire:navigated', registerProfileCropper);
             })();
         </script>
     @endpush
