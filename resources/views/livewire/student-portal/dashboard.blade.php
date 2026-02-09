@@ -9,16 +9,17 @@
             }
             /* Asegurar que la imagen no se desborde en el modal */
             .img-container {
-                max-height: 500px;
+                height: 400px;
+                width: 100%;
+                background-color: #f3f4f6;
+                overflow: hidden;
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                background-color: #f3f4f6;
-                overflow: hidden;
             }
             .img-container img {
                 max-width: 100%;
-                max-height: 50vh;
+                max-height: 100%;
                 display: block;
             }
         </style>
@@ -308,11 +309,11 @@
                         {{-- IMAGEN DE PERFIL: Aquí usamos el object-cover y aspect-square para asegurar 1:1 --}}
                         <div class="h-28 w-28 rounded-full ring-4 ring-white shadow-lg overflow-hidden bg-white mb-3 group relative cursor-pointer" wire:click="openProfileModal">
                             {{-- Mostramos la foto del estudiante (ya sea la default, la de admisión o la nueva subida) --}}
-                            <img class="h-full w-full object-cover aspect-square"
+                            <img class="h-full w-full object-cover aspect-square rounded-full"
                                  src="{{ $student->profile_photo_url }}" 
                                  alt="{{ $student->fullName }}">
                             
-                            {{-- Overlay de editar --}}
+                            {{-- Overlay de editar al pasar mouse --}}
                             <div class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
                                 <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -390,7 +391,7 @@
 
     {{-- 
         =================================================================
-        MODAL DE PERFIL (CON CROPPER JS - SIN ALPINE EN LA LÓGICA)
+        MODAL DE PERFIL (CON CROPPER JS - SIN ALPINE EN LA LÓGICA DE RECORTE)
         ================================================================= 
     --}}
     <x-modal name="complete-profile-modal" :show="$showProfileModal" focusable>
@@ -406,21 +407,22 @@
                         {{-- Visualización de la foto actual (o temporal si Livewire la procesó) --}}
                         <div class="h-32 w-32 rounded-full ring-4 ring-indigo-50 overflow-hidden bg-gray-100 shadow-md">
                             @if ($photo && !$errors->has('photo'))
-                                <img src="{{ $photo->temporaryUrl() }}" class="h-full w-full object-cover aspect-square">
+                                <img src="{{ $photo->temporaryUrl() }}" class="h-full w-full object-cover aspect-square rounded-full">
                             @else
-                                <img src="{{ $student->profile_photo_url }}" class="h-full w-full object-cover aspect-square">
+                                <img src="{{ $student->profile_photo_url }}" class="h-full w-full object-cover aspect-square rounded-full">
                             @endif
                         </div>
 
                         {{-- Botón (Input Oculto + Label) --}}
-                        <label for="photo-input" class="absolute bottom-0 right-0 bg-indigo-600 text-white p-2.5 rounded-full cursor-pointer hover:bg-indigo-700 shadow-lg transition-transform hover:scale-110" title="Cambiar Foto">
+                        {{-- IMPORTANTE: Usamos un id específico para el trigger desde JS --}}
+                        <label for="photo-input-trigger" class="absolute bottom-0 right-0 bg-indigo-600 text-white p-2.5 rounded-full cursor-pointer hover:bg-indigo-700 shadow-lg transition-transform hover:scale-110" title="Cambiar Foto">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
-                            {{-- Input oculto SIN Alpine y SIN wire:model para no disparar subida automática --}}
-                            <input type="file" id="photo-input" class="hidden" accept="image/png, image/jpeg, image/jpg, image/webp">
                         </label>
+                        {{-- El input real está oculto y se maneja por JS para evitar problemas con Livewire/Alpine --}}
+                        <input type="file" id="photo-input-trigger" class="hidden" accept="image/png, image/jpeg, image/jpg, image/webp">
                         
                         {{-- Spinner de Carga Livewire --}}
                         <div wire:loading wire:target="photo" class="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center rounded-full">
@@ -476,7 +478,7 @@
 
     {{-- 
         =================================================================
-        MODAL DE RECORTE (CONTROLADO POR JS PURO, FUERA DE ALPINE)
+        MODAL DE RECORTE (CONTROLADO POR JS PURO)
         ================================================================= 
     --}}
     <div id="crop-modal" class="fixed inset-0 z-[60] hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -515,35 +517,45 @@
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 let cropper;
+                // Referencias a elementos
                 const modal = document.getElementById('crop-modal');
                 const image = document.getElementById('image-to-crop');
-                const input = document.getElementById('photo-input');
+                const input = document.getElementById('photo-input-trigger');
                 const saveBtn = document.getElementById('btn-save-crop');
                 const cancelBtn = document.getElementById('btn-cancel-crop');
 
-                // Listener para el input file
+                // Asegurar que las referencias existen antes de añadir listeners
+                if (!input || !saveBtn || !cancelBtn) {
+                    console.error('Elementos del cropper no encontrados');
+                    return;
+                }
+
+                // 1. Escuchar cambios en el input file
                 input.addEventListener('change', function (e) {
-                    if (this.files && this.files[0]) {
-                        const file = this.files[0];
+                    const files = e.target.files;
+                    if (files && files.length > 0) {
+                        const file = files[0];
                         
-                        // Validar tipo
+                        // Validar tipo de imagen
                         if (!['image/jpeg', 'image/png', 'image/webp', 'image/jpg'].includes(file.type)) {
                             alert('Formato no válido. Usa JPG o PNG.');
                             return;
                         }
 
+                        // Leer archivo
                         const reader = new FileReader();
                         reader.onload = function(e) {
                             image.src = e.target.result;
                             
-                            // Mostrar modal (quitando clase hidden)
+                            // Mostrar modal
                             modal.classList.remove('hidden');
 
-                            // Iniciar Cropper
+                            // Destruir cropper previo si existe
                             if (cropper) { cropper.destroy(); }
                             
+                            // Iniciar Cropper
                             cropper = new Cropper(image, {
-                                aspectRatio: 1, // Cuadrado 1:1
+                                aspectRatio: 1, // Cuadrado 1:1 obligatorio
                                 viewMode: 1,
                                 autoCropArea: 1,
                                 background: false,
@@ -553,34 +565,35 @@
                     }
                 });
 
-                // Botón Cancelar
+                // 2. Botón Cancelar
                 cancelBtn.addEventListener('click', function() {
                     modal.classList.add('hidden');
                     if (cropper) { cropper.destroy(); cropper = null; }
-                    input.value = ''; // Limpiar input
+                    input.value = ''; // Limpiar input para permitir seleccionar mismo archivo
                 });
 
-                // Botón Guardar
+                // 3. Botón Guardar
                 saveBtn.addEventListener('click', function() {
                     if (!cropper) return;
 
-                    // Deshabilitar botón para evitar doble clic
                     saveBtn.disabled = true;
-                    saveBtn.innerText = 'Subiendo...';
+                    saveBtn.innerText = 'Procesando...';
 
-                    // Obtener blob
+                    // Obtener blob de la imagen recortada
                     cropper.getCroppedCanvas({
-                        width: 500, height: 500, // Calidad final
+                        width: 500, height: 500, // Tamaño final optimizado
+                        fillColor: '#fff',
                     }).toBlob((blob) => {
-                        // Subir a Livewire usando la API global de @this
+                        // Subir a Livewire usando @this
                         @this.upload('photo', blob, (uploadedFilename) => {
-                            // Éxito: Cerrar modal
+                            // Éxito
                             modal.classList.add('hidden');
                             if (cropper) { cropper.destroy(); cropper = null; }
                             input.value = ''; 
                             saveBtn.disabled = false;
                             saveBtn.innerText = 'Recortar y Subir';
                         }, () => {
+                            // Error
                             alert('Error al subir la imagen.');
                             saveBtn.disabled = false;
                             saveBtn.innerText = 'Recortar y Subir';
