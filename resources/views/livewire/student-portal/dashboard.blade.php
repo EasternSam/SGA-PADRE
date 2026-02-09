@@ -10,6 +10,7 @@
             /* Asegurar que la imagen no se desborde en el modal */
             .img-container img {
                 max-width: 100%;
+                display: block; /* Importante para Cropper.js */
             }
         </style>
     @endpush
@@ -397,7 +398,7 @@
     <x-modal name="complete-profile-modal" :show="$showProfileModal" focusable>
         
         {{-- INICIALIZACIÓN DE ALPINE PARA CROPPER - PASAMOS $wire --}}
-        <div x-data="profileCropper(@this)" class="p-6">
+        <div x-data="profileCropper()" class="p-6">
             <h2 class="text-xl font-bold text-gray-900 mb-2">📝 Tu Perfil de Estudiante</h2>
             <p class="text-sm text-gray-600 mb-6">Mantén tu información actualizada.</p>
 
@@ -525,12 +526,12 @@
     @push('scripts')
         <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
         <script>
-            function profileCropper(wireComponent) {
+            // Definir profileCropper en el ámbito global
+            function profileCropper() {
                 return {
                     cropping: false,
                     cropper: null,
                     file: null,
-                    wire: wireComponent, // Guardamos la referencia al componente Livewire
 
                     init() {
                         console.log('ProfileCropper debug: Iniciado');
@@ -602,9 +603,7 @@
                             height: 500
                         }).toBlob((blob) => {
                             console.log('ProfileCropper debug: Blob generado, subiendo...');
-                            // Subir a Livewire manualmente usando la referencia guardada
-                            // En Livewire V3 se usa $wire.upload, en V2 @this.upload
-                            // Probamos ambos métodos para robustez
+                            // Subir a Livewire manualmente
                             
                             const uploadCallback = (uploadedFilename) => {
                                 console.log('ProfileCropper debug: Subida exitosa');
@@ -621,12 +620,8 @@
                                 alert('Error al subir la imagen. Intenta de nuevo.');
                             };
 
-                            if (this.wire && this.wire.upload) {
-                                this.wire.upload('photo', blob, uploadCallback, errorCallback);
-                            } else {
-                                // Fallback a la sintaxis global de Blade si wire no se pasó bien
-                                @this.upload('photo', blob, uploadCallback, errorCallback);
-                            }
+                            // Usar @this para la subida directa al componente Livewire
+                            @this.upload('photo', blob, uploadCallback, errorCallback);
 
                         }, 'image/jpeg', 0.9); // Calidad 90%
                     }
