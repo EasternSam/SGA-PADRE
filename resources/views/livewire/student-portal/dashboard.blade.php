@@ -5,21 +5,26 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
         <style>
             .cropper-view-box, .cropper-face {
-                border-radius: 50%; /* Guía visual redonda */
+                border-radius: 50%; /* Guía visual redonda para perfil */
             }
             /* Asegurar que la imagen no se desborde en el modal */
+            .img-container {
+                max-height: 500px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                background-color: #f3f4f6;
+                overflow: hidden;
+            }
             .img-container img {
                 max-width: 100%;
-                display: block; /* Importante para Cropper.js */
+                max-height: 50vh;
+                display: block;
             }
         </style>
     @endpush
 
-    {{-- 
-        =================================================================
-        ENCABEZADO (HEADER)
-        ================================================================= 
-    --}}
+    {{-- ENCABEZADO --}}
     <x-slot name="header">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -90,14 +95,9 @@
             </div>
         @endif
 
-        {{-- 
-            =================================================================
-            1. TARJETAS DE ESTADÍSTICAS (KPIs)
-            ================================================================= 
-        --}}
+        {{-- KPIS --}}
         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            
-            <!-- Card: Cursos Activos -->
+            {{-- Card: Cursos Activos --}}
             <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 transition-all hover:shadow-md">
                 <div class="flex items-center justify-between">
                     <div>
@@ -118,7 +118,7 @@
                 </div>
             </div>
 
-            <!-- Card: Histórico -->
+            {{-- Card: Histórico --}}
             <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 transition-all hover:shadow-md">
                 <div class="flex items-center justify-between">
                     <div>
@@ -136,7 +136,7 @@
                 </div>
             </div>
 
-            <!-- Card: Pagos Pendientes -->
+            {{-- Card: Pendientes --}}
             <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 transition-all hover:shadow-md">
                 <div class="flex items-center justify-between">
                     <div>
@@ -154,7 +154,7 @@
                 </div>
             </div>
 
-            <!-- Card: Deuda Total -->
+            {{-- Card: Deuda --}}
             <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 transition-all hover:shadow-md">
                 <div class="flex items-center justify-between">
                     <div>
@@ -173,15 +173,10 @@
             </div>
         </div>
 
-        {{-- 
-            =================================================================
-            2. LAYOUT PRINCIPAL
-            ================================================================= 
-        --}}
+        {{-- LAYOUT PRINCIPAL --}}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {{-- COLUMNA IZQUIERDA: Cursos (Ocupa 2/3) --}}
+            {{-- COLUMNA IZQUIERDA --}}
             <div class="lg:col-span-2 space-y-8">
-                
                 {{-- TABLA PENDIENTES --}}
                 @php $enrollmentPayments = $pendingPayments->whereNotNull('enrollment_id'); @endphp
                 @if($enrollmentPayments->count() > 0)
@@ -310,14 +305,14 @@
                     <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
                     
                     <div class="relative flex flex-col items-center">
-                         {{-- IMAGEN DE PERFIL PRINCIPAL --}}
+                        {{-- IMAGEN DE PERFIL: Aquí usamos el object-cover y aspect-square para asegurar 1:1 --}}
                         <div class="h-28 w-28 rounded-full ring-4 ring-white shadow-lg overflow-hidden bg-white mb-3 group relative cursor-pointer" wire:click="openProfileModal">
-                            {{-- Se usa object-cover y aspect-square para asegurar 1:1 --}}
+                            {{-- Mostramos la foto del estudiante (ya sea la default, la de admisión o la nueva subida) --}}
                             <img class="h-full w-full object-cover aspect-square"
                                  src="{{ $student->profile_photo_url }}" 
                                  alt="{{ $student->fullName }}">
                             
-                            {{-- Overlay de editar al pasar mouse --}}
+                            {{-- Overlay de editar --}}
                             <div class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
                                 <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -347,12 +342,12 @@
                     </div>
                 </div>
 
-                {{-- ACCESOS RÁPIDOS --}}
+                {{-- Accesos Rápidos (Moodle, etc) --}}
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                     <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 text-xs">Accesos Directos</h3>
                     <div class="space-y-3">
                         <a href="{{ route('student.moodle.auth') }}" target="_blank" class="flex items-center justify-between p-3 rounded-xl bg-orange-50 hover:bg-orange-100 hover:text-orange-700 transition-all group border border-transparent hover:border-orange-200">
-                             <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-3">
                                 <div class="p-2 rounded-lg bg-white text-orange-500 group-hover:text-orange-600 shadow-sm transition-colors">
                                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                         <path d="M12 14l9-5-9-5-9 5 9 5z" stroke-linecap="round" stroke-linejoin="round" />
@@ -395,265 +390,192 @@
 
     {{-- 
         =================================================================
-        MODAL DE PERFIL CON CROPPER JS
+        MODAL DE PERFIL (CON CROPPER JS - SIN ALPINE EN LA LÓGICA)
         ================================================================= 
     --}}
     <x-modal name="complete-profile-modal" :show="$showProfileModal" focusable>
-        
-        {{-- INICIALIZACIÓN DE ALPINE PARA CROPPER - PASAMOS $wire --}}
-        <div x-data="profileCropper(@this)" class="p-6">
+        <div class="p-6">
             <h2 class="text-xl font-bold text-gray-900 mb-2">📝 Tu Perfil de Estudiante</h2>
             <p class="text-sm text-gray-600 mb-6">Mantén tu información actualizada.</p>
 
             <form wire:submit.prevent="saveProfile" class="space-y-4">
                 
-                {{-- ZONA DE FOTO: Preview o Crop --}}
+                {{-- ZONA DE FOTO --}}
                 <div class="flex justify-center mb-6">
                     <div class="relative group">
-                        
-                        {{-- MODO NORMAL: Mostrar foto actual --}}
-                        <div x-show="!cropping" class="h-32 w-32 rounded-full ring-4 ring-indigo-50 overflow-hidden bg-gray-100 shadow-md">
+                        {{-- Visualización de la foto actual (o temporal si Livewire la procesó) --}}
+                        <div class="h-32 w-32 rounded-full ring-4 ring-indigo-50 overflow-hidden bg-gray-100 shadow-md">
                             @if ($photo && !$errors->has('photo'))
-                                {{-- Si ya se subió y recortó una, mostrar la temporal --}}
                                 <img src="{{ $photo->temporaryUrl() }}" class="h-full w-full object-cover aspect-square">
                             @else
-                                {{-- Mostrar la actual (Base de datos o Avatar) --}}
                                 <img src="{{ $student->profile_photo_url }}" class="h-full w-full object-cover aspect-square">
                             @endif
                         </div>
 
-                        {{-- BOTÓN CAMBIAR (Solo visible si no estamos recortando) --}}
-                        <label x-show="!cropping" for="photo-input" class="absolute bottom-0 right-0 bg-indigo-600 text-white p-2.5 rounded-full cursor-pointer hover:bg-indigo-700 shadow-lg transition-transform hover:scale-110" title="Cambiar Foto">
+                        {{-- Botón (Input Oculto + Label) --}}
+                        {{-- IMPORTANTE: 'onchange' llama a la función JS pura abajo --}}
+                        <label for="photo-input" class="absolute bottom-0 right-0 bg-indigo-600 text-white p-2.5 rounded-full cursor-pointer hover:bg-indigo-700 shadow-lg transition-transform hover:scale-110" title="Cambiar Foto">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
-                            {{-- Input oculto controlado por Alpine --}}
-                            <input type="file" id="photo-input" class="hidden" accept="image/png, image/jpeg, image/jpg, image/webp" @change="fileChosen">
+                            <input type="file" id="photo-input" class="hidden" accept="image/png, image/jpeg, image/jpg, image/webp" onchange="startCrop(this)">
                         </label>
-                    </div>
-                </div>
-
-                {{-- MODO RECORTE: Editor CropperJS --}}
-                <div x-show="cropping" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4" x-cloak>
-                    <div class="bg-white rounded-lg shadow-xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
-                        <div class="p-4 border-b flex justify-between items-center">
-                            <h3 class="font-bold text-gray-800">Ajustar Foto</h3>
-                            <button type="button" @click="cancelCrop" class="text-gray-500 hover:text-gray-700">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-                        </div>
                         
-                        <div class="flex-1 bg-gray-100 relative p-4 flex items-center justify-center min-h-[300px]">
-                            {{-- Imagen para recortar --}}
-                            <div class="img-container">
-                                <img x-ref="cropImage" src="" style="display: block; max-width: 100%;">
-                            </div>
-                        </div>
-
-                        <div class="p-4 border-t bg-gray-50 flex justify-end gap-3">
-                            <button type="button" @click="cancelCrop" class="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium text-sm">Cancelar</button>
-                            <button type="button" @click="cropAndSave" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium text-sm flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                                Recortar y Usar
-                            </button>
+                        {{-- Spinner de Carga Livewire --}}
+                        <div wire:loading wire:target="photo" class="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center rounded-full">
+                            <svg class="animate-spin h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
                         </div>
                     </div>
                 </div>
-
                 @error('photo') <span class="text-red-500 text-xs block text-center">{{ $message }}</span> @enderror
 
-                {{-- RESTO DEL FORMULARIO --}}
+                {{-- Campos del Formulario --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Teléfono Móvil -->
                     <div>
                         <x-input-label for="mobile_phone" value="Teléfono Móvil" />
-                        <x-text-input id="mobile_phone" type="text" class="mt-1 block w-full" wire:model="mobile_phone" placeholder="809-555-5555" />
+                        <x-text-input id="mobile_phone" type="text" class="mt-1 block w-full" wire:model="mobile_phone" />
                         @error('mobile_phone') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
-
-                    <!-- Fecha de Nacimiento -->
                     <div>
                         <x-input-label for="birth_date" value="Fecha de Nacimiento" />
                         <x-text-input id="birth_date" type="date" class="mt-1 block w-full" wire:model="birth_date" />
-                        @error('birth_date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
-
-                    <!-- Género -->
                     <div>
                         <x-input-label for="gender" value="Género" />
                         <select id="gender" wire:model="gender" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             <option value="">Seleccionar...</option>
                             <option value="Masculino">Masculino</option>
                             <option value="Femenino">Femenino</option>
-                            <option value="Otro">Otro</option>
                         </select>
-                        @error('gender') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
-
-                    <!-- Ciudad -->
                     <div>
                         <x-input-label for="city" value="Ciudad" />
-                        <x-text-input id="city" type="text" class="mt-1 block w-full" wire:model="city" placeholder="Ej: Santo Domingo" />
-                        @error('city') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        <x-text-input id="city" type="text" class="mt-1 block w-full" wire:model="city" />
                     </div>
-
-                    <!-- Sector -->
                     <div>
                         <x-input-label for="sector" value="Sector" />
-                        <x-text-input id="sector" type="text" class="mt-1 block w-full" wire:model="sector" placeholder="Ej: Gazcue" />
-                        @error('sector') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        <x-text-input id="sector" type="text" class="mt-1 block w-full" wire:model="sector" />
                     </div>
-
-                    <!-- Dirección -->
                     <div class="md:col-span-2">
-                        <x-input-label for="address" value="Dirección Completa" />
-                        <x-text-input id="address" type="text" class="mt-1 block w-full" wire:model="address" placeholder="Calle, Número, Edificio..." />
-                        @error('address') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        <x-input-label for="address" value="Dirección" />
+                        <x-text-input id="address" type="text" class="mt-1 block w-full" wire:model="address" />
                     </div>
                 </div>
 
                 <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-100">
-                    <x-secondary-button wire:click="closeProfileModal">
-                        Cancelar
-                    </x-secondary-button>
-
-                    <x-primary-button class="bg-indigo-600 hover:bg-indigo-700 rounded-lg">
-                        Guardar Cambios
-                    </x-primary-button>
+                    <x-secondary-button wire:click="closeProfileModal">Cancelar</x-secondary-button>
+                    <x-primary-button class="bg-indigo-600 hover:bg-indigo-700">Guardar Cambios</x-primary-button>
                 </div>
             </form>
         </div>
     </x-modal>
 
-    {{-- SCRIPTS PARA CROPPER JS Y ALPINE --}}
+    {{-- 
+        =================================================================
+        MODAL DE RECORTE (CONTROLADO POR JS PURO, FUERA DE ALPINE)
+        ================================================================= 
+    --}}
+    <div id="crop-modal" class="fixed inset-0 z-[60] hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            {{-- Backdrop --}}
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Ajustar Foto</h3>
+                            <div class="mt-4 img-container bg-gray-100 rounded-lg">
+                                <img id="image-to-crop" src="" alt="Imagen para recortar">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-3">
+                    <button type="button" id="btn-save-crop" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Recortar y Subir
+                    </button>
+                    <button type="button" id="btn-cancel-crop" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- SCRIPTS PUROS (SIN ALPINE) --}}
     @push('scripts')
         <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
         <script>
-            // Aseguramos que la definición esté en el scope correcto al momento de ejecución
-            (function() {
-                // Definición del componente Alpine
-                const profileCropperDefinition = (wireComponent) => ({
-                    cropping: false,
-                    cropper: null,
-                    file: null,
-                    wire: wireComponent, // Guardamos la referencia a Livewire
+            let cropper;
+            const modal = document.getElementById('crop-modal');
+            const image = document.getElementById('image-to-crop');
+            const input = document.getElementById('photo-input');
 
-                    init() {
-                        console.log('ProfileCropper debug: Iniciado');
-                    },
+            // Función llamada por el input onchange
+            function startCrop(inputElement) {
+                if (inputElement.files && inputElement.files[0]) {
+                    const file = inputElement.files[0];
+                    
+                    // Validar tipo
+                    if (!['image/jpeg', 'image/png', 'image/webp', 'image/jpg'].includes(file.type)) {
+                        alert('Formato no válido. Usa JPG o PNG.');
+                        return;
+                    }
 
-                    fileChosen(event) {
-                        console.log('ProfileCropper debug: Archivo seleccionado');
-                        this.file = event.target.files[0];
-                        if (this.file) {
-                            // Validar tipo manualmente por seguridad
-                            if (!['image/jpeg', 'image/png', 'image/webp', 'image/jpg'].includes(this.file.type)) {
-                                alert('Por favor selecciona una imagen válida (JPG, PNG, WEBP).');
-                                return;
-                            }
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        image.src = e.target.result;
+                        
+                        // Mostrar modal (quitando clase hidden)
+                        modal.classList.remove('hidden');
 
-                            console.log('ProfileCropper debug: Leyendo archivo...', this.file.type);
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                                console.log('ProfileCropper debug: Archivo leído');
-                                // Asignar src
-                                this.$refs.cropImage.src = e.target.result;
-                                
-                                // Esperar a que la imagen cargue en el DOM antes de iniciar Cropper
-                                this.$refs.cropImage.onload = () => {
-                                    console.log('ProfileCropper debug: Imagen cargada en DOM, iniciando Cropper');
-                                    this.startCropper();
-                                }
-                            };
-                            reader.readAsDataURL(this.file);
-                        }
-                    },
-
-                    startCropper() {
-                        this.cropping = true;
-                        // Destruir instancia previa si existe
-                        if (this.cropper) {
-                            this.cropper.destroy();
-                        }
-                        // Iniciar Cropper en el siguiente tick (cuando el modal sea visible)
-                        this.$nextTick(() => {
-                            this.cropper = new Cropper(this.$refs.cropImage, {
-                                aspectRatio: 1, // Obligar 1:1
-                                viewMode: 1,
-                                autoCropArea: 1,
-                                responsive: true,
-                            });
+                        // Iniciar Cropper
+                        if (cropper) { cropper.destroy(); }
+                        
+                        cropper = new Cropper(image, {
+                            aspectRatio: 1, // Cuadrado 1:1
+                            viewMode: 1,
+                            autoCropArea: 1,
+                            background: false,
                         });
-                    },
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
 
-                    cancelCrop() {
-                        this.cropping = false;
-                        this.file = null;
-                        if (this.cropper) {
-                            this.cropper.destroy();
-                            this.cropper = null;
-                        }
-                        // Limpiar input file para permitir seleccionar el mismo archivo de nuevo
-                        const input = document.getElementById('photo-input');
-                        if(input) input.value = '';
-                    },
+            // Botón Cancelar
+            document.getElementById('btn-cancel-crop').addEventListener('click', function() {
+                modal.classList.add('hidden');
+                if (cropper) { cropper.destroy(); cropper = null; }
+                input.value = ''; // Limpiar input
+            });
 
-                    cropAndSave() {
-                        if (!this.cropper) return;
+            // Botón Guardar
+            document.getElementById('btn-save-crop').addEventListener('click', function() {
+                if (!cropper) return;
 
-                        console.log('ProfileCropper debug: Recortando...');
-                        // Obtener canvas recortado
-                        this.cropper.getCroppedCanvas({
-                            width: 500, // Tamaño razonable para perfil
-                            height: 500
-                         }).toBlob((blob) => {
-                            console.log('ProfileCropper debug: Blob generado, subiendo...');
-                            
-                            const uploadCallback = (uploadedFilename) => {
-                                console.log('ProfileCropper debug: Subida exitosa');
-                                this.cropping = false;
-                                if (this.cropper) {
-                                    this.cropper.destroy();
-                                    this.cropper = null;
-                                }
-                            };
-
-                            const errorCallback = () => {
-                                console.error('ProfileCropper debug: Error en subida');
-                                alert('Error al subir la imagen. Intenta de nuevo.');
-                            };
-
-                            // Usar el objeto wire inyectado para la subida
-                            // IMPORTANTE: usamos 'this.wire' que guardamos al inicializar
-                            if (this.wire && this.wire.upload) {
-                                this.wire.upload('photo', blob, uploadCallback, errorCallback);
-                            } else {
-                                // Fallback a Livewire global si no se inyectó (útil en algunas versiones de Livewire 3)
-                                // @this se resuelve en Blade, así que esto es un último recurso en JS puro
-                                console.warn('ProfileCropper debug: Usando fallback global para upload');
-                            }
-
-                        }, 'image/jpeg', 0.9); // Calidad 90%
-                    }
-                });
-
-                // Función robusta de registro
-                const registerProfileCropper = () => {
-                    // Si Alpine existe y no ha registrado el componente, registrarlo
-                    if (typeof Alpine !== 'undefined') {
-                         Alpine.data('profileCropper', profileCropperDefinition);
-                    }
-                };
-
-                // Intentar registrar inmediatamente
-                registerProfileCropper();
-
-                // Registrar cuando Alpine se inicialice (si aún no lo ha hecho)
-                document.addEventListener('alpine:init', registerProfileCropper);
-                
-                // IMPORTANTE para Livewire SPA (v3): Registrar en cada navegación si es necesario
-                document.addEventListener('livewire:navigated', registerProfileCropper);
-            })();
+                // Obtener blob
+                cropper.getCroppedCanvas({
+                    width: 500, height: 500, // Calidad final
+                }).toBlob((blob) => {
+                    // Subir a Livewire usando la API global de @this
+                    @this.upload('photo', blob, (uploadedFilename) => {
+                        // Éxito: Cerrar modal
+                        modal.classList.add('hidden');
+                        if (cropper) { cropper.destroy(); cropper = null; }
+                        input.value = ''; 
+                    }, () => {
+                        alert('Error al subir la imagen.');
+                    });
+                }, 'image/jpeg', 0.9);
+            });
         </script>
     @endpush
 </div>
