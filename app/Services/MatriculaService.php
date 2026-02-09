@@ -10,7 +10,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str; // Importante
 use App\Services\MoodleApiService;
+use App\Mail\MoodleCredentialsMail; // Importamos el Mailable
 
 /**
  * Servicio para manejar la lógica de generación de matrícula
@@ -162,8 +164,12 @@ class MatriculaService
             // Resolvemos el servicio
             $moodleService = app(MoodleApiService::class);
 
-            // Contraseña inicial
-            $moodlePassword = $student->student_code ?? 'Centu' . date('Y');
+            // --- CORRECCIÓN CRÍTICA: CONTRASEÑA MÁS COMPATIBLE ---
+            // El log indicó que Moodle exige caracteres como *, -, o #.
+            // Cambiamos el formato a: Sga*Matricula#12
+            // Sga (Mayus/Minus) + * (Especial) + Matricula (Numero) + # (Especial) + Random
+            $code = $student->student_code ?? 'Student';
+            $moodlePassword = 'Sga*' . $code . '#' . rand(10,99);
 
             // 1. Sincronizar Usuario
             $moodleUserId = $moodleService->syncUser($user, $moodlePassword);
@@ -173,12 +179,24 @@ class MatriculaService
                 if ($user->moodle_user_id !== $moodleUserId) {
                     $user->moodle_user_id = $moodleUserId;
                     $user->saveQuietly();
+                    
+                    // --- ENVIAR CORREO CON CREDENCIALES (SOLO SI ES USUARIO NUEVO EN MOODLE/LOCAL) ---
+                    // Como acabamos de guardar el ID, asumimos que es la primera vez que sincronizamos
+                    // o que no lo teníamos registrado.
+                    try {
+                        Mail::to($user->email)->send(new MoodleCredentialsMail($user, $moodlePassword));
+                        Log::info("Correo de credenciales Moodle enviado a {$user->email}");
+                    } catch (\Exception $e) {
+                        Log::error("Error enviando correo Moodle: " . $e->getMessage());
+                    }
                 }
 
                 // 2. Matricular en el curso específico encontrado
                 $moodleService->enrollUser($moodleUserId, $moodleCourseId);
                 
-                Log::info("Moodle Sync: Usuario {$user->email} matriculado en Moodle ID {$moodleCourseId} (Origen: Cascada).");
+                Log::info("Moodle Sync: Usuario {$user->email} matriculado en Moodle ID {$moodleCourseId}.");
+            } else {
+                Log::error("Moodle Sync: Fallo al crear/buscar usuario {$user->email}. Revisa los logs de error anteriores.");
             }
 
         } catch (\Exception $e) {
