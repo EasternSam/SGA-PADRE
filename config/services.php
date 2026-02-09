@@ -6,6 +6,12 @@ return [
     |--------------------------------------------------------------------------
     | Third Party Services
     |--------------------------------------------------------------------------
+    |
+    | This file is for storing the credentials for third party services such
+    | as Mailgun, Postmark, AWS and more. This file provides the de facto
+    | location for this type of information, allowing packages to have
+    | a conventional file to locate the various service credentials.
+    |
     */
 
     'postmark' => [
@@ -42,6 +48,12 @@ return [
         'currency'        => '214', // 214 = Peso Dominicano
         'url_sandbox'     => 'https://labservicios.cardnet.com.do/authorize', 
         'url_production'  => 'https://payments.cardnet.com.do/authorize',
+    ],
+
+    // --- CONFIGURACIÓN MOODLE ---
+    'moodle' => [
+        'url' => env('MOODLE_URL'),
+        'token' => env('MOODLE_TOKEN'),
     ],
 
 ];

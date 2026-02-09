@@ -299,6 +299,62 @@ Route::get('/test-wp', function () {
     }
 });
 
+// --- NUEVA RUTA DE DIAGNÓSTICO MOODLE ---
+Route::get('/test-moodle', function () {
+    $url = config('services.moodle.url');
+    $token = config('services.moodle.token');
+    
+    // Preparar URL de prueba para Moodle
+    // Endpoint REST estándar de Moodle
+    $endpoint = $url . '/webservice/rest/server.php';
+    
+    $params = [
+        'wstoken' => $token,
+        'wsfunction' => 'core_course_get_courses', // Función básica para probar lectura
+        'moodlewsrestformat' => 'json'
+    ];
+
+    $startTime = microtime(true);
+    try {
+        $response = Http::asForm()->post($endpoint, $params);
+        $duration = microtime(true) - $startTime;
+
+        $json = $response->json();
+        
+        $status = 'EXITO';
+        $message = 'Conexión exitosa con Moodle.';
+        
+        // Verificar si Moodle devolvió un error de excepción
+        if (isset($json['exception'])) {
+            $status = 'ERROR MOODLE';
+            $message = 'Moodle devolvió un error: ' . $json['message'] . ' (Code: ' . $json['errorcode'] . ')';
+        }
+
+        return response()->json([
+            'test' => 'Conexión Moodle API',
+            'status' => $status,
+            'mensaje' => $message,
+            'config' => [
+                'url_base' => $url,
+                'token_presente' => !empty($token) ? 'SÍ' : 'NO',
+                'endpoint_completo' => $endpoint
+            ],
+            'resultado' => [
+                'http_status' => $response->status(),
+                'duracion' => round($duration, 2) . 's',
+                'respuesta_raw' => $json
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'test' => 'FALLO CRÍTICO DE CONEXIÓN',
+            'error' => $e->getMessage(),
+            'url_intentada' => $endpoint
+        ], 500);
+    }
+});
+
 // Ruta de 'dashboard' genérica que redirige según el rol
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
