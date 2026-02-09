@@ -13,14 +13,10 @@ class MoodleApiService
 
     public function __construct()
     {
-        // Asumimos que estas variables están en tu .env
         $this->baseUrl = config('services.moodle.url');
         $this->token = config('services.moodle.token');
     }
 
-    /**
-     * Enviar petición genérica a Moodle
-     */
     protected function makeRequest($function, $params = [])
     {
         $params['wstoken'] = $this->token;
@@ -50,26 +46,14 @@ class MoodleApiService
         }
     }
 
-    /**
-     * Obtener listado de cursos de Moodle
-     */
     public function getCourses()
     {
         $courses = $this->makeRequest('core_course_get_courses');
-
-        if (is_array($courses)) {
-            return $courses;
-        }
-
-        return [];
+        return is_array($courses) ? $courses : [];
     }
 
-    /**
-     * Busca o crea un usuario.
-     */
     public function syncUser(User $user, $password, $customUsername = null)
     {
-        // 1. Buscar usuario existente por email
         $users = $this->makeRequest('core_user_get_users_by_field', [
             'field' => 'email',
             'values' => [$user->email]
@@ -79,12 +63,10 @@ class MoodleApiService
             return $users[0]['id'];
         }
 
-        // Definir el username: Si nos dan uno (matrícula), lo usamos.
         $moodleUsername = $customUsername 
             ? strtolower($customUsername) 
             : strtolower(explode('@', $user->email)[0]);
 
-        // 2. Crear usuario si no existe
         $newUser = $this->makeRequest('core_user_create_users', [
             'users' => [
                 [
@@ -105,15 +87,24 @@ class MoodleApiService
         return null;
     }
 
-    /**
-     * Matricular usuario en un curso
-     */
+    public function updateUserPassword($moodleUserId, $newPassword)
+    {
+        return $this->makeRequest('core_user_update_users', [
+            'users' => [
+                [
+                    'id' => $moodleUserId,
+                    'password' => $newPassword
+                ]
+            ]
+        ]);
+    }
+
     public function enrollUser($moodleUserId, $moodleCourseId)
     {
         return $this->makeRequest('enrol_manual_enrol_users', [
             'enrolments' => [
                 [
-                    'roleid' => 5, // Rol de estudiante
+                    'roleid' => 5, 
                     'userid' => $moodleUserId,
                     'courseid' => $moodleCourseId
                 ]
@@ -123,24 +114,16 @@ class MoodleApiService
 
     /**
      * Generar URL de acceso directo (SSO) usando el plugin User Key
+     * CORREGIDO: Envía el campo 'email' porque así está configurado el plugin en Moodle.
      */
     public function getLoginUrl($userEmail)
     {
-        // 1. Obtener ID del usuario
-        $users = $this->makeRequest('core_user_get_users_by_field', [
-            'field' => 'email',
-            'values' => [$userEmail]
-        ]);
-
-        if (empty($users)) return null;
+        // Ya no necesitamos buscar el ID primero, porque el plugin acepta el email directamente
+        // según tu configuración.
         
-        $moodleUser = $users[0];
-
-        // 2. Solicitar la URL de login
-        // Esta función requiere que el plugin 'auth_userkey' esté activo en Moodle
         $keyData = $this->makeRequest('auth_userkey_request_login_url', [
             'user' => [
-                'id' => $moodleUser['id']
+                'email' => $userEmail // ¡AQUÍ ESTABA EL DETALLE! Usamos email, no id.
             ]
         ]);
 
@@ -148,6 +131,16 @@ class MoodleApiService
             return $keyData['loginurl'];
         }
         
-        return null;
+        return null; 
+    }
+    
+    public function getMoodleUserByEmail($email)
+    {
+        $users = $this->makeRequest('core_user_get_users_by_field', [
+            'field' => 'email',
+            'values' => [$email]
+        ]);
+
+        return !empty($users) ? $users[0] : null;
     }
 }
