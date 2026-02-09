@@ -117,18 +117,9 @@ class MoodleApiService
 
     public function getLoginUrl($userEmail)
     {
-        $users = $this->makeRequest('core_user_get_users_by_field', [
-            'field' => 'email',
-            'values' => [$userEmail]
-        ]);
-
-        if (empty($users)) return null;
-        
-        $moodleUser = $users[0];
-
         $keyData = $this->makeRequest('auth_userkey_request_login_url', [
             'user' => [
-                'id' => $moodleUser['id']
+                'email' => $userEmail 
             ]
         ]);
 
@@ -137,5 +128,15 @@ class MoodleApiService
         }
         
         return null;
+    }
+    
+    public function getMoodleUserByEmail($email)
+    {
+        $users = $this->makeRequest('core_user_get_users_by_field', [
+            'field' => 'email',
+            'values' => [$email]
+        ]);
+
+        return !empty($users) ? $users[0] : null;
     }
 }
