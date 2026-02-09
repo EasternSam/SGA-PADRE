@@ -108,17 +108,36 @@ class Dashboard extends Component
         }
     }
 
-    // --- DEBUG LIFECYCLE: Para ver si el servidor responde ---
+    // --- DEBUG LIFECYCLE: INSPECCIÓN PROFUNDA ---
     public function hydrate()
     {
-        // Se ejecuta en CADA request. Si esto no sale en el log, el problema es PHP/Nginx (tamaño de archivo) o Red.
-        Log::info('--- [DEBUG BACKEND] Hydrate: Solicitud recibida en el componente ---');
+        Log::info('--- [DEBUG BACKEND] Hydrate (Solicitud Recibida) ---');
+        
+        // 1. Ver qué actualizaciones solicita el frontend
+        // Livewire envía las actualizaciones en un array 'updates' dentro del payload
+        $payload = request()->all();
+        $updates = data_get($payload, 'components.0.updates', 'No updates found in payload');
+        
+        Log::info('[DEBUG BACKEND] Payload Updates:', is_array($updates) ? $updates : ['msg' => $updates]);
+        
+        // 2. Ver si hay archivos temporales en la request (Livewire usa una request separada para upload, 
+        // pero luego envía el hash en la request de actualización)
+        Log::info('[DEBUG BACKEND] Request methods/inputs:', [
+            'method' => request()->method(),
+            'has_files' => request()->hasFile('photo') ? 'YES' : 'NO',
+            'content_length' => request()->header('Content-Length'),
+        ]);
+    }
+
+    public function updating($propertyName, $value)
+    {
+        // Se ejecuta ANTES de que la propiedad cambie. Si esto no sale, Livewire no intentó cambiar nada.
+        Log::info("[DEBUG BACKEND] updating() disparado para: {$propertyName}");
     }
 
     public function updated($propertyName)
     {
-        // Se ejecuta cuando CUALQUIER propiedad cambia
-        Log::info("[DEBUG BACKEND] Propiedad actualizada genérica: {$propertyName}");
+        Log::info("[DEBUG BACKEND] updated() disparado para: {$propertyName}");
     }
     // ---------------------------------------------------------
 
