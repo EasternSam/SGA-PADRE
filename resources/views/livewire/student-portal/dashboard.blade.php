@@ -422,15 +422,18 @@
                     <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
                     
                     <div class="relative flex flex-col items-center">
-                         {{-- IMAGEN DE PERFIL PRINCIPAL: Usamos object-cover y aspect-square para garantizar 1:1 --}}
+                        {{-- IMAGEN DE PERFIL PRINCIPAL --}}
                         <div class="h-28 w-28 rounded-full ring-4 ring-white shadow-lg overflow-hidden bg-white mb-3 group relative cursor-pointer" wire:click="openProfileModal">
+                            {{-- Se usa object-cover y aspect-square para asegurar 1:1 --}}
                             <img class="h-full w-full object-cover aspect-square"
                                  src="{{ $student->profile_photo_url }}" 
                                  alt="{{ $student->fullName }}">
                             
-                             <div class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                            {{-- Overlay de editar al pasar mouse --}}
+                            <div class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
                                 <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
                             </div>
                         </div>
@@ -460,6 +463,7 @@
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                     <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 text-xs">Accesos Directos</h3>
                     <div class="space-y-3">
+                        {{-- BOTÓN MOODLE --}}
                         <a href="{{ route('student.moodle.auth') }}" target="_blank" class="flex items-center justify-between p-3 rounded-xl bg-orange-50 hover:bg-orange-100 hover:text-orange-700 transition-all group border border-transparent hover:border-orange-200">
                             <div class="flex items-center gap-3">
                                 <div class="p-2 rounded-lg bg-white text-orange-500 group-hover:text-orange-600 shadow-sm transition-colors">
@@ -537,7 +541,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                             </svg>
                             {{-- Input oculto controlado por Alpine --}}
-                            <input type="file" id="photo-input" class="hidden" accept="image/*" @change="fileChosen">
+                            <input type="file" id="photo-input" class="hidden" accept="image/png, image/jpeg, image/jpg, image/webp" @change="fileChosen">
                         </label>
                     </div>
                 </div>
