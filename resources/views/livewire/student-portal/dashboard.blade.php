@@ -523,35 +523,35 @@
         <script>
             (function() {
                 let cropper;
-                let isInitialized = false;
 
-                function initProfileCropper() {
-                    if (isInitialized) return; // Evitar múltiples bindings
+                // Elementos estables (dentro de wire:ignore) o globales
+                const modal = document.getElementById('crop-modal');
+                const image = document.getElementById('image-to-crop');
+                const saveBtn = document.getElementById('btn-save-crop');
+                const cancelBtn = document.getElementById('btn-cancel-crop');
+                
+                // Función para resetear
+                const resetCropper = () => {
+                    modal.classList.add('hidden');
+                    if (cropper) { cropper.destroy(); cropper = null; }
                     
-                    const modal = document.getElementById('crop-modal');
-                    const image = document.getElementById('image-to-crop');
+                    // Buscar input dinámicamente porque Livewire lo puede haber regenerado
                     const input = document.getElementById('photo-input');
-                    const saveBtn = document.getElementById('btn-save-crop');
-                    const cancelBtn = document.getElementById('btn-cancel-crop');
+                    if(input) input.value = ''; 
+                    
+                    saveBtn.disabled = false;
+                    saveBtn.innerText = 'Recortar y Subir';
+                };
 
-                    if (!modal || !image || !input || !saveBtn || !cancelBtn) {
-                        return;
-                    }
-
-                    // Función para limpiar
-                    const resetCropper = () => {
-                        modal.classList.add('hidden');
-                        if (cropper) { cropper.destroy(); cropper = null; }
-                        input.value = ''; // Limpiar input para permitir seleccionar misma imagen
-                        saveBtn.disabled = false;
-                        saveBtn.innerText = 'Recortar y Subir';
-                    };
-
-                    input.addEventListener('change', function (e) {
+                // Event Delegation para el input (CRUCIAL para Livewire)
+                // Escuchamos en el documento entero cualquier cambio que venga de #photo-input
+                document.addEventListener('change', function(e) {
+                    if (e.target && e.target.id === 'photo-input') {
                         const files = e.target.files;
                         if (files && files.length > 0) {
                             const file = files[0];
                             
+                            // Validar tipo
                             if (!['image/jpeg', 'image/png', 'image/webp', 'image/jpg'].includes(file.type)) {
                                 alert('Formato no válido. Usa JPG o PNG.');
                                 return;
@@ -573,10 +573,13 @@
                             };
                             reader.readAsDataURL(file);
                         }
-                    });
+                    }
+                });
 
-                    cancelBtn.addEventListener('click', resetCropper);
-
+                // Listeners para botones estables (solo agregar una vez)
+                // Usamos dataset para marcar que ya tienen listener y no duplicar
+                if (saveBtn && !saveBtn.dataset.hasListener) {
+                    saveBtn.dataset.hasListener = "true";
                     saveBtn.addEventListener('click', function() {
                         if (!cropper) return;
 
@@ -591,20 +594,16 @@
                                 resetCropper();
                             }, () => {
                                 alert('Error al subir la imagen.');
-                                saveBtn.disabled = false;
-                                saveBtn.innerText = 'Recortar y Subir';
+                                resetCropper();
                             });
                         }, 'image/jpeg', 0.9);
                     });
-
-                    isInitialized = true;
                 }
 
-                document.addEventListener('DOMContentLoaded', initProfileCropper);
-                document.addEventListener('livewire:navigated', () => {
-                    isInitialized = false; // Reset flag para navegación SPA
-                    initProfileCropper();
-                });
+                if (cancelBtn && !cancelBtn.dataset.hasListener) {
+                    cancelBtn.dataset.hasListener = "true";
+                    cancelBtn.addEventListener('click', resetCropper);
+                }
             })();
         </script>
         @endonce
