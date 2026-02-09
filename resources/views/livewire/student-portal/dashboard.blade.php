@@ -415,14 +415,14 @@
 
                         {{-- Botón (Input Oculto + Label) --}}
                         {{-- IMPORTANTE: Usamos un id específico para el trigger desde JS --}}
-                        <label for="photo-input-trigger" class="absolute bottom-0 right-0 bg-indigo-600 text-white p-2.5 rounded-full cursor-pointer hover:bg-indigo-700 shadow-lg transition-transform hover:scale-110" title="Cambiar Foto">
+                        <label for="photo-input" class="absolute bottom-0 right-0 bg-indigo-600 text-white p-2.5 rounded-full cursor-pointer hover:bg-indigo-700 shadow-lg transition-transform hover:scale-110" title="Cambiar Foto">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
                         </label>
                         {{-- El input real está oculto y se maneja por JS para evitar problemas con Livewire/Alpine --}}
-                        <input type="file" id="photo-input-trigger" class="hidden" accept="image/png, image/jpeg, image/jpg, image/webp">
+                        <input type="file" id="photo-input" class="hidden" accept="image/png, image/jpeg, image/jpg, image/webp">
                         
                         {{-- Spinner de Carga Livewire --}}
                         <div wire:loading wire:target="photo" class="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center rounded-full">
@@ -515,92 +515,104 @@
     @push('scripts')
         <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
         <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                let cropper;
-                // Referencias a elementos
-                const modal = document.getElementById('crop-modal');
-                const image = document.getElementById('image-to-crop');
-                const input = document.getElementById('photo-input-trigger');
-                const saveBtn = document.getElementById('btn-save-crop');
-                const cancelBtn = document.getElementById('btn-cancel-crop');
+            // Encapsulamos en una función auto-ejecutable para evitar conflictos y asegurar variables locales
+            (function() {
+                // Función de inicialización
+                function initProfileCropper() {
+                    console.log("Iniciando Profile Cropper...");
+                    
+                    let cropper;
+                    const modal = document.getElementById('crop-modal');
+                    const image = document.getElementById('image-to-crop');
+                    const input = document.getElementById('photo-input');
+                    const saveBtn = document.getElementById('btn-save-crop');
+                    const cancelBtn = document.getElementById('btn-cancel-crop');
 
-                // Asegurar que las referencias existen antes de añadir listeners
-                if (!input || !saveBtn || !cancelBtn) {
-                    console.error('Elementos del cropper no encontrados');
-                    return;
+                    // Validar existencia de elementos
+                    if (!modal || !image || !input || !saveBtn || !cancelBtn) {
+                        console.error("Elementos del cropper no encontrados en el DOM.");
+                        return;
+                    }
+
+                    console.log("Elementos encontrados. Configurando listeners...");
+
+                    // Limpiar listeners anteriores para evitar duplicados si Livewire refresca
+                    // (Clonar el nodo elimina listeners, una técnica común, o simplemente reasignar si es la primera vez)
+                    // En este caso simple, como es carga inicial, asumimos limpieza.
+
+                    input.addEventListener('change', function (e) {
+                        console.log("Input change detectado");
+                        const files = e.target.files;
+                        if (files && files.length > 0) {
+                            const file = files[0];
+                            
+                            // Validar tipo
+                            if (!['image/jpeg', 'image/png', 'image/webp', 'image/jpg'].includes(file.type)) {
+                                alert('Formato no válido. Usa JPG o PNG.');
+                                return;
+                            }
+
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                image.src = e.target.result;
+                                
+                                // Mostrar modal
+                                modal.classList.remove('hidden');
+
+                                // Iniciar Cropper
+                                if (cropper) { cropper.destroy(); }
+                                
+                                cropper = new Cropper(image, {
+                                    aspectRatio: 1, // Cuadrado 1:1 obligatorio
+                                    viewMode: 1,
+                                    autoCropArea: 1,
+                                    background: false,
+                                });
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
+
+                    cancelBtn.addEventListener('click', function() {
+                        modal.classList.add('hidden');
+                        if (cropper) { cropper.destroy(); cropper = null; }
+                        input.value = ''; 
+                    });
+
+                    saveBtn.addEventListener('click', function() {
+                        if (!cropper) return;
+
+                        saveBtn.disabled = true;
+                        saveBtn.innerText = 'Procesando...';
+
+                        cropper.getCroppedCanvas({
+                            width: 500, height: 500, fillColor: '#fff',
+                        }).toBlob((blob) => {
+                            console.log("Subiendo blob a Livewire...");
+                            // Usamos @this inyectado por Blade
+                            @this.upload('photo', blob, (uploadedFilename) => {
+                                console.log("Subida exitosa");
+                                modal.classList.add('hidden');
+                                if (cropper) { cropper.destroy(); cropper = null; }
+                                input.value = ''; 
+                                saveBtn.disabled = false;
+                                saveBtn.innerText = 'Recortar y Subir';
+                            }, () => {
+                                console.error("Error en subida");
+                                alert('Error al subir la imagen.');
+                                saveBtn.disabled = false;
+                                saveBtn.innerText = 'Recortar y Subir';
+                            });
+                        }, 'image/jpeg', 0.9);
+                    });
                 }
 
-                // 1. Escuchar cambios en el input file
-                input.addEventListener('change', function (e) {
-                    const files = e.target.files;
-                    if (files && files.length > 0) {
-                        const file = files[0];
-                        
-                        // Validar tipo de imagen
-                        if (!['image/jpeg', 'image/png', 'image/webp', 'image/jpg'].includes(file.type)) {
-                            alert('Formato no válido. Usa JPG o PNG.');
-                            return;
-                        }
-
-                        // Leer archivo
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            image.src = e.target.result;
-                            
-                            // Mostrar modal
-                            modal.classList.remove('hidden');
-
-                            // Destruir cropper previo si existe
-                            if (cropper) { cropper.destroy(); }
-                            
-                            // Iniciar Cropper
-                            cropper = new Cropper(image, {
-                                aspectRatio: 1, // Cuadrado 1:1 obligatorio
-                                viewMode: 1,
-                                autoCropArea: 1,
-                                background: false,
-                            });
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                });
-
-                // 2. Botón Cancelar
-                cancelBtn.addEventListener('click', function() {
-                    modal.classList.add('hidden');
-                    if (cropper) { cropper.destroy(); cropper = null; }
-                    input.value = ''; // Limpiar input para permitir seleccionar mismo archivo
-                });
-
-                // 3. Botón Guardar
-                saveBtn.addEventListener('click', function() {
-                    if (!cropper) return;
-
-                    saveBtn.disabled = true;
-                    saveBtn.innerText = 'Procesando...';
-
-                    // Obtener blob de la imagen recortada
-                    cropper.getCroppedCanvas({
-                        width: 500, height: 500, // Tamaño final optimizado
-                        fillColor: '#fff',
-                    }).toBlob((blob) => {
-                        // Subir a Livewire usando @this
-                        @this.upload('photo', blob, (uploadedFilename) => {
-                            // Éxito
-                            modal.classList.add('hidden');
-                            if (cropper) { cropper.destroy(); cropper = null; }
-                            input.value = ''; 
-                            saveBtn.disabled = false;
-                            saveBtn.innerText = 'Recortar y Subir';
-                        }, () => {
-                            // Error
-                            alert('Error al subir la imagen.');
-                            saveBtn.disabled = false;
-                            saveBtn.innerText = 'Recortar y Subir';
-                        });
-                    }, 'image/jpeg', 0.9);
-                });
-            });
+                // Ejecutar al cargar el DOM
+                document.addEventListener('DOMContentLoaded', initProfileCropper);
+                
+                // Ejecutar al navegar con Livewire (si usas wire:navigate)
+                document.addEventListener('livewire:navigated', initProfileCropper);
+            })();
         </script>
     @endpush
 </div>
