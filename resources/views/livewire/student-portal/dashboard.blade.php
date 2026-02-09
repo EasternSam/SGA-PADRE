@@ -1,43 +1,15 @@
-{{-- AÑADIDO: ID para identificar el componente desde JS --}}
-<div id="student-dashboard-component" data-component-id="{{ $this->getId() }}" class="min-h-screen bg-gray-50/50 pb-12">
-    
-    {{-- INYECCIÓN DE ESTILOS PARA CROPPER.JS --}}
-    @push('styles')
-        @once
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
-        <style>
-            .cropper-view-box, .cropper-face {
-                border-radius: 50%; /* Guía visual redonda para perfil */
-            }
-            /* Asegurar que la imagen no se desborde en el modal */
-            .img-container {
-                height: 400px;
-                width: 100%;
-                background-color: #f3f4f6;
-                overflow: hidden;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-            }
-            .img-container img {
-                max-width: 100%;
-                max-height: 100%;
-                display: block;
-            }
-        </style>
-        @endonce
-    @endpush
+<div class="min-h-screen bg-gray-50/50 pb-12">
 
     {{-- ENCABEZADO --}}
     <x-slot name="header">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight text-gray-900">
-                    Hola, {{ explode(' ', $student->first_name ?? '')[0] }} 👋
+                    Hola, {{ explode(' ', $student->first_name)[0] }} 👋
                 </h1>
                 @if($activeCareer)
                     <p class="text-sm text-indigo-600 font-medium mt-1 flex items-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>
+                        <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>
                         {{ $activeCareer->name }}
                     </p>
                 @endif
@@ -240,7 +212,7 @@
                                                 <div class="font-semibold">{{ $enrollment->courseSchedule->module->name ?? 'N/A' }}</div>
                                             </td>
                                             <td class="px-6 py-4">
-                                                {{ ($enrollment->courseSchedule->days_of_week ?? []) ? implode(', ', $enrollment->courseSchedule->days_of_week) : 'N/A' }}
+                                                {{ $enrollment->courseSchedule->days_of_week ? implode(', ', $enrollment->courseSchedule->days_of_week) : 'N/A' }}
                                             </td>
                                             <td class="px-6 py-4 text-center"><span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset bg-indigo-50 text-indigo-700 ring-indigo-600/20">Carrera</span></td>
                                             <td class="px-6 py-4 text-right">
@@ -254,7 +226,7 @@
                                                 <div class="font-semibold">{{ $enrollment->courseSchedule->module->course->name ?? 'N/A' }}</div>
                                             </td>
                                             <td class="px-6 py-4">
-                                                {{ ($enrollment->courseSchedule->days_of_week ?? []) ? implode(', ', $enrollment->courseSchedule->days_of_week) : 'N/A' }}
+                                                {{ $enrollment->courseSchedule->days_of_week ? implode(', ', $enrollment->courseSchedule->days_of_week) : 'N/A' }}
                                             </td>
                                             <td class="px-6 py-4 text-center"><span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset bg-green-50 text-green-700 ring-green-600/20">Técnico</span></td>
                                             <td class="px-6 py-4 text-right">
@@ -394,7 +366,7 @@
 
     {{-- 
         =================================================================
-        MODAL DE PERFIL (CON CROPPER JS - SIN ALPINE EN LA LÓGICA DE RECORTE)
+        MODAL DE PERFIL
         ================================================================= 
     --}}
     <x-modal name="complete-profile-modal" :show="$showProfileModal" focusable>
@@ -407,7 +379,7 @@
                 {{-- ZONA DE FOTO --}}
                 <div class="flex justify-center mb-6">
                     <div class="relative group">
-                        {{-- Visualización de la foto actual (o temporal si Livewire la procesó) --}}
+                        {{-- Visualización de la foto --}}
                         <div class="h-32 w-32 rounded-full ring-4 ring-indigo-50 overflow-hidden bg-gray-100 shadow-md">
                             @if ($photo && !$errors->has('photo'))
                                 <img src="{{ $photo->temporaryUrl() }}" class="h-full w-full object-cover aspect-square rounded-full">
@@ -417,15 +389,14 @@
                         </div>
 
                         {{-- Botón (Input Oculto + Label) --}}
-                        {{-- IMPORTANTE: Usamos un id específico para el trigger desde JS --}}
                         <label for="photo-input" class="absolute bottom-0 right-0 bg-indigo-600 text-white p-2.5 rounded-full cursor-pointer hover:bg-indigo-700 shadow-lg transition-transform hover:scale-110" title="Cambiar Foto">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
+                            {{-- Input con wire:model.live para subida directa, sin cropper JS --}}
+                            <input type="file" id="photo-input" class="hidden" accept="image/png, image/jpeg, image/jpg, image/webp" wire:model.live="photo">
                         </label>
-                        {{-- El input real está oculto y se maneja por JS para evitar problemas con Livewire/Alpine --}}
-                        <input type="file" id="photo-input" class="hidden" accept="image/png, image/jpeg, image/jpg, image/webp">
                         
                         {{-- Spinner de Carga Livewire --}}
                         <div wire:loading wire:target="photo" class="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center rounded-full">
@@ -478,143 +449,4 @@
             </form>
         </div>
     </x-modal>
-
-    {{-- 
-        =================================================================
-        MODAL DE RECORTE (CONTROLADO POR JS PURO)
-        ================================================================= 
-    --}}
-    <div id="crop-modal" wire:ignore class="fixed inset-0 z-[60] hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            {{-- Backdrop --}}
-            <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
-                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                    <div class="sm:flex sm:items-start">
-                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Ajustar Foto</h3>
-                            <div class="mt-4 img-container bg-gray-100 rounded-lg">
-                                <img id="image-to-crop" src="" alt="Imagen para recortar">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-3">
-                    <button type="button" id="btn-save-crop" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
-                        Recortar y Subir
-                    </button>
-                    <button type="button" id="btn-cancel-crop" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-                        Cancelar
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- SCRIPTS PUROS (CON LA SOLUCIÓN TÉCNICA APLICADA) --}}
-    @push('scripts')
-        @once
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-        <script>
-            (function() {
-                let cropper;
-                
-                // Elementos del DOM
-                const modal = document.getElementById('crop-modal');
-                const image = document.getElementById('image-to-crop');
-                const saveBtn = document.getElementById('btn-save-crop');
-                const cancelBtn = document.getElementById('btn-cancel-crop');
-                // Referencia al contenedor con el ID del componente Livewire
-                const container = document.getElementById('student-dashboard-component');
-
-                // Helper para obtener el componente Livewire correcto
-                const getComponent = () => {
-                    if (typeof Livewire !== 'undefined' && container && container.dataset.componentId) {
-                        return Livewire.find(container.dataset.componentId);
-                    }
-                    console.error('No se pudo encontrar el componente Livewire.');
-                    return null;
-                };
-
-                // Función Reset
-                const resetCropper = () => {
-                    modal.classList.add('hidden');
-                    if (cropper) { cropper.destroy(); cropper = null; }
-                    
-                    const input = document.getElementById('photo-input');
-                    if(input) input.value = ''; // Reset input para permitir re-selección
-                    
-                    saveBtn.disabled = false;
-                    saveBtn.innerText = 'Recortar y Subir';
-                };
-
-                // Listener para el Input (Delegado)
-                document.addEventListener('change', function(e) {
-                    if (e.target && e.target.id === 'photo-input') {
-                        const files = e.target.files;
-                        if (files && files.length > 0) {
-                            const file = files[0];
-                            
-                            if (!['image/jpeg', 'image/png', 'image/webp', 'image/jpg'].includes(file.type)) {
-                                alert('Formato no válido. Usa JPG o PNG.');
-                                return;
-                            }
-
-                            const reader = new FileReader();
-                            reader.onload = function(evt) {
-                                image.src = evt.target.result;
-                                modal.classList.remove('hidden');
-
-                                if (cropper) { cropper.destroy(); }
-                                
-                                cropper = new Cropper(image, {
-                                    aspectRatio: 1, 
-                                    viewMode: 1,
-                                    autoCropArea: 1,
-                                    background: false,
-                                });
-                            };
-                            reader.readAsDataURL(file);
-                        }
-                    }
-                });
-
-                // Botón Guardar con FIX Livewire
-                if (saveBtn) {
-                    saveBtn.addEventListener('click', function() {
-                        if (!cropper) return;
-
-                        const component = getComponent();
-                        if (!component) {
-                            alert('Error de conexión con el componente. Recarga la página.');
-                            return;
-                        }
-
-                        saveBtn.disabled = true;
-                        saveBtn.innerText = 'Procesando...';
-
-                        cropper.getCroppedCanvas({
-                            width: 500, height: 500, fillColor: '#fff',
-                        }).toBlob((blob) => {
-                            // Usamos la instancia obtenida dinámicamente en lugar de @this
-                            component.upload('photo', blob, (uploadedFilename) => {
-                                resetCropper();
-                            }, () => {
-                                alert('Error al subir la imagen.');
-                                resetCropper();
-                            });
-                        }, 'image/jpeg', 0.9);
-                    });
-                }
-
-                if (cancelBtn) {
-                    cancelBtn.addEventListener('click', resetCropper);
-                }
-            })();
-        </script>
-        @endonce
-    @endpush
 </div>
