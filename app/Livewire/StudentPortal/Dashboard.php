@@ -14,11 +14,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log; // <--- AGREGADO PARA DEBUG
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Lazy; 
+// use Livewire\Attributes\Lazy; // DESACTIVADO TEMPORALMENTE PARA DEBUG
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
 
-#[Lazy]
+// #[Lazy] // DESACTIVADO TEMPORALMENTE PARA DEBUG
 #[Layout('layouts.dashboard')]
 class Dashboard extends Component
 {
@@ -108,36 +108,81 @@ class Dashboard extends Component
         }
     }
 
-    // --- DEBUG LIFECYCLE: INSPECCIÓN PROFUNDA ---
+    // --- DEBUG LIFECYCLE: INSPECCIÓN PROFUNDA (VERSIÓN MEJORADA) ---
     public function hydrate()
     {
         Log::info('--- [DEBUG BACKEND] Hydrate (Solicitud Recibida) ---');
         
-        // 1. Ver qué actualizaciones solicita el frontend
-        // Livewire envía las actualizaciones en un array 'updates' dentro del payload
-        $payload = request()->all();
-        $updates = data_get($payload, 'components.0.updates', 'No updates found in payload');
-        
-        Log::info('[DEBUG BACKEND] Payload Updates:', is_array($updates) ? $updates : ['msg' => $updates]);
-        
-        // 2. Ver si hay archivos temporales en la request (Livewire usa una request separada para upload, 
-        // pero luego envía el hash en la request de actualización)
-        Log::info('[DEBUG BACKEND] Request methods/inputs:', [
+        // Loguear todo el input de componentes para ver la estructura exacta (V2 vs V3)
+        $components = request()->input('components', []);
+        Log::info('[DEBUG BACKEND] Raw Components Input:', is_array($components) ? $components : ['raw' => $components]);
+
+        // Ver si hay archivos temporales en la request
+        Log::info('[DEBUG BACKEND] Request Status:', [
             'method' => request()->method(),
-            'has_files' => request()->hasFile('photo') ? 'YES' : 'NO',
+            'has_files' => request()->hasFile('photo') ? 'YES' : 'NO', // Esto suele ser NO en la request de update
             'content_length' => request()->header('Content-Length'),
         ]);
     }
 
+    public function updatingPhoto($value)
+    {
+        // Esto se dispara ANTES de asignar el valor a $photo
+        Log::info('[DEBUG BACKEND] updatingPhoto DISPARADO. Valor recibido:', [
+            'is_object' => is_object($value),
+            'class' => is_object($value) ? get_class($value) : 'N/A',
+            'value_preview' => is_string($value) ? substr($value, 0, 50) . '...' : $value
+        ]);
+    }
+
+    public function updatedPhoto()
+    {
+        // Esto se dispara DESPUÉS de asignar el valor
+        Log::info('--- [DEBUG BACKEND] Hook updatedPhoto DISPARADO ---');
+        
+        if ($this->photo) {
+            try {
+                // Verificar si es un array (subida múltiple por error) o un objeto UploadedFile
+                if (is_array($this->photo)) {
+                    Log::warning('[DEBUG BACKEND] $this->photo es un array (¿multiple?). Tomando el primero.');
+                    $file = $this->photo[0];
+                } else {
+                    $file = $this->photo;
+                }
+
+                // Loguear detalles del archivo temporal Livewire
+                Log::info('[DEBUG BACKEND] Archivo temporal recibido:', [
+                    'original_name' => method_exists($file, 'getClientOriginalName') ? $file->getClientOriginalName() : 'N/A',
+                    'mime_type' => method_exists($file, 'getMimeType') ? $file->getMimeType() : 'N/A',
+                    'size_bytes' => method_exists($file, 'getSize') ? $file->getSize() : 'N/A',
+                    'temp_path' => method_exists($file, 'getRealPath') ? $file->getRealPath() : 'N/A',
+                    'livewire_temp_url' => method_exists($file, 'temporaryUrl') ? $file->temporaryUrl() : 'N/A',
+                ]);
+
+                // Validación manual rápida para ver si falla aquí
+                $this->validate(['photo' => 'image|max:10240']); // 10MB
+                Log::info('[DEBUG BACKEND] Validación preliminar en updatedPhoto: OK');
+
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                Log::error('[DEBUG BACKEND] Validación falló en updatedPhoto: ', $e->errors());
+            } catch (\Exception $e) {
+                Log::error('[DEBUG BACKEND] Excepción en updatedPhoto: ' . $e->getMessage());
+            }
+        } else {
+            Log::warning('[DEBUG BACKEND] updatedPhoto se ejecutó pero $this->photo es NULL/VACÍO.');
+        }
+    }
+
     public function updating($propertyName, $value)
     {
-        // Se ejecuta ANTES de que la propiedad cambie. Si esto no sale, Livewire no intentó cambiar nada.
-        Log::info("[DEBUG BACKEND] updating() disparado para: {$propertyName}");
+        // Se ejecuta ANTES de que cualquier propiedad cambie.
+        Log::info("[DEBUG BACKEND] updating() genérico para: {$propertyName}");
     }
 
     public function updated($propertyName)
     {
-        Log::info("[DEBUG BACKEND] updated() disparado para: {$propertyName}");
+        // Se ejecuta DESPUÉS de que cualquier propiedad cambie.
+        Log::info("[DEBUG BACKEND] updated() genérico para: {$propertyName}");
     }
     // ---------------------------------------------------------
 
@@ -235,43 +280,6 @@ class Dashboard extends Component
     {
         $this->showProfileModal = true;
         $this->dispatch('open-modal', 'complete-profile-modal');
-    }
-
-    // --- DEBUG: Hook que se ejecuta cuando Livewire termina de subir el archivo temporal ---
-    public function updatedPhoto()
-    {
-        Log::info('--- [DEBUG BACKEND] Hook updatedPhoto DISPARADO ---');
-        
-        if ($this->photo) {
-            try {
-                // Verificar si es un array (subida múltiple por error) o un objeto UploadedFile
-                if (is_array($this->photo)) {
-                    Log::warning('[DEBUG BACKEND] $this->photo es un array (¿multiple?). Tomando el primero.');
-                    $file = $this->photo[0];
-                } else {
-                    $file = $this->photo;
-                }
-
-                Log::info('[DEBUG BACKEND] Archivo temporal recibido:', [
-                    'original_name' => $file->getClientOriginalName(),
-                    'mime_type' => $file->getMimeType(),
-                    'size_bytes' => $file->getSize(),
-                    'temp_path' => $file->getRealPath(),
-                    'livewire_temp_url' => $file->temporaryUrl(),
-                ]);
-
-                // Validación manual rápida para ver si falla aquí
-                $this->validate(['photo' => 'image|max:10240']); // 10MB
-                Log::info('[DEBUG BACKEND] Validación preliminar en updatedPhoto: OK');
-
-            } catch (\Illuminate\Validation\ValidationException $e) {
-                Log::error('[DEBUG BACKEND] Validación falló en updatedPhoto: ', $e->errors());
-            } catch (\Exception $e) {
-                Log::error('[DEBUG BACKEND] Excepción en updatedPhoto: ' . $e->getMessage());
-            }
-        } else {
-            Log::warning('[DEBUG BACKEND] updatedPhoto se ejecutó pero $this->photo es NULL/VACÍO.');
-        }
     }
 
     public function saveProfile()
