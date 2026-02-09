@@ -3,7 +3,7 @@
 namespace App\Livewire\StudentPortal;
 
 use Livewire\Component;
-use Livewire\WithFileUploads; // Vital para subir archivos
+use Livewire\WithFileUploads;
 use App\Models\Student;
 use App\Models\Enrollment;
 use App\Models\Payment;
@@ -12,17 +12,17 @@ use App\Models\Course;
 use App\Models\CourseSchedule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log; // <--- AGREGADO PARA DEBUG
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
-// use Livewire\Attributes\Lazy; // DESACTIVADO TEMPORALMENTE PARA DEBUG
+// use Livewire\Attributes\Lazy; 
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
 
-// #[Lazy] // DESACTIVADO TEMPORALMENTE PARA DEBUG
+// #[Lazy] // Mantener desactivado mientras depuras para evitar latencia en la carga inicial
 #[Layout('layouts.dashboard')]
 class Dashboard extends Component
 {
-    use WithFileUploads; // Habilitamos subida de archivos
+    use WithFileUploads;
 
     public ?Student $student;
     public $user;
@@ -48,8 +48,8 @@ class Dashboard extends Component
     public $sector;       
     
     // Foto de Perfil
-    public $photo; // Archivo temporal al subir
-    public $current_photo_url; // Para mostrar la actual
+    public $photo; 
+    public $current_photo_url; 
 
     // Variables modal
     public $searchAvailableCourse = '';
@@ -79,24 +79,21 @@ class Dashboard extends Component
         $this->user = Auth::user();
         $this->student = $this->user?->student;
 
-        // Inicializar colecciones vacías para evitar errores
         $this->initEmptyCollections();
 
         if ($this->student) {
-            // Carga de datos de perfil
             $this->mobile_phone = $this->student->mobile_phone ?? $this->student->phone; 
             $this->birth_date = $this->student->birth_date ? $this->student->birth_date->format('Y-m-d') : null;
             $this->address = $this->student->address;
             $this->gender = $this->student->gender;
             $this->city = $this->student->city;
             $this->sector = $this->student->sector;
-            $this->current_photo_url = $this->student->profile_photo_url; // Usamos el accessor
+            $this->current_photo_url = $this->student->profile_photo_url; 
 
-            // Verificar onboarding
             $hasIncompleteData = (
                 $this->isIncomplete($this->mobile_phone) || 
-                $this->isIncomplete($this->address) ||
-                $this->isIncomplete($this->birth_date) ||
+                $this->isIncomplete($this->address) || 
+                $this->isIncomplete($this->birth_date) || 
                 $this->isIncomplete($this->city)
             );
 
@@ -108,90 +105,27 @@ class Dashboard extends Component
         }
     }
 
-    // --- DEBUG LIFECYCLE: INSPECCIÓN PROFUNDA (VERSIÓN MEJORADA) ---
-    public function hydrate()
-    {
-        Log::info('--- [DEBUG BACKEND] Hydrate (Solicitud Recibida) ---');
-        
-        // Loguear todo el input de componentes para ver la estructura exacta (V2 vs V3)
-        $components = request()->input('components', []);
-        Log::info('[DEBUG BACKEND] Raw Components Input:', is_array($components) ? $components : ['raw' => $components]);
-
-        // Ver si hay archivos temporales en la request
-        Log::info('[DEBUG BACKEND] Request Status:', [
-            'method' => request()->method(),
-            'has_files' => request()->hasFile('photo') ? 'YES' : 'NO', // Esto suele ser NO en la request de update
-            'content_length' => request()->header('Content-Length'),
-        ]);
-    }
-
-    public function updatingPhoto($value)
-    {
-        // Esto se dispara ANTES de asignar el valor a $photo
-        Log::info('[DEBUG BACKEND] updatingPhoto DISPARADO. Valor recibido:', [
-            'is_object' => is_object($value),
-            'class' => is_object($value) ? get_class($value) : 'N/A',
-            'value_preview' => is_string($value) ? substr($value, 0, 50) . '...' : $value
-        ]);
-    }
-
+    // --- Hook de Ciclo de Vida: Se ejecuta automáticamente al recibir un archivo ---
     public function updatedPhoto()
     {
-        // Esto se dispara DESPUÉS de asignar el valor
-        Log::info('--- [DEBUG BACKEND] Hook updatedPhoto DISPARADO ---');
+        Log::info('[BACKEND] Hook updatedPhoto disparado.');
         
-        if ($this->photo) {
-            try {
-                // Verificar si es un array (subida múltiple por error) o un objeto UploadedFile
-                if (is_array($this->photo)) {
-                    Log::warning('[DEBUG BACKEND] $this->photo es un array (¿multiple?). Tomando el primero.');
-                    $file = $this->photo[0];
-                } else {
-                    $file = $this->photo;
-                }
-
-                // Loguear detalles del archivo temporal Livewire
-                Log::info('[DEBUG BACKEND] Archivo temporal recibido:', [
-                    'original_name' => method_exists($file, 'getClientOriginalName') ? $file->getClientOriginalName() : 'N/A',
-                    'mime_type' => method_exists($file, 'getMimeType') ? $file->getMimeType() : 'N/A',
-                    'size_bytes' => method_exists($file, 'getSize') ? $file->getSize() : 'N/A',
-                    'temp_path' => method_exists($file, 'getRealPath') ? $file->getRealPath() : 'N/A',
-                    'livewire_temp_url' => method_exists($file, 'temporaryUrl') ? $file->temporaryUrl() : 'N/A',
-                ]);
-
-                // Validación manual rápida para ver si falla aquí
-                $this->validate(['photo' => 'image|max:10240']); // 10MB
-                Log::info('[DEBUG BACKEND] Validación preliminar en updatedPhoto: OK');
-
-            } catch (\Illuminate\Validation\ValidationException $e) {
-                Log::error('[DEBUG BACKEND] Validación falló en updatedPhoto: ', $e->errors());
-            } catch (\Exception $e) {
-                Log::error('[DEBUG BACKEND] Excepción en updatedPhoto: ' . $e->getMessage());
-            }
-        } else {
-            Log::warning('[DEBUG BACKEND] updatedPhoto se ejecutó pero $this->photo es NULL/VACÍO.');
+        try {
+            $this->validate([
+                'photo' => 'image|max:10240', // 10MB Máximo
+            ]);
+            Log::info('[BACKEND] Foto validada temporalmente correctamente.');
+        } catch (\Exception $e) {
+            Log::error('[BACKEND] Error validando foto temporal: ' . $e->getMessage());
+            // Reiniciamos la foto si no es válida para evitar errores al guardar
+            $this->reset('photo'); 
         }
     }
 
-    public function updating($propertyName, $value)
-    {
-        // Se ejecuta ANTES de que cualquier propiedad cambie.
-        Log::info("[DEBUG BACKEND] updating() genérico para: {$propertyName}");
-    }
-
-    public function updated($propertyName)
-    {
-        // Se ejecuta DESPUÉS de que cualquier propiedad cambie.
-        Log::info("[DEBUG BACKEND] updated() genérico para: {$propertyName}");
-    }
-    // ---------------------------------------------------------
-
-    // Método para coordinar la carga de datos
     public function loadData()
     {
         if (!$this->student) return;
 
-        // 1. Cargar Carrera Activa
         $admission = Admission::where('user_id', $this->user->id)
             ->where('status', 'approved')
             ->whereHas('course', fn($q) => $q->where('program_type', 'degree'))
@@ -203,7 +137,6 @@ class Dashboard extends Component
             $this->activeCareer = $admission->course;
         }
 
-        // 2. Cargar Tablas Pesadas (Inscripciones y Pagos)
         $this->loadStudentDataOptimized();
     }
 
@@ -284,28 +217,15 @@ class Dashboard extends Component
 
     public function saveProfile()
     {
-        Log::info('--- [DEBUG BACKEND] Acción saveProfile INICIADA ---');
-        Log::info('Datos actuales antes de validar:', [
-            'photo_exists' => !empty($this->photo),
-            'mobile_phone' => $this->mobile_phone
+        $this->validate([
+            'mobile_phone' => 'nullable|string|max:20',
+            'birth_date' => 'nullable|date|before:today',
+            'address' => 'nullable|string|max:255',
+            'gender' => 'nullable|in:Masculino,Femenino,Otro',
+            'city' => 'nullable|string|max:100',
+            'sector' => 'nullable|string|max:100',
+            'photo' => 'nullable|image|max:10240', // 10MB
         ]);
-
-        try {
-            $this->validate([
-                'mobile_phone' => 'nullable|string|max:20',
-                'birth_date' => 'nullable|date|before:today',
-                'address' => 'nullable|string|max:255',
-                'gender' => 'nullable|in:Masculino,Femenino,Otro',
-                'city' => 'nullable|string|max:100',
-                'sector' => 'nullable|string|max:100',
-                'photo' => 'nullable|image|max:10240', // Validación de imagen (máx 10MB para debug)
-            ]);
-            Log::info('[DEBUG BACKEND] Validación saveProfile: OK');
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('[DEBUG BACKEND] Error de Validación en saveProfile:', $e->errors());
-            // Es vital re-lanzar esto para que Livewire muestre los errores en el frontend
-            throw $e;
-        }
 
         $dataToUpdate = [
             'mobile_phone' => $this->sanitizeInput($this->mobile_phone),
@@ -316,28 +236,20 @@ class Dashboard extends Component
             'sector' => $this->sanitizeInput($this->sector),
         ];
 
-        // Procesar nueva foto si se subió
         if ($this->photo) {
-            Log::info('[DEBUG BACKEND] Procesando guardado de imagen...');
             try {
-                // Borrar foto anterior si existe y no es la default
                 if ($this->student->profile_photo_path && Storage::disk('public')->exists($this->student->profile_photo_path)) {
-                    Log::info('[DEBUG BACKEND] Eliminando foto antigua: ' . $this->student->profile_photo_path);
                     Storage::disk('public')->delete($this->student->profile_photo_path);
                 }
                 
-                // Guardar nueva foto en 'profile-photos' dentro de 'public'
                 $path = $this->photo->store('profile-photos', 'public');
-                Log::info('[DEBUG BACKEND] Foto guardada exitosamente en DISCO: ' . $path);
-                
                 $dataToUpdate['profile_photo_path'] = $path;
+                Log::info('[BACKEND] Nueva foto guardada: ' . $path);
             } catch (\Exception $e) {
-                Log::error('[DEBUG BACKEND] CRITICAL ERROR guardando en Storage: ' . $e->getMessage());
-                session()->flash('error', 'Error interno al guardar la imagen. Revisa los logs.');
-                return;
+                Log::error('[BACKEND] Error guardando foto en disco: ' . $e->getMessage());
+                session()->flash('error', 'Error al guardar la imagen.');
+                return; // Detener para no guardar datos parciales si falla la foto crítica
             }
-        } else {
-            Log::info('[DEBUG BACKEND] No hay foto nueva para guardar en esta petición.');
         }
 
         if ($this->student) {
@@ -345,18 +257,16 @@ class Dashboard extends Component
                 $dataToUpdate['phone'] = $dataToUpdate['mobile_phone'];
             }
             
-            Log::info('[DEBUG BACKEND] Actualizando registro Student en DB...', $dataToUpdate);
             $this->student->update($dataToUpdate);
             $this->student->refresh();
             
-            // Actualizar propiedades locales para reflejar cambios en la vista
+            // Actualizar estado local
             $this->mobile_phone = $this->student->mobile_phone;
             $this->address = $this->student->address;
-            $this->current_photo_url = $this->student->profile_photo_url; // Refrescar URL
-            $this->photo = null; // Limpiar input temporal
+            $this->current_photo_url = $this->student->profile_photo_url; 
+            $this->photo = null; 
 
             session()->flash('message', 'Perfil actualizado exitosamente.');
-            Log::info('[DEBUG BACKEND] Proceso finalizado correctamente.');
         }
         $this->closeProfileModal();
     }
@@ -364,12 +274,11 @@ class Dashboard extends Component
     public function closeProfileModal()
     {
         $this->showProfileModal = false;
-        $this->photo = null; // Limpiar imagen temporal si cancela
+        $this->photo = null; 
         $this->dispatch('close-modal', 'complete-profile-modal');
         session()->put('profile_onboarding_seen', true);
     }
 
-    // --- Lógica del Modal de Inscripción ---
     public function openEnrollmentModal()
     {
         $this->reset('searchAvailableCourse', 'selectedScheduleId', 'availableSchedules');
@@ -431,13 +340,6 @@ class Dashboard extends Component
 
     public function render()
     {
-        // --- DEBUG DE ERRORES SILENCIOSOS ---
-        // Si la subida falla por tamaño o tipo, Livewire a veces no tira excepción, sino que llena el ErrorBag
-        if($this->getErrorBag()->isNotEmpty()){
-            Log::error('[DEBUG BACKEND] RENDER DETECTÓ ERRORES EN BAG:', $this->getErrorBag()->toArray());
-        }
-        // ------------------------------------
-
         return view('livewire.student-portal.dashboard');
     }
 }
