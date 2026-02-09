@@ -108,6 +108,20 @@ class Dashboard extends Component
         }
     }
 
+    // --- DEBUG LIFECYCLE: Para ver si el servidor responde ---
+    public function hydrate()
+    {
+        // Se ejecuta en CADA request. Si esto no sale en el log, el problema es PHP/Nginx (tamaño de archivo) o Red.
+        Log::info('--- [DEBUG BACKEND] Hydrate: Solicitud recibida en el componente ---');
+    }
+
+    public function updated($propertyName)
+    {
+        // Se ejecuta cuando CUALQUIER propiedad cambia
+        Log::info("[DEBUG BACKEND] Propiedad actualizada genérica: {$propertyName}");
+    }
+    // ---------------------------------------------------------
+
     // Método para coordinar la carga de datos
     public function loadData()
     {
@@ -390,6 +404,13 @@ class Dashboard extends Component
 
     public function render()
     {
+        // --- DEBUG DE ERRORES SILENCIOSOS ---
+        // Si la subida falla por tamaño o tipo, Livewire a veces no tira excepción, sino que llena el ErrorBag
+        if($this->getErrorBag()->isNotEmpty()){
+            Log::error('[DEBUG BACKEND] RENDER DETECTÓ ERRORES EN BAG:', $this->getErrorBag()->toArray());
+        }
+        // ------------------------------------
+
         return view('livewire.student-portal.dashboard');
     }
 }
