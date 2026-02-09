@@ -3,6 +3,7 @@
 namespace App\Livewire\StudentPortal;
 
 use Livewire\Component;
+use Livewire\WithFileUploads; // Vital para subir archivos
 use App\Models\Student;
 use App\Models\Enrollment;
 use App\Models\Payment;
@@ -10,6 +11,7 @@ use App\Models\Admission;
 use App\Models\Course;
 use App\Models\CourseSchedule;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Lazy; 
 use Illuminate\Support\Collection;
@@ -19,6 +21,8 @@ use Carbon\Carbon;
 #[Layout('layouts.dashboard')]
 class Dashboard extends Component
 {
+    use WithFileUploads; // Habilitamos subida de archivos
+
     public ?Student $student;
     public $user;
     
@@ -41,6 +45,10 @@ class Dashboard extends Component
     public $gender;       
     public $city;         
     public $sector;       
+    
+    // Foto de Perfil
+    public $photo; // Archivo temporal al subir
+    public $current_photo_url; // Para mostrar la actual
 
     // Variables modal
     public $searchAvailableCourse = '';
@@ -81,6 +89,7 @@ class Dashboard extends Component
             $this->gender = $this->student->gender;
             $this->city = $this->student->city;
             $this->sector = $this->student->sector;
+            $this->current_photo_url = $this->student->profile_photo_url; // Usamos el accessor
 
             // Verificar onboarding
             $hasIncompleteData = (
@@ -94,8 +103,6 @@ class Dashboard extends Component
                 $this->showProfileModal = true;
             }
 
-            // CORRECCIÓN: Llamamos a la carga de datos aquí mismo.
-            // Al ser #[Lazy], mount() se ejecuta en el segundo request, por lo que no bloqueará la vista inicial.
             $this->loadData();
         }
     }
@@ -133,7 +140,6 @@ class Dashboard extends Component
 
     private function loadStudentDataOptimized()
     {
-        // Consulta 1: Traer TODAS las inscripciones con sus relaciones
         $allEnrollments = Enrollment::with([
                 'courseSchedule.module.course',
                 'courseSchedule.teacher',
@@ -143,16 +149,12 @@ class Dashboard extends Component
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Filtrado en MEMORIA
-        
-        // 1. Materias de Carrera
         $this->activeDegreeEnrollments = $allEnrollments->filter(function ($e) {
             $isDegree = optional($e->courseSchedule->module->course)->program_type === 'degree';
             $isActive = in_array(strtolower($e->status), ['cursando', 'activo', 'pendiente', 'pendiente pago', 'enrolled']);
             return $isDegree && $isActive;
         });
 
-        // 2. Cursos Técnicos
         $this->activeCourseEnrollments = $allEnrollments->filter(function ($e) {
             $courseType = optional($e->courseSchedule->module->course)->program_type;
             $isTechnical = $courseType !== 'degree';
@@ -160,7 +162,6 @@ class Dashboard extends Component
             return $isTechnical && $isActive;
         });
 
-        // 3. Pendientes de Pago (Solo Técnicos)
         $this->pendingEnrollments = $allEnrollments->filter(function ($e) {
             $courseType = optional($e->courseSchedule->module->course)->program_type;
             $isTechnical = $courseType !== 'degree';
@@ -168,12 +169,10 @@ class Dashboard extends Component
             return $isTechnical && $isPending;
         });
 
-        // 4. Completados
         $this->completedEnrollments = $allEnrollments->filter(function ($e) {
             return in_array(strtolower($e->status), ['completado', 'aprobado']);
         });
 
-        // Consulta 2: Traer TODOS los pagos
         $allPayments = Payment::with(['paymentConcept', 'enrollment.courseSchedule.module.course'])
             ->where('student_id', $this->student->id)
             ->orderBy('created_at', 'desc')
@@ -213,6 +212,7 @@ class Dashboard extends Component
             'gender' => 'nullable|in:Masculino,Femenino,Otro',
             'city' => 'nullable|string|max:100',
             'sector' => 'nullable|string|max:100',
+            'photo' => 'nullable|image|max:2048', // Validación de imagen (máx 2MB)
         ]);
 
         $dataToUpdate = [
@@ -224,6 +224,18 @@ class Dashboard extends Component
             'sector' => $this->sanitizeInput($this->sector),
         ];
 
+        // Procesar nueva foto si se subió
+        if ($this->photo) {
+            // Borrar foto anterior si existe y no es la default
+            if ($this->student->profile_photo_path && Storage::disk('public')->exists($this->student->profile_photo_path)) {
+                Storage::disk('public')->delete($this->student->profile_photo_path);
+            }
+            
+            // Guardar nueva foto en 'profile-photos' dentro de 'public'
+            $path = $this->photo->store('profile-photos', 'public');
+            $dataToUpdate['profile_photo_path'] = $path;
+        }
+
         if ($this->student) {
             if ($this->isIncomplete($this->student->phone) || empty($this->student->phone)) {
                 $dataToUpdate['phone'] = $dataToUpdate['mobile_phone'];
@@ -234,7 +246,8 @@ class Dashboard extends Component
             // Actualizar propiedades locales para reflejar cambios en la vista
             $this->mobile_phone = $this->student->mobile_phone;
             $this->address = $this->student->address;
-            // etc...
+            $this->current_photo_url = $this->student->profile_photo_url; // Refrescar URL
+            $this->photo = null; // Limpiar input temporal
 
             session()->flash('message', 'Perfil actualizado exitosamente.');
         }
@@ -244,6 +257,7 @@ class Dashboard extends Component
     public function closeProfileModal()
     {
         $this->showProfileModal = false;
+        $this->photo = null; // Limpiar imagen temporal si cancela
         $this->dispatch('close-modal', 'complete-profile-modal');
         session()->put('profile_onboarding_seen', true);
     }
