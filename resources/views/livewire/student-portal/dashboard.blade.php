@@ -2,6 +2,7 @@
     
     {{-- INYECCIÓN DE ESTILOS PARA CROPPER.JS --}}
     @push('styles')
+        @once
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
         <style>
             .cropper-view-box, .cropper-face {
@@ -23,6 +24,7 @@
                 display: block;
             }
         </style>
+        @endonce
     @endpush
 
     {{-- ENCABEZADO --}}
@@ -30,7 +32,8 @@
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight text-gray-900">
-                    Hola, {{ explode(' ', $student->first_name)[0] }} 👋
+                    {{-- Corrección: Null safe operator para evitar crash si first_name es null --}}
+                    Hola, {{ explode(' ', $student->first_name ?? '')[0] }} 👋
                 </h1>
                 @if($activeCareer)
                     <p class="text-sm text-indigo-600 font-medium mt-1 flex items-center">
@@ -237,7 +240,7 @@
                                                 <div class="font-semibold">{{ $enrollment->courseSchedule->module->name ?? 'N/A' }}</div>
                                             </td>
                                             <td class="px-6 py-4">
-                                                {{ $enrollment->courseSchedule->days_of_week ? implode(', ', $enrollment->courseSchedule->days_of_week) : 'N/A' }}
+                                                {{ ($enrollment->courseSchedule->days_of_week ?? []) ? implode(', ', $enrollment->courseSchedule->days_of_week) : 'N/A' }}
                                             </td>
                                             <td class="px-6 py-4 text-center"><span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset bg-indigo-50 text-indigo-700 ring-indigo-600/20">Carrera</span></td>
                                             <td class="px-6 py-4 text-right">
@@ -251,7 +254,7 @@
                                                 <div class="font-semibold">{{ $enrollment->courseSchedule->module->course->name ?? 'N/A' }}</div>
                                             </td>
                                             <td class="px-6 py-4">
-                                                {{ $enrollment->courseSchedule->days_of_week ? implode(', ', $enrollment->courseSchedule->days_of_week) : 'N/A' }}
+                                                {{ ($enrollment->courseSchedule->days_of_week ?? []) ? implode(', ', $enrollment->courseSchedule->days_of_week) : 'N/A' }}
                                             </td>
                                             <td class="px-6 py-4 text-center"><span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset bg-green-50 text-green-700 ring-green-600/20">Técnico</span></td>
                                             <td class="px-6 py-4 text-right">
@@ -480,8 +483,10 @@
         =================================================================
         MODAL DE RECORTE (CONTROLADO POR JS PURO)
         ================================================================= 
+        IMPORTANTE: 'wire:ignore' para que Livewire no destruya el modal ni los eventos
+        si se refresca el componente principal.
     --}}
-    <div id="crop-modal" class="fixed inset-0 z-[60] hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div id="crop-modal" wire:ignore class="fixed inset-0 z-[60] hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             {{-- Backdrop --}}
             <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
@@ -513,57 +518,54 @@
 
     {{-- SCRIPTS PUROS (SIN ALPINE) --}}
     @push('scripts')
+        @once
         <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
         <script>
-            // Encapsulamos en una función auto-ejecutable para evitar conflictos y asegurar variables locales
             (function() {
-                // Función de inicialización
+                let cropper;
+                let isInitialized = false;
+
                 function initProfileCropper() {
-                    console.log("Iniciando Profile Cropper...");
+                    if (isInitialized) return; // Evitar múltiples bindings
                     
-                    let cropper;
                     const modal = document.getElementById('crop-modal');
                     const image = document.getElementById('image-to-crop');
                     const input = document.getElementById('photo-input');
                     const saveBtn = document.getElementById('btn-save-crop');
                     const cancelBtn = document.getElementById('btn-cancel-crop');
 
-                    // Validar existencia de elementos
                     if (!modal || !image || !input || !saveBtn || !cancelBtn) {
-                        console.error("Elementos del cropper no encontrados en el DOM.");
                         return;
                     }
 
-                    console.log("Elementos encontrados. Configurando listeners...");
-
-                    // Limpiar listeners anteriores para evitar duplicados si Livewire refresca
-                    // (Clonar el nodo elimina listeners, una técnica común, o simplemente reasignar si es la primera vez)
-                    // En este caso simple, como es carga inicial, asumimos limpieza.
+                    // Función para limpiar
+                    const resetCropper = () => {
+                        modal.classList.add('hidden');
+                        if (cropper) { cropper.destroy(); cropper = null; }
+                        input.value = ''; // Limpiar input para permitir seleccionar misma imagen
+                        saveBtn.disabled = false;
+                        saveBtn.innerText = 'Recortar y Subir';
+                    };
 
                     input.addEventListener('change', function (e) {
-                        console.log("Input change detectado");
                         const files = e.target.files;
                         if (files && files.length > 0) {
                             const file = files[0];
                             
-                            // Validar tipo
                             if (!['image/jpeg', 'image/png', 'image/webp', 'image/jpg'].includes(file.type)) {
                                 alert('Formato no válido. Usa JPG o PNG.');
                                 return;
                             }
 
                             const reader = new FileReader();
-                            reader.onload = function(e) {
-                                image.src = e.target.result;
-                                
-                                // Mostrar modal
+                            reader.onload = function(evt) {
+                                image.src = evt.target.result;
                                 modal.classList.remove('hidden');
 
-                                // Iniciar Cropper
                                 if (cropper) { cropper.destroy(); }
                                 
                                 cropper = new Cropper(image, {
-                                    aspectRatio: 1, // Cuadrado 1:1 obligatorio
+                                    aspectRatio: 1, 
                                     viewMode: 1,
                                     autoCropArea: 1,
                                     background: false,
@@ -573,11 +575,7 @@
                         }
                     });
 
-                    cancelBtn.addEventListener('click', function() {
-                        modal.classList.add('hidden');
-                        if (cropper) { cropper.destroy(); cropper = null; }
-                        input.value = ''; 
-                    });
+                    cancelBtn.addEventListener('click', resetCropper);
 
                     saveBtn.addEventListener('click', function() {
                         if (!cropper) return;
@@ -588,31 +586,27 @@
                         cropper.getCroppedCanvas({
                             width: 500, height: 500, fillColor: '#fff',
                         }).toBlob((blob) => {
-                            console.log("Subiendo blob a Livewire...");
-                            // Usamos @this inyectado por Blade
+                            // @this inyectado por Blade Livewire
                             @this.upload('photo', blob, (uploadedFilename) => {
-                                console.log("Subida exitosa");
-                                modal.classList.add('hidden');
-                                if (cropper) { cropper.destroy(); cropper = null; }
-                                input.value = ''; 
-                                saveBtn.disabled = false;
-                                saveBtn.innerText = 'Recortar y Subir';
+                                resetCropper();
                             }, () => {
-                                console.error("Error en subida");
                                 alert('Error al subir la imagen.');
                                 saveBtn.disabled = false;
                                 saveBtn.innerText = 'Recortar y Subir';
                             });
                         }, 'image/jpeg', 0.9);
                     });
+
+                    isInitialized = true;
                 }
 
-                // Ejecutar al cargar el DOM
                 document.addEventListener('DOMContentLoaded', initProfileCropper);
-                
-                // Ejecutar al navegar con Livewire (si usas wire:navigate)
-                document.addEventListener('livewire:navigated', initProfileCropper);
+                document.addEventListener('livewire:navigated', () => {
+                    isInitialized = false; // Reset flag para navegación SPA
+                    initProfileCropper();
+                });
             })();
         </script>
+        @endonce
     @endpush
 </div>
