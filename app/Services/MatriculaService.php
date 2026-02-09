@@ -14,10 +14,6 @@ use Illuminate\Support\Str;
 use App\Services\MoodleApiService;
 use App\Mail\MoodleCredentialsMail;
 
-/**
- * Servicio para manejar la lógica de generación de matrícula
- * y activación de cuentas de estudiante.
- */
 class MatriculaService
 {
     public function generarMatricula(Payment $payment)
@@ -31,16 +27,13 @@ class MatriculaService
         $user = $student->user;
 
         if ($student->student_code) {
-            Log::info("MatriculaService: Estudiante existente {$student->id}. Activando inscripción.");
+            Log::info("MatriculaService: Estudiante existente. Activando.");
             $this->activarInscripcion($payment);
             return;
         }
 
         try {
             DB::transaction(function () use ($payment, $student, $user) {
-                
-                Log::info("MatriculaService: Estudiante nuevo {$student->id}. Iniciando transacción.");
-
                 if (!$student->student_code) {
                     $student->student_code = $this->generateUniqueStudentCode();
                 }
@@ -51,7 +44,6 @@ class MatriculaService
                     $newPassword = Hash::make($matricula);
 
                     $emailExists = User::where('email', $newEmail)->where('id', '!=', $user->id)->exists();
-                    
                     if ($emailExists) {
                          $matricula = $this->generateUniqueStudentCode(); 
                          $newEmail = $matricula . '@centu.edu.do';
@@ -67,11 +59,9 @@ class MatriculaService
 
                 $student->save();
                 $this->activarInscripcion($payment);
-
             }); 
-
         } catch (\Exception $e) {
-            Log::error("Error al generar matrícula para estudiante ID {$student->id}: " . $e->getMessage());
+            Log::error("Error generar matrícula: " . $e->getMessage());
         }
     }
 
@@ -81,7 +71,7 @@ class MatriculaService
         $groupedEnrollments = Enrollment::where('payment_id', $payment->id)->get();
 
         foreach ($groupedEnrollments as $enrollment) {
-            if ($enrollment->status === 'Pendiente' || $enrollment->status === 'Reservado') {
+            if (in_array($enrollment->status, ['Pendiente', 'Reservado'])) {
                 $enrollment->status = 'Cursando';
                 $enrollment->save();
                 $activated++;
@@ -92,7 +82,7 @@ class MatriculaService
         if ($payment->enrollment_id) {
             $enrollment = Enrollment::find($payment->enrollment_id);
             if ($enrollment && $enrollment->payment_id !== $payment->id) {
-                if ($enrollment->status === 'Pendiente' || $enrollment->status === 'Reservado') {
+                if (in_array($enrollment->status, ['Pendiente', 'Reservado'])) {
                     $enrollment->status = 'Cursando';
                     $enrollment->save();
                     $activated++;
@@ -101,9 +91,7 @@ class MatriculaService
             }
         }
 
-        if ($activated > 0) {
-            Log::info("MatriculaService: Pago {$payment->id} procesado. Se activaron {$activated} inscripciones.");
-        }
+        if ($activated > 0) Log::info("MatriculaService: Pago procesado.");
     }
 
     private function syncWithMoodle(Enrollment $enrollment)
@@ -112,52 +100,55 @@ class MatriculaService
             $schedule = $enrollment->courseSchedule;
             if (!$schedule) return;
 
-            // --- LÓGICA DE CASCADA ---
+            // --- CASCADA ---
             $moodleCourseId = $schedule->moodle_course_id;
             if (empty($moodleCourseId)) $moodleCourseId = $schedule->module->moodle_course_id ?? null;
             if (empty($moodleCourseId)) $moodleCourseId = $schedule->module->course->moodle_course_id ?? null;
-            
             if (empty($moodleCourseId)) return;
 
             $student = $enrollment->student;
             $user = $student->user;
-
-            if (!$user) {
-                Log::warning("Moodle Sync: Estudiante sin usuario. ID: {$student->id}");
-                return;
-            }
+            if (!$user) return;
 
             $moodleService = app(MoodleApiService::class);
 
-            // 1. Credenciales Seguras para Moodle
             $code = $student->student_code ?? 'Student';
-            $moodleUsername = strtolower($code); // Usuario = Matrícula
-            $moodlePassword = 'Sga*' . $code . '#' . rand(10,99); // Contraseña Fuerte
+            $moodleUsername = strtolower($code);
+            
+            // Generamos contraseña segura (solo se usará si el usuario es NUEVO)
+            $moodlePassword = 'Sga*' . $code . '#' . rand(10,99);
 
-            // 2. Sincronizar Usuario (Crear si no existe)
-            $moodleUserId = $moodleService->syncUser($user, $moodlePassword, $moodleUsername);
+            // Sincronizar: Ahora devuelve array ['id', 'was_created']
+            $syncResult = $moodleService->syncUser($user, $moodlePassword, $moodleUsername);
 
-            if ($moodleUserId) {
-                // Si es la primera vez que lo vinculamos (o lo acabamos de crear)
+            if ($syncResult && isset($syncResult['id'])) {
+                $moodleUserId = $syncResult['id'];
+                $wasCreated = $syncResult['was_created'];
+
+                // Si es la primera vez que enlazamos este usuario con Moodle en Laravel
                 if ($user->moodle_user_id !== (string)$moodleUserId) {
                     $user->moodle_user_id = $moodleUserId;
                     $user->saveQuietly();
 
-                    // --- 3. ENVIAR CORREO DE BIENVENIDA ---
-                    // Usamos el email personal preferiblemente
-                    $emailDestino = $student->email ?? $user->email;
-                    
-                    try {
-                        Mail::to($emailDestino)->send(new MoodleCredentialsMail($user, $moodlePassword, $moodleUsername));
-                        Log::info("Correo Moodle enviado a: {$emailDestino}");
-                    } catch (\Exception $e) {
-                        Log::error("Error enviando correo Moodle: " . $e->getMessage());
+                    // --- LÓGICA INTELIGENTE DE CORREO ---
+                    // Solo enviamos credenciales si el usuario FUE CREADO AHORA.
+                    // Si ya existía, no le mandamos contraseña porque la del email no funcionaría.
+                    if ($wasCreated) {
+                        $emailDestino = $student->email ?? $user->email;
+                        try {
+                            Mail::to($emailDestino)->send(new MoodleCredentialsMail($user, $moodlePassword, $moodleUsername));
+                            Log::info("Correo Bienvenida Moodle enviado a: {$emailDestino}");
+                        } catch (\Exception $e) {
+                            Log::error("Error mail Moodle: " . $e->getMessage());
+                        }
+                    } else {
+                        Log::info("Usuario Moodle {$moodleUsername} ya existía. Vinculado sin enviar nuevas credenciales.");
                     }
                 }
 
-                // 4. Matricular en el curso
+                // Matricular
                 $moodleService->enrollUser($moodleUserId, $moodleCourseId);
-                Log::info("Moodle Sync: Usuario {$moodleUsername} inscrito en curso {$moodleCourseId}");
+                Log::info("Moodle Sync: Usuario {$moodleUsername} enrolado en {$moodleCourseId}");
             }
         } catch (\Exception $e) {
             Log::error("Moodle Sync Error: " . $e->getMessage());
@@ -184,12 +175,7 @@ class MatriculaService
             $candidateCode = $yearPrefix . $paddedSequence;
             $emailTaken = User::where('email', $candidateCode . '@centu.edu.do')->exists();
             $codeTaken = Student::where('student_code', $candidateCode)->exists();
-            
-            if ($emailTaken || $codeTaken) {
-                $nextSequence++;
-            } else {
-                return $candidateCode;
-            }
+            if ($emailTaken || $codeTaken) { $nextSequence++; } else { return $candidateCode; }
         } while (true);
     }
 }
