@@ -10,9 +10,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str; // Importante
+use Illuminate\Support\Str;
 use App\Services\MoodleApiService;
-use App\Mail\MoodleCredentialsMail; // Importamos el Mailable
+use App\Mail\MoodleCredentialsMail;
 
 /**
  * Servicio para manejar la lógica de generación de matrícula
@@ -92,7 +92,7 @@ class MatriculaService
     {
         $activated = 0;
 
-        // ESTRATEGIA 1: Pagos Agrupados
+        // ESTRATEGIA 1: Pagos Agrupados (Carreras/Selección de Materias)
         $groupedEnrollments = Enrollment::where('payment_id', $payment->id)->get();
 
         foreach ($groupedEnrollments as $enrollment) {
@@ -101,19 +101,22 @@ class MatriculaService
                 $enrollment->save();
                 $activated++;
                 
+                // Intento de matriculación en Moodle
                 $this->syncWithMoodle($enrollment);
             }
         }
 
-        // ESTRATEGIA 2: Pagos Individuales
+        // ESTRATEGIA 2: Pagos Individuales (Cursos Libres/Diplomados)
         if ($payment->enrollment_id) {
             $enrollment = Enrollment::find($payment->enrollment_id);
             if ($enrollment && $enrollment->payment_id !== $payment->id) {
+                // Verificar estado actual para no re-procesar
                 if ($enrollment->status === 'Pendiente' || $enrollment->status === 'Reservado') {
                     $enrollment->status = 'Cursando';
                     $enrollment->save();
                     $activated++;
 
+                    // Intento de matriculación en Moodle
                     $this->syncWithMoodle($enrollment);
                 }
             }
@@ -126,7 +129,7 @@ class MatriculaService
 
     /**
      * Sincroniza la inscripción con Moodle con lógica de CASCADA.
-     * Prioridad: Sección > Módulo > Curso
+     * Prioridad de Enlace: Sección > Módulo > Curso
      */
     private function syncWithMoodle(Enrollment $enrollment)
     {
@@ -134,25 +137,27 @@ class MatriculaService
             $schedule = $enrollment->courseSchedule;
             if (!$schedule) return;
 
-            // --- LÓGICA DE CASCADA ---
-            // 1. Verificar si la SECCIÓN tiene un ID de Moodle
+            // --- 1. DETECTAR EL ID DEL CURSO EN MOODLE (CASCADA) ---
+            
+            // A) Verificar si la SECCIÓN (Horario) tiene un enlace específico
             $moodleCourseId = $schedule->moodle_course_id;
 
-            // 2. Si no, verificar si el MÓDULO tiene un ID de Moodle
+            // B) Si no, verificar si el MÓDULO tiene un enlace
             if (empty($moodleCourseId)) {
                 $moodleCourseId = $schedule->module->moodle_course_id ?? null;
             }
 
-            // 3. Si no, verificar si el CURSO padre tiene un ID de Moodle
+            // C) Si no, verificar si el CURSO padre tiene un enlace
             if (empty($moodleCourseId)) {
                 $moodleCourseId = $schedule->module->course->moodle_course_id ?? null;
             }
 
-            // Si después de todo esto no hay ID, salimos
+            // Si después de todo esto no hay ID, no hacemos nada (no es un curso virtual)
             if (empty($moodleCourseId)) {
                 return;
             }
 
+            // --- 2. PREPARAR DATOS DEL USUARIO ---
             $student = $enrollment->student;
             $user = $student->user;
 
@@ -161,49 +166,56 @@ class MatriculaService
                 return;
             }
 
-            // Resolvemos el servicio
+            // Resolvemos el servicio de Moodle
             $moodleService = app(MoodleApiService::class);
 
-            // --- CORRECCIÓN CRÍTICA: CONTRASEÑA MÁS COMPATIBLE ---
-            // El log indicó que Moodle exige caracteres como *, -, o #.
-            // Cambiamos el formato a: Sga*Matricula#12
-            // Sga (Mayus/Minus) + * (Especial) + Matricula (Numero) + # (Especial) + Random
-            $code = $student->student_code ?? 'Student';
+            // Generamos credenciales que cumplan la política estricta de Moodle 5.0
+            // Requisito: 8 chars, 1 mayúscula, 1 minúscula, 1 número, 1 no alfanumérico (*, #, etc)
+            $code = $student->student_code ?? 'ST' . $student->id;
+            
+            // Contraseña: Sga* + Matricula + # + 2 numeros random (Ej: Sga*2026001#45)
             $moodlePassword = 'Sga*' . $code . '#' . rand(10,99);
+            
+            // Usuario: Usamos la matrícula en minúsculas (Ej: 2026001)
+            // Esto evita problemas con correos duplicados o largos
+            $moodleUsername = strtolower($code);
 
-            // 1. Sincronizar Usuario
-            $moodleUserId = $moodleService->syncUser($user, $moodlePassword);
+            // --- 3. SINCRONIZAR USUARIO (CREAR O BUSCAR) ---
+            // Le pasamos el username explícito para que no use el email como usuario
+            $moodleUserId = $moodleService->syncUser($user, $moodlePassword, $moodleUsername);
 
             if ($moodleUserId) {
-                // Guardar el ID de Moodle localmente
-                if ($user->moodle_user_id !== $moodleUserId) {
+                
+                // --- 4. GESTIÓN DE ID LOCAL Y ENVÍO DE CORREO ---
+                // Si el ID es nuevo o diferente, significa que acabamos de crear/vincular al usuario
+                if ($user->moodle_user_id !== (string)$moodleUserId) {
                     $user->moodle_user_id = $moodleUserId;
-                    $user->saveQuietly();
-                    
-                    // --- ENVIAR CORREO CON CREDENCIALES ---
-                    // Intentamos enviar al correo PERSONAL del estudiante si existe,
-                    // porque el institucional ($user->email) quizás no lo ha abierto aún.
-                    // Asumimos que $student->email guarda el personal, o usamos el user->email como fallback.
-                    $emailDestino = $student->email ?? $user->email;
+                    $user->saveQuietly(); // Guardamos sin disparar eventos de observer
 
-                    try {
-                        Mail::to($emailDestino)->send(new MoodleCredentialsMail($user, $moodlePassword));
-                        Log::info("Correo de credenciales Moodle enviado a: {$emailDestino}");
-                    } catch (\Exception $e) {
-                        Log::error("Error enviando correo Moodle a {$emailDestino}: " . $e->getMessage());
+                    // Enviar correo de credenciales
+                    // Intentamos usar el email personal del estudiante, si no, el del usuario
+                    $emailDestino = $student->email ?? $user->email;
+                    
+                    if ($emailDestino) {
+                        try {
+                            Mail::to($emailDestino)->send(new MoodleCredentialsMail($user, $moodlePassword, $moodleUsername));
+                            Log::info("Correo de credenciales Moodle enviado a: {$emailDestino} (User: {$moodleUsername})");
+                        } catch (\Exception $e) {
+                            Log::error("Error enviando correo Moodle a {$emailDestino}: " . $e->getMessage());
+                        }
                     }
                 }
 
-                // 2. Matricular en el curso específico encontrado
+                // --- 5. MATRICULAR EN EL CURSO ---
                 $moodleService->enrollUser($moodleUserId, $moodleCourseId);
                 
-                Log::info("Moodle Sync: Usuario {$user->email} matriculado en Moodle ID {$moodleCourseId}.");
+                Log::info("Moodle Sync: Usuario {$moodleUsername} matriculado en curso Moodle ID {$moodleCourseId}.");
             } else {
-                Log::error("Moodle Sync: Fallo al crear/buscar usuario {$user->email}. Revisa los logs de error anteriores.");
+                Log::error("Moodle Sync: No se pudo obtener ID de usuario para {$user->email}. Verifica logs anteriores.");
             }
 
         } catch (\Exception $e) {
-            Log::error("Moodle Sync Error (Enrollment {$enrollment->id}): " . $e->getMessage());
+            Log::error("Moodle Sync Error Crítico (Enrollment {$enrollment->id}): " . $e->getMessage());
         }
     }
 

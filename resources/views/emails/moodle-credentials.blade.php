@@ -28,10 +28,10 @@
             <p>Aquí tienes tus credenciales de acceso para ingresar a tus clases:</p>
             
             <div class="credentials-box">
-                <div class="credential-label">Usuario / Correo</div>
-                <div class="credential-value">{{ $user->email }}</div>
+                <div class="credential-label">Usuario</div>
+                <div class="credential-value">{{ $username }}</div>
                 
-                <div class="credential-label">Contraseña Temporal</div>
+                <div class="credential-label">Contraseña</div>
                 <div class="credential-value" style="color: #ef4444;">{{ $password }}</div>
             </div>
             

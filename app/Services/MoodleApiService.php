@@ -13,16 +13,10 @@ class MoodleApiService
 
     public function __construct()
     {
-        // Asumimos que estas variables estarán en tu .env
-        // MOODLE_URL=https://tu-moodle.com
-        // MOODLE_TOKEN=tu_token_generado_en_moodle
         $this->baseUrl = config('services.moodle.url');
         $this->token = config('services.moodle.token');
     }
 
-    /**
-     * Enviar petición genérica a Moodle
-     */
     protected function makeRequest($function, $params = [])
     {
         $params['wstoken'] = $this->token;
@@ -52,28 +46,19 @@ class MoodleApiService
         }
     }
 
-    /**
-     * Obtener listado de cursos de Moodle
-     */
     public function getCourses()
     {
-        // core_course_get_courses devuelve la lista de cursos disponibles
         $courses = $this->makeRequest('core_course_get_courses');
-
-        // Moodle a veces devuelve un array directo, verifica si es válido
-        if (is_array($courses)) {
-            return $courses;
-        }
-
-        return [];
+        return is_array($courses) ? $courses : [];
     }
 
     /**
-     * Busca un usuario por email, si no existe, lo crea.
+     * Busca o crea un usuario.
+     * MODIFICADO: Acepta $customUsername para forzar usar la matrícula.
      */
-    public function syncUser(User $user, $password)
+    public function syncUser(User $user, $password, $customUsername = null)
     {
-        // 1. Buscar usuario existente
+        // 1. Buscar usuario existente por email
         $users = $this->makeRequest('core_user_get_users_by_field', [
             'field' => 'email',
             'values' => [$user->email]
@@ -83,14 +68,20 @@ class MoodleApiService
             return $users[0]['id'];
         }
 
+        // Definir el username: Si nos dan uno (matrícula), lo usamos. Si no, usamos el email limpio.
+        // Moodle requiere usernames en minúsculas.
+        $moodleUsername = $customUsername 
+            ? strtolower($customUsername) 
+            : strtolower(explode('@', $user->email)[0]);
+
         // 2. Crear usuario si no existe
         $newUser = $this->makeRequest('core_user_create_users', [
             'users' => [
                 [
-                    'username' => strtolower(explode('@', $user->email)[0] . rand(100,999)), // Username único básico
+                    'username' => $moodleUsername, 
                     'password' => $password,
                     'firstname' => $user->name,
-                    'lastname' => $user->last_name ?? 'Estudiante', // Asegúrate de tener apellido o usa un default
+                    'lastname' => $user->last_name ?? 'Estudiante',
                     'email' => $user->email,
                     'auth' => 'manual',
                 ]
@@ -104,9 +95,6 @@ class MoodleApiService
         return null;
     }
 
-    /**
-     * Actualiza la contraseña de un usuario en Moodle (Plan B para SSO)
-     */
     public function updateUserPassword($moodleUserId, $newPassword)
     {
         return $this->makeRequest('core_user_update_users', [
@@ -119,15 +107,12 @@ class MoodleApiService
         ]);
     }
 
-    /**
-     * Matricular usuario en un curso
-     */
     public function enrollUser($moodleUserId, $moodleCourseId)
     {
         return $this->makeRequest('enrol_manual_enrol_users', [
             'enrolments' => [
                 [
-                    'roleid' => 5, // 5 suele ser el rol de estudiante
+                    'roleid' => 5, 
                     'userid' => $moodleUserId,
                     'courseid' => $moodleCourseId
                 ]
@@ -135,10 +120,6 @@ class MoodleApiService
         ]);
     }
 
-    /**
-     * Generar URL de acceso directo (SSO)
-     * Requiere plugin 'auth_userkey'. Si falla, retorna null.
-     */
     public function getLoginUrl($userEmail)
     {
         $users = $this->makeRequest('core_user_get_users_by_field', [
@@ -160,7 +141,7 @@ class MoodleApiService
             return $keyData['loginurl'];
         }
         
-        return null; // Retornamos null para activar el Plan B en el controlador
+        return null; 
     }
     
     public function getMoodleUserByEmail($email)

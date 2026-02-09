@@ -16,15 +16,18 @@ class MoodleCredentialsMail extends Mailable implements ShouldQueue
 
     public $user;
     public $password;
+    public $username; // Agregado
     public $moodleUrl;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(User $user, $password)
+    public function __construct(User $user, $password, $username = null)
     {
         $this->user = $user;
         $this->password = $password;
+        // Si no se pasa username, usamos el email (comportamiento fallback)
+        $this->username = $username ?? $user->email;
         $this->moodleUrl = config('services.moodle.url');
     }
 
@@ -48,11 +51,6 @@ class MoodleCredentialsMail extends Mailable implements ShouldQueue
         );
     }
 
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
-     */
     public function attachments(): array
     {
         return [];
