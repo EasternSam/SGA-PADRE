@@ -498,9 +498,13 @@
                     <div class="sm:flex sm:items-start">
                         <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                             <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Ajustar Foto</h3>
-                            <div class="mt-4 img-container bg-gray-100 rounded-lg">
+                            
+                            {{-- Container de imagen con estado visual --}}
+                            <div class="mt-4 img-container bg-gray-100 rounded-lg relative">
                                 <img id="image-to-crop" src="" alt="Imagen para recortar">
+                                <div id="crop-status" class="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded hidden">Esperando...</div>
                             </div>
+
                         </div>
                     </div>
                 </div>
@@ -516,94 +520,183 @@
         </div>
     </div>
 
-    {{-- SCRIPTS PUROS (SIN ALPINE) --}}
+    {{-- SCRIPTS PUROS (SIN ALPINE) CON ULTRA DEBUG --}}
     @push('scripts')
         @once
         <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
         <script>
+            console.log('--- [DEBUG] SCRIPT CARGADO: Dashboard Estudiante ---');
+            
             (function() {
                 let cropper;
-
-                // Elementos estables (dentro de wire:ignore) o globales
+                
+                // Elementos del DOM
                 const modal = document.getElementById('crop-modal');
                 const image = document.getElementById('image-to-crop');
                 const saveBtn = document.getElementById('btn-save-crop');
                 const cancelBtn = document.getElementById('btn-cancel-crop');
-                
-                // Función para resetear
-                const resetCropper = () => {
-                    modal.classList.add('hidden');
-                    if (cropper) { cropper.destroy(); cropper = null; }
+                const statusBadge = document.getElementById('crop-status');
+
+                function log(msg, data = null) {
+                    const timestamp = new Date().toLocaleTimeString();
+                    const logMsg = `[CROPPER ${timestamp}] ${msg}`;
+                    if(data) console.log(logMsg, data);
+                    else console.log(logMsg);
                     
-                    // Buscar input dinámicamente porque Livewire lo puede haber regenerado
+                    if(statusBadge) {
+                        statusBadge.classList.remove('hidden');
+                        statusBadge.innerText = msg;
+                    }
+                }
+
+                if (!modal || !image || !saveBtn || !cancelBtn) {
+                    console.error('[FATAL] No se encontraron elementos del cropper en el DOM.');
+                    return;
+                }
+
+                // Función Reset
+                const resetCropper = () => {
+                    log('Reseteando cropper y modal...');
+                    modal.classList.add('hidden');
+                    if (cropper) { 
+                        cropper.destroy(); 
+                        cropper = null; 
+                    }
+                    
                     const input = document.getElementById('photo-input');
-                    if(input) input.value = ''; 
+                    if(input) {
+                        input.value = ''; // Reset input para permitir re-selección
+                        log('Input de archivo limpiado.');
+                    } else {
+                        console.warn('[WARN] Input #photo-input no encontrado al resetear.');
+                    }
                     
                     saveBtn.disabled = false;
                     saveBtn.innerText = 'Recortar y Subir';
+                    if(statusBadge) statusBadge.classList.add('hidden');
                 };
 
-                // Event Delegation para el input (CRUCIAL para Livewire)
-                // Escuchamos en el documento entero cualquier cambio que venga de #photo-input
+                // Listener para el Input (Delegado)
                 document.addEventListener('change', function(e) {
+                    // Verificamos si es nuestro input
                     if (e.target && e.target.id === 'photo-input') {
+                        log('Evento CHANGE detectado en #photo-input');
                         const files = e.target.files;
+                        
                         if (files && files.length > 0) {
                             const file = files[0];
-                            
-                            // Validar tipo
+                            log('Archivo seleccionado:', { name: file.name, type: file.type, size: file.size });
+
                             if (!['image/jpeg', 'image/png', 'image/webp', 'image/jpg'].includes(file.type)) {
                                 alert('Formato no válido. Usa JPG o PNG.');
+                                log('Error: Formato inválido.');
                                 return;
                             }
 
                             const reader = new FileReader();
                             reader.onload = function(evt) {
+                                log('Imagen leída correctamente (FileReader). Abriendo modal...');
                                 image.src = evt.target.result;
                                 modal.classList.remove('hidden');
 
                                 if (cropper) { cropper.destroy(); }
                                 
+                                log('Inicializando CropperJS...');
                                 cropper = new Cropper(image, {
                                     aspectRatio: 1, 
                                     viewMode: 1,
                                     autoCropArea: 1,
                                     background: false,
+                                    ready: function () {
+                                        log('CropperJS listo!');
+                                    }
                                 });
                             };
+                            reader.onerror = function() {
+                                console.error('Error al leer el archivo.');
+                                log('Error FileReader');
+                            };
                             reader.readAsDataURL(file);
+                        } else {
+                            log('Se disparó change pero no hay archivos (Cancelado por usuario).');
                         }
                     }
                 });
 
-                // Listeners para botones estables (solo agregar una vez)
-                // Usamos dataset para marcar que ya tienen listener y no duplicar
-                if (saveBtn && !saveBtn.dataset.hasListener) {
-                    saveBtn.dataset.hasListener = "true";
-                    saveBtn.addEventListener('click', function() {
-                        if (!cropper) return;
+                // Botón Guardar
+                if (saveBtn) {
+                    // Clonamos el nodo para eliminar listeners viejos en caso de re-render (fallback)
+                    // o usamos un flag. Usaremos flag.
+                    if(!saveBtn.dataset.listenerAttached) {
+                        saveBtn.dataset.listenerAttached = "true";
+                        saveBtn.addEventListener('click', function() {
+                            log('Botón "Recortar y Subir" presionado.');
+                            
+                            if (!cropper) {
+                                log('Error: Instancia de cropper no existe.');
+                                return;
+                            }
 
-                        saveBtn.disabled = true;
-                        saveBtn.innerText = 'Procesando...';
+                            saveBtn.disabled = true;
+                            saveBtn.innerText = 'Procesando...';
+                            log('Generando Blob del canvas...');
 
-                        cropper.getCroppedCanvas({
-                            width: 500, height: 500, fillColor: '#fff',
-                        }).toBlob((blob) => {
-                            // @this inyectado por Blade Livewire
-                            @this.upload('photo', blob, (uploadedFilename) => {
-                                resetCropper();
-                            }, () => {
-                                alert('Error al subir la imagen.');
-                                resetCropper();
-                            });
-                        }, 'image/jpeg', 0.9);
-                    });
+                            cropper.getCroppedCanvas({
+                                width: 500, height: 500, fillColor: '#fff',
+                            }).toBlob((blob) => {
+                                if(!blob) {
+                                    log('Error: No se pudo generar el Blob.');
+                                    alert('Error al procesar imagen.');
+                                    resetCropper();
+                                    return;
+                                }
+                                log('Blob generado exitosamente. Tamaño:', blob.size);
+
+                                // Intento de subida a Livewire
+                                if (typeof @this !== 'undefined') {
+                                    log('Iniciando subida a Livewire (@this.upload)...');
+                                    
+                                    @this.upload('photo', blob, 
+                                        (uploadedFilename) => {
+                                            log('ÉXITO: Livewire confirmó la subida.', uploadedFilename);
+                                            resetCropper();
+                                        }, 
+                                        (error) => {
+                                            console.error('ERROR LIVEWIRE UPLOAD:', error);
+                                            log('Error en subida Livewire.');
+                                            alert('Error al subir la imagen.');
+                                            resetCropper();
+                                        }, 
+                                        (event) => {
+                                            // Progreso
+                                            log(`Progreso subida: ${event.detail.progress}%`);
+                                            saveBtn.innerText = `Subiendo ${event.detail.progress}%...`;
+                                        }
+                                    );
+                                } else {
+                                    console.error('[CRITICAL] Objeto @this (Livewire) no definido. ¿Estás dentro del componente?');
+                                    alert('Error crítico: No se detecta contexto Livewire.');
+                                    resetCropper();
+                                }
+
+                            }, 'image/jpeg', 0.9);
+                        });
+                        log('Listener click adjuntado a botón Guardar.');
+                    }
                 }
 
-                if (cancelBtn && !cancelBtn.dataset.hasListener) {
-                    cancelBtn.dataset.hasListener = "true";
-                    cancelBtn.addEventListener('click', resetCropper);
+                // Botón Cancelar
+                if (cancelBtn) {
+                    if(!cancelBtn.dataset.listenerAttached) {
+                        cancelBtn.dataset.listenerAttached = "true";
+                        cancelBtn.addEventListener('click', function() {
+                            log('Botón Cancelar presionado.');
+                            resetCropper();
+                        });
+                        log('Listener click adjuntado a botón Cancelar.');
+                    }
                 }
+
             })();
         </script>
         @endonce
