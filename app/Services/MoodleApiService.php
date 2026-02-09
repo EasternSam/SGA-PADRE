@@ -52,21 +52,32 @@ class MoodleApiService
         return is_array($courses) ? $courses : [];
     }
 
+    /**
+     * Busca o crea un usuario.
+     * Retorna array: ['id' => 123, 'was_created' => true/false]
+     */
     public function syncUser(User $user, $password, $customUsername = null)
     {
+        // 1. Buscar usuario existente por email
         $users = $this->makeRequest('core_user_get_users_by_field', [
             'field' => 'email',
             'values' => [$user->email]
         ]);
 
         if (!empty($users)) {
-            return $users[0]['id'];
+            // USUARIO YA EXISTE: Devolvemos ID y flag false
+            return [
+                'id' => $users[0]['id'],
+                'was_created' => false
+            ];
         }
 
+        // Definir el username
         $moodleUsername = $customUsername 
             ? strtolower($customUsername) 
             : strtolower(explode('@', $user->email)[0]);
 
+        // 2. Crear usuario si no existe
         $newUser = $this->makeRequest('core_user_create_users', [
             'users' => [
                 [
@@ -81,22 +92,14 @@ class MoodleApiService
         ]);
 
         if ($newUser && isset($newUser[0]['id'])) {
-            return $newUser[0]['id'];
+            // USUARIO CREADO: Devolvemos ID y flag true
+            return [
+                'id' => $newUser[0]['id'],
+                'was_created' => true
+            ];
         }
 
         return null;
-    }
-
-    public function updateUserPassword($moodleUserId, $newPassword)
-    {
-        return $this->makeRequest('core_user_update_users', [
-            'users' => [
-                [
-                    'id' => $moodleUserId,
-                    'password' => $newPassword
-                ]
-            ]
-        ]);
     }
 
     public function enrollUser($moodleUserId, $moodleCourseId)
@@ -112,18 +115,20 @@ class MoodleApiService
         ]);
     }
 
-    /**
-     * Generar URL de acceso directo (SSO) usando el plugin User Key
-     * CORREGIDO: Envía el campo 'email' porque así está configurado el plugin en Moodle.
-     */
     public function getLoginUrl($userEmail)
     {
-        // Ya no necesitamos buscar el ID primero, porque el plugin acepta el email directamente
-        // según tu configuración.
+        $users = $this->makeRequest('core_user_get_users_by_field', [
+            'field' => 'email',
+            'values' => [$userEmail]
+        ]);
+
+        if (empty($users)) return null;
         
+        $moodleUser = $users[0];
+
         $keyData = $this->makeRequest('auth_userkey_request_login_url', [
             'user' => [
-                'email' => $userEmail // ¡AQUÍ ESTABA EL DETALLE! Usamos email, no id.
+                'id' => $moodleUser['id']
             ]
         ]);
 
@@ -131,16 +136,6 @@ class MoodleApiService
             return $keyData['loginurl'];
         }
         
-        return null; 
-    }
-    
-    public function getMoodleUserByEmail($email)
-    {
-        $users = $this->makeRequest('core_user_get_users_by_field', [
-            'field' => 'email',
-            'values' => [$email]
-        ]);
-
-        return !empty($users) ? $users[0] : null;
+        return null;
     }
 }
