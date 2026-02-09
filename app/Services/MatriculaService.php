@@ -180,14 +180,17 @@ class MatriculaService
                     $user->moodle_user_id = $moodleUserId;
                     $user->saveQuietly();
                     
-                    // --- ENVIAR CORREO CON CREDENCIALES (SOLO SI ES USUARIO NUEVO EN MOODLE/LOCAL) ---
-                    // Como acabamos de guardar el ID, asumimos que es la primera vez que sincronizamos
-                    // o que no lo teníamos registrado.
+                    // --- ENVIAR CORREO CON CREDENCIALES ---
+                    // Intentamos enviar al correo PERSONAL del estudiante si existe,
+                    // porque el institucional ($user->email) quizás no lo ha abierto aún.
+                    // Asumimos que $student->email guarda el personal, o usamos el user->email como fallback.
+                    $emailDestino = $student->email ?? $user->email;
+
                     try {
-                        Mail::to($user->email)->send(new MoodleCredentialsMail($user, $moodlePassword));
-                        Log::info("Correo de credenciales Moodle enviado a {$user->email}");
+                        Mail::to($emailDestino)->send(new MoodleCredentialsMail($user, $moodlePassword));
+                        Log::info("Correo de credenciales Moodle enviado a: {$emailDestino}");
                     } catch (\Exception $e) {
-                        Log::error("Error enviando correo Moodle: " . $e->getMessage());
+                        Log::error("Error enviando correo Moodle a {$emailDestino}: " . $e->getMessage());
                     }
                 }
 
