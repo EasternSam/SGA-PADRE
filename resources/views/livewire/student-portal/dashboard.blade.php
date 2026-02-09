@@ -5,7 +5,11 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
         <style>
             .cropper-view-box, .cropper-face {
-                border-radius: 50%; /* Esto hace que la guía de recorte sea redonda visualmente */
+                border-radius: 50%; /* Guía visual redonda */
+            }
+            /* Asegurar que la imagen no se desborde en el modal */
+            .img-container img {
+                max-width: 100%;
             }
         </style>
     @endpush
@@ -21,7 +25,6 @@
                 <h1 class="text-2xl font-bold tracking-tight text-gray-900">
                     Hola, {{ explode(' ', $student->first_name)[0] }} 👋
                 </h1>
-                {{-- NUEVO: Mostrar carrera activa si existe --}}
                 @if($activeCareer)
                     <p class="text-sm text-indigo-600 font-medium mt-1 flex items-center">
                         <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>
@@ -92,8 +95,7 @@
             ================================================================= 
         --}}
         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            
-            <!-- Card: Cursos Activos (Suma de carrera y cursos técnicos) -->
+            <!-- Card: Cursos Activos -->
             <div class="relative overflow-hidden rounded-2xl bg-white p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 transition-all hover:shadow-md">
                 <div class="flex items-center justify-between">
                     <div>
@@ -171,20 +173,15 @@
 
         {{-- 
             =================================================================
-            2. LAYOUT PRINCIPAL (TABLA + SIDEBAR)
+            2. LAYOUT PRINCIPAL
             ================================================================= 
         --}}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
             {{-- COLUMNA IZQUIERDA: Cursos (Ocupa 2/3) --}}
             <div class="lg:col-span-2 space-y-8">
                 
-                {{-- 2.0 CURSOS PENDIENTES DE PAGO (CORREGIDO: Usando pendingPayments) --}}
-                @php
-                    // Filtramos solo los pagos pendientes que son de inscripciones
-                    $enrollmentPayments = $pendingPayments->whereNotNull('enrollment_id');
-                @endphp
-
+                {{-- TABLA PENDIENTES --}}
+                @php $enrollmentPayments = $pendingPayments->whereNotNull('enrollment_id'); @endphp
                 @if($enrollmentPayments->count() > 0)
                 <div class="bg-yellow-50 rounded-2xl shadow-sm border border-yellow-200 overflow-hidden">
                       <div class="border-b border-yellow-200 px-6 py-4 flex items-center gap-2">
@@ -195,9 +192,9 @@
                         <table class="min-w-full whitespace-nowrap text-left text-sm">
                             <thead class="bg-yellow-100/50 text-yellow-900">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3 font-semibold">Materia / Curso</th>
-                                    <th scope="col" class="px-6 py-3 font-semibold text-right">Monto</th>
-                                    <th scope="col" class="px-6 py-3 font-semibold text-right">Acción</th>
+                                    <th class="px-6 py-3 font-semibold">Materia / Curso</th>
+                                    <th class="px-6 py-3 font-semibold text-right">Monto</th>
+                                    <th class="px-6 py-3 font-semibold text-right">Acción</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-yellow-100 bg-white">
@@ -205,18 +202,11 @@
                                     <tr>
                                         <td class="px-6 py-4">
                                             <div class="text-sm font-medium text-gray-900">{{ $payment->paymentConcept->name ?? 'Concepto de Pago' }}</div>
-                                            <div class="text-xs text-gray-500">
-                                                {{ $payment->enrollment->courseSchedule->module->name ?? 'Módulo' }} 
-                                                ({{ $payment->enrollment->courseSchedule->module->course->name ?? 'Curso' }})
-                                            </div>
+                                            <div class="text-xs text-gray-500">{{ $payment->enrollment->courseSchedule->module->name ?? 'Módulo' }} ({{ $payment->enrollment->courseSchedule->module->course->name ?? 'Curso' }})</div>
                                         </td>
-                                        <td class="px-6 py-4 text-right font-bold text-gray-900">
-                                            ${{ number_format($payment->amount, 2) }}
-                                        </td>
+                                        <td class="px-6 py-4 text-right font-bold text-gray-900">${{ number_format($payment->amount, 2) }}</td>
                                         <td class="px-6 py-4 text-right">
-                                            <button wire:click="$dispatch('payEnrollment', { enrollmentId: {{ $payment->enrollment_id }} })" class="text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded transition font-bold shadow-sm">
-                                                Pagar Ahora
-                                            </button>
+                                            <button wire:click="$dispatch('payEnrollment', { enrollmentId: {{ $payment->enrollment_id }} })" class="text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded transition font-bold shadow-sm">Pagar Ahora</button>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -226,185 +216,82 @@
                 </div>
                 @endif
 
-                {{-- 2.1 TABLA DE CURSOS ACTIVOS --}}
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div class="border-b border-gray-100 px-6 py-5 flex items-center justify-between">
-                        <div>
+                {{-- TABLA ACTIVOS --}}
+                @if($activeDegreeEnrollments->isNotEmpty() || $activeCourseEnrollments->isNotEmpty())
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div class="border-b border-gray-100 px-6 py-5">
                             <h3 class="text-lg font-bold text-gray-900">Mis Inscripciones Activas</h3>
-                            <p class="text-sm text-gray-500">Materias y cursos en progreso</p>
                         </div>
-                        <div class="hidden sm:block">
-                            <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                                {{ $activeDegreeEnrollments->count() + $activeCourseEnrollments->count() }} Total
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full whitespace-nowrap text-left text-sm">
-                            <thead class="bg-gray-50/50 text-gray-900">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 font-semibold">Curso / Módulo</th>
-                                    {{-- COLUMNA PROFESOR ELIMINADA --}}
-                                    <th scope="col" class="px-6 py-3 font-semibold">Horario</th>
-                                    <th scope="col" class="px-6 py-3 font-semibold text-center">Tipo</th>
-                                    <th scope="col" class="px-6 py-3 font-semibold text-right"></th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 bg-white">
-                                {{-- 1. Materias de Carrera --}}
-                                @foreach ($activeDegreeEnrollments as $enrollment)
-                                    <tr class="hover:bg-gray-50/50 transition-colors group">
-                                        <td class="px-6 py-4">
-                                            <div class="flex items-center gap-3">
-                                                <div class="h-10 w-10 flex-shrink-0 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-lg">
-                                                    {{ substr($enrollment->courseSchedule->module->name ?? 'M', 0, 1) }}
-                                                </div>
-                                                <div class="flex flex-col">
-                                                    <span class="text-gray-900 font-semibold">{{ $enrollment->courseSchedule->module->name ?? 'N/A' }}</span>
-                                                    <span class="text-gray-500 text-xs truncate max-w-[200px]">
-                                                        {{ $enrollment->courseSchedule->section_name ?? 'Sección '.$enrollment->courseSchedule->id }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            <div class="flex flex-col">
-                                                <span class="text-gray-900 font-medium text-xs">
-                                                    {{ $enrollment->courseSchedule->days_of_week ? implode(', ', $enrollment->courseSchedule->days_of_week) : 'N/A' }}
-                                                </span>
-                                                <span class="text-gray-400 text-[10px]">
-                                                    {{ $enrollment->courseSchedule->start_time ? \Carbon\Carbon::parse($enrollment->courseSchedule->start_time)->format('g:i A') : '' }}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 text-center">
-                                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset bg-indigo-50 text-indigo-700 ring-indigo-600/20">
-                                                Carrera
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 text-right">
-                                            <a href="{{ route('student.course.detail', $enrollment->id) }}" class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                                                Ver Aula
-                                            </a>
-                                        </td>
-                                    </tr>
-                                @endforeach
-
-                                {{-- 2. Cursos Técnicos --}}
-                                @foreach ($activeCourseEnrollments as $enrollment)
-                                    <tr class="hover:bg-gray-50/50 transition-colors group">
-                                        <td class="px-6 py-4">
-                                            <div class="flex items-center gap-3">
-                                                <div class="h-10 w-10 flex-shrink-0 rounded-lg bg-green-50 flex items-center justify-center text-green-600 font-bold text-lg">
-                                                    {{ substr($enrollment->courseSchedule->module->course->name ?? 'C', 0, 1) }}
-                                                </div>
-                                                <div class="flex flex-col">
-                                                    <span class="text-gray-900 font-semibold">{{ $enrollment->courseSchedule->module->course->name ?? 'N/A' }}</span>
-                                                    <span class="text-gray-500 text-xs truncate max-w-[200px]">
-                                                        {{ $enrollment->courseSchedule->module->name ?? 'N/A' }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            <div class="flex flex-col">
-                                                <span class="text-gray-900 font-medium text-xs">
-                                                    {{ $enrollment->courseSchedule->days_of_week ? implode(', ', $enrollment->courseSchedule->days_of_week) : 'N/A' }}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 text-center">
-                                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset bg-green-50 text-green-700 ring-green-600/20">
-                                                Técnico
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 text-right">
-                                            <a href="{{ route('student.course.detail', $enrollment->id) }}" class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
-                                                Entrar
-                                            </a>
-                                        </td>
-                                    </tr>
-                                @endforeach
-
-                                @if ($activeDegreeEnrollments->isEmpty() && $activeCourseEnrollments->isEmpty())
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full whitespace-nowrap text-left text-sm">
+                                <thead class="bg-gray-50/50 text-gray-900">
                                     <tr>
-                                        <td colspan="5" class="px-6 py-12 text-center">
-                                            <div class="flex flex-col items-center justify-center">
-                                                <div class="h-16 w-16 rounded-full bg-gray-50 flex items-center justify-center mb-4">
-                                                    <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                                    </svg>
-                                                </div>
-                                                <h3 class="text-base font-semibold text-gray-900">No tienes cursos activos</h3>
-                                                <p class="mt-1 text-sm text-gray-500">¿Buscas aprender algo nuevo hoy?</p>
-                                            </div>
-                                        </td>
+                                        <th class="px-6 py-3 font-semibold">Curso / Módulo</th>
+                                        <th class="px-6 py-3 font-semibold">Horario</th>
+                                        <th class="px-6 py-3 font-semibold text-center">Tipo</th>
+                                        <th class="px-6 py-3 font-semibold text-right"></th>
                                     </tr>
-                                @endif
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 bg-white">
+                                    @foreach ($activeDegreeEnrollments as $enrollment)
+                                        <tr>
+                                            <td class="px-6 py-4">
+                                                <div class="font-semibold">{{ $enrollment->courseSchedule->module->name ?? 'N/A' }}</div>
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                {{ $enrollment->courseSchedule->days_of_week ? implode(', ', $enrollment->courseSchedule->days_of_week) : 'N/A' }}
+                                            </td>
+                                            <td class="px-6 py-4 text-center"><span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset bg-indigo-50 text-indigo-700 ring-indigo-600/20">Carrera</span></td>
+                                            <td class="px-6 py-4 text-right">
+                                                <a href="{{ route('student.course.detail', $enrollment->id) }}" class="text-indigo-600 hover:text-indigo-900 font-bold text-xs">Ver Aula</a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                    @foreach ($activeCourseEnrollments as $enrollment)
+                                        <tr>
+                                            <td class="px-6 py-4">
+                                                <div class="font-semibold">{{ $enrollment->courseSchedule->module->course->name ?? 'N/A' }}</div>
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                {{ $enrollment->courseSchedule->days_of_week ? implode(', ', $enrollment->courseSchedule->days_of_week) : 'N/A' }}
+                                            </td>
+                                            <td class="px-6 py-4 text-center"><span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset bg-green-50 text-green-700 ring-green-600/20">Técnico</span></td>
+                                            <td class="px-6 py-4 text-right">
+                                                <a href="{{ route('student.course.detail', $enrollment->id) }}" class="text-indigo-600 hover:text-indigo-900 font-bold text-xs">Entrar</a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
-
-                {{-- 2.2 HISTORIAL ACADÉMICO (CURSOS COMPLETADOS) --}}
+                @endif
+                
+                {{-- HISTORIAL --}}
                 @if($completedEnrollments->count() > 0)
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div class="border-b border-gray-100 px-6 py-5 flex items-center justify-between">
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-900">Historial Académico</h3>
-                            <p class="text-sm text-gray-500">Cursos finalizados satisfactoriamente</p>
-                        </div>
-                        <div class="hidden sm:block">
-                            <span class="inline-flex items-center rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">
-                                {{ $completedEnrollments->count() }} Completados
-                            </span>
-                        </div>
+                    <div class="border-b border-gray-100 px-6 py-5">
+                        <h3 class="text-lg font-bold text-gray-900">Historial Académico</h3>
                     </div>
-
                     <div class="overflow-x-auto">
                         <table class="min-w-full whitespace-nowrap text-left text-sm">
                             <thead class="bg-gray-50/50 text-gray-900">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3 font-semibold">Curso / Módulo</th>
-                                    <th scope="col" class="px-6 py-3 font-semibold text-center">Calificación</th>
-                                    <th scope="col" class="px-6 py-3 font-semibold text-center">Fecha Fin</th>
-                                    <th scope="col" class="px-6 py-3 font-semibold text-right"></th>
+                                    <th class="px-6 py-3 font-semibold">Curso / Módulo</th>
+                                    <th class="px-6 py-3 font-semibold text-center">Calificación</th>
+                                    <th class="px-6 py-3 font-semibold text-center">Fecha Fin</th>
+                                    <th class="px-6 py-3 font-semibold text-right"></th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 bg-white">
                                 @foreach ($completedEnrollments as $enrollment)
-                                    <tr class="hover:bg-gray-50/50 transition-colors group">
+                                    <tr>
                                         <td class="px-6 py-4">
-                                            <div class="flex items-center gap-3">
-                                                <div class="h-10 w-10 flex-shrink-0 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 font-bold text-lg">
-                                                    {{ substr($enrollment->courseSchedule->module->course->name ?? 'C', 0, 1) }}
-                                                </div>
-                                                <div class="flex flex-col">
-                                                    <span class="text-gray-900 font-semibold">{{ $enrollment->courseSchedule->module->course->name ?? 'N/A' }}</span>
-                                                    <span class="text-gray-500 text-xs truncate max-w-[200px]" title="{{ $enrollment->courseSchedule->module->name ?? '' }}">
-                                                        {{ $enrollment->courseSchedule->module->name ?? 'N/A' }}
-                                                    </span>
-                                                </div>
-                                            </div>
+                                            <div class="font-semibold">{{ $enrollment->courseSchedule->module->course->name ?? 'N/A' }}</div>
                                         </td>
-                                        <td class="px-6 py-4 text-center">
-                                            @if($enrollment->final_grade)
-                                                <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-sm font-bold text-gray-700 ring-1 ring-inset ring-gray-500/10">
-                                                    {{ number_format($enrollment->final_grade, 1) }}
-                                                </span>
-                                            @else
-                                                <span class="text-gray-400 text-xs">-</span>
-                                            @endif
-                                        </td>
-                                        <td class="px-6 py-4 text-center text-gray-500 text-xs">
-                                            {{ $enrollment->updated_at->format('d/m/Y') }}
-                                        </td>
-                                        <td class="px-6 py-4 text-right">
-                                            <a href="{{ route('student.course.detail', $enrollment->id) }}" class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-                                                Ver Detalles
-                                            </a>
-                                        </td>
+                                        <td class="px-6 py-4 text-center">{{ $enrollment->final_grade ? number_format($enrollment->final_grade, 1) : '-' }}</td>
+                                        <td class="px-6 py-4 text-center">{{ $enrollment->updated_at->format('d/m/Y') }}</td>
+                                        <td class="px-6 py-4 text-right"><a href="{{ route('student.course.detail', $enrollment->id) }}" class="text-indigo-600 hover:text-indigo-900 font-bold text-xs">Ver Detalles</a></td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -416,21 +303,18 @@
 
             {{-- COLUMNA DERECHA: Perfil + Sidebar --}}
             <div class="space-y-8">
-                
-                {{-- CARD DE PERFIL (Estilo ID Card) --}}
+                {{-- CARD DE PERFIL --}}
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
                     
                     <div class="relative flex flex-col items-center">
-                        {{-- IMAGEN DE PERFIL PRINCIPAL --}}
+                         {{-- IMAGEN DE PERFIL PRINCIPAL: Usamos object-cover y aspect-square para garantizar 1:1 --}}
                         <div class="h-28 w-28 rounded-full ring-4 ring-white shadow-lg overflow-hidden bg-white mb-3 group relative cursor-pointer" wire:click="openProfileModal">
-                            {{-- Se usa object-cover y aspect-square para asegurar 1:1 --}}
                             <img class="h-full w-full object-cover aspect-square"
                                  src="{{ $student->profile_photo_url }}" 
                                  alt="{{ $student->fullName }}">
                             
-                            {{-- Overlay de editar al pasar mouse --}}
-                            <div class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                             <div class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
                                 <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -463,13 +347,12 @@
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                     <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 text-xs">Accesos Directos</h3>
                     <div class="space-y-3">
-                        {{-- BOTÓN MOODLE --}}
                         <a href="{{ route('student.moodle.auth') }}" target="_blank" class="flex items-center justify-between p-3 rounded-xl bg-orange-50 hover:bg-orange-100 hover:text-orange-700 transition-all group border border-transparent hover:border-orange-200">
-                            <div class="flex items-center gap-3">
+                             <div class="flex items-center gap-3">
                                 <div class="p-2 rounded-lg bg-white text-orange-500 group-hover:text-orange-600 shadow-sm transition-colors">
                                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                         <path d="M12 14l9-5-9-5-9 5 9 5z" stroke-linecap="round" stroke-linejoin="round" />
-                                        <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" stroke-linecap="round" stroke-linejoin="round" />
+                                        <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" stroke-linecap="round" stroke-linejoin="round" />
                                     </svg>
                                 </div>
                                 <span class="font-medium text-sm">Aula Virtual (Moodle)</span>
@@ -513,8 +396,8 @@
     --}}
     <x-modal name="complete-profile-modal" :show="$showProfileModal" focusable>
         
-        {{-- INICIALIZACIÓN DE ALPINE PARA CROPPER --}}
-        <div x-data="profileCropper()" class="p-6">
+        {{-- INICIALIZACIÓN DE ALPINE PARA CROPPER - PASAMOS $wire --}}
+        <div x-data="profileCropper(@this)" class="p-6">
             <h2 class="text-xl font-bold text-gray-900 mb-2">📝 Tu Perfil de Estudiante</h2>
             <p class="text-sm text-gray-600 mb-6">Mantén tu información actualizada.</p>
 
@@ -557,7 +440,10 @@
                         </div>
                         
                         <div class="flex-1 bg-gray-100 relative p-4 flex items-center justify-center min-h-[300px]">
-                            <img x-ref="cropImage" src="" style="display: block; max-width: 100%;">
+                            {{-- Imagen para recortar --}}
+                            <div class="img-container">
+                                <img x-ref="cropImage" src="" style="display: block; max-width: 100%;">
+                            </div>
                         </div>
 
                         <div class="p-4 border-t bg-gray-50 flex justify-end gap-3">
@@ -639,20 +525,39 @@
     @push('scripts')
         <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
         <script>
-            function profileCropper() {
+            function profileCropper(wireComponent) {
                 return {
                     cropping: false,
                     cropper: null,
                     file: null,
+                    wire: wireComponent, // Guardamos la referencia al componente Livewire
+
+                    init() {
+                        console.log('ProfileCropper debug: Iniciado');
+                    },
 
                     fileChosen(event) {
+                        console.log('ProfileCropper debug: Archivo seleccionado');
                         this.file = event.target.files[0];
                         if (this.file) {
-                            // Crear URL temporal para el cropper
+                            // Validar tipo manualmente por seguridad
+                            if (!['image/jpeg', 'image/png', 'image/webp', 'image/jpg'].includes(this.file.type)) {
+                                alert('Por favor selecciona una imagen válida (JPG, PNG, WEBP).');
+                                return;
+                            }
+
+                            console.log('ProfileCropper debug: Leyendo archivo...', this.file.type);
                             const reader = new FileReader();
                             reader.onload = (e) => {
+                                console.log('ProfileCropper debug: Archivo leído');
+                                // Asignar src
                                 this.$refs.cropImage.src = e.target.result;
-                                this.startCropper();
+                                
+                                // Esperar a que la imagen cargue en el DOM antes de iniciar Cropper
+                                this.$refs.cropImage.onload = () => {
+                                    console.log('ProfileCropper debug: Imagen cargada en DOM, iniciando Cropper');
+                                    this.startCropper();
+                                }
                             };
                             reader.readAsDataURL(this.file);
                         }
@@ -670,6 +575,7 @@
                                 aspectRatio: 1, // Obligar 1:1
                                 viewMode: 1,
                                 autoCropArea: 1,
+                                responsive: true,
                             });
                         });
                     },
@@ -679,28 +585,50 @@
                         this.file = null;
                         if (this.cropper) {
                             this.cropper.destroy();
+                            this.cropper = null;
                         }
                         // Limpiar input file para permitir seleccionar el mismo archivo de nuevo
-                        document.getElementById('photo-input').value = '';
+                        const input = document.getElementById('photo-input');
+                        if(input) input.value = '';
                     },
 
                     cropAndSave() {
                         if (!this.cropper) return;
 
+                        console.log('ProfileCropper debug: Recortando...');
                         // Obtener canvas recortado
                         this.cropper.getCroppedCanvas({
-                            width: 400,
-                            height: 400
+                            width: 500, // Tamaño razonable para perfil
+                            height: 500
                         }).toBlob((blob) => {
-                            // Subir a Livewire manualmente
-                            @this.upload('photo', blob, (uploadedFilename) => {
-                                // Éxito
+                            console.log('ProfileCropper debug: Blob generado, subiendo...');
+                            // Subir a Livewire manualmente usando la referencia guardada
+                            // En Livewire V3 se usa $wire.upload, en V2 @this.upload
+                            // Probamos ambos métodos para robustez
+                            
+                            const uploadCallback = (uploadedFilename) => {
+                                console.log('ProfileCropper debug: Subida exitosa');
                                 this.cropping = false;
-                            }, () => {
-                                // Error
-                                alert('Error al subir la imagen.');
-                            });
-                        }, 'image/jpeg');
+                                // Destruir cropper para liberar memoria
+                                if (this.cropper) {
+                                    this.cropper.destroy();
+                                    this.cropper = null;
+                                }
+                            };
+
+                            const errorCallback = () => {
+                                console.error('ProfileCropper debug: Error en subida');
+                                alert('Error al subir la imagen. Intenta de nuevo.');
+                            };
+
+                            if (this.wire && this.wire.upload) {
+                                this.wire.upload('photo', blob, uploadCallback, errorCallback);
+                            } else {
+                                // Fallback a la sintaxis global de Blade si wire no se pasó bien
+                                @this.upload('photo', blob, uploadCallback, errorCallback);
+                            }
+
+                        }, 'image/jpeg', 0.9); // Calidad 90%
                     }
                 }
             }
