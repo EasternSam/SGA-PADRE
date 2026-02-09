@@ -109,7 +109,16 @@
                                     </div>
                                     
                                     <div>
-                                        <h4 class="text-base font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{{ $module->name }}</h4>
+                                        <h4 class="text-base font-bold text-gray-900 group-hover:text-indigo-600 transition-colors flex items-center gap-2">
+                                            {{ $module->name }}
+                                            
+                                            {{-- INDICADOR MOODLE --}}
+                                            @if($module->moodle_course_id)
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 text-orange-800" title="Enlazado con Moodle ID: {{ $module->moodle_course_id }}">
+                                                    <i class="fas fa-graduation-cap mr-1"></i> Moodle
+                                                </span>
+                                            @endif
+                                        </h4>
                                         
                                         <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
                                             {{-- Créditos --}}
@@ -151,6 +160,11 @@
                                 {{-- Botones de Acción --}}
                                 <div class="mt-4 sm:mt-0 flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                     
+                                    {{-- BOTÓN ENLACE MOODLE --}}
+                                    <button wire:click="openMoodleLinkModal({{ $module->id }})" class="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors" title="Enlazar con Moodle">
+                                        <i class="fas fa-graduation-cap"></i>
+                                    </button>
+
                                     {{-- BOTÓN PRINCIPAL: GESTIONAR HORARIOS/SECCIONES --}}
                                     <button wire:click="openScheduleModal({{ $module->id }})" class="inline-flex items-center px-3 py-1.5 border border-indigo-200 text-xs font-bold rounded-lg text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors shadow-sm" title="Asignar Horarios, Maestros y Aulas">
                                         <svg class="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -275,7 +289,6 @@
                     
                     <div class="space-y-3">
                         @forelse($moduleSchedules as $schedule)
-                            {{-- CAMBIO CLAVE AQUÍ: Agregar wire:click en el contenedor principal para que sea cliqueable --}}
                             <div 
                                 wire:click="editSchedule({{ $schedule->id }})" 
                                 class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm hover:border-indigo-400 hover:shadow-md transition-all relative group cursor-pointer {{ $scheduleId === $schedule->id ? 'border-indigo-500 ring-2 ring-indigo-200 bg-indigo-50' : '' }}" 
@@ -286,12 +299,10 @@
                                         {{ $schedule->section_name }}
                                     </span>
                                     <div class="flex gap-1 items-center">
-                                        {{-- Indicador de Cupos --}}
                                         <span class="text-[10px] font-bold mr-1 {{ $schedule->isFull() ? 'text-red-500' : 'text-emerald-500' }}">
                                             {{ $schedule->enrollments_count ?? 0 }} / {{ $schedule->capacity }}
                                         </span>
 
-                                        {{-- Botón eliminar sigue siendo funcional individualmente pero requiere stop propagation --}}
                                         <button wire:click.stop="deleteSchedule({{ $schedule->id }})" wire:confirm="¿Eliminar esta sección?" class="text-red-600 hover:bg-red-50 p-1 rounded" title="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                                     </div>
                                 </div>
@@ -299,7 +310,6 @@
                                 <div class="space-y-1">
                                     <p class="font-bold text-sm text-gray-900 flex items-center gap-1">
                                         <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                        {{-- Mostrar días seleccionados --}}
                                         @if(is_array($schedule->days_of_week))
                                             {{ implode(', ', $schedule->days_of_week) }}
                                         @else
@@ -375,7 +385,6 @@
                         <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-100">
                             <h4 class="text-xs font-bold text-indigo-800 uppercase mb-3">Horario Semanal</h4>
                             
-                            {{-- Selección de Días con Checkboxes --}}
                             <div class="mb-4">
                                 <x-input-label value="Días de Clase" class="mb-2"/>
                                 <div class="flex flex-wrap gap-3">
@@ -413,7 +422,6 @@
                                 <x-input-error :messages="$errors->get('s_classroom_id')" class="mt-1" />
                             </div>
 
-                            {{-- Campo Cupos --}}
                             <div>
                                 <x-input-label value="Cupo Máximo" />
                                 <x-text-input type="number" min="1" wire:model="s_capacity" class="w-full mt-1" />
@@ -440,6 +448,44 @@
                         </div>
                     </form>
                 </div>
+            </div>
+        </div>
+    </x-modal>
+
+    {{-- MODAL 3: Enlace con Moodle (NUEVO) --}}
+    <x-modal name="link-moodle-curriculum-modal" maxWidth="lg">
+        <div class="p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-2">Enlazar Materia con Moodle</h2>
+            <p class="text-sm text-gray-600 mb-4">Estás enlazando: <strong class="text-gray-900">{{ $moodleLinkingModuleName }}</strong></p>
+            
+            <div wire:loading wire:target="openMoodleLinkModal, saveMoodleLink" class="w-full mb-4">
+                <div class="flex items-center p-3 text-sm text-orange-700 bg-orange-50 rounded-lg">
+                    <svg class="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    <span>Cargando cursos de Moodle...</span>
+                </div>
+            </div>
+
+            @if($moodleLinkErrorMessage) <div class="p-3 text-sm text-red-700 bg-red-50 rounded-lg mb-4">Error: {{ $moodleLinkErrorMessage }}</div> @endif
+            
+            <div wire:loading.remove wire:target="openMoodleLinkModal">
+                @if(!$moodleLinkErrorMessage && !empty($moodleCourses))
+                    <div class="mt-4">
+                        <label for="moodle_course_select" class="block text-sm font-medium text-gray-700">Selecciona el curso de Moodle</label>
+                        <select id="moodle_course_select" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm mt-1 block w-full" wire:model="selectedMoodleCourseId">
+                            <option value="">-- Ninguno (Quitar enlace) --</option>
+                            @foreach($moodleCourses as $moodleCourse)
+                                <option value="{{ $moodleCourse['id'] }}">{{ $moodleCourse['fullname'] ?? $moodleCourse['shortname'] }} (ID: {{ $moodleCourse['id'] }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @elseif(!$moodleLinkErrorMessage)
+                    <p class="mt-4 text-sm text-gray-500 italic">No se encontraron cursos en Moodle.</p>
+                @endif
+            </div>
+            
+            <div class="flex justify-end mt-6">
+                <button x-on:click="$dispatch('close-modal', 'link-moodle-curriculum-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
+                <button wire:click="saveMoodleLink()" wire:loading.attr="disabled" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg">Guardar Enlace</button>
             </div>
         </div>
     </x-modal>

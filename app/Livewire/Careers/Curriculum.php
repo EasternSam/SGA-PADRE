@@ -13,6 +13,8 @@ use Livewire\Attributes\Computed;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log; // Importante
+use App\Services\MoodleApiService; // Importante
 
 #[Layout('layouts.dashboard')]
 class Curriculum extends Component
@@ -33,19 +35,30 @@ class Curriculum extends Component
     public $description = '';
     public $selectedPrerequisites = []; 
     
+    // --- NUEVO: Campo Moodle para Materias ---
+    public $moodle_course_id = null; // Para el formulario de crear/editar
+
+    // --- MODAL ENLACE MOODLE (Separado) ---
+    public $showMoodleLinkModal = false;
+    public $moodleCourses = [];
+    public $selectedMoodleCourseId = '';
+    public $moodleLinkErrorMessage = '';
+    public $moodleLinkingModuleId = null;
+    public $moodleLinkingModuleName = '';
+
     // --- MODAL HORARIOS (Secciones) ---
     public $showScheduleModal = false;
     public $selectedModuleId = null; 
     public $scheduleId = null;
     
     // Campos Horario
-    public $s_day_of_week = []; // Inicializamos como array para múltiples días
+    public $s_day_of_week = []; 
     public $s_start_time = '18:00';
     public $s_end_time = '20:00';
     public $s_teacher_id = '';
     public $s_classroom_id = '';
     public $s_modality = 'Presencial';
-    public $s_capacity = 30; // <-- Nuevo campo con valor por defecto
+    public $s_capacity = 30; 
     public $s_start_date;
     public $s_end_date;
     public $s_section_name = 'Sec-01';
@@ -70,7 +83,9 @@ class Curriculum extends Component
             $query->with('prerequisites');
         }
         
-        $query->with('schedules')
+        // Seleccionamos también moodle_course_id
+        $query->select('modules.*', 'moodle_course_id') 
+              ->with('schedules')
               ->orderBy('period_number');
 
         if ($hasOrderColumn) {
@@ -95,7 +110,6 @@ class Curriculum extends Component
         if ($this->selectedModuleId) {
             $selectedModule = Module::find($this->selectedModuleId);
             if ($selectedModule) {
-                // Incluimos count de enrollments para mostrar ocupación
                 $moduleSchedules = CourseSchedule::with(['teacher', 'classroom'])
                     ->withCount('enrollments')
                     ->where('module_id', $this->selectedModuleId)
@@ -151,6 +165,7 @@ class Curriculum extends Component
         $this->period_number = $module->period_number;
         $this->is_elective = (bool)$module->is_elective;
         $this->description = $module->description;
+        $this->moodle_course_id = $module->moodle_course_id; // Cargar ID Moodle si existe
         
         if (Schema::hasTable('module_prerequisites')) {
             $this->selectedPrerequisites = $module->prerequisites()->pluck('prerequisite_id')->map(fn($id) => (string)$id)->toArray();
@@ -171,6 +186,7 @@ class Curriculum extends Component
             'credits' => 'required|integer|min:0',
             'period_number' => 'required|integer|min:1',
             'selectedPrerequisites' => 'array',
+            'moodle_course_id' => 'nullable|string', // Validación simple
         ]);
 
         DB::transaction(function () {
@@ -183,6 +199,7 @@ class Curriculum extends Component
                 'is_elective' => $this->is_elective,
                 'description' => $this->description,
                 'status' => 'Activo',
+                'moodle_course_id' => $this->moodle_course_id ?: null, // Guardar
             ];
 
             if ($this->moduleId) {
@@ -231,6 +248,58 @@ class Curriculum extends Component
     }
 
     // =================================================================
+    // ENLACE CON MOODLE (ESPECÍFICO PARA CURRICULUM)
+    // =================================================================
+
+    public function openMoodleLinkModal($moduleId, MoodleApiService $moodleService)
+    {
+        $this->reset(['moodleCourses', 'selectedMoodleCourseId', 'moodleLinkErrorMessage']);
+        
+        $module = Module::find($moduleId);
+        if (!$module) return;
+
+        $this->moodleLinkingModuleId = $module->id;
+        $this->moodleLinkingModuleName = $module->name;
+        $this->selectedMoodleCourseId = $module->moodle_course_id ?? '';
+
+        // Cargar cursos de Moodle
+        try {
+            $this->moodleCourses = $moodleService->getCourses();
+            if (empty($this->moodleCourses)) {
+                $this->moodleLinkErrorMessage = 'No se encontraron cursos en Moodle.';
+            }
+        } catch (\Exception $e) {
+            Log::error('Moodle API Error', ['exception' => $e->getMessage()]);
+            $this->moodleLinkErrorMessage = 'Error al conectar con Moodle.';
+        }
+
+        $this->showMoodleLinkModal = true;
+        $this->dispatch('open-modal', 'link-moodle-curriculum-modal');
+    }
+
+    public function saveMoodleLink()
+    {
+        if (!$this->moodleLinkingModuleId) return;
+
+        $module = Module::find($this->moodleLinkingModuleId);
+        if ($module) {
+            $module->moodle_course_id = $this->selectedMoodleCourseId ?: null;
+            $module->save();
+            
+            $this->dispatch('notify', message: 'Enlace con Moodle guardado.', type: 'success');
+            unset($this->modulesByPeriod); // Refrescar lista
+        }
+
+        $this->closeMoodleLinkModal();
+    }
+
+    public function closeMoodleLinkModal()
+    {
+        $this->showMoodleLinkModal = false;
+        $this->dispatch('close-modal', 'link-moodle-curriculum-modal');
+    }
+
+    // =================================================================
     // GESTIÓN DE HORARIOS (SECCIONES)
     // =================================================================
 
@@ -252,7 +321,7 @@ class Curriculum extends Component
             's_teacher_id' => 'required|exists:users,id',
             's_start_date' => 'required|date',
             's_end_date' => 'required|date|after_or_equal:s_start_date',
-            's_capacity' => 'required|integer|min:1', // <-- Validación de cupos
+            's_capacity' => 'required|integer|min:1', 
         ]);
 
         // --- VALIDACIÓN DE CHOQUE DE HORARIOS ---
@@ -322,7 +391,7 @@ class Curriculum extends Component
                 'start_time' => $this->s_start_time,
                 'end_time' => $this->s_end_time,
                 'modality' => $this->s_modality,
-                'capacity' => $this->s_capacity, // <-- Guardar cupos
+                'capacity' => $this->s_capacity, 
                 'start_date' => $this->s_start_date,
                 'end_date' => $this->s_end_date,
                 'status' => 'Activo',
@@ -367,7 +436,7 @@ class Curriculum extends Component
         $this->s_teacher_id = $schedule->teacher_id;
         $this->s_classroom_id = $schedule->classroom_id;
         $this->s_modality = $schedule->modality;
-        $this->s_capacity = $schedule->capacity ?? 30; // <-- Cargar cupos
+        $this->s_capacity = $schedule->capacity ?? 30; 
         
         $this->s_start_date = \Carbon\Carbon::parse($schedule->start_date)->format('Y-m-d');
         $this->s_end_date = \Carbon\Carbon::parse($schedule->end_date)->format('Y-m-d');
@@ -398,7 +467,7 @@ class Curriculum extends Component
         $this->s_teacher_id = '';
         $this->s_classroom_id = '';
         $this->s_modality = 'Presencial';
-        $this->s_capacity = 30; // <-- Resetear a default
+        $this->s_capacity = 30; 
         $this->s_start_date = now()->format('Y-m-d');
         $this->s_end_date = now()->addMonths(4)->format('Y-m-d');
         $this->resetValidation();
@@ -413,6 +482,7 @@ class Curriculum extends Component
         $this->is_elective = false;
         $this->description = '';
         $this->selectedPrerequisites = [];
+        $this->moodle_course_id = null; // Resetear campo moodle
         $this->resetValidation();
     }
 
