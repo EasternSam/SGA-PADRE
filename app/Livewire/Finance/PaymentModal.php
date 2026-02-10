@@ -179,6 +179,8 @@ class PaymentModal extends Component
     {
         $this->pendingDebts = collect();
 
+        // 1. Cargar PAGOS REALES pendientes (tabla payments)
+        // Esto cargará correctamente el pago de RD$1,300 generado por el admin.
         $payments = Payment::where('student_id', $this->student_id)
             ->where('status', 'Pendiente')
             ->with('paymentConcept', 'enrollment.courseSchedule.module')
@@ -200,6 +202,11 @@ class PaymentModal extends Component
             ]);
         }
 
+        // 2. CORRECCIÓN: ELIMINAR CARGA DE DEUDAS VIRTUALES (Enrollments)
+        // Antes, el sistema buscaba inscripciones sin pagar y calculaba su precio (RD$2,000).
+        // Al comentar este bloque, dejamos de mostrar esas deudas "fantasmas" que no existen en la tabla payments.
+        
+        /* BLOQUE ANTERIOR (CAUSANTE DEL PROBLEMA):
         $enrollments = Enrollment::where('student_id', $this->student_id)
             ->where('status', 'Pendiente')
             ->doesntHave('payment') 
@@ -211,11 +218,12 @@ class PaymentModal extends Component
                 'type' => 'enrollment',
                 'id' => $e->id,
                 'concept' => 'Inscripción: ' . ($e->courseSchedule->module->course->name ?? 'Curso') . ' - ' . ($e->courseSchedule->module->name ?? ''),
-                'amount' => $e->courseSchedule->module->price ?? 0.00,
+                'amount' => $e->courseSchedule->module->price ?? 0.00, // <-- Aquí salían los 2,000
                 'date' => $e->created_at,
                 'is_enrollment' => true
             ]);
         }
+        */
     }
 
     public function selectDebt($type, $id)
@@ -236,6 +244,8 @@ class PaymentModal extends Component
                 $this->status = 'Completado'; 
             }
         } elseif ($type === 'enrollment') {
+            // Mantenemos la lógica por si se llama desde 'payEnrollment' explícitamente,
+            // pero ya no aparecerá en la lista automática de deudas.
             $enrollment = Enrollment::with('courseSchedule.module')->find($id);
             if ($enrollment) {
                 $this->enrollment_id = $enrollment->id;
