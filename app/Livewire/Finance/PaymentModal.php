@@ -304,6 +304,27 @@ class PaymentModal extends Component
         
         $isNewStudent = !$this->student->student_code;
 
+        // --- CORRECCIÓN: PREVENCIÓN DE DUPLICADOS ---
+        // Verificamos si ya existe un pago para esta misma inscripción y monto creado recientemente.
+        // Esto soluciona el conflicto donde se intenta cobrar dos veces.
+        if (!$this->payment_id_to_update && $this->enrollment_id) {
+            $existingPayment = Payment::where('enrollment_id', $this->enrollment_id)
+                ->where('amount', $this->amount) // Verifica si ya se cobró este mismo monto
+                ->exists();
+
+            // Opcional: También podrías verificar si ya existe CUALQUIER pago de inscripción
+            // para ese enrollment, independientemente del monto, si eso es lo deseado.
+            
+            if ($existingPayment) {
+                // Si ya existe, NO creamos uno nuevo. Simplemente cerramos el modal y notificamos.
+                Log::info("Prevención de pago duplicado: Ya existe un pago para enrollment {$this->enrollment_id} de {$this->amount}");
+                $this->closeModal();
+                $this->dispatch('paymentAdded'); 
+                session()->flash('warning', 'Este pago ya fue procesado o existe un registro previo.');
+                return;
+            }
+        }
+
         try {
             $payment = DB::transaction(function () use ($matriculaService, $ecfService, $isNewStudent) {
                 
