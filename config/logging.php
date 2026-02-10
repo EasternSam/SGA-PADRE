@@ -65,6 +65,16 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // --- CANAL NUEVO: AUDITORÍA TOTAL (CAJA NEGRA) ---
+        'audit' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/audit.log'),
+            'level' => 'debug',
+            'days' => 14, // Guardar historia de 2 semanas
+            'permission' => 0664,
+        ],
+        // -------------------------------------------------
+
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),

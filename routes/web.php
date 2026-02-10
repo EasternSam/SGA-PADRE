@@ -70,6 +70,24 @@ use App\Livewire\Admin\Inventory\Index as InventoryIndex;
 |--------------------------------------------------------------------------
 */
 
+// --- RUTA DE AUDITORÍA FRONTEND (CAJA NEGRA) ---
+// Esta ruta recibe los "clics" que envía el JavaScript del navegador
+Route::post('/api/log-click', function (Request $request) {
+    $user = auth()->user() ? "ID:".auth()->id() : 'Guest';
+    $data = json_decode($request->getContent(), true) ?? [];
+    
+    Log::channel('audit')->info("🖱️ CLIC DETECTADO ($user)", [
+        'Elemento' => $data['tag'] ?? '?',
+        'Texto' => $data['text'] ?? '',
+        'Wire:Click' => $data['wire_click'] ?? '',
+        'URL' => $data['url'] ?? '',
+        'Classes' => $data['classes'] ?? ''
+    ]);
+    
+    return response()->noContent();
+});
+// -----------------------------------------------
+
 Route::get('/', function () {
     return view('auth.login');
 });

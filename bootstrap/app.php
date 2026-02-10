@@ -7,8 +7,9 @@ use Illuminate\Http\Request;
 
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\PermissionMiddleware;
-// Importar el nuevo middleware
+// Importar middlewares personalizados
 use App\Http\Middleware\ForcePasswordChange;
+use App\Http\Middleware\AuditLogMiddleware; // Importar el logger
 use App\Console\Commands\ImportStudentsFast;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -31,6 +32,17 @@ return Application::configure(basePath: dirname(__DIR__))
         // --- REGISTRAR MIDDLEWARE GLOBAL O ALIAS ---
         // Lo agregamos al grupo 'web' para que se ejecute en todas las rutas de navegador
         $middleware->appendToGroup('web', ForcePasswordChange::class);
+        
+        // --- AUDITORÍA DE CAJA NEGRA ---
+        // Registramos el middleware que loguea todas las peticiones
+        $middleware->web(append: [
+            AuditLogMiddleware::class,
+        ]);
+
+        // Excluimos la verificación CSRF para el endpoint del logger frontend
+        $middleware->validateCsrfTokens(except: [
+            'api/log-click', 
+        ]);
 
         $middleware->trustProxies(at: '*');
 
