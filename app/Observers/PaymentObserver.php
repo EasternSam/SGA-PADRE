@@ -15,21 +15,30 @@ class PaymentObserver
      */
     public function created(Payment $payment): void
     {
-        // --- DETECTIVE DE PAGOS ---
-        // Esto dejará un rastro en laravel.log indicando exactamente qué archivo/línea
-        // creó CADA pago. Así descubriremos de dónde viene el de RD$2,000.
+        // --- DETECTIVE DE PAGOS MEJORADO ---
+        // Capturamos el stack trace completo para ver de dónde viene CUALQUIER pago.
         
-        // Filtramos para obtener un stack trace limpio solo de tu aplicación (app/)
-        $stack = collect(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 20))->map(function ($trace) {
+        $stack = collect(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 25))->map(function ($trace) {
             return ($trace['file'] ?? '') . ':' . ($trace['line'] ?? '');
         })->filter(function ($line) {
             return str_contains($line, 'app/') && !str_contains($line, 'PaymentObserver');
         })->values();
 
-        Log::info("💰 PAGO CREADO (ID: {$payment->id}) | Monto: {$payment->amount} | Concepto ID: {$payment->payment_concept_id}", [
-            'Origen' => $stack->first(), // El archivo inmediato que lo creó
-            'Traza_Completa' => $stack->take(5) // Contexto adicional
+        // Log general para todos los pagos
+        Log::info("💰 PAGO CREADO (ID: {$payment->id}) | Monto: {$payment->amount} | Concepto: {$payment->payment_concept_id}", [
+            'Origen' => $stack->first(),
         ]);
+
+        // ALERTA ROJA: Si el monto es sospechoso (ej: 2000 o diferente de la inscripción esperada de 1300)
+        // Ajusta la condición si quieres ser más específico, aquí pongo > 1500 como ejemplo
+        if ($payment->amount >= 1500) {
+            Log::critical("🚨 PAGO FANTASMA DETECTADO (ID: {$payment->id}) DE {$payment->amount}! 🚨", [
+                'Student_ID' => $payment->student_id,
+                'Enrollment_ID' => $payment->enrollment_id,
+                'Creado_Por' => $stack->first(),
+                'Traza_Completa' => $stack->take(10)->toArray()
+            ]);
+        }
     }
 
     /**
