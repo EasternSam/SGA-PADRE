@@ -15,29 +15,41 @@ class PaymentObserver
      */
     public function created(Payment $payment): void
     {
-        // --- DETECTIVE DE PAGOS MEJORADO ---
-        // Capturamos el stack trace completo para ver de dónde viene CUALQUIER pago.
+        // --- DETECTIVE DE PAGOS NIVEL AGRESIVO ---
         
-        $stack = collect(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 25))->map(function ($trace) {
+        // 1. Obtener traza limpia de la aplicación
+        $stack = collect(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 30))->map(function ($trace) {
             return ($trace['file'] ?? '') . ':' . ($trace['line'] ?? '');
         })->filter(function ($line) {
             return str_contains($line, 'app/') && !str_contains($line, 'PaymentObserver');
         })->values();
 
-        // Log general para todos los pagos
-        Log::info("💰 PAGO CREADO (ID: {$payment->id}) | Monto: {$payment->amount} | Concepto: {$payment->payment_concept_id}", [
-            'Origen' => $stack->first(),
-        ]);
+        // 2. Recopilar contexto del entorno (¿Fue por web? ¿Fue por comando?)
+        $context = [
+            'Payment_ID' => $payment->id,
+            'Amount' => $payment->amount,
+            'Concept_ID' => $payment->payment_concept_id,
+            'Student_ID' => $payment->student_id,
+            'Enrollment_ID' => $payment->enrollment_id,
+            'Running_In_Console' => app()->runningInConsole(), // TRUE si es Cron Job/Artisan
+            'Request_URL' => app()->runningInConsole() ? 'CLI Command' : request()->fullUrl(),
+            'Request_Params' => app()->runningInConsole() ? [] : request()->all(), // Ver qué datos envió el navegador
+            'Creado_Por_Archivo' => $stack->first(),
+        ];
 
-        // ALERTA ROJA: Si el monto es sospechoso (ej: 2000 o diferente de la inscripción esperada de 1300)
-        // Ajusta la condición si quieres ser más específico, aquí pongo > 1500 como ejemplo
+        // 3. Log Estándar
+        Log::info("💰 PAGO REGISTRADO (ID: {$payment->id}) | Monto: {$payment->amount}", $context);
+
+        // 4. ALERTA NUCLEAR: Si el monto es sospechoso (>= 1500)
         if ($payment->amount >= 1500) {
-            Log::critical("🚨 PAGO FANTASMA DETECTADO (ID: {$payment->id}) DE {$payment->amount}! 🚨", [
-                'Student_ID' => $payment->student_id,
-                'Enrollment_ID' => $payment->enrollment_id,
-                'Creado_Por' => $stack->first(),
-                'Traza_Completa' => $stack->take(10)->toArray()
-            ]);
+            Log::emergency("🚨🚨🚨 ¡¡¡PAGO FANTASMA DETECTADO (ID: {$payment->id}) DE {$payment->amount}!!! 🚨🚨🚨");
+            Log::emergency("----------------------------------------------------------------");
+            Log::emergency("🔍 CULPABLE INMEDIATO: " . $stack->first());
+            Log::emergency("🌍 ORIGEN: " . ($context['Running_In_Console'] ? "Consola/Cron" : "Petición Web: " . $context['Request_URL']));
+            Log::emergency("📂 DATOS REQUEST: " . json_encode($context['Request_Params']));
+            Log::emergency("📜 TRAZA DETALLADA DE LA CREACIÓN:");
+            Log::emergency($stack->implode("\n <--- "));
+            Log::emergency("----------------------------------------------------------------");
         }
     }
 
@@ -48,7 +60,7 @@ class PaymentObserver
     {
         $this->invalidateFinanceCache();
 
-        // Lógica de activación de matrícula (Mantenemos tu corrección anterior)
+        // Lógica de activación de matrícula
         if ($payment->status === 'Completado' && ($payment->wasRecentlyCreated || $payment->wasChanged('status'))) {
             
             Log::info("PaymentObserver: Pago {$payment->id} pasó a estado 'Completado'. Invocando MatriculaService::generarMatricula.");
