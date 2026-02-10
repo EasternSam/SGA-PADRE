@@ -80,6 +80,7 @@ class Index extends Component
             DB::transaction(function () use ($admission) {
                 
                 // 1. OBTENER O CREAR USUARIO
+                // Usamos withoutEvents para evitar que UserObserver genere cobros fantasma
                 $user = null;
                 if ($admission->user_id) {
                     $user = User::find($admission->user_id);
@@ -91,13 +92,18 @@ class Index extends Component
                 $passwordGenerated = null;
                 if (!$user) {
                     $passwordGenerated = $admission->identification_id; 
-                    $user = User::create([
-                        'name' => $admission->first_name . ' ' . $admission->last_name,
-                        'email' => $admission->email,
-                        'password' => Hash::make($passwordGenerated),
-                        'access_expires_at' => now()->addMonths(3),
-                        'must_change_password' => true,
-                    ]);
+                    
+                    // CORRECCIÓN: Evitar disparar eventos al crear usuario
+                    // Esto previene que UserObserver cree deudas automáticas indeseadas
+                    $user = User::withoutEvents(function () use ($admission, $passwordGenerated) {
+                        return User::create([
+                            'name' => $admission->first_name . ' ' . $admission->last_name,
+                            'email' => $admission->email,
+                            'password' => Hash::make($passwordGenerated),
+                            'access_expires_at' => now()->addMonths(3),
+                            'must_change_password' => true,
+                        ]);
+                    });
                 }
 
                 // 2. ASIGNAR ROL
@@ -109,24 +115,28 @@ class Index extends Component
                 }
 
                 // 3. CREAR O ACTUALIZAR PERFIL DE ESTUDIANTE
+                // CORRECCIÓN: Evitar disparar eventos al crear estudiante (posible origen de mensualidad fantasma)
                 $student = Student::where('user_id', $user->id)->first();
                 $preMatricula = 'PRE-' . date('y') . '-' . str_pad($user->id, 4, '0', STR_PAD_LEFT);
 
                 if (!$student) {
-                    $student = Student::create([
-                        'user_id' => $user->id,
-                        'first_name' => $admission->first_name,
-                        'last_name' => $admission->last_name,
-                        'email' => $admission->email,
-                        'cedula' => $admission->identification_id,
-                        'status' => 'Prospecto',
-                        'phone' => $admission->phone,
-                        'birth_date' => $admission->birth_date,
-                        'address' => $admission->address,
-                        'enrollment_date' => now(),
-                        'course_id' => $admission->course_id,
-                        'student_code' => $preMatricula,
-                    ]);
+                    // Usamos withoutEvents también aquí por seguridad
+                    $student = Student::withoutEvents(function () use ($user, $admission, $preMatricula) {
+                        return Student::create([
+                            'user_id' => $user->id,
+                            'first_name' => $admission->first_name,
+                            'last_name' => $admission->last_name,
+                            'email' => $admission->email,
+                            'cedula' => $admission->identification_id,
+                            'status' => 'Prospecto',
+                            'phone' => $admission->phone,
+                            'birth_date' => $admission->birth_date,
+                            'address' => $admission->address,
+                            'enrollment_date' => now(),
+                            'course_id' => $admission->course_id,
+                            'student_code' => $preMatricula,
+                        ]);
+                    });
                 } else {
                     $student->update([
                         'course_id' => $admission->course_id,
@@ -134,7 +144,7 @@ class Index extends Component
                     ]);
                 }
 
-                // 4. GENERAR DEUDA DE INSCRIPCIÓN
+                // 4. GENERAR DEUDA DE INSCRIPCIÓN (OFICIAL)
                 if ($student && $admission->course_id) {
                     $course = Course::find($admission->course_id);
                     
@@ -150,17 +160,20 @@ class Index extends Component
                             ->exists();
 
                         if (!$exists) {
-                            Payment::create([
-                                'user_id' => $user->id,
-                                'student_id' => $student->id,
-                                'payment_concept_id' => $concept->id,
-                                'amount' => $course->registration_fee,
-                                'currency' => 'DOP',
-                                'status' => 'Pendiente',
-                                'gateway' => 'Sistema',
-                                'due_date' => now()->addDays(5),
-                                'notes' => 'Generado automáticamente al aprobar admisión.',
-                            ]);
+                            // CORRECCIÓN: withoutEvents para asegurar que PaymentObserver no duplique ni haga magia extraña
+                            Payment::withoutEvents(function () use ($user, $student, $concept, $course) {
+                                Payment::create([
+                                    'user_id' => $user->id,
+                                    'student_id' => $student->id,
+                                    'payment_concept_id' => $concept->id,
+                                    'amount' => $course->registration_fee,
+                                    'currency' => 'DOP',
+                                    'status' => 'Pendiente',
+                                    'gateway' => 'Sistema',
+                                    'due_date' => now()->addDays(5),
+                                    'notes' => 'Generado automáticamente al aprobar admisión.',
+                                ]);
+                            });
                         }
                     }
                 }
@@ -177,7 +190,11 @@ class Index extends Component
                 $notificacionMensaje = 'Felicidades, tu solicitud ha sido aprobada. Se ha generado tu orden de pago de inscripción. Bienvenido a SGA PADRE.';
                 $urlDestino = route('student.dashboard'); // O student.payments
 
-                $user->notify(new SystemNotification($notificacionTitulo, $notificacionMensaje, 'success', $urlDestino));
+                try {
+                    $user->notify(new SystemNotification($notificacionTitulo, $notificacionMensaje, 'success', $urlDestino));
+                } catch (\Exception $e) {
+                    Log::warning("No se pudo enviar notificación de admisión aprobada: " . $e->getMessage());
+                }
             });
 
             session()->flash('message', 'Solicitud APROBADA y usuario notificado.');
