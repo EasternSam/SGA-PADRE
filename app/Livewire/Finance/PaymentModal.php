@@ -187,6 +187,13 @@ class PaymentModal extends Component
             ->get();
 
         foreach ($payments as $p) {
+            // Lógica de Limpieza: Si el monto es 0 (o negativo por error), marcar como Completado automáticamente
+            if ($p->amount <= 0) {
+                $p->status = 'Completado';
+                $p->save(); // Esto disparará el PaymentObserver para activar matrícula si corresponde
+                continue; // No lo agregamos a la lista visual
+            }
+
             $conceptName = $p->paymentConcept->name ?? $p->description ?? 'Deuda General';
             if ($p->enrollment) {
                 $conceptName .= ' - ' . ($p->enrollment->courseSchedule->module->name ?? '');
