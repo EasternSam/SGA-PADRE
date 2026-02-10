@@ -69,18 +69,32 @@ class MatriculaService
                     $user->email = $newEmail;
                     $user->password = $newPassword;
                     $user->access_expires_at = null; // Quitar expiración temporal
+                    
+                    // Asegurar que no intentamos guardar campos eliminados
+                    // Si el modelo User en memoria aún tiene moodle_password sucio, lo limpiamos
+                    if(isset($user->moodle_password)) {
+                        unset($user->moodle_password);
+                    }
+                    
                     $user->save();
                 }
 
                 $student->save();
                 
                 // Llamamos a la activación explícitamente dentro de la transacción
-                $this->activarInscripcion($payment);
+                // PERO protegemos que un fallo ahí no revierta la matrícula
+                try {
+                    $this->activarInscripcion($payment);
+                } catch (\Throwable $e) {
+                    Log::error("MatriculaService: Error en activación secundaria (Moodle/Pagos), pero la matrícula se generó. Error: " . $e->getMessage());
+                }
 
             }); 
 
+            Log::info("MatriculaService: Transacción completada para {$student->id}");
+
         } catch (\Exception $e) {
-            Log::error("Error al generar matrícula para estudiante ID {$student->id}: " . $e->getMessage());
+            Log::error("Error CRÍTICO al generar matrícula para estudiante ID {$student->id}: " . $e->getMessage());
         }
     }
 
@@ -101,7 +115,7 @@ class MatriculaService
                 $enrollment->save();
                 $activated++;
                 
-                // Intento de matriculación en Moodle
+                // Intento de matriculación en Moodle (NO BLOQUEANTE)
                 $this->syncWithMoodle($enrollment);
             }
         }
@@ -116,7 +130,7 @@ class MatriculaService
                     $enrollment->save();
                     $activated++;
 
-                    // Intento de matriculación en Moodle
+                    // Intento de matriculación en Moodle (NO BLOQUEANTE)
                     $this->syncWithMoodle($enrollment);
                 }
             }
@@ -129,7 +143,7 @@ class MatriculaService
 
     /**
      * Sincroniza la inscripción con Moodle con lógica de CASCADA.
-     * Prioridad de Enlace: Sección > Módulo > Curso
+     * PROTEGIDO: Usa Throwable para atrapar errores fatales y no romper el flujo principal.
      */
     private function syncWithMoodle(Enrollment $enrollment)
     {
@@ -138,89 +152,63 @@ class MatriculaService
             if (!$schedule) return;
 
             // --- LÓGICA DE CASCADA ---
-            // 1. Verificar si la SECCIÓN tiene un ID de Moodle
             $moodleCourseId = $schedule->moodle_course_id;
-
-            // 2. Si no, verificar si el MÓDULO tiene un enlace
-            if (empty($moodleCourseId)) {
-                $moodleCourseId = $schedule->module->moodle_course_id ?? null;
-            }
-
-            // 3. Si no, verificar si el CURSO padre tiene un enlace
-            if (empty($moodleCourseId)) {
-                $moodleCourseId = $schedule->module->course->moodle_course_id ?? null;
-            }
-
-            // Si después de todo esto no hay ID, no hacemos nada
-            if (empty($moodleCourseId)) {
-                return;
-            }
+            if (empty($moodleCourseId)) $moodleCourseId = $schedule->module->moodle_course_id ?? null;
+            if (empty($moodleCourseId)) $moodleCourseId = $schedule->module->course->moodle_course_id ?? null;
+            
+            if (empty($moodleCourseId)) return;
 
             $student = $enrollment->student;
             $user = $student->user;
 
-            if (!$user) {
-                Log::warning("Moodle Sync: El estudiante ID {$student->id} no tiene usuario de sistema asociado.");
+            if (!$user) return;
+
+            // Instanciar servicio de forma segura
+            if (!class_exists(MoodleApiService::class)) {
+                Log::error("Moodle Sync: Clase MoodleApiService no encontrada.");
                 return;
             }
-
             $moodleService = app(MoodleApiService::class);
 
-            // --- GESTIÓN DE USUARIO ---
             $code = $student->student_code ?? 'Student';
-            $moodleUsername = strtolower($code); // Usuario = Matrícula
-            
-            // Generamos una contraseña segura SOLO por si hay que crear al usuario.
-            // Si ya existe, Moodle NO la actualizará porque el servicio syncUser está programado así.
+            $moodleUsername = strtolower($code);
             $moodlePassword = 'Sga*' . $code . '#' . rand(10,99);
 
-            // Sincronizar: Buscamos si existe. Si no, lo creamos.
-            // NOTA: syncUser ahora devuelve un array ['id' => ..., 'was_created' => bool] (según lo definimos en MoodleApiService)
-            // Si tu versión actual de MoodleApiService solo devuelve ID (int/string), 
-            // asumiremos que si ya tenía ID guardado localmente, NO es nuevo.
+            // Sincronizar
+            $syncResult = $moodleService->syncUser($user, $moodlePassword, $moodleUsername);
             
-            $result = $moodleService->syncUser($user, $moodlePassword, $moodleUsername);
+            // Manejo robusto del resultado (sea array o ID simple)
+            $moodleUserId = is_array($syncResult) ? ($syncResult['id'] ?? null) : $syncResult;
+            $wasCreated = is_array($syncResult) ? ($syncResult['was_created'] ?? false) : false;
             
-            // Adaptamos la respuesta por si el servicio devuelve solo ID o Array
-            $moodleUserId = is_array($result) ? $result['id'] : $result;
-            $wasCreated = is_array($result) ? ($result['was_created'] ?? false) : false;
-
-            // Si el servicio devuelve solo ID, deducimos si es nuevo comparando con la BD local
-            if (!is_array($result) && $moodleUserId) {
+            // Si devuelve solo ID (versión vieja del servicio), inferimos creación
+            if (!is_array($syncResult) && $moodleUserId) {
                 $wasCreated = ($user->moodle_user_id !== (string)$moodleUserId);
             }
 
             if ($moodleUserId) {
-                
-                // Si es la primera vez que lo vinculamos (o lo acabamos de crear)
                 if ($user->moodle_user_id !== (string)$moodleUserId) {
                     $user->moodle_user_id = $moodleUserId;
                     $user->saveQuietly();
-                }
 
-                // --- ENVIAR CORREO (SOLO SI ES NUEVO) ---
-                if ($wasCreated) {
-                    $emailDestino = $student->email ?? $user->email;
-                    try {
-                        Mail::to($emailDestino)->send(new MoodleCredentialsMail($user, $moodlePassword, $moodleUsername));
-                        Log::info("Correo Bienvenida Moodle enviado a: {$emailDestino} (Usuario creado)");
-                    } catch (\Exception $e) {
-                        Log::error("Error enviando correo Moodle: " . $e->getMessage());
+                    // Enviar correo solo si es nuevo y la clase existe
+                    if ($wasCreated && class_exists(MoodleCredentialsMail::class)) {
+                        $emailDestino = $student->email ?? $user->email;
+                        try {
+                            Mail::to($emailDestino)->send(new MoodleCredentialsMail($user, $moodlePassword, $moodleUsername));
+                            Log::info("Correo Moodle enviado a: {$emailDestino}");
+                        } catch (\Throwable $e) { // Catch Throwable para errores de Mail
+                            Log::error("Error enviando correo Moodle (No crítico): " . $e->getMessage());
+                        }
                     }
-                } else {
-                    Log::info("Usuario Moodle {$moodleUsername} ya existía. No se envió nueva contraseña.");
                 }
 
-                // Matricular en el curso
                 $moodleService->enrollUser($moodleUserId, $moodleCourseId);
-                
-                Log::info("Moodle Sync: Usuario {$moodleUsername} matriculado en curso Moodle ID {$moodleCourseId}.");
-            } else {
-                Log::error("Moodle Sync: No se pudo obtener ID de usuario para {$user->email}.");
+                Log::info("Moodle Sync: Usuario {$moodleUsername} enrolado en {$moodleCourseId}");
             }
 
-        } catch (\Exception $e) {
-            Log::error("Moodle Sync Error (Enrollment {$enrollment->id}): " . $e->getMessage());
+        } catch (\Throwable $e) { // ¡IMPORTANTE! Atrapa Fatal Errors para no revertir la matrícula
+            Log::error("Moodle Sync Falló (Ignorado para no afectar matrícula): " . $e->getMessage());
         }
     }
 
@@ -242,15 +230,9 @@ class MatriculaService
         do {
             $paddedSequence = str_pad($nextSequence, 7, '0', STR_PAD_LEFT);
             $candidateCode = $yearPrefix . $paddedSequence;
-            
             $emailTaken = User::where('email', $candidateCode . '@centu.edu.do')->exists();
             $codeTaken = Student::where('student_code', $candidateCode)->exists();
-
-            if ($emailTaken || $codeTaken) {
-                $nextSequence++;
-            } else {
-                return $candidateCode;
-            }
+            if ($emailTaken || $codeTaken) { $nextSequence++; } else { return $candidateCode; }
         } while (true);
     }
 }
