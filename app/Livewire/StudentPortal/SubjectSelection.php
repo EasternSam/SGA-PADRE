@@ -204,21 +204,11 @@ class SubjectSelection extends Component
         foreach ($schedules as $schedule) {
             $this->totalCredits += $schedule->module->credits;
             
-            // --- CORRECCIÓN PAGOS FANTASMAS ---
-            // ANTES: Se cobraba el precio del módulo si existía.
-            // AHORA: Se ignora el precio individual del módulo porque el cobro es por inscripción/curso.
-            // Si tu modelo de negocio requiere cobrar por créditos, mantenemos la parte del 'else'.
-            
-            /* Lógica antigua comentada para evitar cobros de RD$2,000 fantasma
             if ($schedule->module->price > 0) {
                 $this->totalCost += $schedule->module->price;
             } else {
                 $this->totalCost += ($schedule->module->credits * $costoPorCredito);
             }
-            */
-
-            // Nueva lógica: Solo cobrar por créditos si aplica, ignorando el precio fijo del módulo
-            $this->totalCost += ($schedule->module->credits * $costoPorCredito);
         }
     }
 
@@ -238,23 +228,22 @@ class SubjectSelection extends Component
                 );
 
                 // 2. Crear DEUDA (Estado Pendiente)
-                // Si el totalCost es 0 (porque ya se pagó la inscripción de RD$1,300 por otro lado),
-                // esto generará un pago de 0 que se auto-completará o quedará informativo.
+                // Esto genera el balance en la cuenta del estudiante, pero no bloquea su acceso académico.
                 $payment = Payment::create([
                     'user_id' => $this->student->user_id,
                     'student_id' => $this->student->id,
                     'payment_concept_id' => $concept->id,
                     'amount' => $this->totalCost,
-                    'status' => $this->totalCost > 0 ? 'Pendiente' : 'Completado', // Auto-completar si es 0
+                    'status' => 'Pendiente', 
                     'gateway' => 'Sistema', 
                     'notes' => 'Selección de materias. Total asignaturas: ' . count($this->selectedSchedules),
-                    'due_date' => Carbon::now()->addDays(30), 
+                    'due_date' => Carbon::now()->addDays(30), // Fecha límite de pago (ej. 30 días o fin de mes)
                 ]);
 
                 // 3. Crear INSCRIPCIONES ACTIVAS
                 foreach ($this->selectedSchedules as $modId => $schedId) {
                     
-                    // A. BLOQUEO DE FILA
+                    // A. BLOQUEO DE FILA: Mantenemos esto para evitar sobrecupo físico del aula
                     $schedule = CourseSchedule::lockForUpdate()->find($schedId);
 
                     if ($schedule->isFull()) {
@@ -271,7 +260,7 @@ class SubjectSelection extends Component
                             'student_id' => $this->student->id,
                             'course_schedule_id' => $schedId,
                             'payment_id' => $payment->id, 
-                            'status' => 'Cursando', 
+                            'status' => 'Cursando', // <-- ESTADO ACTIVO: Estudiante entra a clases de inmediato
                             'final_grade' => null,
                             'enrollment_date' => now(),
                         ]);
@@ -281,7 +270,8 @@ class SubjectSelection extends Component
             
             $this->reset(['selectedSchedules', 'totalCredits', 'totalCost']);
             
-            return redirect()->route('student.dashboard')->with('message', '¡Inscripción exitosa! Tu carga académica ha sido actualizada.');
+            // Redirigimos al Dashboard porque ya tienen sus materias cargadas
+            return redirect()->route('student.dashboard')->with('message', '¡Inscripción exitosa! Tu carga académica ha sido actualizada. Recuerda revisar tu estado de cuenta.');
 
         } catch (\Exception $e) {
             $this->errorMessage = "No se pudo procesar la inscripción: " . $e->getMessage();
