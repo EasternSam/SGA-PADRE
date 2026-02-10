@@ -26,29 +26,45 @@ class MatriculaService
      */
     public function generarMatricula(Payment $payment)
     {
-        if ($payment->status !== 'Completado' || !$payment->student) {
-            Log::warning("MatriculaService: El pago {$payment->id} no está 'Completado' o no tiene estudiante.");
+        // Generamos un ID corto para rastrear esta ejecución específica en los logs
+        $traceId = '[MAT-' . strtoupper(Str::random(6)) . ']';
+
+        Log::info("{$traceId} INICIO: Procesando generación de matrícula para Pago ID: {$payment->id}");
+
+        // Verificación 1: Estado del pago
+        if ($payment->status !== 'Completado') {
+            Log::warning("{$traceId} ABORTADO: El pago no está en estado 'Completado'. Estado actual: {$payment->status}");
+            return;
+        }
+
+        // Verificación 2: Relación Student
+        if (!$payment->student) {
+            Log::error("{$traceId} ERROR CRÍTICO: El objeto Payment no tiene un estudiante asociado (relación es null). Enrollment ID: {$payment->enrollment_id}");
             return;
         }
 
         $student = $payment->student;
         $user = $student->user;
 
+        Log::info("{$traceId} DATOS: Estudiante ID: {$student->id}, Usuario ID: " . ($user ? $user->id : 'NULL'));
+
         // Si el estudiante ya tiene matrícula, solo activamos la inscripción
         if ($student->student_code) {
-            Log::info("MatriculaService: Estudiante existente {$student->id}. Activando inscripción.");
-            $this->activarInscripcion($payment);
+            Log::info("{$traceId} ESTADO: Estudiante ya tiene matrícula ({$student->student_code}). Procediendo a activar inscripción.");
+            $this->activarInscripcion($payment, $traceId);
             return;
         }
 
         // Si es un estudiante nuevo (temporal), procedemos a matricular
         try {
-            DB::transaction(function () use ($payment, $student, $user) {
+            DB::transaction(function () use ($payment, $student, $user, $traceId) {
                 
-                Log::info("MatriculaService: Estudiante nuevo {$student->id}. Iniciando transacción.");
+                Log::info("{$traceId} TRANSACCIÓN: Iniciando transacción de base de datos.");
 
                 if (!$student->student_code) {
-                    $student->student_code = $this->generateUniqueStudentCode();
+                    Log::info("{$traceId} GENERACIÓN: Calculando nuevo código de estudiante...");
+                    $student->student_code = $this->generateUniqueStudentCode($traceId);
+                    Log::info("{$traceId} GENERACIÓN: Código asignado temporalmente: {$student->student_code}");
                 }
                 
                 if ($user) {
@@ -60,27 +76,46 @@ class MatriculaService
                     $emailExists = User::where('email', $newEmail)->where('id', '!=', $user->id)->exists();
                     
                     if ($emailExists) {
-                         $matricula = $this->generateUniqueStudentCode(); 
+                         Log::warning("{$traceId} COLISIÓN: El email {$newEmail} ya existe. Regenerando matrícula.");
+                         $matricula = $this->generateUniqueStudentCode($traceId); 
                          $newEmail = $matricula . '@centu.edu.do';
                          $newPassword = Hash::make($matricula);
                          $student->student_code = $matricula; 
+                         Log::info("{$traceId} RE-GENERACIÓN: Nueva matrícula asignada: {$student->student_code}");
                     }
 
                     $user->email = $newEmail;
                     $user->password = $newPassword;
                     $user->access_expires_at = null; // Quitar expiración temporal
-                    $user->save();
+                    
+                    if($user->save()){
+                        Log::info("{$traceId} USUARIO: Usuario actualizado correctamente (Email: {$newEmail}).");
+                    } else {
+                        Log::error("{$traceId} USUARIO: Falló el guardado del usuario.");
+                    }
+                } else {
+                    Log::warning("{$traceId} USUARIO: No se encontró usuario asociado al estudiante. Se guardará solo el estudiante.");
                 }
 
-                $student->save();
+                if($student->save()){
+                    Log::info("{$traceId} ESTUDIANTE: Estudiante guardado correctamente con matrícula {$student->student_code}.");
+                } else {
+                    Log::error("{$traceId} ESTUDIANTE: Falló el guardado del modelo Student.");
+                }
                 
                 // Llamamos a la activación explícitamente dentro de la transacción
-                $this->activarInscripcion($payment);
+                $this->activarInscripcion($payment, $traceId);
 
             }); 
 
+            Log::info("{$traceId} ÉXITO: Transacción completada y commited.");
+
         } catch (\Exception $e) {
-            Log::error("Error al generar matrícula para estudiante ID {$student->id}: " . $e->getMessage());
+            Log::error("{$traceId} EXCEPCIÓN: Error al generar matrícula. " . 
+                "Mensaje: " . $e->getMessage() . 
+                " | Archivo: " . $e->getFile() . 
+                " | Línea: " . $e->getLine()
+            );
         }
     }
 
@@ -88,12 +123,16 @@ class MatriculaService
      * Cambia el estado de la inscripción asociada al pago.
      * Pasa de 'Pendiente' a 'Cursando'.
      */
-    public function activarInscripcion(Payment $payment)
+    public function activarInscripcion(Payment $payment, $traceId = null)
     {
+        $traceId = $traceId ?? '[MAT-ACTIV]';
         $activated = 0;
+
+        Log::info("{$traceId} ACTIVACIÓN: Buscando inscripciones para activar...");
 
         // ESTRATEGIA 1: Pagos Agrupados (Carreras/Selección de Materias)
         $groupedEnrollments = Enrollment::where('payment_id', $payment->id)->get();
+        Log::info("{$traceId} ACTIVACIÓN: Encontradas " . $groupedEnrollments->count() . " inscripciones agrupadas.");
 
         foreach ($groupedEnrollments as $enrollment) {
             if ($enrollment->status === 'Pendiente' || $enrollment->status === 'Reservado') {
@@ -102,7 +141,7 @@ class MatriculaService
                 $activated++;
                 
                 // Intento de matriculación en Moodle
-                $this->syncWithMoodle($enrollment);
+                $this->syncWithMoodle($enrollment, $traceId);
             }
         }
 
@@ -116,14 +155,18 @@ class MatriculaService
                     $enrollment->save();
                     $activated++;
 
+                    Log::info("{$traceId} ACTIVACIÓN: Inscripción individual {$enrollment->id} activada.");
+
                     // Intento de matriculación en Moodle
-                    $this->syncWithMoodle($enrollment);
+                    $this->syncWithMoodle($enrollment, $traceId);
                 }
             }
         }
 
         if ($activated > 0) {
-            Log::info("MatriculaService: Pago {$payment->id} procesado. Se activaron {$activated} inscripciones.");
+            Log::info("{$traceId} RESUMEN: Pago procesado. Se activaron {$activated} inscripciones en total.");
+        } else {
+            Log::info("{$traceId} RESUMEN: No se requirió activar ninguna inscripción (posiblemente ya estaban activas).");
         }
     }
 
@@ -131,11 +174,16 @@ class MatriculaService
      * Sincroniza la inscripción con Moodle con lógica de CASCADA.
      * Prioridad de Enlace: Sección > Módulo > Curso
      */
-    private function syncWithMoodle(Enrollment $enrollment)
+    private function syncWithMoodle(Enrollment $enrollment, $traceId = null)
     {
+        $traceId = $traceId ?? '[MOODLE-SYNC]';
+
         try {
             $schedule = $enrollment->courseSchedule;
-            if (!$schedule) return;
+            if (!$schedule) {
+                Log::warning("{$traceId} MOODLE: No hay horario asociado a la inscripción {$enrollment->id}.");
+                return;
+            }
 
             // --- LÓGICA DE CASCADA ---
             // 1. Verificar si la SECCIÓN tiene un ID de Moodle
@@ -153,6 +201,7 @@ class MatriculaService
 
             // Si después de todo esto no hay ID, no hacemos nada
             if (empty($moodleCourseId)) {
+                // Log::info("{$traceId} MOODLE: No se encontró ID de curso Moodle en la cascada para inscripción {$enrollment->id}.");
                 return;
             }
 
@@ -160,7 +209,7 @@ class MatriculaService
             $user = $student->user;
 
             if (!$user) {
-                Log::warning("Moodle Sync: El estudiante ID {$student->id} no tiene usuario de sistema asociado.");
+                Log::warning("{$traceId} MOODLE: El estudiante ID {$student->id} no tiene usuario de sistema asociado.");
                 return;
             }
 
@@ -203,29 +252,31 @@ class MatriculaService
                     $emailDestino = $student->email ?? $user->email;
                     try {
                         Mail::to($emailDestino)->send(new MoodleCredentialsMail($user, $moodlePassword, $moodleUsername));
-                        Log::info("Correo Bienvenida Moodle enviado a: {$emailDestino} (Usuario creado)");
+                        Log::info("{$traceId} MOODLE: Correo Bienvenida enviado a: {$emailDestino} (Usuario creado)");
                     } catch (\Exception $e) {
-                        Log::error("Error enviando correo Moodle: " . $e->getMessage());
+                        Log::error("{$traceId} MOODLE: Error enviando correo: " . $e->getMessage());
                     }
                 } else {
-                    Log::info("Usuario Moodle {$moodleUsername} ya existía. No se envió nueva contraseña.");
+                    // Log::info("{$traceId} MOODLE: Usuario {$moodleUsername} ya existía. No se envió nueva contraseña.");
                 }
 
                 // Matricular en el curso
                 $moodleService->enrollUser($moodleUserId, $moodleCourseId);
                 
-                Log::info("Moodle Sync: Usuario {$moodleUsername} matriculado en curso Moodle ID {$moodleCourseId}.");
+                Log::info("{$traceId} MOODLE: Usuario {$moodleUsername} matriculado en curso Moodle ID {$moodleCourseId}.");
             } else {
-                Log::error("Moodle Sync: No se pudo obtener ID de usuario para {$user->email}.");
+                Log::error("{$traceId} MOODLE: No se pudo obtener ID de usuario para {$user->email}.");
             }
 
         } catch (\Exception $e) {
-            Log::error("Moodle Sync Error (Enrollment {$enrollment->id}): " . $e->getMessage());
+            Log::error("{$traceId} MOODLE EXCEPTION (Enrollment {$enrollment->id}): " . $e->getMessage());
         }
     }
 
-    private function generateUniqueStudentCode(): string
+    private function generateUniqueStudentCode($traceId = ''): string
     {
+        Log::info("{$traceId} CODE-GEN: Buscando último estudiante para secuencia...");
+        
         $yearPrefix = date('y'); 
         $lastStudent = Student::where('student_code', 'like', $yearPrefix . '%')
             ->orderByRaw('LENGTH(student_code) DESC')
@@ -237,8 +288,12 @@ class MatriculaService
         if ($lastStudent) {
             $lastSequenceStr = substr($lastStudent->student_code, strlen($yearPrefix));
             $nextSequence = intval($lastSequenceStr) + 1;
+            Log::info("{$traceId} CODE-GEN: Último encontrado {$lastStudent->student_code}. Siguiente secuencia base: {$nextSequence}");
+        } else {
+            Log::info("{$traceId} CODE-GEN: No se encontraron estudiantes previos este año. Iniciando en 1.");
         }
 
+        $attempts = 0;
         do {
             $paddedSequence = str_pad($nextSequence, 7, '0', STR_PAD_LEFT);
             $candidateCode = $yearPrefix . $paddedSequence;
@@ -247,8 +302,15 @@ class MatriculaService
             $codeTaken = Student::where('student_code', $candidateCode)->exists();
 
             if ($emailTaken || $codeTaken) {
+                Log::warning("{$traceId} CODE-GEN: Colisión encontrada para {$candidateCode}. Incrementando secuencia.");
                 $nextSequence++;
+                $attempts++;
+                if ($attempts > 50) {
+                    Log::error("{$traceId} CODE-GEN: Demasiados intentos de generación de código. Posible bucle infinito.");
+                    throw new \Exception("Error generando matrícula única después de 50 intentos.");
+                }
             } else {
+                Log::info("{$traceId} CODE-GEN: Código disponible encontrado: {$candidateCode}");
                 return $candidateCode;
             }
         } while (true);
