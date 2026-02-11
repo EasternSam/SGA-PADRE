@@ -43,6 +43,11 @@ class PaymentModal extends Component
     public bool $isAmountDisabled = false;
     public bool $isConceptDisabled = false; 
 
+    // --- Nuevas propiedades para NCF ---
+    public $ncfType = 'B02'; 
+    public $rnc = '';
+    public $companyName = '';
+
     protected function rules()
     {
         return [
@@ -79,6 +84,10 @@ class PaymentModal extends Component
                     }
                 },
             ],
+            // --- Reglas NCF ---
+            'ncfType' => 'required|in:B01,B02', 
+            'rnc' => 'required_if:ncfType,B01|nullable|string|max:20',
+            'companyName' => 'required_if:ncfType,B01|nullable|string|max:150',
         ];
     }
     
@@ -87,6 +96,8 @@ class PaymentModal extends Component
         'payment_concept_id.required' => 'Debe seleccionar un concepto de pago.',
         'amount.required' => 'El monto no puede estar vacío.',
         'transaction_id.required_if' => 'El número de referencia es obligatorio para pagos completados con este método.',
+        'rnc.required_if' => 'El RNC es obligatorio para Crédito Fiscal.',
+        'companyName.required_if' => 'La Razón Social es requerida para Crédito Fiscal.',
     ];
 
     #[On('openPaymentModal')]
@@ -149,6 +160,8 @@ class PaymentModal extends Component
             $this->search_query = ''; 
             $this->student_results = [];
             $this->show_search = false; 
+            // Autocompletar RNC si existe en el estudiante
+            $this->rnc = $this->student->rnc ?? '';
             $this->loadInitialData(); 
         }
     }
@@ -180,18 +193,16 @@ class PaymentModal extends Component
         $this->pendingDebts = collect();
 
         // 1. Cargar PAGOS REALES pendientes (tabla payments)
-        // Esto cargará correctamente el pago de RD$1,300 generado por el admin.
         $payments = Payment::where('student_id', $this->student_id)
             ->where('status', 'Pendiente')
             ->with('paymentConcept', 'enrollment.courseSchedule.module')
             ->get();
 
         foreach ($payments as $p) {
-            // Lógica de Limpieza: Si el monto es 0 (o negativo por error), marcar como Completado automáticamente
             if ($p->amount <= 0) {
                 $p->status = 'Completado';
-                $p->save(); // Esto disparará el PaymentObserver para activar matrícula si corresponde
-                continue; // No lo agregamos a la lista visual
+                $p->save(); 
+                continue; 
             }
 
             $conceptName = $p->paymentConcept->name ?? $p->description ?? 'Deuda General';
@@ -208,29 +219,6 @@ class PaymentModal extends Component
                 'is_enrollment' => false
             ]);
         }
-
-        // 2. CORRECCIÓN: ELIMINAR CARGA DE DEUDAS VIRTUALES (Enrollments)
-        // Antes, el sistema buscaba inscripciones sin pagar y calculaba su precio (RD$2,000).
-        // Al comentar este bloque, dejamos de mostrar esas deudas "fantasmas" que no existen en la tabla payments.
-        
-        /* BLOQUE ANTERIOR (CAUSANTE DEL PROBLEMA):
-        $enrollments = Enrollment::where('student_id', $this->student_id)
-            ->where('status', 'Pendiente')
-            ->doesntHave('payment') 
-            ->with('courseSchedule.module.course')
-            ->get();
-
-        foreach ($enrollments as $e) {
-            $this->pendingDebts->push([
-                'type' => 'enrollment',
-                'id' => $e->id,
-                'concept' => 'Inscripción: ' . ($e->courseSchedule->module->course->name ?? 'Curso') . ' - ' . ($e->courseSchedule->module->name ?? ''),
-                'amount' => $e->courseSchedule->module->price ?? 0.00, // <-- Aquí salían los 2,000
-                'date' => $e->created_at,
-                'is_enrollment' => true
-            ]);
-        }
-        */
     }
 
     public function selectDebt($type, $id)
@@ -251,8 +239,6 @@ class PaymentModal extends Component
                 $this->status = 'Completado'; 
             }
         } elseif ($type === 'enrollment') {
-            // Mantenemos la lógica por si se llama desde 'payEnrollment' explícitamente,
-            // pero ya no aparecerá en la lista automática de deudas.
             $enrollment = Enrollment::with('courseSchedule.module')->find($id);
             if ($enrollment) {
                 $this->enrollment_id = $enrollment->id;
@@ -273,6 +259,9 @@ class PaymentModal extends Component
         $this->amount = 0.00;
         $this->gateway = 'Efectivo';
         $this->status = 'Completado';
+        $this->ncfType = 'B02'; // Reset NCF
+        $this->rnc = $this->student->rnc ?? ''; // Reset RNC but keep user's if present
+        $this->companyName = '';
     }
 
     public function updatedPaymentConceptId($value)
@@ -321,19 +310,15 @@ class PaymentModal extends Component
         
         $isNewStudent = !$this->student->student_code;
 
-        // --- CORRECCIÓN: PREVENCIÓN DE DUPLICADOS ---
-        // Verificamos si ya existe un pago para esta misma inscripción y monto creado recientemente.
-        // Esto soluciona el conflicto donde se intenta cobrar dos veces.
+        // Mapeo NCF
+        $ncfDbCode = ($this->ncfType === 'B01') ? '31' : '32';
+
         if (!$this->payment_id_to_update && $this->enrollment_id) {
             $existingPayment = Payment::where('enrollment_id', $this->enrollment_id)
-                ->where('amount', $this->amount) // Verifica si ya se cobró este mismo monto
+                ->where('amount', $this->amount) 
                 ->exists();
-
-            // Opcional: También podrías verificar si ya existe CUALQUIER pago de inscripción
-            // para ese enrollment, independientemente del monto, si eso es lo deseado.
             
             if ($existingPayment) {
-                // Si ya existe, NO creamos uno nuevo. Simplemente cerramos el modal y notificamos.
                 Log::info("Prevención de pago duplicado: Ya existe un pago para enrollment {$this->enrollment_id} de {$this->amount}");
                 $this->closeModal();
                 $this->dispatch('paymentAdded'); 
@@ -343,7 +328,7 @@ class PaymentModal extends Component
         }
 
         try {
-            $payment = DB::transaction(function () use ($matriculaService, $ecfService, $isNewStudent) {
+            $payment = DB::transaction(function () use ($matriculaService, $ecfService, $isNewStudent, $ncfDbCode) {
                 
                 $data = [
                     'payment_concept_id' => $this->payment_concept_id,
@@ -353,6 +338,10 @@ class PaymentModal extends Component
                     'transaction_id' => $this->transaction_id,
                     'enrollment_id' => $this->enrollment_id,
                     'user_id' => Auth::id(),
+                    // Datos Fiscales
+                    'ncf_type' => $ncfDbCode,
+                    'rnc_client' => ($this->ncfType === 'B01') ? $this->rnc : null,
+                    'company_name' => ($this->ncfType === 'B01') ? $this->companyName : null,
                 ];
 
                 $payment = null;
@@ -371,18 +360,12 @@ class PaymentModal extends Component
                     $payment = Payment::create($data);
                 }
                 
-                // Efectos secundarios solo si se COMPLETA
                 if ($payment && $payment->status == 'Completado') {
-                    
-                    // 1. Emitir e-CF (Factura Electrónica)
                     $ecfService->emitirComprobante($payment);
 
-                    // 2. Matrícula (Si es nuevo ingreso)
                     if ($isNewStudent && $payment->paymentConcept && stripos($payment->paymentConcept->name, 'Inscripción') !== false) {
                         $matriculaService->generarMatricula($payment);
                     } else {
-                        // 3. Activar inscripciones (Para pagos recurrentes/mensuales)
-                        // IMPORTANTE: Usamos el servicio centralizado que maneja pagos agrupados (Fase 2)
                         $matriculaService->activarInscripcion($payment);
                     }
                 }
@@ -390,7 +373,6 @@ class PaymentModal extends Component
                 return $payment;
             });
 
-            // LOGICA DE ENVIO DE CORREO
             if ($payment && $this->student && $this->student->email) {
                 if ($payment->status === 'Completado' || $payment->status === 'Pendiente') {
                     try {
@@ -441,12 +423,13 @@ class PaymentModal extends Component
             'payment_id', 'payment_concept_id', 'amount', 'gateway', 'status', 
             'transaction_id', 'enrollment_id', 'payment_id_to_update', 
             'isAmountDisabled', 'isConceptDisabled', 'cash_received', 
-            'change_amount', 'notes'
+            'change_amount', 'notes', 'ncfType', 'rnc', 'companyName'
         ]);
 
         $this->amount = 0.00;
         $this->gateway = 'Efectivo';
         $this->status = 'Completado';
+        $this->ncfType = 'B02';
         $this->resetErrorBag();
     }
 }

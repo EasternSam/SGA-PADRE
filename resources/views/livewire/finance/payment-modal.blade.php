@@ -235,71 +235,101 @@
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                {{-- SECCIÓN C: MÉTODO DE PAGO (SOLO SI ES COBRO INMEDIATO) --}}
-                                <div x-show="$wire.status === 'Completado'" x-transition class="mt-6 pt-6 border-t border-gray-100">
-                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Método de Pago</label>
-                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                                        @foreach(['Efectivo', 'Transferencia', 'Tarjeta', 'Otro'] as $method)
-                                            <button 
-                                                type="button"
-                                                wire:click="$set('gateway', '{{ $method }}')"
-                                                class="group relative flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all {{ $gateway === $method ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50' }}"
-                                            >
-                                                <span class="text-sm font-bold">{{ $method }}</span>
-                                                @if($gateway === $method)
-                                                    <div class="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white rounded-full p-0.5">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3 h-3"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" /></svg>
-                                                    </div>
-                                                @endif
-                                            </button>
-                                        @endforeach
-                                    </div>
+                                    {{-- NUEVA SECCIÓN: Tipo de Comprobante Fiscal --}}
+                                    <div class="md:col-span-2 mt-4 pt-4 border-t border-gray-100">
+                                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Tipo de Comprobante Fiscal</label>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer" wire:click="$set('ncfType', 'B02')">
+                                                <input id="modal_ncf_b02" type="radio" wire:model.live="ncfType" value="B02" class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500 cursor-pointer">
+                                                <label for="modal_ncf_b02" class="ml-3 block text-sm font-medium text-gray-700 cursor-pointer w-full">Consumidor Final (B02)</label>
+                                            </div>
+                                            <div class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer" wire:click="$set('ncfType', 'B01')">
+                                                <input id="modal_ncf_b01" type="radio" wire:model.live="ncfType" value="B01" class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500 cursor-pointer">
+                                                <label for="modal_ncf_b01" class="ml-3 block text-sm font-medium text-gray-700 cursor-pointer w-full">Crédito Fiscal (B01)</label>
+                                            </div>
+                                        </div>
 
-                                    {{-- Panel Dinámico (Cambio, Referencia o Cardnet) --}}
-                                    <div class="bg-gray-50 rounded-xl p-5 border border-gray-200 shadow-inner">
-                                        
-                                        {{-- 1. Efectivo --}}
-                                        <div x-show="$wire.gateway === 'Efectivo'" class="flex flex-col sm:flex-row gap-6 items-center">
-                                            <div class="w-full sm:w-1/2">
-                                                <label class="block text-xs font-bold text-gray-500 mb-1">Dinero Recibido</label>
-                                                <div class="relative">
-                                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
-                                                    <input type="number" wire:model.live="cash_received" class="w-full pl-6 pr-3 py-2.5 border border-gray-300 rounded-lg text-lg font-bold text-gray-900 focus:ring-green-500 focus:border-green-500" placeholder="0.00">
+                                        {{-- Campos extra para Crédito Fiscal --}}
+                                        @if($ncfType === 'B01')
+                                            <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in-up bg-indigo-50 p-4 rounded-lg border border-indigo-100">
+                                                <div>
+                                                    <label for="modal_rnc" class="block text-xs font-bold text-gray-700 uppercase mb-1">RNC / Cédula *</label>
+                                                    <input type="text" wire:model="rnc" id="modal_rnc" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3" placeholder="101123456">
+                                                    @error('rnc') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                                                </div>
+                                                <div>
+                                                    <label for="modal_companyName" class="block text-xs font-bold text-gray-700 uppercase mb-1">Razón Social *</label>
+                                                    <input type="text" wire:model="companyName" id="modal_companyName" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3" placeholder="Nombre de la empresa">
+                                                    @error('companyName') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                                                 </div>
                                             </div>
-                                            <div class="w-full sm:w-1/2 bg-white rounded-lg p-3 border border-gray-200 text-center shadow-sm">
-                                                <span class="block text-xs font-bold text-gray-400 uppercase tracking-wider">Devuelta</span>
-                                                <span class="block text-2xl font-black {{ $change_amount < 0 ? 'text-red-500' : 'text-emerald-600' }}">
-                                                    ${{ number_format($change_amount, 2) }}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {{-- 2. Tarjeta (Cardnet) --}}
-                                        <div x-show="$wire.gateway === 'Tarjeta'">
-                                            {{-- CONTENEDOR PARA EL IFRAME DE CARDNET --}}
-                                            <div id="cardnet-container" class="w-full min-h-[300px] bg-white rounded-lg border border-gray-300 flex items-center justify-center">
-                                                <span class="text-gray-400 text-sm">El formulario de pago seguro cargará aquí...</span>
-                                            </div>
-                                            
-                                            {{-- FORMULARIO OCULTO PARA CARDNET --}}
-                                            <form id="cardnet-form" style="display: none;">
-                                                <input type="hidden" name="PWToken" id="PWToken" />
-                                            </form>
-                                        </div>
-
-                                        {{-- 3. Otros Métodos --}}
-                                        <div x-show="$wire.gateway !== 'Efectivo' && $wire.gateway !== 'Tarjeta'">
-                                            <label class="block text-xs font-bold text-gray-500 mb-1">Referencia / No. Autorización</label>
-                                            <input type="text" wire:model="transaction_id" class="w-full border border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 py-2.5 px-3 shadow-sm" placeholder="Ej: REF-12345678">
-                                            @error('transaction_id') <p class="mt-1 text-xs text-red-500 font-bold">{{ $message }}</p> @enderror
-                                        </div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
 
+                            {{-- SECCIÓN C: MÉTODO DE PAGO (SOLO SI ES COBRO INMEDIATO) --}}
+                            <div x-show="$wire.status === 'Completado'" x-transition class="mt-6 pt-6 border-t border-gray-100">
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Método de Pago</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                                    @foreach(['Efectivo', 'Transferencia', 'Tarjeta', 'Otro'] as $method)
+                                        <button 
+                                            type="button"
+                                            wire:click="$set('gateway', '{{ $method }}')"
+                                            class="group relative flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all {{ $gateway === $method ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50' }}"
+                                        >
+                                            <span class="text-sm font-bold">{{ $method }}</span>
+                                            @if($gateway === $method)
+                                                <div class="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white rounded-full p-0.5">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3 h-3"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" /></svg>
+                                                </div>
+                                            @endif
+                                        </button>
+                                    @endforeach
+                                </div>
+
+                                {{-- Panel Dinámico (Cambio, Referencia o Cardnet) --}}
+                                <div class="bg-gray-50 rounded-xl p-5 border border-gray-200 shadow-inner">
+                                    
+                                    {{-- 1. Efectivo --}}
+                                    <div x-show="$wire.gateway === 'Efectivo'" class="flex flex-col sm:flex-row gap-6 items-center">
+                                        <div class="w-full sm:w-1/2">
+                                            <label class="block text-xs font-bold text-gray-500 mb-1">Dinero Recibido</label>
+                                            <div class="relative">
+                                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                                                <input type="number" wire:model.live="cash_received" class="w-full pl-6 pr-3 py-2.5 border border-gray-300 rounded-lg text-lg font-bold text-gray-900 focus:ring-green-500 focus:border-green-500" placeholder="0.00">
+                                            </div>
+                                        </div>
+                                        <div class="w-full sm:w-1/2 bg-white rounded-lg p-3 border border-gray-200 text-center shadow-sm">
+                                            <span class="block text-xs font-bold text-gray-400 uppercase tracking-wider">Devuelta</span>
+                                            <span class="block text-2xl font-black {{ $change_amount < 0 ? 'text-red-500' : 'text-emerald-600' }}">
+                                                ${{ number_format($change_amount, 2) }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {{-- 2. Tarjeta (Cardnet) --}}
+                                    <div x-show="$wire.gateway === 'Tarjeta'">
+                                        {{-- CONTENEDOR PARA EL IFRAME DE CARDNET --}}
+                                        <div id="cardnet-container" class="w-full min-h-[300px] bg-white rounded-lg border border-gray-300 flex items-center justify-center">
+                                            <span class="text-gray-400 text-sm">El formulario de pago seguro cargará aquí...</span>
+                                        </div>
+                                        
+                                        {{-- FORMULARIO OCULTO PARA CARDNET --}}
+                                        <form id="cardnet-form" style="display: none;">
+                                            <input type="hidden" name="PWToken" id="PWToken" />
+                                        </form>
+                                    </div>
+
+                                    {{-- 3. Otros Métodos --}}
+                                    <div x-show="$wire.gateway !== 'Efectivo' && $wire.gateway !== 'Tarjeta'">
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">Referencia / No. Autorización</label>
+                                        <input type="text" wire:model="transaction_id" class="w-full border border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 py-2.5 px-3 shadow-sm" placeholder="Ej: REF-12345678">
+                                        @error('transaction_id') <p class="mt-1 text-xs text-red-500 font-bold">{{ $message }}</p> @enderror
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         {{-- FOOTER (Sticky Bottom) --}}
