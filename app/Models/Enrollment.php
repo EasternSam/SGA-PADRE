@@ -9,11 +9,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Models\Attendance;
 use App\Models\Payment;
-use App\Traits\RecordsActivity; // <-- IMPORTANTE
+use App\Traits\RecordsActivity; // <-- Importar el Trait de Auditoría
 
 class Enrollment extends Model
 {
-    use HasFactory, RecordsActivity; // <-- ACTIVAR AUDITORÍA
+    use HasFactory, RecordsActivity; // <-- Activar Auditoría Automática
 
     /**
      * The attributes that are mass assignable.
@@ -27,6 +27,26 @@ class Enrollment extends Model
         'status', // Ej. Pendiente, Cursando, Completado
         'final_grade',
     ];
+
+    /**
+     * Método "booted" para lógica automática del modelo.
+     */
+    protected static function booted()
+    {
+        static::deleting(function ($enrollment) {
+            // --- SOLUCIÓN AL PROBLEMA DE DEUDA HUÉRFANA ---
+            // Antes de eliminar la inscripción, buscamos pagos PENDIENTES vinculados a ella
+            // y los eliminamos. Como Payment también tiene el Trait RecordsActivity,
+            // esto dejará un log: "Sistema eliminó registro en Payment: Monto..."
+            
+            Payment::where('enrollment_id', $enrollment->id)
+                ->whereIn('status', ['Pendiente', 'pendiente']) // Solo borrar si no se ha pagado
+                ->get()
+                ->each(function ($payment) {
+                    $payment->delete(); 
+                });
+        });
+    }
 
     /**
      * Define la relación con el estudiante.
@@ -59,5 +79,13 @@ class Enrollment extends Model
     public function payment(): BelongsTo
     {
         return $this->belongsTo(Payment::class);
+    }
+
+    /**
+     * Relación inversa para pagos individuales que apuntan a este enrollment.
+     */
+    public function individualPayments(): HasMany
+    {
+        return $this->hasMany(Payment::class, 'enrollment_id');
     }
 }
