@@ -9,10 +9,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Models\Attendance;
 use App\Models\Payment;
+use App\Traits\RecordsActivity; // <-- IMPORTANTE
 
 class Enrollment extends Model
 {
-    use HasFactory;
+    use HasFactory, RecordsActivity; // <-- ACTIVAR AUDITORÍA
 
     /**
      * The attributes that are mass assignable.

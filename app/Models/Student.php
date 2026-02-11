@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\RecordsActivity; // <-- IMPORTANTE
 
 class Student extends Model
 {
-    use HasFactory;
+    use HasFactory, RecordsActivity; // <-- ACTIVAR AUDITORÍA
 
     /**
      * The attributes that are mass assignable.
@@ -33,6 +34,7 @@ class Student extends Model
         'how_found', // Fuente de captación
         'status', // Activo, Inactivo, etc.
         'balance', // Balance financiero
+        'rnc', // RNC para comprobantes fiscales
         
         // Campos de Tutor (para menores de edad)
         'is_minor',

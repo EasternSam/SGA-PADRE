@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\RecordsActivity; // <-- IMPORTANTE
 
 class Payment extends Model
 {
-    use HasFactory;
+    use HasFactory, RecordsActivity; // <-- ACTIVAR AUDITORÍA
 
     protected $fillable = [
         'student_id',
