@@ -119,7 +119,12 @@
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset {{ $payment->status === 'Completado' ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20' : ($payment->status === 'Pendiente' ? 'bg-amber-50 text-amber-700 ring-amber-600/20' : 'bg-red-50 text-red-700 ring-red-600/20') }}">{{ $payment->status }}</span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-900">RD$ {{ number_format($payment->amount, 2) }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">@if($payment->status === 'Completado')<button wire:click="$dispatch('printTicket', { url: '{{ route('finance.ticket', $payment->id) }}' })" class="text-indigo-600 hover:text-indigo-900">Ver Recibo</button>@endif</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        @if($payment->status === 'Completado')
+                                            {{-- MODIFICADO: Usar @click directo de AlpineJS para abrir el popup --}}
+                                            <button @click="window.open('{{ route('finance.ticket', $payment->id) }}', 'Ticket', 'width=400,height=600').focus()" class="text-indigo-600 hover:text-indigo-900 cursor-pointer">Ver Recibo</button>
+                                        @endif
+                                    </td>
                                 </tr>
                             @empty
                                 <tr><td colspan="6" class="px-6 py-12 text-center text-gray-500 text-sm">No hay transacciones registradas.</td></tr>
@@ -252,12 +257,25 @@
 
     <script>
         document.addEventListener('livewire:init', () => {
-            Livewire.on('printTicket', event => { if(event.url) window.open(event.url, 'Ticket', 'width=400,height=600').focus(); });
+            // Este listener original se mantiene por compatibilidad si el backend lo dispara en otros casos,
+            // pero el botón de la tabla ahora usa AlpineJS directamente.
+            Livewire.on('printTicket', event => { 
+                // Fix para manejo flexible del evento (objeto o detalle)
+                const data = event[0] || event; 
+                if(data.url) window.open(data.url, 'Ticket', 'width=400,height=600').focus(); 
+            });
             
             Livewire.on('submit-cardnet-form', event => {
-                const data = event.data;
+                // Fix para Livewire 3 events structure
+                const data = event.data || (Array.isArray(event) ? event[0].data : null); 
+                
+                if(!data) {
+                    console.error('Datos de Cardnet inválidos:', event);
+                    return alert('Error de configuración en pasarela.');
+                }
+
                 const form = document.getElementById('cardnet-form');
-                if(!data || !data.url) return alert('Error de configuración en pasarela.');
+                if(!data.url) return alert('Error de configuración en pasarela (URL).');
                 
                 form.action = data.url;
                 form.innerHTML = '';
@@ -272,7 +290,9 @@
             });
 
             Livewire.on('open-pdf-modal', (event) => {
-                window.open(event.url, '_blank');
+                // Fix para Livewire 3 events structure
+                const url = event.url || (event[0] ? event[0].url : null) || (event.detail ? event.detail.url : null);
+                if (url) window.open(url, '_blank');
             });
         });
     </script>
