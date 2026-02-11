@@ -236,6 +236,14 @@
                         </svg>
                         <span>{{ __('Probar Correos') }}</span>
                     </x-responsive-nav-link>
+
+                    {{-- NUEVO: REGISTRO DE ACTIVIDAD --}}
+                    <x-responsive-nav-link :href="route('admin.activity-logs.index')" :active="request()->routeIs('admin.activity-logs.index')" wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm11.378-3.917c-.89-.777-2.366-.777-3.255 0a.75.75 0 0 1-.988-1.129c1.454-1.272 3.776-1.272 5.23 0 1.539 1.345 1.539 3.535 0 4.881L10.3 16.912a.75.75 0 0 1-1.133-.976l4.312-5.042c.835-.976.835-2.564 0-3.54Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Registro de Actividad') }}</span>
+                    </x-responsive-nav-link>
                 @endrole
 
             </div>

@@ -460,6 +460,9 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     Route::get('/email-tester', EmailTester::class)->name('admin.email-tester');
 
     Route::get('/users', \App\Livewire\Admin\Users\Index::class)->name('admin.users.index');
+    
+    // --- RUTA NUEVA: REGISTRO DE ACTIVIDADES ---
+    Route::get('/activity-logs', \App\Livewire\Admin\ActivityLogs\Index::class)->name('admin.activity-logs.index');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
 });
