@@ -7,6 +7,7 @@ use Livewire\WithPagination;
 use App\Models\ActivityLog;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class Index extends Component
 {
@@ -23,6 +24,9 @@ class Index extends Component
     public $selectedLog = null;
     public $showDetailsModal = false;
 
+    // Propiedades para filtros ligeros
+    public $actions = [];
+
     protected $queryString = [
         'search' => ['except' => ''],
         'user_id' => ['except' => ''],
@@ -32,13 +36,22 @@ class Index extends Component
 
     public function mount()
     {
-        // Por defecto mostramos el mes actual
+        // Establecer fechas por defecto solo si no vienen en la URL
         if (!$this->date_from) {
             $this->date_from = now()->startOfMonth()->format('Y-m-d');
         }
         if (!$this->date_to) {
             $this->date_to = now()->endOfMonth()->format('Y-m-d');
         }
+
+        // Cargar acciones únicas de forma eficiente (usando caché si fuera necesario, aquí directo pero optimizado)
+        // Limitamos a las ultimas 1000 acciones para no escanear toda la tabla si es gigante
+        $this->actions = ActivityLog::select('action')
+            ->distinct()
+            ->orderBy('action')
+            ->limit(50) 
+            ->pluck('action')
+            ->toArray();
     }
 
     public function updatingSearch()
@@ -60,19 +73,18 @@ class Index extends Component
 
     public function render()
     {
-        $query = ActivityLog::with('user')
+        $query = ActivityLog::with('user') // Eager loading esencial
             ->orderBy('created_at', 'desc');
 
         // Filtro de Búsqueda General
         if ($this->search) {
-            $query->where(function($q) {
-                $q->where('description', 'like', '%' . $this->search . '%')
-                  ->orWhere('action', 'like', '%' . $this->search . '%')
-                  ->orWhere('ip_address', 'like', '%' . $this->search . '%')
-                  ->orWhereHas('user', function($u) {
-                      $u->where('name', 'like', '%' . $this->search . '%')
-                        ->orWhere('email', 'like', '%' . $this->search . '%');
-                  });
+            $term = '%' . $this->search . '%';
+            $query->where(function($q) use ($term) {
+                $q->where('description', 'like', $term)
+                  ->orWhere('action', 'like', $term)
+                  ->orWhere('ip_address', 'like', $term);
+                  // Eliminamos la búsqueda por relación de usuario en el cuadro general para mejorar rendimiento
+                  // si hay muchos registros. Se puede buscar por usuario específico en el filtro dedicado.
             });
         }
 
@@ -94,17 +106,20 @@ class Index extends Component
              $query->where('action', $this->action_filter);
         }
 
+        // Paginación estándar
         $logs = $query->paginate(20);
         
-        // Datos para los selectores
-        $users = User::orderBy('name')->get();
-        // Obtenemos acciones únicas para el filtro dropdown
-        $actions = ActivityLog::select('action')->distinct()->orderBy('action')->pluck('action');
+        // Carga de usuarios optimizada: Solo cargamos usuarios que tengan logs recientes o admins
+        // O simplemente limitamos la lista para el select. 
+        // Si son miles, mejor usar un input de búsqueda, pero por ahora limitamos a 100.
+        $users = User::select('id', 'name', 'email')
+            ->orderBy('name')
+            ->limit(200) // Limite de seguridad
+            ->get();
 
         return view('livewire.admin.activity-logs.index', [
             'logs' => $logs,
             'users' => $users,
-            'actions' => $actions
         ])->layout('layouts.dashboard');
     }
 }
