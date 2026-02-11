@@ -15,16 +15,17 @@ class Index extends Component
 
     // Filtros
     public $search = '';
-    public $user_id = '';
+    public $user_id = ''; // Filtro por usuario específico (dropdown)
     public $date_from = '';
     public $date_to = '';
-    public $action_filter = '';
+    
+    // Eliminamos action_filter temporalmente si no se va a usar
 
     // Modal de Detalles
     public $selectedLog = null;
     public $showDetailsModal = false;
 
-    // Propiedades para filtros ligeros
+    // Propiedades para filtros
     public $actions = [];
 
     protected $queryString = [
@@ -44,14 +45,7 @@ class Index extends Component
             $this->date_to = now()->endOfMonth()->format('Y-m-d');
         }
 
-        // Cargar acciones únicas de forma eficiente (usando caché si fuera necesario, aquí directo pero optimizado)
-        // Limitamos a las ultimas 1000 acciones para no escanear toda la tabla si es gigante
-        $this->actions = ActivityLog::select('action')
-            ->distinct()
-            ->orderBy('action')
-            ->limit(50) 
-            ->pluck('action')
-            ->toArray();
+        $this->actions = []; 
     }
 
     public function updatingSearch()
@@ -73,27 +67,36 @@ class Index extends Component
 
     public function render()
     {
-        $query = ActivityLog::with('user') // Eager loading esencial
+        $query = ActivityLog::with('user')
             ->orderBy('created_at', 'desc');
 
-        // Filtro de Búsqueda General
+        // 1. Filtro de Búsqueda Inteligente
+        // Permite buscar por texto general O datos de estudiante (Matrícula/Cédula)
         if ($this->search) {
-            $term = '%' . $this->search . '%';
+            $term = $this->search;
             $query->where(function($q) use ($term) {
-                $q->where('description', 'like', $term)
-                  ->orWhere('action', 'like', $term)
-                  ->orWhere('ip_address', 'like', $term);
-                  // Eliminamos la búsqueda por relación de usuario en el cuadro general para mejorar rendimiento
-                  // si hay muchos registros. Se puede buscar por usuario específico en el filtro dedicado.
+                $q->where('description', 'like', '%'.$term.'%')
+                  ->orWhere('action', 'like', '%'.$term.'%')
+                  ->orWhere('ip_address', 'like', '%'.$term.'%')
+                  // Busca en el usuario (Nombre/Email)
+                  ->orWhereHas('user', function($u) use ($term) {
+                      $u->where('name', 'like', '%'.$term.'%')
+                        ->orWhere('email', 'like', '%'.$term.'%')
+                        // Y si es estudiante, busca por sus datos específicos
+                        ->orWhereHas('student', function($s) use ($term) {
+                             $s->where('student_code', 'like', '%'.$term.'%')
+                               ->orWhere('cedula', 'like', '%'.$term.'%');
+                        });
+                  });
             });
         }
 
-        // Filtro por Usuario
+        // 2. Filtro de Dropdown de Usuario (Solo Admin/Staff)
         if ($this->user_id) {
             $query->where('user_id', $this->user_id);
         }
 
-        // Filtro por Rango de Fechas
+        // 3. Filtro de Fechas
         if ($this->date_from) {
             $query->whereDate('created_at', '>=', $this->date_from);
         }
@@ -101,25 +104,22 @@ class Index extends Component
             $query->whereDate('created_at', '<=', $this->date_to);
         }
         
-        // Filtro por Tipo de Acción
-        if ($this->action_filter) {
-             $query->where('action', $this->action_filter);
-        }
-
-        // Paginación estándar
         $logs = $query->paginate(20);
         
-        // Carga de usuarios optimizada: Solo cargamos usuarios que tengan logs recientes o admins
-        // O simplemente limitamos la lista para el select. 
-        // Si son miles, mejor usar un input de búsqueda, pero por ahora limitamos a 100.
-        $users = User::select('id', 'name', 'email')
+        // --- LOGICA DEL DROPDOWN FILTRADO ---
+        // Cargamos SOLO usuarios que NO sean estudiantes ni solicitantes.
+        // Esto reduce la lista de miles a solo los administrativos/docentes (quizás 20-50 personas).
+        $users = User::whereDoesntHave('roles', function ($q) {
+                $q->whereIn('name', ['Estudiante', 'Solicitante']);
+            })
             ->orderBy('name')
-            ->limit(200) // Limite de seguridad
+            ->select('id', 'name')
             ->get();
 
         return view('livewire.admin.activity-logs.index', [
             'logs' => $logs,
-            'users' => $users,
+            'users' => $users, 
+            'actions' => [],
         ])->layout('layouts.dashboard');
     }
 }
