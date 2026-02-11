@@ -348,7 +348,7 @@ class Index extends Component
         return array_unique($result);
     }
 
-    // --- REPORTE FINANCIERO (CORREGIDO Y ROBUSTO) ---
+    // --- REPORTE FINANCIERO (CORREGIDO PARA USAR LÓGICA DE RECIBOS) ---
     public function generatePaymentsReport()
     {
         // 1. Base Query: Empezamos desde las Matrículas
@@ -372,7 +372,7 @@ class Index extends Component
                 // Sumamos pagos confirmados
                 DB::raw("SUM(CASE WHEN LOWER(payments.status) IN ('paid', 'pagado', 'completado', 'succeeded', 'aprobado') THEN payments.amount ELSE 0 END) as total_paid"),
                 
-                // Sumamos pagos pendientes
+                // Sumamos pagos pendientes (USAMOS LA MISMA LÓGICA DEL PERFIL: RECIBOS PENDIENTES)
                 DB::raw("SUM(CASE WHEN LOWER(payments.status) IN ('pending', 'pendiente', 'created') THEN payments.amount ELSE 0 END) as raw_pending_sum")
             );
 
@@ -409,14 +409,14 @@ class Index extends Component
         // 5. Post-procesamiento LÓGICO
         $financials = $financials->map(function ($item) {
             $paid = (float) $item->total_paid;
-            $modulePrice = (float) $item->module_price;
             
-            // Costo Total = Precio del Módulo
-            $item->total_cost = $modulePrice;
-
-            if ($paid > $item->total_cost) {
-                $item->total_cost = $paid;
-            }
+            // LÓGICA DE RECIBOS: La deuda es exactamente lo que suman los recibos pendientes
+            $item->total_cost = $paid + (float) $item->raw_pending_sum; 
+            
+            // Si no hay recibos pendientes, el costo total visualizado es igual a lo pagado,
+            // para que el balance sea 0 y coincida con el perfil.
+            // Si hay recibos pendientes, el costo total será lo pagado + deuda,
+            // y el balance resultante será la deuda exacta.
             
             return $item;
         });
@@ -428,7 +428,7 @@ class Index extends Component
                 $cost = (float) $item->total_cost;
                 $balance = round($cost - $paid, 2);
 
-                if ($this->payment_status == 'paid') return $balance <= 0 && $paid > 0; 
+                if ($this->payment_status == 'paid') return $balance <= 0; 
                 if ($this->payment_status == 'pending') return $balance > 0; 
                 return true;
             });
