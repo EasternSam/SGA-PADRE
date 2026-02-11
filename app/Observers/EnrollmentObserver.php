@@ -4,8 +4,10 @@ namespace App\Observers;
 
 use App\Models\Enrollment;
 use App\Models\User;
+use App\Models\ActivityLog; // Importante para registrar
 use App\Notifications\SystemNotification;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Log;
 
 class EnrollmentObserver
 {
@@ -14,49 +16,85 @@ class EnrollmentObserver
      */
     public function created(Enrollment $enrollment)
     {
-        // Determinar origen (suponiendo que si no hay 'causer' en ActivityLog fue Web, 
-        // o usando lógica personalizada si tienes un campo 'origin' en enrollment)
-        // Por simplicidad, asumiremos que si el usuario logueado es Admin, es Sistema.
-        // Si no hay usuario logueado (API), es Web.
-        
         $source = auth()->check() ? 'Sistema' : 'Página Web';
-        $type = auth()->check() ? 'info' : 'success'; // Verde para Web (dinero!), Azul para Sistema
+        $type = auth()->check() ? 'info' : 'success';
         
         $studentName = $enrollment->student->full_name ?? 'Estudiante';
         $courseName = $enrollment->courseSchedule->module->course->name ?? 'Curso';
+        $sectionName = $enrollment->courseSchedule->section_name ?? 'Sección';
 
+        // 1. Notificación al Admin (Existente)
         $admins = User::role('Admin')->get();
-
         Notification::send($admins, new SystemNotification(
             "Nueva Inscripción ($source)",
             "$studentName se ha inscrito en $courseName.",
             $type,
             route('admin.students.profile', $enrollment->student_id)
         ));
+
+        // 2. REGISTRO DE ACTIVIDAD (NUEVO)
+        try {
+            ActivityLog::create([
+                'user_id' => auth()->id(), // Puede ser null si es registro público
+                'action' => 'Inscripción',
+                'description' => "Se inscribió al estudiante $studentName en $courseName - $sectionName.",
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'payload' => json_encode([
+                    'student_id' => $enrollment->student_id,
+                    'schedule_id' => $enrollment->course_schedule_id,
+                    'status' => $enrollment->status
+                ]),
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error registrando log de inscripción: " . $e->getMessage());
+        }
     }
 
     /**
      * Handle the Enrollment "updating" event.
-     * Se ejecuta ANTES de guardar los cambios en la base de datos.
      */
     public function updating(Enrollment $enrollment)
     {
-        // Detectar si la calificación final ha cambiado
-        if ($enrollment->isDirty('final_grade')) {
+        // Detectar cambios importantes para el log
+        if ($enrollment->isDirty('status')) {
+            $oldStatus = $enrollment->getOriginal('status');
+            $newStatus = $enrollment->status;
             
-            // Caso 1: Se asignó una nota (y no es nula)
+            try {
+                ActivityLog::create([
+                    'user_id' => auth()->id(),
+                    'action' => 'Estado Inscripción',
+                    'description' => "Cambio de estado de inscripción para {$enrollment->student->full_name}: $oldStatus -> $newStatus",
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent(),
+                ]);
+            } catch (\Exception $e) {}
+        }
+
+        // Lógica de calificación (Existente)
+        if ($enrollment->isDirty('final_grade')) {
             if (!is_null($enrollment->final_grade)) {
-                // Verificar si ya está en un estado final para evitar sobrescribir estados especiales si los hubiera,
-                // pero según tu requerimiento, al tener nota debe estar "Completado".
-                // Puedes ajustar 'Completado' por 'Aprobado'/'Reprobado' si tienes la lógica de nota mínima.
-                
                 $enrollment->status = 'Completado';
-            } 
-            // Caso 2: Se eliminó la nota (se puso en null/vacío)
-            // Es buena práctica revertir el estado a 'Cursando' si el profesor borra la nota por error.
-            elseif (is_null($enrollment->final_grade)) {
+            } elseif (is_null($enrollment->final_grade)) {
                 $enrollment->status = 'Cursando';
             }
         }
+    }
+    
+    /**
+     * Handle the Enrollment "deleted" event.
+     */
+    public function deleted(Enrollment $enrollment)
+    {
+        try {
+            ActivityLog::create([
+                'user_id' => auth()->id(),
+                'action' => 'Anulación',
+                'description' => "Se eliminó/anuló la inscripción de {$enrollment->student->full_name} en " . ($enrollment->courseSchedule->module->name ?? 'Módulo'),
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        } catch (\Exception $e) {}
     }
 }

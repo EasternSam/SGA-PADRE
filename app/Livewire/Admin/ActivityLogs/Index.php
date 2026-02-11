@@ -19,8 +19,6 @@ class Index extends Component
     public $date_from = '';
     public $date_to = '';
     
-    // Eliminamos action_filter temporalmente si no se va a usar
-
     // Modal de Detalles
     public $selectedLog = null;
     public $showDetailsModal = false;
@@ -37,7 +35,6 @@ class Index extends Component
 
     public function mount()
     {
-        // Establecer fechas por defecto solo si no vienen en la URL
         if (!$this->date_from) {
             $this->date_from = now()->startOfMonth()->format('Y-m-d');
         }
@@ -70,28 +67,37 @@ class Index extends Component
         $query = ActivityLog::with('user')
             ->orderBy('created_at', 'desc');
 
-        // 1. Filtro de Búsqueda Inteligente
-        // Permite buscar por texto general O datos de estudiante (Matrícula/Cédula)
+        // 1. Filtro de Búsqueda ESTRICTO
         if ($this->search) {
             $term = $this->search;
             $query->where(function($q) use ($term) {
+                // Búsqueda general en la descripción o acción del log
                 $q->where('description', 'like', '%'.$term.'%')
                   ->orWhere('action', 'like', '%'.$term.'%')
                   ->orWhere('ip_address', 'like', '%'.$term.'%')
-                  // Busca en el usuario (Nombre/Email)
+                  
+                  // Búsqueda en Usuarios (ADMINISTRATIVOS) por nombre o email
                   ->orWhereHas('user', function($u) use ($term) {
-                      $u->where('name', 'like', '%'.$term.'%')
-                        ->orWhere('email', 'like', '%'.$term.'%')
-                        // Y si es estudiante, busca por sus datos específicos
-                        ->orWhereHas('student', function($s) use ($term) {
-                             $s->where('student_code', 'like', '%'.$term.'%')
-                               ->orWhere('cedula', 'like', '%'.$term.'%');
-                        });
+                      $u->where(function($qu) use ($term) {
+                          $qu->where('name', 'like', '%'.$term.'%')
+                             ->orWhere('email', 'like', '%'.$term.'%');
+                      })
+                      // IMPORTANTE: Excluir estudiantes de la búsqueda por nombre parcial
+                      // para evitar ruido, a menos que sea una búsqueda exacta.
+                      ->whereDoesntHave('roles', function ($r) {
+                          $r->where('name', 'Estudiante');
+                      });
+                  })
+                  
+                  // Búsqueda de ESTUDIANTES solo por Cédula o Matrícula
+                  ->orWhereHas('user.student', function($s) use ($term) {
+                       $s->where('student_code', 'like', $term.'%') // Matricula (Empieza con...)
+                         ->orWhere('cedula', 'like', $term.'%'); // Cedula (Empieza con...)
                   });
             });
         }
 
-        // 2. Filtro de Dropdown de Usuario (Solo Admin/Staff)
+        // 2. Filtro de Dropdown de Usuario
         if ($this->user_id) {
             $query->where('user_id', $this->user_id);
         }
@@ -106,9 +112,8 @@ class Index extends Component
         
         $logs = $query->paginate(20);
         
-        // --- LOGICA DEL DROPDOWN FILTRADO ---
-        // Cargamos SOLO usuarios que NO sean estudiantes ni solicitantes.
-        // Esto reduce la lista de miles a solo los administrativos/docentes (quizás 20-50 personas).
+        // --- LOGICA DE USUARIOS (Solo Personal Administrativo/Docente) ---
+        // Excluimos explícitamente Estudiantes y Solicitantes para que la lista no sea gigante.
         $users = User::whereDoesntHave('roles', function ($q) {
                 $q->whereIn('name', ['Estudiante', 'Solicitante']);
             })

@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\PaymentConcept; 
+use App\Models\ActivityLog; // Importado
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
@@ -336,6 +337,9 @@ class Index extends Component
                 ]);
             });
 
+            // LOGICA DE LOG (Ahora redundante con el observer, pero útil para debug)
+            // El Observer se encargará.
+
             session()->flash('message', 'Inscripción creada exitosamente. Se generó el cargo de inscripción.');
             $this->dispatch('close-modal', 'enroll-student-modal');
             $this->refreshData(); 
@@ -359,6 +363,15 @@ class Index extends Component
                 $enrollment = Enrollment::with('payment')->find($this->enrollmentToCancelId);
                 
                 if ($enrollment && $enrollment->student_id == $this->student->id) {
+                    // Log Antes de eliminar (si el observer de delete falla o son soft deletes)
+                    ActivityLog::create([
+                        'user_id' => Auth::id(),
+                        'action' => 'Anulación Manual',
+                        'description' => "Usuario anuló inscripción de {$this->student->full_name} ID #{$enrollment->id}",
+                        'ip_address' => request()->ip(),
+                        'user_agent' => request()->userAgent()
+                    ]);
+
                     if ($enrollment->payment && $enrollment->payment->status == 'Pendiente') {
                         $enrollment->payment->delete();
                     }
@@ -702,6 +715,15 @@ class Index extends Component
 
                     $this->user->update($userData);
                 }
+
+                // NUEVO LOG DE ACTUALIZACIÓN
+                ActivityLog::create([
+                    'user_id' => Auth::id(),
+                    'action' => 'Actualización Perfil',
+                    'description' => "Se actualizaron los datos del estudiante {$this->student->full_name}",
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent()
+                ]);
             }); 
 
             session()->flash('message', 'Estudiante actualizado exitosamente.');
