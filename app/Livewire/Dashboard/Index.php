@@ -138,10 +138,11 @@ class Index extends Component
         if (class_exists(ActivityLog::class)) {
             // Cache corto para actividades (1 min) o versión
             $this->recentActivities = Cache::remember('dashboard_recent_activities', 60, function() {
-                 return ActivityLog::with('causer:id,name') 
+                 return ActivityLog::with('user:id,name') // CORREGIDO: user en lugar de causer
                     ->latest()
                     ->take(5)
-                    ->get(['id', 'description', 'causer_id', 'created_at', 'properties']);
+                    // CORREGIDO: solicitamos las columnas de nuestra nueva tabla de auditoría
+                    ->get(['id', 'description', 'user_id', 'created_at', 'action', 'payload']);
             });
         }
     }
