@@ -16,7 +16,10 @@
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
 
-    <!-- Scripts -->
+    <!-- Tailwind CDN (En vivo) para renderizar clases no compiladas -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Scripts locales (Vite) -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <!-- Livewire Styles -->
