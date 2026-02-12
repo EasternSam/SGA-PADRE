@@ -20,7 +20,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Scripts locales (Vite) - DESACTIVADOS PARA PROBAR SOLO EL CDN -->
-    {{ @vite(['resources/css/app.css', 'resources/js/app.js']) }}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <!-- Livewire Styles -->
     @livewireStyles
