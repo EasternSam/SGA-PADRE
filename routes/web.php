@@ -76,8 +76,55 @@ use App\Livewire\Admin\Settings\Index as SystemSettingsIndex;
 */
 
 // ==============================================================================
+// RUTA DE DIAGNÓSTICO TOTAL (VITAL PARA DEBUG)
+// Entra aquí para ver exactamente qué responde el maestro
+// ==============================================================================
+Route::get('/system/debug-license', function () {
+    $licenseKey = env('APP_LICENSE_KEY');
+    $domain = request()->getHost();
+    $masterUrl = rtrim(env('SAAS_MASTER_URL', 'https://gestion.90s.agency'), '/');
+
+    try {
+        $startTime = microtime(true);
+        // Intentamos conectar con un timeout más generoso para ver si es lentitud
+        $response = Http::withoutVerifying()
+            ->timeout(20) 
+            ->post("{$masterUrl}/api/v1/validate-license", [
+                'license_key' => $licenseKey,
+                'domain'      => $domain,
+            ]);
+        $duration = microtime(true) - $startTime;
+        
+        return response()->json([
+            'TITULO' => 'DIAGNÓSTICO DE CONEXIÓN SAAS',
+            '1. Configuración Local' => [
+                'License Key' => $licenseKey,
+                'Domain Detectado' => $domain,
+                'Master URL' => $masterUrl,
+            ],
+            '2. Respuesta del Maestro' => [
+                'HTTP Status' => $response->status(),
+                'Es Exitosa (bool)' => $response->successful(),
+                'Body JSON' => $response->json(),
+            ],
+            '3. Rendimiento' => [
+                'Tiempo de respuesta' => round($duration, 2) . ' segundos',
+            ],
+            '4. Conclusión' => ($response->successful() && $response->json('status') === 'success') 
+                ? 'EL MAESTRO DICE QUE ESTÁ ACTIVO (Revisa DB del Maestro)' 
+                : 'EL MAESTRO DICE QUE ESTÁ SUSPENDIDO (Debería bloquearse)'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'ERROR CRÍTICO' => 'Falló la conexión con el maestro',
+            'Mensaje' => $e->getMessage(),
+            'Conclusión' => 'El sistema está activo porque el "Modo a prueba de fallos" permite el acceso cuando hay error de conexión.'
+        ], 500);
+    }
+});
+
+// ==============================================================================
 // RUTA DE UTILIDAD: FORZAR RE-VERIFICACIÓN DE LICENCIA
-// Úsala cuando cambies el estado en el panel maestro y quieras ver el efecto inmediato.
 // ==============================================================================
 Route::get('/system/refresh-license', function () {
     \Illuminate\Support\Facades\Cache::forget('saas_license_valid');
@@ -90,8 +137,7 @@ Route::get('/system/refresh-license', function () {
 });
 
 // ==============================================================================
-// RUTAS DEL INSTALADOR SAAS (Deben estar sin protección CSRF/Auth completa si es necesario, 
-// pero el Middleware CheckSaaSProfile ya las permite pasar)
+// RUTAS DEL INSTALADOR SAAS
 // ==============================================================================
 Route::get('/install', [InstallerController::class, 'index'])->name('installer.step1');
 Route::post('/install', [InstallerController::class, 'install'])->name('installer.submit');
