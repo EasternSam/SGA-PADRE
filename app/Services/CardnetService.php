@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Models\Setting; // <-- Importamos el modelo de Configuración
 
 class CardnetService
 {
@@ -13,8 +14,10 @@ class CardnetService
 
     public function __construct()
     {
-        $this->environment = config('services.cardnet.environment', 'sandbox');
-        $this->privateKey = config('services.cardnet.private_key');
+        // 1. Intenta leer del Panel de Ajustes Globales (BD / Caché).
+        // 2. Si está vacío o falla, lee de config().
+        $this->environment = Setting::val('cardnet_environment', config('services.cardnet.environment', 'sandbox'));
+        $this->privateKey = Setting::val('cardnet_private_key', config('services.cardnet.private_key'));
 
         // Definir URL base según entorno
         if ($this->environment === 'production') {

@@ -27,6 +27,9 @@ use App\Http\Controllers\AdmissionDocumentController;
 // IMPORTAMOS EL CONTROLADOR DE MOODLE (Agregado)
 use App\Http\Controllers\MoodleController;
 
+// NUEVO: IMPORTAR CONTROLADOR DEL INSTALADOR SAAS
+use App\Http\Controllers\InstallerController;
+
 use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
 use App\Livewire\StudentPortal\CourseDetail as StudentPortalCourseDetail;
 use App\Livewire\StudentPortal\Requests as StudentPortalRequests;
@@ -71,6 +74,14 @@ use App\Livewire\Admin\Settings\Index as SystemSettingsIndex;
 | Web Routes
 |--------------------------------------------------------------------------
 */
+
+// ==============================================================================
+// RUTAS DEL INSTALADOR SAAS (Deben estar sin protección CSRF/Auth completa si es necesario, 
+// pero el Middleware CheckSaaSProfile ya las permite pasar)
+// ==============================================================================
+Route::get('/install', [InstallerController::class, 'index'])->name('installer.step1');
+Route::post('/install', [InstallerController::class, 'install'])->name('installer.submit');
+
 
 // --- RUTA DE AUDITORÍA FRONTEND (CAJA NEGRA) ---
 // Esta ruta recibe los "clics" que envía el JavaScript del navegador
