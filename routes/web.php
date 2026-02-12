@@ -76,6 +76,20 @@ use App\Livewire\Admin\Settings\Index as SystemSettingsIndex;
 */
 
 // ==============================================================================
+// RUTA DE UTILIDAD: FORZAR RE-VERIFICACIÓN DE LICENCIA
+// Úsala cuando cambies el estado en el panel maestro y quieras ver el efecto inmediato.
+// ==============================================================================
+Route::get('/system/refresh-license', function () {
+    \Illuminate\Support\Facades\Cache::forget('saas_license_valid');
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    
+    return response()->json([
+        'status' => 'ok',
+        'message' => 'Caché de licencia eliminada. El sistema consultará al maestro en la próxima recarga.'
+    ]);
+});
+
+// ==============================================================================
 // RUTAS DEL INSTALADOR SAAS (Deben estar sin protección CSRF/Auth completa si es necesario, 
 // pero el Middleware CheckSaaSProfile ya las permite pasar)
 // ==============================================================================
