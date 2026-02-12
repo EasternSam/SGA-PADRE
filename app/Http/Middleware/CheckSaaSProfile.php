@@ -17,6 +17,16 @@ class CheckSaaSProfile
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // =========================================================
+        // INTERRUPTOR DE DESARROLLO (Bypass del SaaS)
+        // =========================================================
+        // Si en tu archivo .env agregas: SAAS_MODE_ENABLED=false
+        // El sistema saltará toda la validación y funcionará
+        // exactamente como lo tenías antes, sin pedir licencia.
+        if (env('SAAS_MODE_ENABLED', true) === false) {
+            return $next($request);
+        }
+
         // 1. Permitir acceso libre a las rutas del instalador para evitar bucles infinitos
         if ($request->is('install') || $request->is('install/*')) {
             return $next($request);
