@@ -63,6 +63,8 @@ use App\Livewire\Calendar\Index as CalendarIndex;
 // Importar componente de Inventario
 use App\Livewire\Admin\Inventory\Index as InventoryIndex;
 
+// ---> NUEVO: Importar Settings <---
+use App\Livewire\Admin\Settings\Index as SystemSettingsIndex;
 
 /*
 |--------------------------------------------------------------------------
@@ -463,6 +465,9 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     
     // --- RUTA NUEVA: REGISTRO DE ACTIVIDADES ---
     Route::get('/activity-logs', \App\Livewire\Admin\ActivityLogs\Index::class)->name('admin.activity-logs.index');
+
+    // ---> RUTA NUEVA: CONFIGURACIÓN DEL SISTEMA <---
+    Route::get('/settings', SystemSettingsIndex::class)->name('admin.settings.index');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
 });
