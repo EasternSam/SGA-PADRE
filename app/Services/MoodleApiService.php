@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
+use App\Models\Setting; // <-- Importamos el modelo de Configuración
 
 class MoodleApiService
 {
@@ -13,8 +14,10 @@ class MoodleApiService
 
     public function __construct()
     {
-        $this->baseUrl = config('services.moodle.url');
-        $this->token = config('services.moodle.token');
+        // 1. Intenta leer del Panel de Ajustes Globales (BD / Caché).
+        // 2. Si está vacío o falla, lee de config().
+        $this->baseUrl = Setting::val('moodle_url', config('services.moodle.url'));
+        $this->token = Setting::val('moodle_token', config('services.moodle.token'));
     }
 
     protected function makeRequest($function, $params = [])

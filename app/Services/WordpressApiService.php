@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Models\Setting; // <-- Importamos el modelo de Configuración
 
 /**
  * Servicio para manejar la comunicación (saliente) con la API de WordPress.
@@ -17,10 +18,10 @@ class WordpressApiService
     public function __construct()
     {
         // ESTRATEGIA DE DEFENSA: 
-        // Primero intenta leer de la configuración cacheada (lo correcto).
-        // Si falla (null), lee DIRECTAMENTE del .env (salvavidas para cPanel).
-        $this->baseUri = config('services.wordpress.base_uri') ?? env('WP_API_BASE_URI');
-        $this->secret = config('services.wordpress.secret') ?? env('WP_API_SECRET');
+        // 1. Intenta leer del Panel de Ajustes Globales (BD / Caché).
+        // 2. Si está vacío o falla, lee de config() o directamente del .env (salvavidas).
+        $this->baseUri = Setting::val('wp_api_url', config('services.wordpress.base_uri') ?? env('WP_API_BASE_URI'));
+        $this->secret = Setting::val('wp_api_secret', config('services.wordpress.secret') ?? env('WP_API_SECRET'));
     }
 
     /**
@@ -41,7 +42,7 @@ class WordpressApiService
         ]);
 
         if (empty($this->baseUri) || empty($this->secret)) {
-            Log::error('WP_API_FATAL: Faltan credenciales en .env (WP_API_BASE_URI o WP_API_SECRET).');
+            Log::error('WP_API_FATAL: Faltan credenciales en Panel de Ajustes o .env (WP_API_BASE_URI o WP_API_SECRET).');
             return null;
         }
 
