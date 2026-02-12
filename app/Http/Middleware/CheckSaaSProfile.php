@@ -44,8 +44,10 @@ class CheckSaaSProfile
 
         // =========================================================
         // CACHÉ OPTIMIZADO: 300 segundos (5 minutos)
+        // CAMBIO DE LLAVE: Usamos 'saas_license_status_v2' para forzar 
+        // una nueva consulta inmediata e ignorar la caché vieja atascada.
         // =========================================================
-        $isLicenseValid = Cache::remember('saas_license_valid', 300, function () use ($licenseKey, $domain, $masterUrl) {
+        $isLicenseValid = Cache::remember('saas_license_status_v2', 300, function () use ($licenseKey, $domain, $masterUrl) {
             try {
                 $response = Http::withoutVerifying()
                     ->timeout(5)
@@ -54,8 +56,10 @@ class CheckSaaSProfile
                         'domain'      => $domain,
                     ]);
 
+                // Log para depuración en storage/logs/laravel.log
+                Log::info("SaaS Check: {$domain} -> HTTP " . $response->status());
+
                 // Si el servidor respondió (aunque sea error), analizamos el status
-                // Si el status es 'success', devolvemos true. Si es 'error' (suspendido), devolvemos false.
                 if ($response->successful() && $response->json('status') === 'success') {
                     return true;
                 }
@@ -65,25 +69,20 @@ class CheckSaaSProfile
                     return false;
                 }
 
-                // Si llegamos aquí, podría ser un error 500 del servidor maestro.
-                // En ese caso, por seguridad del negocio, mejor dejamos pasar temporalmente (return true)
-                // O bloqueamos (return false) según tu política. 
-                // Asumiremos false para forzar revisión, o true para "fail-open".
+                // Error 500 o respuesta extraña -> Bloqueamos por seguridad si no es explícitamente success
                 return false; 
 
             } catch (\Exception $e) {
-                // AQUÍ es donde entra si se va el internet o el servidor no existe (timeout/DNS).
-                // "Fail Open": Si no podemos contactar al guardián, dejamos pasar al cliente.
+                // "Fail Open": Si no podemos contactar al guardián (Internet caído), dejamos pasar.
                 Log::error("SaaS Connection Error: " . $e->getMessage());
                 return true; 
             }
         });
 
         if (!$isLicenseValid) {
-            // Si está bloqueado, permitimos ver una vista de error.
+            // Si está bloqueado, forzamos el borrado de esta nueva caché para re-intentar pronto
             if ($request->isMethod('get') && !$request->ajax()) {
-                // Borramos caché al mostrar el error para que al refrescar se intente validar de nuevo
-                Cache::forget('saas_license_valid');
+                Cache::forget('saas_license_status_v2');
             }
             
             abort(403, 'Academic+: Su licencia ha sido SUSPENDIDA o expiró. Contacte a soporte para reactivación inmediata.');
