@@ -50,8 +50,9 @@ class InstallerController extends Controller
 
         // 2. Validar Licencia con tu Servidor Maestro
         $domain = $request->getHost();
-        // Usamos la URL real como fallback en caso de que la caché del .env esté fallando
-        $masterUrl = env('SAAS_MASTER_URL', 'https://gestion.90s.agency'); 
+        
+        // Limpiamos la URL por si quedó con un slash al final en el .env (ej: agency/)
+        $masterUrl = rtrim(env('SAAS_MASTER_URL', 'https://gestion.90s.agency'), '/'); 
         
         try {
             // Se agregó withoutVerifying() para evitar el bloqueo por certificados SSL recientes en cPanel
@@ -63,7 +64,13 @@ class InstallerController extends Controller
                 ]);
 
             if (!$response->successful() || $response->json('status') !== 'success') {
-                $msg = $response->json('message') ?? 'La licencia es inválida o ya está registrada en otro dominio. (HTTP ' . $response->status() . ')';
+                $msg = $response->json('message');
+                
+                // Si el maestro no devuelve JSON (ej. si da un error 404 o 500 HTML)
+                if (!$msg) {
+                    $msg = "El maestro no encontró la ruta o devolvió un error (HTTP {$response->status()}). Verifica las rutas del maestro.";
+                }
+
                 return back()->with('error', 'Validación fallida en servidor central: ' . $msg)->withInput();
             }
         } catch (\Exception $e) {
