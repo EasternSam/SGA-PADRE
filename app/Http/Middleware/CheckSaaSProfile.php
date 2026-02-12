@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Log;
 
 class CheckSaaSProfile
 {
@@ -24,9 +25,8 @@ class CheckSaaSProfile
             return $next($request);
         }
 
-        // 1. Permitir acceso libre al instalador Y A LA RUTA DE LIMPIEZA DE CACHÉ
-        // Esto permite desbloquear el sistema manualmente si pagaron y no quieren esperar
-        if ($request->is('install') || $request->is('install/*') || $request->is('system/refresh-license')) {
+        // 1. Permitir acceso libre al instalador Y A LA RUTA DE LIMPIEZA DE CACHÉ Y DEBUG
+        if ($request->is('install') || $request->is('install/*') || $request->is('system/*')) {
             return $next($request);
         }
 
@@ -54,22 +54,39 @@ class CheckSaaSProfile
                         'domain'      => $domain,
                     ]);
 
-                return $response->successful() && $response->json('status') === 'success';
+                // Si el servidor respondió (aunque sea error), analizamos el status
+                // Si el status es 'success', devolvemos true. Si es 'error' (suspendido), devolvemos false.
+                if ($response->successful() && $response->json('status') === 'success') {
+                    return true;
+                }
+                
+                // Si el servidor responde explícitamente que NO es válida (403, 404, etc), devolvemos false
+                if ($response->status() === 403 || $response->status() === 404) {
+                    return false;
+                }
+
+                // Si llegamos aquí, podría ser un error 500 del servidor maestro.
+                // En ese caso, por seguridad del negocio, mejor dejamos pasar temporalmente (return true)
+                // O bloqueamos (return false) según tu política. 
+                // Asumiremos false para forzar revisión, o true para "fail-open".
+                return false; 
+
             } catch (\Exception $e) {
-                // Si el maestro se cae temporalmente, permitimos el paso
+                // AQUÍ es donde entra si se va el internet o el servidor no existe (timeout/DNS).
+                // "Fail Open": Si no podemos contactar al guardián, dejamos pasar al cliente.
+                Log::error("SaaS Connection Error: " . $e->getMessage());
                 return true; 
             }
         });
 
         if (!$isLicenseValid) {
-            // Si está bloqueado, permitimos ver una vista de error, pero forzamos borrar la caché 
-            // para que si recargan y ya pagaron, entre de una vez.
+            // Si está bloqueado, permitimos ver una vista de error.
             if ($request->isMethod('get') && !$request->ajax()) {
-                // Opcional: Auto-limpiar caché al mostrar error para re-checkear en el siguiente F5
+                // Borramos caché al mostrar el error para que al refrescar se intente validar de nuevo
                 Cache::forget('saas_license_valid');
             }
             
-            abort(403, 'Academic+: La licencia de este sistema ha sido SUSPENDIDA o expiró. Contacte a soporte técnico para reactivación inmediata.');
+            abort(403, 'Academic+: Su licencia ha sido SUSPENDIDA o expiró. Contacte a soporte para reactivación inmediata.');
         }
 
         return $next($request);
