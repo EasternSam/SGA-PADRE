@@ -50,20 +50,25 @@ class InstallerController extends Controller
 
         // 2. Validar Licencia con tu Servidor Maestro
         $domain = $request->getHost();
-        $masterUrl = env('SAAS_MASTER_URL', 'https://tu-panel-central.com'); 
+        // Usamos la URL real como fallback en caso de que la caché del .env esté fallando
+        $masterUrl = env('SAAS_MASTER_URL', 'https://gestion.90s.agency'); 
         
         try {
-            $response = Http::timeout(10)->post("{$masterUrl}/api/v1/validate-license", [
-                'license_key' => $request->license_key,
-                'domain'      => $domain,
-            ]);
+            // Se agregó withoutVerifying() para evitar el bloqueo por certificados SSL recientes en cPanel
+            $response = Http::withoutVerifying()
+                ->timeout(15)
+                ->post("{$masterUrl}/api/v1/validate-license", [
+                    'license_key' => $request->license_key,
+                    'domain'      => $domain,
+                ]);
 
             if (!$response->successful() || $response->json('status') !== 'success') {
-                $msg = $response->json('message') ?? 'La licencia es inválida o ya está registrada en otro dominio.';
+                $msg = $response->json('message') ?? 'La licencia es inválida o ya está registrada en otro dominio. (HTTP ' . $response->status() . ')';
                 return back()->with('error', 'Validación fallida en servidor central: ' . $msg)->withInput();
             }
         } catch (\Exception $e) {
-            return back()->with('error', 'No se pudo contactar al servidor central de licencias. Verifique la conexión a internet.')->withInput();
+            // Ahora mostramos el error exacto que arroja el servidor/cURL para saber qué está pasando realmente
+            return back()->with('error', 'Error de red al contactar al Maestro (' . $masterUrl . '): ' . $e->getMessage())->withInput();
         }
 
         // 3. Guardar en el archivo .env
