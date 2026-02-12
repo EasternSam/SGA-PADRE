@@ -139,6 +139,22 @@
             margin-right: 0.5rem;
             color: #10b981;
         }
+        
+        /* Estilos para Errores de Validación */
+        .sys-error-text {
+            color: #dc2626; /* red-600 */
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin: 0.25rem 0 0 0;
+        }
+        .sys-input-error {
+            border-color: #fca5a5 !important; /* red-300 */
+            background-color: #fef2f2; /* red-50 */
+        }
+        .sys-input-error:focus {
+            border-color: #ef4444 !important; /* red-500 */
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+        }
 
         /* Secciones del Formulario */
         .sys-form-body {
@@ -215,7 +231,7 @@
             border: 1px solid #d1d5db;
             border-radius: 0.5rem;
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out, background-color 0.15s;
             outline: none;
         }
         .sys-input:focus {
@@ -346,12 +362,14 @@
                                 <div class="sys-grid">
                                     <div class="sys-form-group">
                                         <label class="sys-label">URL Base de la API</label>
-                                        <input type="text" wire:model="state.wp_api_url" placeholder="https://mi-sitio.com/wp-json/" class="sys-input">
+                                        <input type="text" wire:model="state.wp_api_url" placeholder="https://mi-sitio.com/wp-json/" class="sys-input @error('state.wp_api_url') sys-input-error @enderror">
+                                        @error('state.wp_api_url') <p class="sys-error-text">{{ $message }}</p> @enderror
                                         <p class="sys-help-text">Ejemplo: https://institucion.edu.do/wp-json/</p>
                                     </div>
                                     <div class="sys-form-group">
                                         <label class="sys-label">Token Secreto / Firma (X-SGA-Signature)</label>
-                                        <input type="password" wire:model="state.wp_api_secret" class="sys-input">
+                                        <input type="password" wire:model="state.wp_api_secret" class="sys-input @error('state.wp_api_secret') sys-input-error @enderror">
+                                        @error('state.wp_api_secret') <p class="sys-error-text">{{ $message }}</p> @enderror
                                     </div>
                                 </div>
                             </div>
@@ -367,11 +385,13 @@
                                 <div class="sys-grid sys-grid-2">
                                     <div class="sys-form-group sys-col-full">
                                         <label class="sys-label">URL de Moodle</label>
-                                        <input type="text" wire:model="state.moodle_url" placeholder="https://virtual.mi-sitio.com" class="sys-input">
+                                        <input type="text" wire:model="state.moodle_url" placeholder="https://virtual.mi-sitio.com" class="sys-input @error('state.moodle_url') sys-input-error @enderror">
+                                        @error('state.moodle_url') <p class="sys-error-text">{{ $message }}</p> @enderror
                                     </div>
                                     <div class="sys-form-group sys-col-full">
                                         <label class="sys-label">Token de Web Services</label>
-                                        <input type="password" wire:model="state.moodle_token" class="sys-input">
+                                        <input type="password" wire:model="state.moodle_token" class="sys-input @error('state.moodle_token') sys-input-error @enderror">
+                                        @error('state.moodle_token') <p class="sys-error-text">{{ $message }}</p> @enderror
                                     </div>
                                 </div>
                             </div>
@@ -384,11 +404,13 @@
                                 <div class="sys-grid sys-grid-2">
                                     <div class="sys-form-group">
                                         <label class="sys-label">Merchant ID</label>
-                                        <input type="text" wire:model="state.cardnet_merchant_id" class="sys-input">
+                                        <input type="text" wire:model="state.cardnet_merchant_id" class="sys-input @error('state.cardnet_merchant_id') sys-input-error @enderror">
+                                        @error('state.cardnet_merchant_id') <p class="sys-error-text">{{ $message }}</p> @enderror
                                     </div>
                                     <div class="sys-form-group">
                                         <label class="sys-label">Terminal ID</label>
-                                        <input type="text" wire:model="state.cardnet_terminal_id" class="sys-input">
+                                        <input type="text" wire:model="state.cardnet_terminal_id" class="sys-input @error('state.cardnet_terminal_id') sys-input-error @enderror">
+                                        @error('state.cardnet_terminal_id') <p class="sys-error-text">{{ $message }}</p> @enderror
                                     </div>
                                 </div>
                             </div>
@@ -398,7 +420,8 @@
                                 <div class="sys-grid sys-grid-2">
                                     <div class="sys-form-group">
                                         <label class="sys-label">RNC Emisor de la Institución</label>
-                                        <input type="text" wire:model="state.ecf_rnc_emisor" class="sys-input">
+                                        <input type="text" wire:model="state.ecf_rnc_emisor" class="sys-input @error('state.ecf_rnc_emisor') sys-input-error @enderror">
+                                        @error('state.ecf_rnc_emisor') <p class="sys-error-text">{{ $message }}</p> @enderror
                                         <p class="sys-help-text">Se utiliza para los links QR de los tickets generados.</p>
                                     </div>
                                 </div>
@@ -412,11 +435,13 @@
                                 <div class="sys-grid sys-grid-2">
                                     <div class="sys-form-group">
                                         <label class="sys-label">Nombre de la Institución</label>
-                                        <input type="text" wire:model="state.school_name" class="sys-input">
+                                        <input type="text" wire:model="state.school_name" class="sys-input @error('state.school_name') sys-input-error @enderror">
+                                        @error('state.school_name') <p class="sys-error-text">{{ $message }}</p> @enderror
                                     </div>
                                     <div class="sys-form-group">
                                         <label class="sys-label">Correo de Soporte/Contacto</label>
-                                        <input type="email" wire:model="state.support_email" class="sys-input">
+                                        <input type="email" wire:model="state.support_email" class="sys-input @error('state.support_email') sys-input-error @enderror">
+                                        @error('state.support_email') <p class="sys-error-text">{{ $message }}</p> @enderror
                                     </div>
                                 </div>
                             </div>
