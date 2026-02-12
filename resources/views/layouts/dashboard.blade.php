@@ -224,18 +224,20 @@
             </header>
 
             <!-- Page Content (Scrollable) -->
-            <!-- Aquí el overflow-y-auto permite el scroll del contenido interno, no de toda la página -->
-            <main class="flex-1 overflow-y-auto focus:outline-none scroll-smooth bg-gray-50">
-                <div class="py-6 sm:py-8">
-                    <!-- Añadidos paddings laterales (px-4 sm:px-6 lg:px-8) para que el contenido no choque con los bordes -->
-                    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <!-- AGREGADO: flex flex-col para que el mt-auto del footer funcione -->
+            <main class="flex-1 flex flex-col overflow-y-auto focus:outline-none scroll-smooth bg-gray-50">
+                <div class="py-6 sm:py-8 w-full">
+                    <!-- CAMBIO: w-full en lugar de max-w-7xl para usar 100% del ancho disponible -->
+                    <div class="w-full px-4 sm:px-6 lg:px-8">
                         {{ $slot }}
                     </div>
                 </div>
                 
-                <!-- Footer Mejorado (Integrado dentro del scroll para flujo natural) -->
-                <footer class="mt-auto border-t border-gray-200 py-6">
-                    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                <!-- Footer Mejorado -->
+                <!-- mt-auto asegura que siempre se vaya al fondo del contenedor principal -->
+                <footer class="mt-auto border-t border-gray-200 py-6 w-full">
+                    <!-- CAMBIO: w-full en lugar de max-w-7xl para usar 100% del ancho disponible -->
+                    <div class="w-full px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
                         
                         {{-- Copyright alineado a la izquierda --}}
                         <div class="text-left w-full md:w-auto order-2 md:order-1">
