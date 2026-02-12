@@ -20,7 +20,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Scripts locales (Vite) - DESACTIVADOS PARA PROBAR SOLO EL CDN -->
-    {{-- @vite(['resources/css/app.css', 'resources/js/app.js']) --}}
+    {{ @vite(['resources/css/app.css', 'resources/js/app.js']) }}
 
     <!-- Livewire Styles -->
     @livewireStyles
@@ -136,7 +136,7 @@
         @include('layouts.navigation')
 
         <!-- Main Content Area -->
-        <div class="flex-1 flex flex-col min-w-0 lg:pl-64 transition-all duration-300 ease-in-out h-full">
+        <div class="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out h-full">
 
             <!-- Top bar -->
             <header class="sticky top-0 z-20 flex bg-white/90 backdrop-blur-md border-b border-gray-200/60 shadow-sm supports-[backdrop-filter]:bg-white/60">
