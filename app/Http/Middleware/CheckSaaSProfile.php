@@ -43,42 +43,52 @@ class CheckSaaSProfile
         $masterUrl = rtrim(env('SAAS_MASTER_URL', 'https://gestion.90s.agency'), '/');
 
         // =========================================================
-        // VALIDACIÓN EN TIEMPO REAL (SIN CACHÉ)
-        // Se ha eliminado Cache::remember para efecto inmediato.
+        // VALIDACIÓN DE PAQUETES (CON CACHÉ CORTA DE 5 MINUTOS)
+        // Guardamos no solo si es válido, sino QUÉ puede hacer.
         // =========================================================
-        
-        $isLicenseValid = true; // Por defecto dejamos pasar si hay error de conexión (Fail Open)
+        $isLicenseValid = Cache::remember('saas_license_v3_data', 300, function () use ($licenseKey, $domain, $masterUrl) {
+            try {
+                $response = Http::withoutVerifying()
+                    ->timeout(4)
+                    ->post("{$masterUrl}/api/v1/validate-license", [
+                        'license_key' => $licenseKey,
+                        'domain'      => $domain,
+                    ]);
 
-        try {
-            // Timeout ajustado a 3 segundos para no afectar la experiencia de usuario
-            $response = Http::withoutVerifying()
-                ->timeout(3)
-                ->post("{$masterUrl}/api/v1/validate-license", [
-                    'license_key' => $licenseKey,
-                    'domain'      => $domain,
-                ]);
+                // Si el servidor maestro responde que todo está bien
+                if ($response->successful() && $response->json('status') === 'success') {
+                    
+                    // ===> AQUÍ ESTÁ LA CLAVE <===
+                    // El maestro nos devuelve las funciones permitidas. Las guardamos.
+                    $data = $response->json('data');
+                    
+                    // Guardamos features y plan en caché separada para que el Helper SaaS::has() los lea rápido
+                    // Cacheamos esto por 5 minutos igual que la validación principal
+                    Cache::put('saas_active_features', $data['features'] ?? [], 300);
+                    Cache::put('saas_plan_name', $data['plan_name'] ?? 'N/A', 300);
 
-            // Si el servidor maestro responde que todo está bien
-            if ($response->successful() && $response->json('status') === 'success') {
-                $isLicenseValid = true;
-            }
-            // Si el servidor responde explícitamente que NO (403 Suspendido, 404 No existe)
-            elseif ($response->status() === 403 || $response->status() === 404) {
-                $isLicenseValid = false;
-            }
-            // Cualquier otro código de estado (ej. error 500 en el maestro) -> Bloqueamos por seguridad
-            else {
-                $isLicenseValid = false;
-            }
+                    return true;
+                }
+                
+                // Si el servidor responde explícitamente que NO (403 Suspendido, 404 No existe)
+                if ($response->status() === 403 || $response->status() === 404) {
+                    return false;
+                }
 
-        } catch (\Exception $e) {
-            // Si falla la conexión (Internet caído, DNS, Timeout)
-            // Registramos el error pero dejamos pasar al cliente para no detener su operación
-            // Log::error("SaaS Connection Error: " . $e->getMessage()); // Descomentar para debug
-            $isLicenseValid = true; 
-        }
+                return false;
+
+            } catch (\Exception $e) {
+                // Fail Open: Si falla la conexión, permitimos el acceso
+                // PERO mantenemos las últimas features conocidas si existen en caché vieja
+                return true; 
+            }
+        });
 
         if (!$isLicenseValid) {
+            // Si está bloqueado, forzamos borrado de caché para reintento rápido
+            if ($request->isMethod('get') && !$request->ajax()) {
+                Cache::forget('saas_license_v3_data');
+            }
             abort(403, 'Academic+: Su licencia ha sido SUSPENDIDA o expiró. Contacte a soporte para reactivación inmediata.');
         }
 
