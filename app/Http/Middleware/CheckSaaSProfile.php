@@ -43,52 +43,53 @@ class CheckSaaSProfile
         $masterUrl = rtrim(env('SAAS_MASTER_URL', 'https://gestion.90s.agency'), '/');
 
         // =========================================================
-        // VALIDACIÓN DE PAQUETES (CON CACHÉ CORTA DE 5 MINUTOS)
-        // Guardamos no solo si es válido, sino QUÉ puede hacer.
+        // VALIDACIÓN DE PAQUETES (SIN CACHÉ / TIEMPO REAL)
+        // Hemos eliminado Cache::remember para que los cambios se reflejen al instante.
         // =========================================================
-        $isLicenseValid = Cache::remember('saas_license_v3_data', 300, function () use ($licenseKey, $domain, $masterUrl) {
-            try {
-                $response = Http::withoutVerifying()
-                    ->timeout(4)
-                    ->post("{$masterUrl}/api/v1/validate-license", [
-                        'license_key' => $licenseKey,
-                        'domain'      => $domain,
-                    ]);
+        $isValid = false;
 
-                // Si el servidor maestro responde que todo está bien
-                if ($response->successful() && $response->json('status') === 'success') {
-                    
-                    // ===> AQUÍ ESTÁ LA CLAVE <===
-                    // El maestro nos devuelve las funciones permitidas. Las guardamos.
-                    $data = $response->json('data');
-                    
-                    // Guardamos features y plan en caché separada para que el Helper SaaS::has() los lea rápido
-                    // Cacheamos esto por 5 minutos igual que la validación principal
-                    Cache::put('saas_active_features', $data['features'] ?? [], 300);
-                    Cache::put('saas_plan_name', $data['plan_name'] ?? 'N/A', 300);
+        try {
+            // Timeout corto para no ralentizar la carga si el maestro tarda
+            $response = Http::withoutVerifying()
+                ->timeout(3)
+                ->post("{$masterUrl}/api/v1/validate-license", [
+                    'license_key' => $licenseKey,
+                    'domain'      => $domain,
+                ]);
 
-                    return true;
-                }
+            // Si el servidor maestro responde que todo está bien
+            if ($response->successful() && $response->json('status') === 'success') {
                 
-                // Si el servidor responde explícitamente que NO (403 Suspendido, 404 No existe)
-                if ($response->status() === 403 || $response->status() === 404) {
-                    return false;
-                }
+                // ===> AQUÍ ESTÁ LA CLAVE <===
+                // El maestro nos devuelve las funciones permitidas. Las guardamos.
+                $data = $response->json('data');
+                
+                // Guardamos features y plan en caché separada para que el Helper SaaS::has() los lea rápido
+                // Cacheamos esto por 60 segundos (muy poco) para balancear velocidad y frescura
+                Cache::put('saas_active_features', $data['features'] ?? [], 60);
+                Cache::put('saas_plan_name', $data['plan_name'] ?? 'N/A', 60);
 
-                return false;
-
-            } catch (\Exception $e) {
-                // Fail Open: Si falla la conexión, permitimos el acceso
-                // PERO mantenemos las últimas features conocidas si existen en caché vieja
-                return true; 
+                $isValid = true;
             }
-        });
+            
+            // Si el servidor responde explícitamente que NO (403 Suspendido, 404 No existe)
+            elseif ($response->status() === 403 || $response->status() === 404) {
+                $isValid = false;
+            } else {
+                // Error 500 u otro, asumimos fallo
+                $isValid = false;
+            }
 
-        if (!$isLicenseValid) {
+        } catch (\Exception $e) {
+            // Fail Open: Si falla la conexión, permitimos el acceso
+            // PERO mantenemos las últimas features conocidas si existen en caché vieja
+            $isValid = true; 
+        }
+
+        if (!$isValid) {
             // Si está bloqueado, forzamos borrado de caché para reintento rápido
-            if ($request->isMethod('get') && !$request->ajax()) {
-                Cache::forget('saas_license_v3_data');
-            }
+            Cache::forget('saas_active_features');
+            Cache::forget('saas_plan_name');
             abort(403, 'Academic+: Su licencia ha sido SUSPENDIDA o expiró. Contacte a soporte para reactivación inmediata.');
         }
 
