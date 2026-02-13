@@ -30,7 +30,7 @@ use App\Http\Controllers\MoodleController;
 // NUEVO: IMPORTAR CONTROLADOR DEL INSTALADOR SAAS
 use App\Http\Controllers\InstallerController;
 
-// NUEVO: IMPORTAR HELPER SAAS PARA PROTEGER RUTAS
+// ===> IMPORTANTE: ESTA LÍNEA ES LA QUE FALTABA Y CAUSABA EL ERROR <===
 use App\Helpers\SaaS;
 
 use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
@@ -130,9 +130,8 @@ Route::get('/system/debug-license', function () {
 // RUTA DE UTILIDAD: FORZAR RE-VERIFICACIÓN DE LICENCIA
 // ==============================================================================
 Route::get('/system/refresh-license', function () {
-    \Illuminate\Support\Facades\Cache::forget('saas_active_features');
-    \Illuminate\Support\Facades\Cache::forget('saas_plan_name');
     \Illuminate\Support\Facades\Cache::forget('saas_license_valid');
+    \Illuminate\Support\Facades\Cache::forget('saas_active_features'); // Olvidar features
     \Illuminate\Support\Facades\Artisan::call('cache:clear');
     
     return response()->json([
@@ -351,7 +350,7 @@ Route::get('/test', function () {
     ]);
 });
 
-// --- NUEVA RUTA DE DIAGNÓSTICO WP API (Solo si API Access está activo) ---
+// --- NUEVA RUTA DE DIAGNÓSTICO WP API ---
 if (SaaS::has('api_access')) {
     Route::get('/test-wp', function () {
         $baseUri = config('services.wordpress.base_uri') ?? env('WP_API_BASE_URI');
@@ -399,7 +398,7 @@ if (SaaS::has('api_access')) {
     });
 }
 
-// --- NUEVA RUTA DE DIAGNÓSTICO MOODLE (Solo si Aula Virtual está activo) ---
+// --- NUEVA RUTA DE DIAGNÓSTICO MOODLE ---
 if (SaaS::has('virtual_classroom')) {
     Route::get('/test-moodle', function () {
         $url = config('services.moodle.url');
@@ -497,18 +496,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // --- RUTAS DE ADMINISTRADOR ---
 Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('admin')->group(function () {
     
-    // El Dashboard principal siempre debería estar accesible si hay login
     Route::get('/dashboard', \App\Livewire\Dashboard\Index::class)->name('admin.dashboard');
 
-    // =========================================================
-    // MODULO: GESTIÓN ACADÉMICA (academic)
-    // =========================================================
+    // --- MODULO: GESTIÓN ACADÉMICA ---
     if (SaaS::has('academic')) {
         Route::get('/students', \App\Livewire\Students\Index::class)->name('admin.students.index');
         Route::get('/students/profile/{student}', \App\Livewire\StudentProfile\Index::class)->name('admin.students.profile');
-        
         Route::get('/courses', \App\Livewire\Courses\Index::class)->name('admin.courses.index');
-        
         Route::get('/careers', \App\Livewire\Careers\Index::class)->name('admin.careers.index');
         Route::get('/careers/{career}/curriculum', \App\Livewire\Careers\Curriculum::class)->name('admin.careers.curriculum');
         Route::get('/careers/{career}/curriculum/pdf', [CurriculumPdfController::class, 'download'])->name('admin.careers.curriculum.pdf');
@@ -516,49 +510,41 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
         if (class_exists(CalendarIndex::class)) {
             Route::get('/calendar', CalendarIndex::class)->name('admin.calendar.index');
         }
-        
         if (class_exists(AdmissionsIndex::class)) {
             Route::get('/admissions', AdmissionsIndex::class)->name('admin.admissions.index');
         }
 
         Route::get('/teachers', \App\Livewire\Teachers\Index::class)->name('admin.teachers.index');
         Route::get('/teachers/profile/{teacher}', \App\Livewire\TeacherProfile\Index::class)->name('admin.teachers.profile');
-
         Route::get('/requests', \App\Livewire\Admin\RequestsManagement::class)->name('admin.requests');
         Route::get('/classrooms', ClassroomManagement::class)->name('admin.classrooms.index');
     }
 
-    // =========================================================
-    // MODULO: INVENTARIO (inventory)
-    // =========================================================
+    // --- MODULO: INVENTARIO ---
     if (SaaS::has('inventory')) {
         if (class_exists(InventoryIndex::class)) {
             Route::get('/inventory', InventoryIndex::class)->name('admin.inventory.index');
         } else {
-            // Fallback por si la clase no se encuentra
             Route::get('/inventory', function() { return 'Módulo de inventario no instalado'; })->name('admin.inventory.index');
         }
     }
     
-    // =========================================================
-    // MODULO: FINANZAS (finance)
-    // =========================================================
+    // --- MODULO: FINANZAS ---
     if (SaaS::has('finance')) {
         Route::get('/finance/dashboard', FinanceDashboard::class)->name('admin.finance.dashboard');
         Route::get('/finance/payment-concepts', \App\Livewire\Finance\PaymentConcepts::class)->name('admin.finance.concepts');
     }
 
-    // =========================================================
-    // MODULO: REPORTES AVANZADOS / DIPLOMAS (reports_advanced)
-    // =========================================================
+    // --- MODULO: REPORTES AVANZADOS / DIPLOMAS ---
     if (SaaS::has('reports_advanced')) {
-        Route::get('/reports', \App\Livewire\Reports\Index::class)->name('reports.index');
         Route::get('/certificates', \App\Livewire\Certificates\Index::class)->name('admin.certificates.index'); 
         Route::get('/certificate-templates', CertificateTemplatesIndex::class)->name('admin.certificates.templates');
         Route::get('/certificate-editor', CertificateEditor::class)->name('admin.certificates.editor');
         Route::get('/certificate-editor/{templateId?}', CertificateEditor::class)->name('admin.certificates.edit');
-    } elseif (SaaS::has('reports_basic')) {
-        // Si no tiene avanzado pero tiene básico, mostramos el índice de reportes
+    }
+
+    // --- REPORTES BÁSICOS ---
+    if (SaaS::has('reports_basic') || SaaS::has('reports_advanced')) {
         Route::get('/reports', \App\Livewire\Reports\Index::class)->name('reports.index');
     }
 
@@ -579,22 +565,18 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
 // --- RUTAS DE ESTUDIANTE ---
 Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student.')->group(function () {
     
-    // Core Estudiante (Siempre activo o ligado a academic)
     if (SaaS::has('academic')) {
         Route::get('/dashboard', \App\Livewire\StudentPortal\Dashboard::class)->name('dashboard');
         Route::get('/course/{enrollmentId}', \App\Livewire\StudentPortal\CourseDetail::class)->name('course.detail');
         Route::get('/requests', \App\Livewire\StudentPortal\Requests::class)->name('requests');
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-        // ===> RUTA PARA SELECCIÓN DE MATERIAS <===
         Route::get('/selection', StudentPortalSelection::class)->name('selection');
     }
 
-    // Modulo Finanzas Estudiante
     if (SaaS::has('finance')) {
         Route::get('/payments', StudentPortalPayments::class)->name('payments');
     }
 
-    // Modulo Moodle
     if (SaaS::has('virtual_classroom')) {
         Route::get('/moodle-auth', [MoodleController::class, 'sso'])->name('moodle.auth');
     }
