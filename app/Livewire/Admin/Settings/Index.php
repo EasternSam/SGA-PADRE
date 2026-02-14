@@ -4,12 +4,13 @@ namespace App\Livewire\Admin\Settings;
 
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use App\Models\Setting; // <--- Usamos el modelo Setting
+use App\Models\Setting; // Usamos el modelo Setting que ya confirmamos que funciona
 use App\Models\ActivityLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
-use Illuminate\Support\Facades\Log; // <--- IMPORTANTE: Importar Log
 
 #[Layout('layouts.dashboard')]
 class Index extends Component
@@ -49,10 +50,6 @@ class Index extends Component
 
     public function save()
     {
-        // DEBUG: Inicio del proceso
-        Log::info('--- INICIANDO GUARDADO DE SETTINGS ---');
-        Log::info('Datos recibidos del formulario:', $this->state);
-
         $this->validate([
             'state.institution_name'    => 'required|string|max:100',
             'state.brand_primary_color' => 'required|regex:/^#[a-fA-F0-9]{6}$/',
@@ -62,21 +59,30 @@ class Index extends Component
             'state.moodle_url'          => 'nullable|url',
         ]);
 
-        Log::info('Validación superada.');
-
-        // 1. Manejo de subida de Logo
+        // 1. Manejo de subida de Logo (CAMBIO: Usar disco hosting_public)
         if ($this->logo) {
             try {
-                $path = $this->logo->store('public/branding');
-                $url = Storage::url($path);
+                // Generar nombre único
+                $filename = 'logo_' . time() . '.' . $this->logo->getClientOriginalExtension();
+                
+                // Guardar directamente en public/branding (sin symlinks)
+                // Usamos el disco 'hosting_public' que definimos en config/filesystems.php
+                // Esto guarda en: /home/usuario/public_html/branding/logo_xxxxx.png
+                $this->logo->storeAs('branding', $filename, 'hosting_public');
+                
+                // La URL ahora es directa, sin /storage/
+                $url = "/branding/" . $filename;
+                
                 $this->state['institution_logo'] = $url;
-                Log::info('Logo subido exitosamente: ' . $url);
+                Log::info('Logo subido a carpeta pública: ' . $url);
             } catch (\Exception $e) {
                 Log::error('Error subiendo logo: ' . $e->getMessage());
+                session()->flash('error', 'Error al guardar la imagen: ' . $e->getMessage());
+                return;
             }
         }
 
-        // 2. Guardar en la tabla settings usando el helper del modelo
+        // 2. Guardar en la tabla settings
         foreach ($this->state as $key => $value) {
             
             $type = str_contains($key, 'secret') || str_contains($key, 'token') ? 'password' : 'string';
@@ -88,15 +94,12 @@ class Index extends Component
             if (str_starts_with($key, 'cardnet_') || str_starts_with($key, 'ecf_')) $group = 'finance';
 
             try {
-                // Usamos el método estático set
+                // Usamos el método estático set del modelo Setting
                 Setting::set($key, $value, $group, $type);
-                // Log::info("Guardado: $key"); // Descomentar si quieres ver cada campo
             } catch (\Exception $e) {
                 Log::error("Error guardando $key: " . $e->getMessage());
             }
         }
-
-        Log::info('Ciclo de guardado finalizado.');
 
         // 3. Auditoría
         if (class_exists(ActivityLog::class)) {
@@ -109,11 +112,10 @@ class Index extends Component
             ]);
         }
 
-        // 4. Recargar
-        session()->flash('message', 'Configuración guardada. Los cambios visuales se aplicarán ahora.');
-        
-        Log::info('Redirigiendo...');
-        
+        // 4. LIMPIAR CACHÉ
+        Cache::flush();
+
+        session()->flash('message', 'Personalización guardada correctamente. El sistema se ha actualizado.');
         return redirect()->route('admin.settings.index');
     }
 
