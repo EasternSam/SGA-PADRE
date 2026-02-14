@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 // Modelos y Observadores
-use App\Models\Setting; // <--- CAMBIO IMPORTANTE: Usamos Setting
+use App\Models\Setting; // <--- CAMBIO CRÍTICO: Usamos Setting, no SystemOption
 use App\Models\Enrollment;
 use App\Observers\EnrollmentObserver;
 use App\Models\Payment;
@@ -33,52 +33,59 @@ class AppServiceProvider extends ServiceProvider
         // 1. Configuración de BD
         Schema::defaultStringLength(191);
 
-        // 2. CORRECCIÓN PARA NGROK
+        // 2. CORRECCIÓN PARA NGROK (Forzar HTTPS si es producción o ngrok)
         if ($this->app->environment('production') || str_contains(request()->getHost(), 'ngrok')) {
             URL::forceScheme('https');
         }
 
-        // 3. CORRECCIÓN LÍMITE LIVEWIRE
+        // 3. CORRECCIÓN LÍMITE LIVEWIRE (Aumentar tamaño de subida temporal)
         config(['livewire.temporary_file_upload.rules' => 'file|max:102400']);
 
         // 4. REGISTRAR OBSERVADORES
         Enrollment::observe(EnrollmentObserver::class);
         Payment::observe(PaymentObserver::class);
 
-        // 5. CARGAR PERSONALIZACIÓN (Brand)
+        // 5. CARGAR PERSONALIZACIÓN DEL SISTEMA (Marca Blanca)
         try {
-            // Verificar conexión antes de consultar
+            // Verificar conexión antes de consultar para no romper despliegues
+            // Usamos el driver PDO para chequear conexión rápida
             DB::connection()->getPdo();
             
-            if (Schema::hasTable('settings')) { // <--- Verificamos la tabla 'settings'
+            // Verificamos que la tabla 'settings' exista antes de intentar leerla
+            if (Schema::hasTable('settings')) {
                 $this->bootSystemCustomization();
             } else {
+                // Si no hay tabla, cargamos branding por defecto (Azul)
                 $this->shareDefaultBranding();
             }
         } catch (\Exception $e) {
+            // Si falla la BD (ej. durante migración), cargamos default
             $this->shareDefaultBranding();
         }
     }
 
     private function bootSystemCustomization()
     {
-        // 1. Cargar Nombre (Usando el modelo Setting)
-        // Usamos 'institution_name' para coincidir con el formulario
-        $appName = Setting::get('institution_name'); 
+        // 1. Cargar Nombre de la Institución (Desde la tabla settings)
+        // Usamos el helper get() del modelo Setting
+        $appName = Setting::get('institution_name');
         
         if ($appName) {
             Config::set('app.name', $appName);
         }
 
         // 2. Cargar Logo y Colores
+        // Si no existen en BD, usamos los defaults
         $brandSettings = [
             'logo_url' => Setting::get('institution_logo'), 
-            'primary_color' => Setting::get('brand_primary_color', '#1e3a8a'),
+            'primary_color' => Setting::get('brand_primary_color', '#1e3a8a'), // Azul default
         ];
 
-        // 3. RGB para Tailwind
+        // 3. Convertir Hex a RGB para Tailwind (Ej: #e41b12 -> "228 27 18")
+        // Esto es vital para que las variables CSS --color-primary funcionen
         $brandSettings['primary_rgb'] = $this->hex2rgb($brandSettings['primary_color']);
 
+        // Compartir la variable $branding globalmente en todos los blades
         View::share('branding', (object) $brandSettings);
     }
 
@@ -91,6 +98,7 @@ class AppServiceProvider extends ServiceProvider
         ]);
     }
 
+    // Función auxiliar para convertir Hex a RGB string
     private function hex2rgb($hex) {
         $hex = str_replace("#", "", $hex);
         if(strlen($hex) == 3) {
