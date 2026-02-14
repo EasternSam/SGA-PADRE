@@ -1,3 +1,16 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Definimos los valores por defecto (CENTU) en formato RGB */
+:root {
+    /* Color Azul Oscuro Original (#1e3a8a es aprox 30 58 138) */
+    --color-primary: 30 58 138;
+    
+    /* Un color secundario/acento */
+    --color-secondary: 220 38 38;
+}
+
+[x-cloak] {
+    display: none !important;
+}

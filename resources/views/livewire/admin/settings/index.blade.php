@@ -246,6 +246,21 @@
             color: #6b7280;
             margin: 0;
         }
+        
+        /* Input Color Custom */
+        .sys-color-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .sys-color-input {
+            height: 3rem;
+            width: 6rem;
+            padding: 0.25rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            cursor: pointer;
+        }
 
         /* Footer y Botones */
         .sys-footer {
@@ -321,17 +336,20 @@
             {{-- Sidebar Pestañas --}}
             <div class="sys-sidebar">
                 <nav class="sys-nav">
+                    <!-- Tab General -->
+                    <button type="button" wire:click="$set('activeTab', 'general')" class="sys-tab {{ $activeTab === 'general' ? 'active' : '' }}">
+                        <svg class="sys-tab-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" /></svg>
+                        Personalización e Identidad
+                    </button>
+                    <!-- Tab APIs -->
                     <button type="button" wire:click="$set('activeTab', 'apis')" class="sys-tab {{ $activeTab === 'apis' ? 'active' : '' }}">
                         <svg class="sys-tab-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg>
                         Integraciones API
                     </button>
+                    <!-- Tab Finanzas -->
                     <button type="button" wire:click="$set('activeTab', 'finance')" class="sys-tab {{ $activeTab === 'finance' ? 'active' : '' }}">
                         <svg class="sys-tab-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" /></svg>
                         Pasarelas y Finanzas
-                    </button>
-                    <button type="button" wire:click="$set('activeTab', 'general')" class="sys-tab {{ $activeTab === 'general' ? 'active' : '' }}">
-                        <svg class="sys-tab-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" /></svg>
-                        Datos Generales
                     </button>
                 </nav>
             </div>
@@ -350,6 +368,44 @@
 
                     <div class="sys-form-body">
                         
+                        {{-- ================= TAB: GENERAL (PERSONALIZACIÓN) ================= --}}
+                        <div x-show="$wire.activeTab === 'general'" class="sys-fade-in" style="display: none;">
+                            <div class="sys-section">
+                                <h3 class="sys-section-title">
+                                    <svg class="sys-section-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                    Identidad de la Institución
+                                </h3>
+                                <div class="sys-grid">
+                                    <!-- 1. Nombre -->
+                                    <div class="sys-form-group">
+                                        <label class="sys-label">Nombre del Sistema / Colegio</label>
+                                        <input type="text" wire:model="state.school_name" class="sys-input @error('state.school_name') sys-input-error @enderror">
+                                        @error('state.school_name') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                    </div>
+
+                                    <!-- 2. Correo Soporte -->
+                                    <div class="sys-form-group">
+                                        <label class="sys-label">Correo de Soporte/Contacto</label>
+                                        <input type="email" wire:model="state.support_email" class="sys-input @error('state.support_email') sys-input-error @enderror">
+                                        @error('state.support_email') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                    </div>
+
+                                    <!-- 3. Color Principal -->
+                                    {{-- Nota: Este campo aún no está en el controlador state, se agregará próximamente --}}
+                                    {{-- 
+                                    <div class="sys-form-group">
+                                        <label class="sys-label">Color Institucional (Primario)</label>
+                                        <div class="sys-color-wrapper">
+                                            <input type="color" class="sys-color-input" disabled title="Próximamente">
+                                            <input type="text" class="sys-input" placeholder="#1E3A8A" disabled>
+                                        </div>
+                                        <p class="sys-help-text">Configura el color principal del sistema (Próximamente).</p>
+                                    </div>
+                                    --}}
+                                </div>
+                            </div>
+                        </div>
+
                         {{-- ================= TAB: APIS ================= --}}
                         <div x-show="$wire.activeTab === 'apis'" class="sys-fade-in" style="display: none;">
                             
@@ -423,25 +479,6 @@
                                         <input type="text" wire:model="state.ecf_rnc_emisor" class="sys-input @error('state.ecf_rnc_emisor') sys-input-error @enderror">
                                         @error('state.ecf_rnc_emisor') <p class="sys-error-text">{{ $message }}</p> @enderror
                                         <p class="sys-help-text">Se utiliza para los links QR de los tickets generados.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- ================= TAB: GENERAL ================= --}}
-                        <div x-show="$wire.activeTab === 'general'" class="sys-fade-in" style="display: none;">
-                            <div class="sys-section">
-                                <h3 class="sys-section-title">Información Institucional</h3>
-                                <div class="sys-grid sys-grid-2">
-                                    <div class="sys-form-group">
-                                        <label class="sys-label">Nombre de la Institución</label>
-                                        <input type="text" wire:model="state.school_name" class="sys-input @error('state.school_name') sys-input-error @enderror">
-                                        @error('state.school_name') <p class="sys-error-text">{{ $message }}</p> @enderror
-                                    </div>
-                                    <div class="sys-form-group">
-                                        <label class="sys-label">Correo de Soporte/Contacto</label>
-                                        <input type="email" wire:model="state.support_email" class="sys-input @error('state.support_email') sys-input-error @enderror">
-                                        @error('state.support_email') <p class="sys-error-text">{{ $message }}</p> @enderror
                                     </div>
                                 </div>
                             </div>

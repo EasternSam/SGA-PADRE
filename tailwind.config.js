@@ -9,8 +9,6 @@ export default {
         './resources/views/**/*.blade.php',
     ],
 
-    // --- CORRECCIÓN ---
-    // Mantenemos el modo oscuro deshabilitado
     // darkMode: 'class', 
 
     theme: {
@@ -18,28 +16,29 @@ export default {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
-            // --- ¡ACTUALIZADO! ---
-            // Paleta de colores redefinida para coincidir con la imagen de inspiración.
             colors: {
-                // 'sga-primary': '#0055A4', // Azul oscuro (Original)
-                'sga-primary': '#1e3a8a', // Azul-indigo oscuro para el sidebar (Inspiración)
-                // 'sga-secondary': '#E6F0FF', // Azul claro (Original)
-                'sga-secondary': '#3b82f6', // Azul brillante para highlights (Inspiración)
-                'sga-accent': '#10b981', // Verde (Inspiración - Donut Chart)
-                'sga-accent-purple': '#8b5cf6', // Púrpura (Inspiración - Donut Chart)
-                'sga-accent-red': '#ef4444', // Rojo (Inspiración - Donut Chart)
+                // ===> AQUÍ ESTÁ EL CAMBIO CLAVE <===
+                // 'sga-primary' ahora es DINÁMICO.
+                // Lee la variable CSS --color-primary que inyectamos en el layout (app.blade.php)
+                // <alpha-value> permite usar opacidades como bg-sga-primary/50
+                'sga-primary': 'rgb(var(--color-primary) / <alpha-value>)', 
                 
-                'sga-text': '#1f2937', // Texto principal (gris-900)
-                'sga-text-light': '#6b7280', // Texto secundario (gris-500)
-                'sga-gray': '#e5e7eb', // Bordes (gris-200)
-                'sga-success': '#22c55e', // Verde éxito
-                'sga-danger': '#ef4444', // Rojo peligro
-                'sga-warning': '#f59e0b', // Naranja advertencia
-                'sga-info': '#3b82f6', // Azul información
+                // El resto de la paleta se mantiene fija para asegurar armonía visual
+                'sga-secondary': '#3b82f6', // Azul brillante para highlights
+                'sga-accent': '#10b981',    // Verde
+                'sga-accent-purple': '#8b5cf6', 
+                'sga-accent-red': '#ef4444', 
                 
-                // 'sga-bg': '#F9FAFB', // Original (gris-50)
-                'sga-bg': '#f3f4f6', // Fondo de la app (gris-100)
-                'sga-card': '#ffffff', // Fondo de tarjetas
+                'sga-text': '#1f2937', 
+                'sga-text-light': '#6b7280', 
+                'sga-gray': '#e5e7eb', 
+                'sga-success': '#22c55e', 
+                'sga-danger': '#ef4444', 
+                'sga-warning': '#f59e0b', 
+                'sga-info': '#3b82f6', 
+                
+                'sga-bg': '#f3f4f6', 
+                'sga-card': '#ffffff', 
             },
         },
     },
