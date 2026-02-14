@@ -114,21 +114,99 @@
                                         @error('state.support_email') <p class="sys-error-text">{{ $message }}</p> @enderror
                                     </div>
 
-                                    <div class="sys-form-group">
-                                        <label class="sys-label">Color Institucional (Primario)</label>
-                                        <div class="sys-color-wrapper">
-                                            <input type="color" wire:model.live="state.brand_primary_color" class="sys-color-input">
-                                            <input type="text" wire:model.live="state.brand_primary_color" class="sys-input uppercase" placeholder="#1E3A8A">
+                                    <!-- APARIENCIA DEL MENÚ -->
+                                    <div class="sys-form-group sys-col-full p-4 border rounded bg-white">
+                                        <h4 class="font-semibold text-gray-700 mb-3">Estilo del Menú Lateral (Sidebar)</h4>
+                                        
+                                        <div class="flex flex-col gap-4">
+                                            <div class="flex items-center gap-4">
+                                                <label class="inline-flex items-center">
+                                                    <input type="radio" wire:model.live="navbar_type" value="solid" class="form-radio text-indigo-600">
+                                                    <span class="ml-2 text-sm text-gray-700">Color Sólido</span>
+                                                </label>
+                                                <label class="inline-flex items-center">
+                                                    <input type="radio" wire:model.live="navbar_type" value="gradient" class="form-radio text-indigo-600">
+                                                    <span class="ml-2 text-sm text-gray-700">Degradado</span>
+                                                </label>
+                                            </div>
+
+                                            @if($navbar_type === 'solid')
+                                                <div class="sys-form-group">
+                                                    <label class="sys-label">Color Institucional</label>
+                                                    <div class="sys-color-wrapper">
+                                                        <input type="color" wire:model.live="state.brand_primary_color" class="sys-color-input">
+                                                        <input type="text" wire:model.live="state.brand_primary_color" class="sys-input uppercase w-32" placeholder="#1E3A8A">
+                                                    </div>
+                                                    @error('state.brand_primary_color') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                                </div>
+                                            @else
+                                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    <div class="sys-form-group">
+                                                        <label class="sys-label">Color Inicio</label>
+                                                        <div class="sys-color-wrapper">
+                                                            <input type="color" wire:model.live="navbar_gradient_start" class="sys-color-input">
+                                                        </div>
+                                                    </div>
+                                                    <div class="sys-form-group">
+                                                        <label class="sys-label">Color Fin</label>
+                                                        <div class="sys-color-wrapper">
+                                                            <input type="color" wire:model.live="navbar_gradient_end" class="sys-color-input">
+                                                        </div>
+                                                    </div>
+                                                    <div class="sys-form-group">
+                                                        <label class="sys-label">Dirección</label>
+                                                        <select wire:model.live="navbar_gradient_direction" class="sys-input">
+                                                            <option value="to right">Izquierda a Derecha (&rarr;)</option>
+                                                            <option value="to left">Derecha a Izquierda (&larr;)</option>
+                                                            <option value="to bottom">Arriba a Abajo (&darr;)</option>
+                                                            <option value="to top">Abajo a Arriba (&uarr;)</option>
+                                                            <option value="to bottom right">Diagonal (&searr;)</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            @endif
+
+                                            <!-- VISTA PREVIA -->
+                                            <div class="mt-2">
+                                                <label class="sys-label block mb-1">Vista Previa:</label>
+                                                <div class="h-12 w-full rounded-lg shadow-sm flex items-center px-4 text-white font-bold" 
+                                                     style="background: {{ $navbar_type === 'solid' ? $state['brand_primary_color'] : 'linear-gradient('.$navbar_gradient_direction.', '.$navbar_gradient_start.', '.$navbar_gradient_end.')' }};">
+                                                    SGA Academic+
+                                                </div>
+                                            </div>
+
+                                            <!-- GESTIÓN DE PRESETS -->
+                                            <div class="mt-4 pt-4 border-t border-gray-200">
+                                                <label class="sys-label mb-2 block">Presets / Temas Guardados</label>
+                                                <div class="flex gap-2 mb-3">
+                                                    <input type="text" wire:model="new_preset_name" placeholder="Nombre para guardar actual..." class="sys-input text-sm h-9">
+                                                    <button type="button" wire:click="savePreset" class="sys-btn-secondary text-xs h-9 whitespace-nowrap">Guardar Preset</button>
+                                                </div>
+                                                
+                                                <div class="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                                                    @forelse($presets as $index => $preset)
+                                                        <div class="flex items-center bg-gray-100 rounded-lg p-1 pr-2 border border-gray-300">
+                                                            <div class="w-6 h-6 rounded mr-2 border border-white shadow-sm" style="background: {{ $preset['color'] }}"></div>
+                                                            <span class="text-xs font-medium text-gray-700 mr-2">{{ $preset['name'] }}</span>
+                                                            <button type="button" wire:click="loadPreset({{ $index }})" class="text-blue-600 hover:text-blue-800 p-1" title="Cargar">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                                            </button>
+                                                            <button type="button" wire:click="deletePreset({{ $index }})" wire:confirm="¿Borrar preset?" class="text-red-500 hover:text-red-700 p-1" title="Eliminar">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                                            </button>
+                                                        </div>
+                                                    @empty
+                                                        <span class="text-xs text-gray-400 italic">No hay presets guardados.</span>
+                                                    @endforelse
+                                                </div>
+                                            </div>
                                         </div>
-                                        <p class="sys-help-text">Este color definirá la identidad visual del panel y menú lateral.</p>
-                                        @error('state.brand_primary_color') <p class="sys-error-text">{{ $message }}</p> @enderror
                                     </div>
 
                                     <div class="sys-form-group sys-col-full">
                                         <label class="sys-label">Logotipo</label>
                                         <div class="flex items-center gap-4 p-4 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
                                             <div class="shrink-0">
-                                                <!-- CORRECCIÓN: Eliminado bg-white para fondo transparente -->
                                                 @if ($logo)
                                                     <img src="{{ $logo->temporaryUrl() }}" class="h-16 w-auto object-contain rounded p-1 shadow-sm">
                                                 @elseif (!empty($state['institution_logo']))

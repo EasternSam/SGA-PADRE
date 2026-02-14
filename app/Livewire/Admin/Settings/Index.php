@@ -23,6 +23,16 @@ class Index extends Component
 
     public $state = [];
 
+    // Propiedades para la gestión de degradados
+    public $navbar_type = 'solid'; // 'solid' o 'gradient'
+    public $navbar_gradient_start = '#1e3a8a';
+    public $navbar_gradient_end = '#000000';
+    public $navbar_gradient_direction = 'to right';
+
+    // Propiedades para Presets
+    public $presets = [];
+    public $new_preset_name = '';
+
     public function mount()
     {
         $settings = Setting::all()->pluck('value', 'key')->toArray();
@@ -40,6 +50,46 @@ class Index extends Component
             'cardnet_terminal_id' => $settings['cardnet_terminal_id'] ?? '',
             'ecf_rnc_emisor'      => $settings['ecf_rnc_emisor'] ?? '101000000',
         ];
+
+        // Cargar configuraciones de degradado guardadas
+        $this->navbar_type = $settings['navbar_type'] ?? 'solid';
+        $this->navbar_gradient_start = $settings['navbar_gradient_start'] ?? '#1e3a8a';
+        $this->navbar_gradient_end = $settings['navbar_gradient_end'] ?? '#000000';
+        $this->navbar_gradient_direction = $settings['navbar_gradient_direction'] ?? 'to right';
+
+        // Cargar Presets
+        $this->presets = json_decode($settings['theme_presets'] ?? '[]', true) ?? [];
+
+        // Sincronizar el color inicial si es sólido
+        if ($this->navbar_type === 'solid') {
+            $this->navbar_gradient_start = $this->state['brand_primary_color'];
+        }
+    }
+
+    public function updated($propertyName)
+    {
+        // Construir el color en tiempo real si cambian las propiedades del degradado
+        if (in_array($propertyName, ['navbar_type', 'navbar_gradient_start', 'navbar_gradient_end', 'navbar_gradient_direction'])) {
+            $this->buildNavbarColor();
+        }
+        
+        // Si el usuario cambia el color en modo sólido directamente
+        if ($propertyName === 'state.brand_primary_color' && $this->navbar_type === 'solid') {
+            $this->navbar_gradient_start = $this->state['brand_primary_color'];
+        }
+    }
+
+    public function buildNavbarColor()
+    {
+        if ($this->navbar_type === 'gradient') {
+            $this->state['brand_primary_color'] = "linear-gradient({$this->navbar_gradient_direction}, {$this->navbar_gradient_start}, {$this->navbar_gradient_end})";
+        } else {
+            // Si volvemos a sólido, usamos el color de inicio como color principal
+            // Verifica si el color actual es un string de gradiente para no dejar basura
+            if (str_starts_with($this->state['brand_primary_color'], 'linear-gradient')) {
+                $this->state['brand_primary_color'] = $this->navbar_gradient_start;
+            }
+        }
     }
 
     // --- NUEVA FUNCIÓN: RESTAURAR VALORES POR DEFECTO ---
@@ -47,20 +97,26 @@ class Index extends Component
     {
         $this->state['institution_name'] = 'SGA Academic+';
         $this->state['brand_primary_color'] = '#1e3a8a'; // Azul Original
-        $this->state['institution_logo'] = null; // Al ser null, el sistema usará el componente <x-application-logo>
-        $this->logo = null; // Limpiar subida temporal
+        $this->state['institution_logo'] = null;
+        $this->logo = null;
 
-        // Opcional: Guardar automáticamente o dejar que el usuario guarde
-        // $this->save(); 
-        
+        // Restaurar valores de degradado
+        $this->navbar_type = 'solid';
+        $this->navbar_gradient_start = '#1e3a8a';
+        $this->navbar_gradient_end = '#000000';
+        $this->navbar_gradient_direction = 'to right';
+
         session()->flash('message', 'Valores por defecto restablecidos. Pulsa "Guardar" para aplicar.');
     }
 
     public function save()
     {
+        // Validar color solo si es sólido (hexadecimal). Si es degradado, omitimos la validación regex.
+        $colorRule = $this->navbar_type === 'solid' ? 'required|regex:/^#[a-fA-F0-9]{6}$/' : 'required';
+
         $this->validate([
             'state.institution_name'    => 'required|string|max:100',
-            'state.brand_primary_color' => 'required|regex:/^#[a-fA-F0-9]{6}$/',
+            'state.brand_primary_color' => $colorRule,
             'state.support_email'       => 'nullable|email',
             'logo'                      => 'nullable|image|max:2048', 
             'state.wp_api_url'          => 'nullable|url',
@@ -73,14 +129,16 @@ class Index extends Component
                 $this->logo->storeAs('branding', $filename, 'hosting_public');
                 $url = "/branding/" . $filename;
                 $this->state['institution_logo'] = $url;
-                // Log::info('Logo subido: ' . $url); // Log deshabilitado
             } catch (\Exception $e) {
-                // Log::error('Error subiendo logo: ' . $e->getMessage()); // Log deshabilitado
                 session()->flash('error', 'Error al guardar la imagen: ' . $e->getMessage());
                 return;
             }
         }
 
+        // Asegurar que el color esté construido correctamente antes de guardar
+        $this->buildNavbarColor();
+
+        // Guardar configuraciones estándar
         foreach ($this->state as $key => $value) {
             $type = str_contains($key, 'secret') || str_contains($key, 'token') ? 'password' : 'string';
             if ($key === 'institution_logo') $type = 'image';
@@ -94,6 +152,17 @@ class Index extends Component
             } catch (\Exception $e) {
                 // Log::error("Error guardando $key: " . $e->getMessage());
             }
+        }
+
+        // Guardar configuraciones adicionales de degradado
+        try {
+            Setting::set('navbar_type', $this->navbar_type, 'general', 'string');
+            Setting::set('navbar_gradient_start', $this->navbar_gradient_start, 'general', 'string');
+            Setting::set('navbar_gradient_end', $this->navbar_gradient_end, 'general', 'string');
+            Setting::set('navbar_gradient_direction', $this->navbar_gradient_direction, 'general', 'string');
+            Setting::set('theme_presets', json_encode($this->presets), 'general', 'json');
+        } catch (\Exception $e) {
+            // Manejar error si es necesario
         }
 
         if (class_exists(ActivityLog::class)) {
@@ -110,6 +179,73 @@ class Index extends Component
 
         session()->flash('message', 'Personalización guardada correctamente.');
         return redirect()->route('admin.settings.index');
+    }
+
+    // --- FUNCIONES DE PRESETS ---
+
+    public function savePreset()
+    {
+        $this->validate([
+            'new_preset_name' => 'required|string|min:3|max:30'
+        ]);
+
+        $this->buildNavbarColor();
+
+        $themeData = [
+            'name' => $this->new_preset_name,
+            'color' => $this->state['brand_primary_color'], // CSS value final
+            'type' => $this->navbar_type,
+            'gradient_data' => [
+                'start' => $this->navbar_gradient_start,
+                'end' => $this->navbar_gradient_end,
+                'direction' => $this->navbar_gradient_direction,
+            ]
+        ];
+
+        $this->presets[] = $themeData;
+        
+        // Guardamos inmediatamente en la propiedad temporal, se persistirá al dar clic en "Guardar Configuraciones"
+        // Opcionalmente podemos guardar solo presets ahora:
+        try {
+            Setting::set('theme_presets', json_encode($this->presets), 'general', 'json');
+            Cache::flush(); // Limpiar cache para asegurar que otros componentes lo vean si es necesario
+        } catch(\Exception $e) {}
+
+        $this->new_preset_name = '';
+        $this->dispatch('notify', 'Preset guardado (No olvides guardar cambios globales).');
+    }
+
+    public function loadPreset($index)
+    {
+        if (isset($this->presets[$index])) {
+            $preset = $this->presets[$index];
+            
+            $this->navbar_type = $preset['type'] ?? 'solid';
+            
+            if ($this->navbar_type === 'gradient') {
+                $this->navbar_gradient_start = $preset['gradient_data']['start'] ?? '#ffffff';
+                $this->navbar_gradient_end = $preset['gradient_data']['end'] ?? '#000000';
+                $this->navbar_gradient_direction = $preset['gradient_data']['direction'] ?? 'to right';
+            } else {
+                $this->navbar_gradient_start = $preset['color']; // Si es sólido, el color principal es el start
+                $this->state['brand_primary_color'] = $preset['color'];
+            }
+
+            $this->buildNavbarColor();
+        }
+    }
+
+    public function deletePreset($index)
+    {
+        if (isset($this->presets[$index])) {
+            unset($this->presets[$index]);
+            $this->presets = array_values($this->presets); // Reindexar
+            
+            try {
+                Setting::set('theme_presets', json_encode($this->presets), 'general', 'json');
+                Cache::flush();
+            } catch(\Exception $e) {}
+        }
     }
 
     public function render()
