@@ -4,11 +4,10 @@ namespace App\Livewire\Admin\Settings;
 
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use App\Models\SystemOption; // <--- CAMBIO CRÍTICO: Usar el modelo correcto que lee el AppServiceProvider
+use App\Models\Setting; // <--- Usamos el modelo Setting
 use App\Models\ActivityLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Cache; // Importante para limpiar la caché
 use Livewire\Attributes\Layout;
 
 #[Layout('layouts.dashboard')]
@@ -24,8 +23,8 @@ class Index extends Component
 
     public function mount()
     {
-        // Cargar configuraciones de la tabla CORRECTA (system_options)
-        $settings = SystemOption::all()->pluck('value', 'key')->toArray();
+        // Cargar configuraciones de la tabla settings
+        $settings = Setting::all()->pluck('value', 'key')->toArray();
 
         $this->state = [
             // --- PERSONALIZACIÓN / MARCA BLANCA ---
@@ -65,17 +64,20 @@ class Index extends Component
             $this->state['institution_logo'] = $url;
         }
 
-        // 2. Guardar en la tabla system_options
+        // 2. Guardar en la tabla settings usando el helper del modelo
         foreach ($this->state as $key => $value) {
             
             $type = str_contains($key, 'secret') || str_contains($key, 'token') ? 'password' : 'string';
             if ($key === 'institution_logo') $type = 'image';
 
-            // Usamos SystemOption::updateOrCreate para asegurar que se guarde donde el sistema busca
-            SystemOption::updateOrCreate(
-                ['key' => $key],
-                ['value' => $value, 'type' => $type] 
-            );
+            // Determinar grupo
+            $group = 'general';
+            if (str_starts_with($key, 'wp_') || str_starts_with($key, 'moodle_')) $group = 'apis';
+            if (str_starts_with($key, 'cardnet_') || str_starts_with($key, 'ecf_')) $group = 'finance';
+
+            // Usamos el método estático set que definiste en el modelo Setting
+            // Este método ya se encarga de updateOrCreate y de limpiar la caché individual
+            Setting::set($key, $value, $group, $type);
         }
 
         // 3. Auditoría
@@ -89,10 +91,8 @@ class Index extends Component
             ]);
         }
 
-        // 4. LIMPIAR CACHÉ (Vital para que el AppServiceProvider recargue los colores)
-        Cache::flush();
-
-        session()->flash('message', 'Personalización guardada correctamente. El sistema se ha actualizado.');
+        // 4. Recargar
+        session()->flash('message', 'Configuración guardada. Los cambios visuales se aplicarán ahora.');
         return redirect()->route('admin.settings.index');
     }
 

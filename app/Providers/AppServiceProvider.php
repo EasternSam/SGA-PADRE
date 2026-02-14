@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 // Modelos y Observadores
-use App\Models\SystemOption;
+use App\Models\Setting; // <--- CAMBIO IMPORTANTE: Usamos Setting
 use App\Models\Enrollment;
 use App\Observers\EnrollmentObserver;
 use App\Models\Payment;
@@ -33,75 +33,64 @@ class AppServiceProvider extends ServiceProvider
         // 1. Configuración de BD
         Schema::defaultStringLength(191);
 
-        // 2. CORRECCIÓN PARA NGROK (Forzar HTTPS si es producción o ngrok)
+        // 2. CORRECCIÓN PARA NGROK
         if ($this->app->environment('production') || str_contains(request()->getHost(), 'ngrok')) {
             URL::forceScheme('https');
         }
 
-        // 3. CORRECCIÓN LÍMITE LIVEWIRE (Aumentar tamaño de subida temporal)
+        // 3. CORRECCIÓN LÍMITE LIVEWIRE
         config(['livewire.temporary_file_upload.rules' => 'file|max:102400']);
 
         // 4. REGISTRAR OBSERVADORES
-        // Estos observers se disparan automáticamente al crear/actualizar modelos
         Enrollment::observe(EnrollmentObserver::class);
         Payment::observe(PaymentObserver::class);
 
-        // 5. CARGAR PERSONALIZACIÓN DEL SISTEMA (SaaS Branding)
-        // Solo intentamos cargar si la tabla existe para no romper migraciones iniciales
+        // 5. CARGAR PERSONALIZACIÓN (Brand)
         try {
-            // Verificar si la conexión es SQLite y si el archivo existe antes de consultar
-            // Esto evita errores en el primer despliegue o si se borra el archivo .sqlite
-            $canConnect = true;
-            if (DB::connection()->getDriverName() === 'sqlite') {
-                $dbPath = DB::connection()->getDatabaseName();
-                if (!file_exists($dbPath) && $dbPath !== ':memory:') {
-                    $canConnect = false;
-                }
-            }
-
-            if ($canConnect && Schema::hasTable('system_options')) {
+            // Verificar conexión antes de consultar
+            DB::connection()->getPdo();
+            
+            if (Schema::hasTable('settings')) { // <--- Verificamos la tabla 'settings'
                 $this->bootSystemCustomization();
             } else {
-                // Fallback branding si no hay DB
-                View::share('branding', (object) [
-                    'logo_url' => null,
-                    'primary_color' => '#1e3a8a',
-                    'primary_rgb' => '30 58 138'
-                ]);
+                $this->shareDefaultBranding();
             }
         } catch (\Exception $e) {
-            // Ignorar errores de BD durante despliegue inicial
-            // Proveer branding por defecto para que no falle la vista
-             View::share('branding', (object) [
-                'logo_url' => null,
-                'primary_color' => '#1e3a8a',
-                'primary_rgb' => '30 58 138'
-            ]);
+            $this->shareDefaultBranding();
         }
     }
 
     private function bootSystemCustomization()
     {
-        // 1. Cargar Nombre de la Institución
-        $appName = SystemOption::get('institution_name');
+        // 1. Cargar Nombre (Usando el modelo Setting)
+        // Usamos 'institution_name' para coincidir con el formulario
+        $appName = Setting::get('institution_name'); 
+        
         if ($appName) {
             Config::set('app.name', $appName);
         }
 
-        // 2. Cargar Logo y Colores para compartirlos con TODAS las vistas
+        // 2. Cargar Logo y Colores
         $brandSettings = [
-            'logo_url' => SystemOption::get('institution_logo'), // Si es null, usará el componente default
-            'primary_color' => SystemOption::get('brand_primary_color', '#1e3a8a'), // Azul default
+            'logo_url' => Setting::get('institution_logo'), 
+            'primary_color' => Setting::get('brand_primary_color', '#1e3a8a'),
         ];
 
-        // 3. Convertir Hex a RGB para Tailwind (Ej: #ffffff -> "255 255 255")
+        // 3. RGB para Tailwind
         $brandSettings['primary_rgb'] = $this->hex2rgb($brandSettings['primary_color']);
 
-        // Compartir la variable $branding globalmente en todos los blades
         View::share('branding', (object) $brandSettings);
     }
 
-    // Función auxiliar para convertir Hex a RGB string
+    private function shareDefaultBranding()
+    {
+        View::share('branding', (object) [
+            'logo_url' => null,
+            'primary_color' => '#1e3a8a',
+            'primary_rgb' => '30 58 138'
+        ]);
+    }
+
     private function hex2rgb($hex) {
         $hex = str_replace("#", "", $hex);
         if(strlen($hex) == 3) {
