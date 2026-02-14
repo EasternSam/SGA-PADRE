@@ -12,23 +12,36 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
 
-    {{-- Font Awesome (Carga diferida para no bloquear renderizado) --}}
+    {{-- Font Awesome --}}
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
 
-    <!-- Tailwind CDN (En vivo) para renderizar clases no compiladas -->
+    <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Scripts locales (Vite) - DESACTIVADOS PARA PROBAR SOLO EL CDN -->
+    <!-- Scripts locales (Desactivados por ahora para usar CDN) -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <!-- Livewire Styles -->
     @livewireStyles
 
+    <!-- ========================================================= -->
+    <!-- PERSONALIZACIÓN DINÁMICA (ESTO ES LO QUE FALTABA)       -->
+    <!-- ========================================================= -->
     <style>
         [x-cloak] { display: none !important; }
         
-        /* Animación personalizada para la barra de progreso indeterminada */
+        :root {
+            /* Inyectamos el color desde la variable global $branding */
+            --color-primary: {{ isset($branding) && property_exists($branding, 'primary_rgb') ? $branding->primary_rgb : '30 58 138' }};
+        }
+
+        /* Clases de utilidad para forzar el color si Tailwind falla */
+        .bg-sga-primary { background-color: rgb(var(--color-primary)) !important; }
+        .text-sga-primary { color: rgb(var(--color-primary)) !important; }
+        .border-sga-primary { border-color: rgb(var(--color-primary)) !important; }
+        
+        /* Animación de carga */
         @keyframes progress-indeterminate {
             0% { left: -35%; right: 100%; }
             60% { left: 100%; right: -90%; }
@@ -37,12 +50,11 @@
         .animate-progress-indeterminate {
             position: relative;
             animation: progress-indeterminate 2s infinite linear;
-            width: 100%; /* Asegura que ocupe el ancho */
+            width: 100%; 
         }
     </style>
 
-    <!-- SCRIPT DE CARDNET (TOKENIZACIÓN) -->
-    <!-- Se carga dinámicamente usando la configuración corregida -->
+    <!-- SCRIPT DE CARDNET -->
     <script type="text/javascript" 
             src="{{ config('services.cardnet.base_uri') }}/Scripts/PWCheckout.js?key={{ config('services.cardnet.public_key') }}">
     </script>
@@ -50,16 +62,15 @@
 
 <body class="h-full font-sans antialiased text-slate-600 overflow-hidden bg-gray-50">
 
-    <!-- 1. Barra de Carga Global (Inmediata y Z-Index Alto) -->
+    <!-- Barra de Carga Global -->
     <div wire:loading class="fixed top-0 left-0 w-full h-1.5 z-[2000] bg-indigo-100/50" style="pointer-events: none;">
-        <div class="h-full bg-indigo-600 animate-progress-indeterminate shadow-[0_0_10px_rgba(79,70,229,0.5)]"></div>
+        <div class="h-full bg-sga-primary animate-progress-indeterminate shadow-[0_0_10px_rgba(79,70,229,0.5)]"></div>
     </div>
 
-    <!-- 2. Indicador Flotante Moderno (Toast) - Inmediato -->
-    <!-- Sin .delay para feedback instantáneo en modales -->
+    <!-- Indicador Flotante -->
     <div wire:loading class="fixed bottom-6 right-6 z-[2000] pointer-events-none transition-opacity duration-200 ease-in-out" style="pointer-events: none;">
         <div class="bg-white/95 backdrop-blur-md border border-indigo-100 shadow-2xl rounded-full px-5 py-3 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200 ring-1 ring-indigo-50">
-            <svg class="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg class="animate-spin h-5 w-5 text-sga-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -67,18 +78,11 @@
         </div>
     </div>
 
-    <!-- 3. Sistema de Notificaciones Toast -->
-    <!-- style="pointer-events: none;" para asegurar que no bloquee clics -->
+    <!-- Notificaciones Toast -->
     <div aria-live="assertive" class="pointer-events-none fixed inset-0 z-[1500] flex items-end px-4 py-6 sm:items-start sm:p-6">
         <div class="flex w-full flex-col items-center space-y-4 sm:items-end">
             @if (session()->has('success'))
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
-                     x-transition:enter="transform ease-out duration-300 transition"
-                     x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
-                     x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
-                     x-transition:leave="transition ease-in duration-100"
-                     x-transition:leave-start="opacity-100"
-                     x-transition:leave-end="opacity-0"
                      class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
                     <div class="p-4">
                         <div class="flex items-start">
@@ -91,7 +95,6 @@
                             </div>
                             <div class="ml-4 flex flex-shrink-0">
                                 <button @click="show = false" class="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none">
-                                    <span class="sr-only">Cerrar</span>
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>
@@ -102,9 +105,6 @@
 
             @if (session()->has('error'))
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
-                     x-transition:enter="transform ease-out duration-300 transition"
-                     x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
-                     x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
                      class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-red-500 ring-opacity-50 border-l-4 border-red-500">
                     <div class="p-4">
                         <div class="flex items-start">
@@ -136,16 +136,16 @@
         @include('layouts.navigation')
 
         <!-- Main Content Area -->
-        <div class="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out h-full">
+        <div class="flex-1 flex flex-col min-w-0 lg:pl-64 transition-all duration-300 ease-in-out h-full">
 
             <!-- Top bar -->
-            <header class="sticky top-0 z-20 flex bg-white/90 backdrop-blur-md border-b border-gray-200/60 shadow-sm supports-[backdrop-filter]:bg-white/60">
+            <header class="sticky top-0 z-20 flex bg-white/90 backdrop-blur-md border-b border-gray-200/60 shadow-sm">
                 <div class="flex flex-1 items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
                     
                     <!-- Left: Hamburger & Page Title -->
                     <div class="flex items-center gap-4">
                         <button @click.stop="open = !open" type="button"
-                            class="-m-2.5 p-2.5 text-gray-500 lg:hidden hover:text-indigo-600 transition-colors rounded-md hover:bg-gray-100">
+                            class="-m-2.5 p-2.5 text-gray-500 lg:hidden hover:text-sga-primary transition-colors rounded-md hover:bg-gray-100">
                             <span class="sr-only">Abrir menú</span>
                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -168,13 +168,9 @@
 
                     <!-- Right: Actions -->
                     <div class="flex items-center gap-x-4 lg:gap-x-6">
-                        
-                        <!-- Notifications -->
                         <livewire:notifications-dropdown lazy />
-
-                        <!-- Separator -->
                         <div class="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200" aria-hidden="true"></div>
-
+                        
                         <!-- User Menu -->
                         <div class="relative">
                             <x-dropdown align="right" width="48">
@@ -186,7 +182,7 @@
                                         </div>
                                         <div class="relative">
                                             <img class="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-gray-100" 
-                                                 src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&color=7F9CF5&background=EBF4FF&bold=true" 
+                                                 src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&color=FFFFFF&background={{ isset($branding) && property_exists($branding, 'primary_color') ? str_replace('#', '', $branding->primary_color) : '1E3A8A' }}&bold=true" 
                                                  alt="{{ Auth::user()->name }}"
                                                  loading="lazy">
                                             <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-400 ring-2 ring-white"></span>
@@ -199,14 +195,10 @@
                                     <div class="px-4 py-3 border-b border-gray-100">
                                         <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Mi Cuenta</p>
                                     </div>
-
                                     <x-dropdown-link :href="route('profile.edit')" wire:navigate class="flex items-center gap-2"> 
                                         <i class="fas fa-user-circle text-gray-400"></i> {{ __('Mi Perfil') }}
                                     </x-dropdown-link>
-
                                     <div class="border-t border-gray-100 my-1"></div>
-
-                                    <!-- Authentication -->
                                     <form method="POST" action="{{ route('logout') }}">
                                         @csrf
                                         <x-dropdown-link :href="route('logout')"
@@ -218,50 +210,32 @@
                                 </x-slot>
                             </x-dropdown>
                         </div>
-
                     </div>
                 </div>
             </header>
 
-            <!-- Page Content (Scrollable) -->
-            <!-- AGREGADO: flex flex-col para que el mt-auto del footer funcione -->
+            <!-- Page Content -->
+            <!-- AGREGADO: flex flex-col para el sticky footer -->
             <main class="flex-1 flex flex-col overflow-y-auto focus:outline-none scroll-smooth bg-gray-50">
                 <div class="py-6 sm:py-8 w-full">
-                    <!-- CAMBIO: w-full en lugar de max-w-7xl para usar 100% del ancho disponible -->
                     <div class="w-full px-4 sm:px-6 lg:px-8">
                         {{ $slot }}
                     </div>
                 </div>
-                
-                <!-- Footer Mejorado -->
-                <!-- mt-auto asegura que siempre se vaya al fondo del contenedor principal -->
+
+                <!-- FOOTER DINÁMICO (AGREGADO) -->
                 <footer class="mt-auto border-t border-gray-200 py-6 w-full">
-                    <!-- CAMBIO: w-full en lugar de max-w-7xl para usar 100% del ancho disponible -->
                     <div class="w-full px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
-                        
-                        {{-- Copyright alineado a la izquierda --}}
                         <div class="text-left w-full md:w-auto order-2 md:order-1">
                             <p class="text-xs text-gray-400 leading-relaxed">
-                                {{-- LOGICA DINÁMICA DE NOMBRE APP --}}
-                                &copy; {{ date('Y') }} <span class="font-medium text-gray-600">{{ config('app.name', 'SGA-PADRE') }}</span>. 
-                                Todos los derechos reservados. Versión 1.0.0
+                                {{-- NOMBRE DINÁMICO --}}
+                                &copy; {{ date('Y') }} <span class="font-medium text-gray-600">{{ config('app.name', 'SGA Academic+') }}</span>. 
+                                Todos los derechos reservados.
                             </p>
                         </div>
-
-                        {{-- Enlaces de Soporte --}}
                         <div class="flex items-center justify-center md:justify-end gap-6 w-full md:w-auto order-1 md:order-2">
-                            <a href="#" class="group flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-indigo-600 transition-colors duration-200">
-                                <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                                Soporte
-                            </a>
-                            <span class="text-gray-200 h-3 w-px bg-gray-300"></span>
-                            <a href="#" class="group flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-indigo-600 transition-colors duration-200">
-                                <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                </svg>
-                                Manual de Usuario
+                            <a href="#" class="group flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-sga-primary transition-colors duration-200">
+                                <i class="fas fa-life-ring text-gray-400 group-hover:text-sga-primary"></i> Soporte
                             </a>
                         </div>
                     </div>
@@ -270,8 +244,6 @@
         </div>
     </div>
 
-    <!-- Livewire Scripts -->
     @livewireScripts
 </body>
-
 </html>

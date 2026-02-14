@@ -12,6 +12,7 @@
 </div>
 
 <!-- Contenido del Sidebar -->
+<!-- NOTA: bg-sga-primary aquí obedecerá a la variable CSS inyectada en dashboard.blade.php -->
 <aside
     class="fixed inset-y-0 left-0 z-40 flex h-screen w-64 transform flex-col overflow-y-auto border-r border-sga-primary bg-sga-primary pt-4 transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-auto lg:h-screen lg:w-64 lg:shadow-xl [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/40"
     :class="open ? 'translate-x-0 ease-out' : '-translate-x-full ease-in lg:translate-x-0'" 
@@ -22,7 +23,7 @@
         <a href="{{ route('dashboard') }}" class="flex items-center gap-2 transition-transform hover:scale-105">
             {{-- LOGICA DINÁMICA DE LOGO --}}
             @if(isset($branding) && $branding->logo_url)
-                <img src="{{ $branding->logo_url }}" alt="{{ config('app.name') }}" class="block h-12 w-auto object-contain">
+                <img src="{{ $branding->logo_url }}" alt="{{ config('app.name') }}" class="block h-16 w-auto object-contain bg-white/10 rounded-lg p-1">
             @else
                 <x-application-logo class="block h-10 w-auto fill-current text-white" />
             @endif
@@ -32,7 +33,7 @@
     <!-- Enlaces de Navegación -->
     <nav class="flex-1 space-y-2 px-3 py-2">
 
-        <!-- Dashboard General (Todos los roles permitidos) -->
+        <!-- Dashboard General -->
         <x-responsive-nav-link :href="route('dashboard')"
             :active="request()->routeIs(['dashboard', 'admin.dashboard', 'student.dashboard', 'teacher.dashboard', 'applicant.portal'])"
             wire:navigate>
@@ -43,18 +44,15 @@
             <span>{{ __('Dashboard') }}</span>
         </x-responsive-nav-link>
 
-        <!-- ================= SECCIÓN ADMINISTRACIÓN ================= -->
-        {{-- Visible para Admin, Registro, Contabilidad y Caja --}}
+        <!-- SECCIÓN ADMINISTRACIÓN -->
         @hasanyrole('Admin|Registro|Contabilidad|Caja')
             <div class="pt-4 space-y-1">
                 
-                {{-- SAAS: Solo mostrar bloque Académico si tiene el feature 'academic' activado --}}
                 @if(\App\Helpers\SaaS::has('academic'))
                     <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white">
                         {{ __('Gestión Académica') }}
                     </p>
                     
-                    {{-- MÓDULO ACADÉMICO: Admin y Registro --}}
                     @hasanyrole('Admin|Registro')
                         <x-responsive-nav-link :href="route('admin.students.index')"
                             :active="request()->routeIs(['admin.students.index', 'admin.students.profile'])"
@@ -92,13 +90,10 @@
                             </button>
                             
                             <div x-show="openAcademic" x-collapse class="pl-10 space-y-1 mt-1">
-                                <!-- Cursos (Instituto) -->
                                 <a href="{{ route('admin.courses.index') }}" wire:navigate 
                                     class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.courses.index') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
                                     {{ __('Cursos') }}
                                 </a>
-                                
-                                <!-- Carreras (Universidad) -->
                                 <a href="{{ route('admin.careers.index') }}" wire:navigate 
                                     class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.careers.*') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/10' }}">
                                     {{ __('Carreras') }}
@@ -132,7 +127,7 @@
                             <span>{{ __('Admisiones') }}</span>
                         </x-responsive-nav-link>
 
-                        {{-- SAAS: Solo mostrar Inventario si tiene el feature 'inventory' activado --}}
+                        {{-- INVENTARIO --}}
                         @if(\App\Helpers\SaaS::has('inventory'))
                             <x-responsive-nav-link :href="route('admin.inventory.index')" :active="request()->routeIs('admin.inventory.index')" wire:navigate>
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -145,15 +140,13 @@
                     @endhasanyrole
                 @endif
 
-                {{-- MÓDULO FINANCIERO: Admin, Contabilidad, Caja --}}
+                {{-- FINANZAS --}}
                 @hasanyrole('Admin|Contabilidad|Caja')
-                    {{-- SAAS: Solo mostrar Finanzas si tiene el feature 'finance' activado --}}
                     @if(\App\Helpers\SaaS::has('finance'))
                         <p class="px-3 pt-4 pb-2 text-xs font-bold uppercase tracking-wider text-white">
                             {{ __('Finanzas') }}
                         </p>
-                        <x-responsive-nav-link :href="route('admin.finance.dashboard')" :active="request()->routeIs('admin.finance.*')"
-                            wire:navigate>
+                        <x-responsive-nav-link :href="route('admin.finance.dashboard')" :active="request()->routeIs('admin.finance.*')" wire:navigate>
                             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M12 7.5a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Z" />
                                 <path fill-rule="evenodd" d="M1.5 4.875C1.5 3.839 2.34 3 3.375 3h17.25c1.035 0 1.875.84 1.875 1.875v9.75c0 1.036-.84 1.875-1.875 1.875H3.375A1.875 1.875 0 0 1 1.5 14.625v-9.75ZM8.25 9.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM18.75 9a.75.75 0 0 0-.75.75v.008c0 .414.336.75.75.75h.008a.75.75 0 0 0 .75-.75V9.75a.75.75 0 0 0-.75-.75h-.008ZM4.5 9.75A.75.75 0 0 1 5.25 9h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75H5.25a.75.75 0 0 1-.75-.75V9.75Z" clip-rule="evenodd" />
@@ -162,7 +155,6 @@
                             <span>{{ __('Panel Financiero') }}</span>
                         </x-responsive-nav-link>
                         
-                        {{-- Configuración de Pagos (Solo Admin y Contabilidad) --}}
                         @hasanyrole('Admin|Contabilidad')
                             <x-responsive-nav-link :href="route('admin.finance.concepts')" :active="request()->routeIs('admin.finance.concepts')" wire:navigate>
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -174,9 +166,8 @@
                     @endif
                 @endhasanyrole
 
-                {{-- MÓDULO REPORTES: Admin, Registro, Contabilidad --}}
+                {{-- REPORTES --}}
                 @hasanyrole('Admin|Registro|Contabilidad')
-                    {{-- SAAS: Solo mostrar Reportes si tiene el feature 'reports_basic' activado --}}
                     @if(\App\Helpers\SaaS::has('reports_basic'))
                         <p class="px-3 pt-4 pb-2 text-xs font-bold uppercase tracking-wider text-white">
                             {{ __('Reportes') }}
@@ -190,7 +181,7 @@
                     @endif
                 @endhasanyrole
 
-                {{-- SOLO ADMIN: Gestión Personal, Importar, Correos --}}
+                {{-- CONFIGURACIÓN --}}
                 @role('Admin')
                     <p class="px-3 pt-4 pb-2 text-xs font-bold uppercase tracking-wider text-white">
                         {{ __('Configuración') }}
@@ -209,8 +200,6 @@
                         <span>{{ __('Aulas') }}</span>
                     </x-responsive-nav-link>
 
-                    {{-- DESPLEGABLE DIPLOMAS --}}
-                    {{-- SAAS: Solo mostrar Diplomas si tiene el feature 'reports_advanced' activado --}}
                     @if(\App\Helpers\SaaS::has('reports_advanced'))
                         <div x-data="{ openDiplomas: {{ request()->routeIs('admin.certificates.*') ? 'true' : 'false' }} }">
                             <button @click="openDiplomas = !openDiplomas" 
@@ -256,7 +245,6 @@
                         <span>{{ __('Probar Correos') }}</span>
                     </x-responsive-nav-link>
 
-                    {{-- NUEVO: REGISTRO DE ACTIVIDAD --}}
                     <x-responsive-nav-link :href="route('admin.activity-logs.index')" :active="request()->routeIs('admin.activity-logs.index')" wire:navigate>
                         <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                             <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm11.378-3.917c-.89-.777-2.366-.777-3.255 0a.75.75 0 0 1-.988-1.129c1.454-1.272 3.776-1.272 5.23 0 1.539 1.345 1.539 3.535 0 4.881L10.3 16.912a.75.75 0 0 1-1.133-.976l4.312-5.042c.835-.976.835-2.564 0-3.54Z" clip-rule="evenodd" />
@@ -264,7 +252,6 @@
                         <span>{{ __('Registro de Actividad') }}</span>
                     </x-responsive-nav-link>
 
-                    {{-- ---> NUEVO: SISTEMA DE CONFIGURACIÓN <--- --}}
                     <x-responsive-nav-link :href="route('admin.settings.index')" :active="request()->routeIs('admin.settings.index')" wire:navigate>
                         <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                           <path fill-rule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 4.889c-.02.12-.115.26-.297.348a7.493 7.493 0 0 0-.986.57c-.166.115-.334.126-.45.083L6.3 5.508a1.875 1.875 0 0 0-2.282.819l-.922 1.597a1.875 1.875 0 0 0 .432 2.385l.84.692c.095.078.17.229.154.43a7.598 7.598 0 0 0 0 1.139c.015.2-.059.352-.153.43l-.841.692a1.875 1.875 0 0 0-.432 2.385l.922 1.597a1.875 1.875 0 0 0 2.282.818l1.019-.382c.115-.043.283-.031.45.082.312.214.641.405.985.57.182.088.277.228.297.35l.178 1.071c.151.904.933 1.567 1.85 1.567h1.844c.916 0 1.699-.663 1.85-1.567l.178-1.072c.02-.12.114-.26.297-.349.344-.165.673-.356.985-.57.167-.114.335-.125.45-.082l1.02.382a1.875 1.875 0 0 0 2.28-.819l.923-1.597a1.875 1.875 0 0 0-.432-2.385l-.84-.692c-.095-.078-.17-.229-.154-.43a7.614 7.614 0 0 0 0-1.139c-.016-.2.059-.352.153-.43l.84-.692c.708-.582.891-1.59.433-2.385l-.922-1.597a1.875 1.875 0 0 0-2.282-.818l-1.02.382c-.114.043-.282.031-.449-.083a7.49 7.49 0 0 0-.985-.57c-.183-.087-.277-.227-.297-.348l-.179-1.072a1.875 1.875 0 0 0-1.85-1.567h-1.843ZM12 15.75a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5Z" clip-rule="evenodd" />
@@ -283,7 +270,6 @@
                     {{ __('Mi Portal') }}
                 </p>
 
-                {{-- SAAS: Finanzas de Estudiante también protegidas --}}
                 @if(\App\Helpers\SaaS::has('finance'))
                     <x-responsive-nav-link :href="route('student.payments')" :active="request()->routeIs('student.payments')" wire:navigate>
                         <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -297,7 +283,7 @@
 
                 <x-responsive-nav-link :href="route('student.requests')" :active="request()->routeIs('student.requests')" wire:navigate>
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                        <path fill-rule="evenodd" d="M1.5 5.625c0-1.036.84-1.875 1.875-1.875h17.25c1.035 0 1.875.84 1.875 1.875v12.75c0 1.035-.84 1.875-1.875 1.875H3.375A1.875 1.875 0 0 1 1.5 18.375V5.625ZM21 9.375A.375.375 0 0 0 20.625 9h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5ZM10.875 18.75a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5ZM3.375 15h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0 .375.375v1.5c0 .207.168.375.375.375ZM3.375 11.25h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0 .375.375v1.5c0 .207.168.375.375.375Z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M1.5 5.625c0-1.036.84-1.875 1.875-1.875h17.25c1.035 0 1.875.84 1.875 1.875v12.75c0 1.035-.84 1.875-1.875 1.875H3.375A1.875 1.875 0 0 1 1.5 18.375V5.625ZM21 9.375A.375.375 0 0 0 20.625 9h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5ZM10.875 18.75a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5ZM3.375 15h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0 .375.375v1.5c0 .207.168.375.375.375ZM3.375 11.25h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0 .375.375v1.5c0 .207.168.375.375.375Z" clip-rule="evenodd" />
                     </svg>
                     <span>{{ __('Mis Solicitudes') }}</span>
                 </x-responsive-nav-link>
