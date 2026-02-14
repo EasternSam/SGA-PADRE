@@ -14,7 +14,7 @@ return new class extends Migration
                 $table->id();
                 $table->string('key')->unique();
                 $table->text('value')->nullable();
-                $table->string('type')->default('string'); // Creamos con type directamente
+                $table->string('type')->default('string'); 
                 $table->timestamps();
             });
         } else {
@@ -26,9 +26,8 @@ return new class extends Migration
             }
         }
 
-        // 2. Asegurar tabla settings (si es necesaria para tu lógica anterior)
-        // Si tu código ahora usa SystemOption para todo, quizás settings ya no se use,
-        // pero por si acaso evitamos el error.
+        // 2. Asegurar tabla settings
+        // Verificar si la tabla 'settings' NO existe antes de crearla.
         if (!Schema::hasTable('settings')) {
             Schema::create('settings', function (Blueprint $table) {
                 $table->id();
