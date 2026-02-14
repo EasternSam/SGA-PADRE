@@ -34,7 +34,7 @@
                 {{-- Usamos asset() para generar la URL absoluta completa (https://dominio.com/storage/...) --}}
                 <img src="{{ asset($branding->logo_url) }}" 
                      alt="{{ config('app.name') }}" 
-                     class="block h-16 w-auto object-contain bg-white/10 rounded-lg p-1 backdrop-blur-sm shadow-sm">
+                     class="block h-16 w-auto object-contain rounded-lg p-1 backdrop-blur-sm shadow-sm">
             @else
                 {{-- Fallback al logo por defecto si no hay personalización --}}
                 <x-application-logo class="block h-10 w-auto fill-current text-white" />
