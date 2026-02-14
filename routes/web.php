@@ -11,7 +11,8 @@ use App\Http\Controllers\CertificatePdfController;
 use Illuminate\Support\Facades\Auth;
 use App\Livewire\Admin\DatabaseImport; 
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Str;
+use Illuminate\Support\Facades\DB; // Agregado para el diagnóstico
 // Importamos componentes existentes
 use App\Livewire\Admin\CertificateEditor;
 use App\Livewire\Admin\CertificateTemplatesIndex;
@@ -29,6 +30,8 @@ use App\Http\Controllers\MoodleController;
 
 // NUEVO: IMPORTAR CONTROLADOR DEL INSTALADOR SAAS
 use App\Http\Controllers\InstallerController;
+// NUEVO: IMPORTAR HELPER SAAS PARA PROTEGER RUTAS
+use App\Helpers\SaaS;
 
 use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
 use App\Livewire\StudentPortal\CourseDetail as StudentPortalCourseDetail;
@@ -76,8 +79,38 @@ use App\Livewire\Admin\Settings\Index as SystemSettingsIndex;
 */
 
 // ==============================================================================
-// RUTA DE DIAGNÓSTICO TOTAL (VITAL PARA DEBUG)
-// Entra aquí para ver exactamente qué responde el maestro
+// RUTA DE DIAGNÓSTICO DE BASE DE DATOS (NUEVO)
+// ==============================================================================
+Route::get('/system/debug-db', function () {
+    try {
+        $configName = DB::connection()->getDatabaseName();
+        
+        // Intentamos averiguar la ruta real absoluta que está usando el proceso web
+        $realPath = realpath($configName);
+        
+        // Si realpath falla, intentamos construirla relativa al directorio actual
+        if (!$realPath) {
+            $realPath = realpath(getcwd() . '/' . $configName) ?? 'NO ENCONTRADO (Probablemente nueva ruta relativa)';
+        }
+
+        $studentCount = DB::table('students')->count();
+
+        return response()->json([
+            'TITULO' => 'DIAGNÓSTICO DE BASE DE DATOS (WEB)',
+            'Directorio de Ejecución (CWD)' => getcwd(),
+            'Configuración DB_DATABASE' => $configName,
+            'Ruta Absoluta Detectada' => $realPath,
+            'Conteo de Estudiantes' => $studentCount,
+            'Tamaño del Archivo' => file_exists($realPath) ? round(filesize($realPath) / 1024 / 1024, 2) . ' MB' : 'N/A',
+            'CONCLUSIÓN' => $studentCount > 1000 ? 'ESTA ES LA BD CORRECTA' : 'ESTA ES LA BD VACÍA/INCORRECTA'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['ERROR' => $e->getMessage()]);
+    }
+});
+
+// ==============================================================================
+// RUTA DE DIAGNÓSTICO SAAS
 // ==============================================================================
 Route::get('/system/debug-license', function () {
     $licenseKey = env('APP_LICENSE_KEY');
@@ -346,7 +379,8 @@ Route::get('/test', function () {
     ]);
 });
 
-// --- NUEVA RUTA DE DIAGNÓSTICO WP API (Protegida) ---
+// --- NUEVA RUTA DE DIAGNÓSTICO WP API ---
+// --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
 Route::middleware(['feature:api_access'])->group(function () {
     Route::get('/test-wp', function () {
         $baseUri = config('services.wordpress.base_uri') ?? env('WP_API_BASE_URI');
@@ -394,7 +428,8 @@ Route::middleware(['feature:api_access'])->group(function () {
     });
 });
 
-// --- NUEVA RUTA DE DIAGNÓSTICO MOODLE (Protegida) ---
+// --- NUEVA RUTA DE DIAGNÓSTICO MOODLE ---
+// --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
 Route::middleware(['feature:virtual_classroom'])->group(function () {
     Route::get('/test-moodle', function () {
         $url = config('services.moodle.url');
@@ -498,6 +533,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     // =========================================================
     // MODULO: GESTIÓN ACADÉMICA (academic)
     // =========================================================
+    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:academic'])->group(function () {
         Route::get('/students', \App\Livewire\Students\Index::class)->name('admin.students.index');
         Route::get('/students/profile/{student}', \App\Livewire\StudentProfile\Index::class)->name('admin.students.profile');
@@ -526,6 +562,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     // =========================================================
     // MODULO: INVENTARIO (inventory)
     // =========================================================
+    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:inventory'])->group(function () {
         if (class_exists(InventoryIndex::class)) {
             Route::get('/inventory', InventoryIndex::class)->name('admin.inventory.index');
@@ -534,10 +571,11 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
             Route::get('/inventory', function() { return 'Módulo de inventario no instalado'; })->name('admin.inventory.index');
         }
     });
-    
+
     // =========================================================
     // MODULO: FINANZAS (finance)
     // =========================================================
+    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:finance'])->group(function () {
         Route::get('/finance/dashboard', FinanceDashboard::class)->name('admin.finance.dashboard');
         Route::get('/finance/payment-concepts', \App\Livewire\Finance\PaymentConcepts::class)->name('admin.finance.concepts');
@@ -546,6 +584,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     // =========================================================
     // MODULO: REPORTES AVANZADOS / DIPLOMAS (reports_advanced)
     // =========================================================
+    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:reports_advanced'])->group(function () {
         Route::get('/certificates', \App\Livewire\Certificates\Index::class)->name('admin.certificates.index'); 
         Route::get('/certificate-templates', CertificateTemplatesIndex::class)->name('admin.certificates.templates');
@@ -553,7 +592,8 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
         Route::get('/certificate-editor/{templateId?}', CertificateEditor::class)->name('admin.certificates.edit');
     });
 
-    // Reportes básicos (agrupamos para facilitar lectura, si aplica)
+    // --- REPORTES BÁSICOS ---
+    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:reports_basic'])->group(function () {
         Route::get('/reports', \App\Livewire\Reports\Index::class)->name('reports.index');
     });
@@ -576,6 +616,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
 Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student.')->group(function () {
     
     // Core Estudiante (Siempre activo o ligado a academic)
+    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:academic'])->group(function () {
         Route::get('/dashboard', \App\Livewire\StudentPortal\Dashboard::class)->name('dashboard');
         Route::get('/course/{enrollmentId}', \App\Livewire\StudentPortal\CourseDetail::class)->name('course.detail');
@@ -586,11 +627,13 @@ Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student
     });
 
     // Modulo Finanzas Estudiante
+    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:finance'])->group(function () {
         Route::get('/payments', StudentPortalPayments::class)->name('payments');
     });
 
     // Modulo Moodle
+    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:virtual_classroom'])->group(function () {
         Route::get('/moodle-auth', [MoodleController::class, 'sso'])->name('moodle.auth');
     });
@@ -598,6 +641,7 @@ Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student
 
 // --- RUTAS DE PROFESOR ---
 Route::middleware(['auth', 'role:Profesor|Admin'])->prefix('teacher')->group(function () {
+    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:academic'])->group(function () {
         Route::get('/dashboard', \App\Livewire\TeacherPortal\Dashboard::class)->name('teacher.dashboard');
         Route::get('/grades/{section}', \App\Livewire\TeacherPortal\Grades::class)->name('teacher.grades');
@@ -609,6 +653,7 @@ Route::middleware(['auth', 'role:Profesor|Admin'])->prefix('teacher')->group(fun
 // --- RUTAS DE REPORTES (Generación PDF) ---
 Route::middleware(['auth'])->group(function () {
     
+    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:reports_basic'])->group(function () {
         Route::get('/reports/student-report/{student}', [ReportController::class, 'generateStudentReport'])->name('reports.student-report');
         Route::get('/reports/attendance-report/{section}', [ReportController::class, 'generateAttendanceReport'])->name('reports.attendance-report');
@@ -618,12 +663,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/reports/students-list/{section}/pdf', [StudentListPdfController::class, 'download'])->name('reports.students.pdf');
     });
 
+    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:finance'])->group(function () {
         Route::get('/reports/financial/pdf', [FinancialPdfController::class, 'download'])->name('reports.financial.pdf');
         Route::get('/reports/financial/{student}', [FinancialPdfController::class, 'download'])->name('reports.financial-report');
         Route::get('/finance/ticket/{payment}', [\App\Http\Controllers\FinancialPdfController::class, 'ticket'])->name('finance.ticket');
     });
 
+    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:reports_advanced'])->group(function () {
         Route::get('/reports/certificate/{student}/{course}/pdf', [CertificatePdfController::class, 'download'])->name('certificates.download'); 
     });
