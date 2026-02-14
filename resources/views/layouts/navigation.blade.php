@@ -1,5 +1,4 @@
 <!-- Overlay/Fondo oscuro para Móvil -->
-<!-- Controlado por el estado 'open' del layout padre (dashboard.blade.php) -->
 <div x-show="open" 
     x-transition:enter="transition-opacity ease-linear duration-300"
     x-transition:enter-start="opacity-0" 
@@ -21,7 +20,12 @@
     <!-- Logo Sidebar (Visible en el tope del menú lateral) -->
     <div class="mb-6 flex items-center justify-center px-6">
         <a href="{{ route('dashboard') }}" class="flex items-center gap-2 transition-transform hover:scale-105">
-            <x-application-logo class="block h-10 w-auto fill-current text-white" />
+            {{-- LOGICA DINÁMICA DE LOGO --}}
+            @if(isset($branding) && $branding->logo_url)
+                <img src="{{ $branding->logo_url }}" alt="{{ config('app.name') }}" class="block h-12 w-auto object-contain">
+            @else
+                <x-application-logo class="block h-10 w-auto fill-current text-white" />
+            @endif
         </a>
     </div>
 

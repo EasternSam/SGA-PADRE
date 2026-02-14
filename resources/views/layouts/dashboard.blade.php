@@ -242,7 +242,8 @@
                         {{-- Copyright alineado a la izquierda --}}
                         <div class="text-left w-full md:w-auto order-2 md:order-1">
                             <p class="text-xs text-gray-400 leading-relaxed">
-                                &copy; {{ date('Y') }} <span class="font-medium text-gray-600">SGA-PADRE | Academic+</span>. 
+                                {{-- LOGICA DINÁMICA DE NOMBRE APP --}}
+                                &copy; {{ date('Y') }} <span class="font-medium text-gray-600">{{ config('app.name', 'SGA-PADRE') }}</span>. 
                                 Todos los derechos reservados. Versión 1.0.0
                             </p>
                         </div>
