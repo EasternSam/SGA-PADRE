@@ -8,15 +8,41 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('system_options', function (Blueprint $table) {
-            $table->string('type')->default('string')->after('value'); // Agregamos la columna type
-        });
+        // 1. Asegurar tabla system_options y columna 'type'
+        if (!Schema::hasTable('system_options')) {
+            Schema::create('system_options', function (Blueprint $table) {
+                $table->id();
+                $table->string('key')->unique();
+                $table->text('value')->nullable();
+                $table->string('type')->default('string'); // Creamos con type directamente
+                $table->timestamps();
+            });
+        } else {
+            // Si la tabla ya existe, verificamos si falta la columna 'type'
+            if (!Schema::hasColumn('system_options', 'type')) {
+                Schema::table('system_options', function (Blueprint $table) {
+                    $table->string('type')->default('string')->after('value');
+                });
+            }
+        }
+
+        // 2. Asegurar tabla settings (si es necesaria para tu lógica anterior)
+        // Si tu código ahora usa SystemOption para todo, quizás settings ya no se use,
+        // pero por si acaso evitamos el error.
+        if (!Schema::hasTable('settings')) {
+            Schema::create('settings', function (Blueprint $table) {
+                $table->id();
+                $table->string('key')->unique();
+                $table->text('value')->nullable();
+                $table->string('group')->default('general');
+                $table->string('type')->default('string');
+                $table->timestamps();
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('system_options', function (Blueprint $table) {
-            $table->dropColumn('type');
-        });
+        // No borramos nada para proteger datos en producción
     }
 };
