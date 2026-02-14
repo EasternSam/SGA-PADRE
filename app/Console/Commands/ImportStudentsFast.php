@@ -28,16 +28,23 @@ class ImportStudentsFast extends Command
         $this->info('Driver: ' . $dbConnection->getDriverName());
         
         // Obtenemos la ruta real del archivo SQLite
-        $dbName = $dbConnection->getDatabaseName();
-        $this->info('Base de Datos (Archivo): ' . $dbName);
+        $dbConfigName = $dbConnection->getDatabaseName();
+        $this->info('Nombre Configurado: ' . $dbConfigName);
+
+        // Intentamos resolver la ruta absoluta
+        $realPath = realpath($dbConfigName);
         
-        // Verificamos si el archivo existe físicamente
-        if (file_exists($dbName)) {
-            $this->info('Estado del archivo: EXISTE (Permisos: ' . substr(sprintf('%o', fileperms($dbName)), -4) . ')');
-            $this->info('Tamaño: ' . round(filesize($dbName) / 1024 / 1024, 2) . ' MB');
-        } else {
-            $this->warn('Estado del archivo: NO ENCONTRADO O ES EN MEMORIA (:memory:)');
+        // Si no existe con realpath directo, probamos con database_path si no es absoluta
+        if (!$realPath && !Str::startsWith($dbConfigName, '/')) {
+             $realPath = realpath(base_path($dbConfigName));
+             if (!$realPath) $realPath = realpath(database_path($dbConfigName));
         }
+        
+        if (!$realPath) {
+            $realPath = realpath(getcwd() . '/' . $dbConfigName);
+        }
+
+        $this->warn('Ruta Absoluta Detectada (CLI): ' . ($realPath ?: 'NO SE PUDO RESOLVER (¿Archivo en memoria o permisos?)'));
 
         $countBefore = DB::table('students')->count();
         $this->info("Estudiantes actuales en esta BD antes de importar: $countBefore");
@@ -181,7 +188,7 @@ class ImportStudentsFast extends Command
             $address = $this->cleanText($data['Direccion'] ?? '');
             if (empty($address)) $address = 'Sin Dirección Registrada';
 
-            $city = $this->cleanText($data['Ciudad_Raw'] ?? ''); 
+            $city = $this->cleanText($data['Ciudad_Raw'] ?? ''); // Nueva columna
             
             $nationality = $this->cleanText($data['Nacionalidad'] ?? '');
             if (empty($nationality)) $nationality = 'Dominicana';
