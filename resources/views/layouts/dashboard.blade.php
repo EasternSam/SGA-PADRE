@@ -26,7 +26,7 @@
     @livewireStyles
 
     <!-- ========================================================= -->
-    <!-- PERSONALIZACIÓN DINÁMICA (ESTO ES LO QUE FALTABA)       -->
+    <!-- PERSONALIZACIÓN DINÁMICA -->
     <!-- ========================================================= -->
     <style>
         [x-cloak] { display: none !important; }
@@ -136,7 +136,8 @@
         @include('layouts.navigation')
 
         <!-- Main Content Area -->
-        <div class="flex-1 flex flex-col min-w-0 lg:pl-64 transition-all duration-300 ease-in-out h-full">
+        <!-- CORRECCIÓN: Eliminada clase lg:pl-64 para evitar doble espaciado -->
+        <div class="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out h-full">
 
             <!-- Top bar -->
             <header class="sticky top-0 z-20 flex bg-white/90 backdrop-blur-md border-b border-gray-200/60 shadow-sm">
@@ -215,7 +216,6 @@
             </header>
 
             <!-- Page Content -->
-            <!-- AGREGADO: flex flex-col para el sticky footer -->
             <main class="flex-1 flex flex-col overflow-y-auto focus:outline-none scroll-smooth bg-gray-50">
                 <div class="py-6 sm:py-8 w-full">
                     <div class="w-full px-4 sm:px-6 lg:px-8">
@@ -223,7 +223,7 @@
                     </div>
                 </div>
 
-                <!-- FOOTER DINÁMICO (AGREGADO) -->
+                <!-- FOOTER DINÁMICO -->
                 <footer class="mt-auto border-t border-gray-200 py-6 w-full">
                     <div class="w-full px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
                         <div class="text-left w-full md:w-auto order-2 md:order-1">
