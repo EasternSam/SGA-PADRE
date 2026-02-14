@@ -9,6 +9,7 @@ use App\Models\ActivityLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
+use Illuminate\Support\Facades\Log; // <--- IMPORTANTE: Importar Log
 
 #[Layout('layouts.dashboard')]
 class Index extends Component
@@ -48,6 +49,10 @@ class Index extends Component
 
     public function save()
     {
+        // DEBUG: Inicio del proceso
+        Log::info('--- INICIANDO GUARDADO DE SETTINGS ---');
+        Log::info('Datos recibidos del formulario:', $this->state);
+
         $this->validate([
             'state.institution_name'    => 'required|string|max:100',
             'state.brand_primary_color' => 'required|regex:/^#[a-fA-F0-9]{6}$/',
@@ -57,11 +62,18 @@ class Index extends Component
             'state.moodle_url'          => 'nullable|url',
         ]);
 
+        Log::info('Validación superada.');
+
         // 1. Manejo de subida de Logo
         if ($this->logo) {
-            $path = $this->logo->store('public/branding');
-            $url = Storage::url($path);
-            $this->state['institution_logo'] = $url;
+            try {
+                $path = $this->logo->store('public/branding');
+                $url = Storage::url($path);
+                $this->state['institution_logo'] = $url;
+                Log::info('Logo subido exitosamente: ' . $url);
+            } catch (\Exception $e) {
+                Log::error('Error subiendo logo: ' . $e->getMessage());
+            }
         }
 
         // 2. Guardar en la tabla settings usando el helper del modelo
@@ -75,10 +87,16 @@ class Index extends Component
             if (str_starts_with($key, 'wp_') || str_starts_with($key, 'moodle_')) $group = 'apis';
             if (str_starts_with($key, 'cardnet_') || str_starts_with($key, 'ecf_')) $group = 'finance';
 
-            // Usamos el método estático set que definiste en el modelo Setting
-            // Este método ya se encarga de updateOrCreate y de limpiar la caché individual
-            Setting::set($key, $value, $group, $type);
+            try {
+                // Usamos el método estático set
+                Setting::set($key, $value, $group, $type);
+                // Log::info("Guardado: $key"); // Descomentar si quieres ver cada campo
+            } catch (\Exception $e) {
+                Log::error("Error guardando $key: " . $e->getMessage());
+            }
         }
+
+        Log::info('Ciclo de guardado finalizado.');
 
         // 3. Auditoría
         if (class_exists(ActivityLog::class)) {
@@ -93,6 +111,9 @@ class Index extends Component
 
         // 4. Recargar
         session()->flash('message', 'Configuración guardada. Los cambios visuales se aplicarán ahora.');
+        
+        Log::info('Redirigiendo...');
+        
         return redirect()->route('admin.settings.index');
     }
 
