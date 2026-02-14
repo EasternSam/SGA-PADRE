@@ -27,4 +27,13 @@ class Setting extends Model
         );
         Cache::forget("setting_{$key}");
     }
+
+    /**
+     * Alias para get() para compatibilidad con llamadas legacy o errores de tipeo.
+     * Permite usar Setting::val('key')
+     */
+    public static function val($key, $default = null)
+    {
+        return self::get($key, $default);
+    }
 }
