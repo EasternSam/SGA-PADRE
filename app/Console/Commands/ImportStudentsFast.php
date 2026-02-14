@@ -22,14 +22,27 @@ class ImportStudentsFast extends Command
             return;
         }
 
-        $this->info('--- MODO TURBO ACTIVADO ---');
+        // --- DIAGNÓSTICO CRÍTICO DE RUTA SQLITE ---
+        $this->info('--- DIAGNÓSTICO DE CONEXIÓN ---');
+        $dbConnection = DB::connection();
+        $this->info('Driver: ' . $dbConnection->getDriverName());
+        $this->info('Base de Datos (Archivo): ' . $dbConnection->getDatabaseName());
+        
+        $countBefore = DB::table('students')->count();
+        $this->info("Estudiantes actuales en esta BD antes de importar: $countBefore");
+        
+        if (!$this->confirm('Verifica que la ruta de la BD sea la correcta. ¿Continuar?')) {
+            return;
+        }
+        // -------------------------------------------
+
+        $this->info('--- MODO TURBO ACTIVADO (SQLite Safe) ---');
         $this->info('Este script está hecho a medida para tu archivo CSV.');
         
         // Configuración fija para velocidad
         $pass = '12345678'; // Contraseña por defecto rápida
         $defaultPasswordHash = Hash::make($pass);
-        $mustChangePassword = true; 
-
+        
         $this->info("Contraseña temporal para todos: $pass");
         $this->info('Iniciando proceso...');
         
@@ -46,9 +59,15 @@ class ImportStudentsFast extends Command
         $driver = DB::connection()->getDriverName();
         if ($driver === 'sqlite') {
             DB::statement('PRAGMA foreign_keys = OFF;');
+            // Reducimos drásticamente el batch size para SQLite (Límite de variables)
+            $batchSize = 250; 
+            $this->info("Modo SQLite detectado: Lotes reducidos a $batchSize para evitar errores de memoria.");
         } else {
             DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-            DB::statement('SET UNIQUE_CHECKS=0;'); // Solo en MySQL
+            try {
+                DB::statement('SET UNIQUE_CHECKS=0;');
+            } catch (\Exception $e) {} 
+            $batchSize = 1000;
         }
 
         // Obtener Rol
@@ -74,7 +93,6 @@ class ImportStudentsFast extends Command
             return trim(preg_replace('/[\x00-\x1F\x7F\xEF\xBB\xBF]/', '', $v)); 
         }, $headerLine);
 
-        $batchSize = 2000; // Procesar de 2000 en 2000
         $usersBatch = [];
         $studentsBatch = [];
         $emailsInBatch = [];
@@ -90,7 +108,6 @@ class ImportStudentsFast extends Command
 
         while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
             
-            // Si la fila está rota, intentamos saltarla o arreglarla simple
             if (count($row) !== count($headers)) {
                 $skippedCount++;
                 $bar->advance();
@@ -152,7 +169,7 @@ class ImportStudentsFast extends Command
             $address = $this->cleanText($data['Direccion'] ?? '');
             if (empty($address)) $address = 'Sin Dirección Registrada';
 
-            $city = $this->cleanText($data['Ciudad_Raw'] ?? ''); // Nueva columna
+            $city = $this->cleanText($data['Ciudad_Raw'] ?? ''); 
             
             $nationality = $this->cleanText($data['Nacionalidad'] ?? '');
             if (empty($nationality)) $nationality = 'Dominicana';
@@ -170,7 +187,7 @@ class ImportStudentsFast extends Command
                 'cedula' => $cedula, 
                 'email' => $email,
                 'address' => $address,
-                'city' => $city, // Guardamos la ciudad
+                'city' => $city,
                 'birth_date' => $this->parseDate($data['Fecha Nacimiento'] ?? ''),
                 'phone' => $this->cleanPhone($data['Telefono'] ?? null),
                 'mobile' => $this->cleanPhone($data['Celular'] ?? null),
@@ -185,7 +202,11 @@ class ImportStudentsFast extends Command
 
             // Ejecutar lote cuando se llena
             if ($count >= $batchSize) {
-                $insertedCount += $this->processBatch($usersBatch, $studentsBatch, $roleId);
+                try {
+                    $insertedCount += $this->processBatch($usersBatch, $studentsBatch, $roleId);
+                } catch (\Exception $e) {
+                    $this->error("Error en lote: " . $e->getMessage());
+                }
                 
                 // Limpiar memoria
                 $usersBatch = [];
@@ -199,7 +220,11 @@ class ImportStudentsFast extends Command
 
         // Procesar remanentes
         if ($count > 0) {
-            $insertedCount += $this->processBatch($usersBatch, $studentsBatch, $roleId);
+            try {
+                $insertedCount += $this->processBatch($usersBatch, $studentsBatch, $roleId);
+            } catch (\Exception $e) {
+                $this->error("Error final: " . $e->getMessage());
+            }
             $bar->advance($count);
         }
 
@@ -211,24 +236,28 @@ class ImportStudentsFast extends Command
             DB::statement('PRAGMA foreign_keys = ON;');
         } else {
             DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-            DB::statement('SET UNIQUE_CHECKS=1;');
+            try {
+                DB::statement('SET UNIQUE_CHECKS=1;');
+            } catch (\Exception $e) {}
         }
 
         $duration = round(microtime(true) - $startTime, 2);
         $this->newLine(2);
+        
+        $countAfter = DB::table('students')->count();
         $this->info("¡FINALIZADO!");
-        $this->line("Total CSV: " . number_format($totalRows));
-        $this->info("Insertados: " . number_format($insertedCount));
-        $this->warn("Ignorados: " . number_format($skippedCount));
+        $this->info("Estudiantes en BD ahora: " . number_format($countAfter));
+        $this->info("Insertados en esta ejecución: " . number_format($insertedCount));
+        $this->warn("Ignorados (duplicados/errores): " . number_format($skippedCount));
         $this->line("Tiempo: $duration segundos");
     }
 
     private function processBatch($usersData, $studentsData, $roleId)
     {
-        // 1. Insertar Usuarios (ignorando si el email ya existe)
+        // 1. Insertar Usuarios
         DB::table('users')->insertOrIgnore($usersData);
 
-        // 2. Obtener IDs de los usuarios recién insertados (o existentes)
+        // 2. Obtener IDs
         $emails = array_keys($studentsData);
         $usersMap = DB::table('users')
             ->whereIn('email', $emails)
@@ -241,10 +270,6 @@ class ImportStudentsFast extends Command
             if (isset($usersMap[$email])) {
                 $userId = $usersMap[$email];
                 $studentRow['user_id'] = $userId;
-                
-                // Quitamos el email del array de estudiante si ya está en la tabla users 
-                // (aunque tu tabla students lo tiene duplicado, así que lo dejamos).
-                
                 $finalStudents[] = $studentRow;
 
                 $finalRoles[] = [
@@ -258,7 +283,6 @@ class ImportStudentsFast extends Command
         // 3. Insertar Estudiantes y Roles
         $insertedStudents = 0;
         if (count($finalStudents) > 0) {
-            // Usamos insertOrIgnore por si la matrícula o cédula ya existen
             $insertedStudents = DB::table('students')->insertOrIgnore($finalStudents);
         }
         if (count($finalRoles) > 0) {
@@ -267,71 +291,46 @@ class ImportStudentsFast extends Command
 
         return $insertedStudents;
     }
-
-    // --- FUNCIONES DE LIMPIEZA A MEDIDA ---
-
-    private function generateUniqueCedula($cedula, $matricula)
-    {
+    
+    // --- FUNCIONES AUXILIARES (Sin cambios) ---
+    private function generateUniqueCedula($cedula, $matricula) {
         $c = trim($cedula);
         $invalid = ['ND', 'N/D', '', '-       -', '000-0000000-0', 'SIN CEDULA'];
-        // Si la cédula es inválida o muy corta, generamos una basada en la matrícula
-        if (in_array(strtoupper($c), $invalid) || strlen($c) < 5) {
-            return 'GEN-' . $matricula; 
-        }
+        if (in_array(strtoupper($c), $invalid) || strlen($c) < 5) return 'GEN-' . $matricula; 
         return $c;
     }
-
     private function cleanEmail($email, $matricula) {
         $email = trim($email);
-        // Validación simple: si no parece un email o es "ND", creamos uno falso
         if (empty($email) || strlen($email) < 5 || strpos($email, '@') === false || strtoupper($email) === 'ND') {
             return strtolower($matricula) . '@sga.local';
         }
         return $email;
     }
-
     private function cleanText($text) {
         if (empty($text)) return null;
-        
-        // 1. Fix Encoding: Convertir de Windows-1252 a UTF-8 si es necesario
-        if (!mb_check_encoding($text, 'UTF-8')) {
-            $text = mb_convert_encoding($text, 'UTF-8', 'Windows-1252');
-        }
-
-        // 2. Quitar basura al inicio (BOM, comillas, puntos raros)
+        if (!mb_check_encoding($text, 'UTF-8')) $text = mb_convert_encoding($text, 'UTF-8', 'Windows-1252');
+        $text = trim(preg_replace('/[\x00-\x1F\x7F\xEF\xBB\xBF]/', '', $text));
         $text = trim($text, "\"' ");
         $text = str_replace("\xEF\xBB\xBF", '', $text); 
-        $text = preg_replace('/^[^a-zA-Z0-9\(\)]+/', '', $text); // Quita símbolos no alfanuméricos del inicio
-
+        $text = preg_replace('/^[^a-zA-Z0-9\(\)]+/', '', $text); 
         if (strtoupper($text) === 'ND' || $text === '-       -') return null;
-
-        // 3. Formato Título (Juan Perez)
         return Str::title(Str::lower($text));
     }
-
     private function cleanPhone($text) {
         $text = trim($text);
         if (empty($text) || strtoupper($text) === 'ND' || $text === '-       -') return null;
         return $text;
     }
-
     private function parseDate($date) {
         if (empty($date)) return null;
-        // Parsea formato d/m/Y (ej: 25/8/2002) -> Y-m-d
         $parts = explode('/', $date);
-        if (count($parts) === 3) {
-            return $parts[2] . '-' . str_pad($parts[1], 2, '0', STR_PAD_LEFT) . '-' . str_pad($parts[0], 2, '0', STR_PAD_LEFT);
-        }
+        if (count($parts) === 3) return $parts[2] . '-' . str_pad($parts[1], 2, '0', STR_PAD_LEFT) . '-' . str_pad($parts[0], 2, '0', STR_PAD_LEFT);
         return null;
     }
-
     private function countRows($file) {
         $lineCount = 0;
         $handle = fopen($file, "r");
-        while(!feof($handle)){
-            $line = fgets($handle);
-            if($line !== false) $lineCount++;
-        }
+        while(!feof($handle)){ $line = fgets($handle); if($line !== false) $lineCount++; }
         fclose($handle);
         return max(0, $lineCount - 1);
     }
