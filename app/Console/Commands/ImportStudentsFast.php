@@ -26,12 +26,23 @@ class ImportStudentsFast extends Command
         $this->info('--- DIAGNÓSTICO DE CONEXIÓN ---');
         $dbConnection = DB::connection();
         $this->info('Driver: ' . $dbConnection->getDriverName());
-        $this->info('Base de Datos (Archivo): ' . $dbConnection->getDatabaseName());
         
+        // Obtenemos la ruta real del archivo SQLite
+        $dbName = $dbConnection->getDatabaseName();
+        $this->info('Base de Datos (Archivo): ' . $dbName);
+        
+        // Verificamos si el archivo existe físicamente
+        if (file_exists($dbName)) {
+            $this->info('Estado del archivo: EXISTE (Permisos: ' . substr(sprintf('%o', fileperms($dbName)), -4) . ')');
+            $this->info('Tamaño: ' . round(filesize($dbName) / 1024 / 1024, 2) . ' MB');
+        } else {
+            $this->warn('Estado del archivo: NO ENCONTRADO O ES EN MEMORIA (:memory:)');
+        }
+
         $countBefore = DB::table('students')->count();
         $this->info("Estudiantes actuales en esta BD antes de importar: $countBefore");
         
-        if (!$this->confirm('Verifica que la ruta de la BD sea la correcta. ¿Continuar?')) {
+        if (!$this->confirm('Verifica que la ruta de la BD sea la CORRECTA y coincida con la de tu servidor web. ¿Continuar?')) {
             return;
         }
         // -------------------------------------------
@@ -108,6 +119,7 @@ class ImportStudentsFast extends Command
 
         while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
             
+            // Si la fila está rota, intentamos saltarla o arreglarla simple
             if (count($row) !== count($headers)) {
                 $skippedCount++;
                 $bar->advance();
