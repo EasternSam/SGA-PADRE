@@ -19,7 +19,7 @@
 >
 
     <!-- Logo Sidebar -->
-    <div class="mb-6 flex items-center justify-center px-6">
+    <div class="mb-6 flex flex-col items-center justify-center px-6">
         <a href="{{ route('dashboard') }}" class="flex items-center gap-2 transition-transform hover:scale-105">
             {{-- LÓGICA DINÁMICA DE LOGO --}}
             {{-- Verifica si la variable branding existe y tiene un logo_url válido --}}
@@ -32,6 +32,17 @@
                 <x-application-logo class="block h-10 w-auto fill-current text-white" />
             @endif
         </a>
+
+        {{-- ================================================= --}}
+        {{-- DEBUG TEMPORAL: VERIFICACIÓN DE LOGO             --}}
+        {{-- ================================================= --}}
+        <div class="mt-4 p-2 text-[10px] leading-tight text-white bg-red-500/80 rounded border border-red-300 w-full break-all">
+            <strong>DEBUG INFO:</strong><br>
+            Branding existe: {{ isset($branding) ? 'SÍ' : 'NO' }}<br>
+            Logo URL (BD): {{ $branding->logo_url ?? 'VACÍO/NULL' }}<br>
+            Asset URL: {{ isset($branding->logo_url) ? asset($branding->logo_url) : '-' }}
+        </div>
+        {{-- ================================================= --}}
     </div>
 
     <!-- Enlaces de Navegación -->
