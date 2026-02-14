@@ -174,7 +174,14 @@ class ImportFinancialsFast extends Command
         fgetcsv($handle, 0, $delimiter); 
 
         DB::disableQueryLog();
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        
+        // --- DETECCIÓN DE DRIVER PARA DESACTIVAR LLAVES FORÁNEAS ---
+        $driver = DB::connection()->getDriverName();
+        if ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = OFF;');
+        } else {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        }
         
         $batchSize = 2000;
         $paymentsBatch = [];
@@ -313,7 +320,13 @@ class ImportFinancialsFast extends Command
 
         $bar->finish();
         fclose($handle);
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        
+        // --- REACTIVACIÓN DE LLAVES FORÁNEAS SEGÚN DRIVER ---
+        if ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = ON;');
+        } else {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        }
 
         $this->newLine(2);
         $this->info("¡FINALIZADO!");
@@ -338,7 +351,7 @@ class ImportFinancialsFast extends Command
                 ]);
             } catch (\Exception $e) {
                 // Si es error de duplicado (código 23000), reintentamos con otro código
-                if (str_contains($e->getMessage(), 'Duplicate entry') || $e->getCode() == 23000) {
+                if (str_contains($e->getMessage(), 'Duplicate entry') || $e->getCode() == 23000 || str_contains($e->getMessage(), 'UNIQUE constraint failed')) {
                     $attempts++;
                     continue;
                 }

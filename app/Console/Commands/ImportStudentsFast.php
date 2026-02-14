@@ -41,8 +41,15 @@ class ImportStudentsFast extends Command
         
         // Desactivar frenos de seguridad para velocidad máxima
         DB::disableQueryLog();
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        DB::statement('SET UNIQUE_CHECKS=0;');
+        
+        // --- DETECCIÓN DE DRIVER PARA DESACTIVAR LLAVES FORÁNEAS ---
+        $driver = DB::connection()->getDriverName();
+        if ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = OFF;');
+        } else {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            DB::statement('SET UNIQUE_CHECKS=0;'); // Solo en MySQL
+        }
 
         // Obtener Rol
         $role = DB::table('roles')->where('name', 'Estudiante')->first();
@@ -200,8 +207,12 @@ class ImportStudentsFast extends Command
         fclose($handle);
 
         // Reactivar seguridad
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-        DB::statement('SET UNIQUE_CHECKS=1;');
+        if ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = ON;');
+        } else {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+            DB::statement('SET UNIQUE_CHECKS=1;');
+        }
 
         $duration = round(microtime(true) - $startTime, 2);
         $this->newLine(2);
