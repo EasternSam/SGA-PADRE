@@ -24,7 +24,8 @@
             {{-- LÓGICA DINÁMICA DE LOGO --}}
             {{-- Verifica si la variable branding existe y tiene un logo_url válido --}}
             @if(isset($branding) && !empty($branding->logo_url))
-                <img src="{{ $branding->logo_url }}" 
+                {{-- Usamos asset() para generar la URL absoluta completa (https://dominio.com/storage/...) --}}
+                <img src="{{ asset($branding->logo_url) }}" 
                      alt="{{ config('app.name') }}" 
                      class="block h-16 w-auto object-contain bg-white/10 rounded-lg p-1 backdrop-blur-sm shadow-sm">
             @else
@@ -36,12 +37,14 @@
         {{-- ================================================= --}}
         {{-- DEBUG TEMPORAL: VERIFICACIÓN DE LOGO             --}}
         {{-- ================================================= --}}
+        @if(config('app.debug'))
         <div class="mt-4 p-2 text-[10px] leading-tight text-white bg-red-500/80 rounded border border-red-300 w-full break-all">
             <strong>DEBUG INFO:</strong><br>
             Branding existe: {{ isset($branding) ? 'SÍ' : 'NO' }}<br>
             Logo URL (BD): {{ $branding->logo_url ?? 'VACÍO/NULL' }}<br>
             Asset URL: {{ isset($branding->logo_url) ? asset($branding->logo_url) : '-' }}
         </div>
+        @endif
         {{-- ================================================= --}}
     </div>
 
