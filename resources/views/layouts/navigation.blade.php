@@ -20,22 +20,16 @@
 
     <!-- Logo Sidebar -->
     <div class="mb-6 flex flex-col items-center justify-center px-6">
-        <a href="{{ route('dashboard') }}" class="flex items-center gap-2 transition-transform hover:scale-105" x-data="{ imgError: false }">
+        <a href="{{ route('dashboard') }}" class="flex items-center gap-2 transition-transform hover:scale-105">
             {{-- LÓGICA DINÁMICA DE LOGO --}}
+            {{-- Verifica si la variable branding existe y tiene un logo_url válido --}}
             @if(isset($branding) && !empty($branding->logo_url))
-                {{-- Intenta mostrar el logo personalizado --}}
-                <img x-show="!imgError"
-                     src="{{ asset($branding->logo_url) }}" 
+                {{-- Usamos asset() para generar la URL absoluta completa (https://dominio.com/storage/...) --}}
+                <img src="{{ asset($branding->logo_url) }}" 
                      alt="{{ config('app.name') }}" 
-                     class="block h-16 w-auto object-contain bg-white/10 rounded-lg p-1 backdrop-blur-sm shadow-sm"
-                     @error="imgError = true">
-                
-                {{-- Fallback: Si falla la imagen (403), muestra el logo por defecto automáticamente --}}
-                <div x-show="imgError" style="display: none;">
-                    <x-application-logo class="block h-10 w-auto fill-current text-white" />
-                </div>
+                     class="block h-16 w-auto object-contain bg-white/10 rounded-lg p-1 backdrop-blur-sm shadow-sm">
             @else
-                {{-- Si no hay configuración, muestra el logo por defecto directo --}}
+                {{-- Fallback al logo por defecto si no hay personalización --}}
                 <x-application-logo class="block h-10 w-auto fill-current text-white" />
             @endif
         </a>
@@ -104,7 +98,7 @@
                             <div x-show="openAcademic" x-collapse class="pl-10 space-y-1 mt-1">
                                 <!-- Cursos (Instituto) -->
                                 <a href="{{ route('admin.courses.index') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.courses.index') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/10' }}">
+                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.courses.index') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
                                     {{ __('Cursos') }}
                                 </a>
                                 
@@ -275,7 +269,7 @@
 
                     <x-responsive-nav-link :href="route('admin.settings.index')" :active="request()->routeIs('admin.settings.index')" wire:navigate>
                         <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                          <path fill-rule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 4.889c-.02.12-.115.26-.297.348a7.493 7.493 0 0 0-.986.57c-.166.115-.334.126-.45.083L6.3 5.508a1.875 1.875 0 0 0-2.282.819l-.922 1.597a1.875 1.875 0 0 0 .432 2.385l.84.692c.095.078.17.229.154.43a7.598 7.598 0 0 0 0 1.139c.015.2-.059.352-.153.43l-.841.692a1.875 1.875 0 0 0-.432 2.385l.922 1.597a1.875 1.875 0 0 0 2.282.818l1.019-.382c.115-.043.283-.031.45.082.312.214.641.405.985.57.182.088.277.228.297.35l.178 1.071c.151.904.933 1.567 1.85 1.567h1.844c.916 0 1.699-.663 1.85-1.567l.178-1.072c.02-.12.114-.26.297-.349.344-.165.673-.356.985-.57.167-.114.335-.125.45-.082l1.02.382a1.875 1.875 0 0 0 2.28-.819l.923-1.597a1.875 1.875 0 0 0-.432-2.385l-.84-.692c-.114.043-.282.031-.449-.083a7.49 7.49 0 0 0-.985-.57c-.183-.087-.277-.227-.297-.348l-.179-1.072a1.875 1.875 0 0 0-1.85-1.567h-1.843ZM12 15.75a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5Z" clip-rule="evenodd" />
+                          <path fill-rule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 4.889c-.02.12-.115.26-.297.348a7.493 7.493 0 0 0-.986.57c-.166.115-.334.126-.45.083L6.3 5.508a1.875 1.875 0 0 0-2.282.819l-.922 1.597a1.875 1.875 0 0 0 .432 2.385l.84.692c.095.078.17.229.154.43a7.598 7.598 0 0 0 0 1.139c.015.2-.059.352-.153.43l-.841.692a1.875 1.875 0 0 0-.432 2.385l.922 1.597a1.875 1.875 0 0 0 2.282.818l1.019-.382c.115-.043.283-.031.45.082.312.214.641.405.985.57.182.088.277.228.297.35l.178 1.071c.151.904.933 1.567 1.85 1.567h1.844c.916 0 1.699-.663 1.85-1.567l.178-1.072c.02-.12.114-.26.297-.349.344-.165.673-.356.985-.57.167-.114.335-.125.45-.082l1.02.382a1.875 1.875 0 0 0 2.28-.819l.923-1.597a1.875 1.875 0 0 0-.432-2.385l-.84-.692c-.095-.078-.17-.229-.154-.43a7.614 7.614 0 0 0 0-1.139c-.016-.2.059-.352.153-.43l.84-.692c.708-.582.891-1.59.433-2.385l-.922-1.597a1.875 1.875 0 0 0-2.282-.818l-1.02.382c-.114.043-.282.031-.449-.083a7.49 7.49 0 0 0-.985-.57c-.183-.087-.277-.227-.297-.348l-.179-1.072a1.875 1.875 0 0 0-1.85-1.567h-1.843ZM12 15.75a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5Z" clip-rule="evenodd" />
                         </svg>
                         <span>{{ __('Ajustes Globales') }}</span>
                     </x-responsive-nav-link>
@@ -305,7 +299,7 @@
 
                 <x-responsive-nav-link :href="route('student.requests')" :active="request()->routeIs('student.requests')" wire:navigate>
                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                        <path fill-rule="evenodd" d="M1.5 5.625c0-1.036.84-1.875 1.875-1.875h17.25c1.035 0 1.875.84 1.875 1.875v12.75c0 1.035-.84 1.875-1.875 1.875H3.375A1.875 1.875 0 0 1 1.5 18.375V5.625ZM21 9.375A.375.375 0 0 0 20.625 9h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm10.875 18.75a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5ZM3.375 15h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0 .375.375v1.5c0 .207.168.375.375.375ZM3.375 11.25h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0 .375.375v1.5c0 .207.168.375.375.375Z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M1.5 5.625c0-1.036.84-1.875 1.875-1.875h17.25c1.035 0 1.875.84 1.875 1.875v12.75c0 1.035-.84 1.875-1.875 1.875H3.375A1.875 1.875 0 0 1 1.5 18.375V5.625ZM21 9.375A.375.375 0 0 0 20.625 9h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm10.875 18.75a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5ZM3.375 15h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0 .375.375v1.5c0 .207.168.375.375.375ZM3.375 11.25h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0 .375.375v1.5c0 .207.168.375.375.375Z" clip-rule="evenodd" />
                     </svg>
                     <span>{{ __('Mis Solicitudes') }}</span>
                 </x-responsive-nav-link>
