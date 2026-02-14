@@ -684,4 +684,20 @@ Route::middleware(['auth'])->group(function () {
         ->name('password.force_update');
 });
 
+
+// RUTA DE RESCATE PARA IMÁGENES (Bypass de cPanel 403)
+Route::get('/storage/branding/{filename}', function ($filename) {
+    $path = storage_path('app/public/branding/' . $filename);
+
+    if (!file_exists($path)) {
+        abort(404);
+    }
+
+    $file = file_get_contents($path);
+    $type = mime_content_type($path);
+
+    return response($file, 200)->header("Content-Type", $type);
+})->where('filename', '.*');
+
+
 require __DIR__.'/auth.php';
