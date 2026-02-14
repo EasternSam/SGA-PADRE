@@ -255,11 +255,12 @@
         }
         .sys-color-input {
             height: 3rem;
-            width: 6rem;
+            width: 4rem;
             padding: 0.25rem;
             border: 1px solid #d1d5db;
             border-radius: 0.375rem;
             cursor: pointer;
+            background: #fff;
         }
 
         /* Footer y Botones */
@@ -379,8 +380,8 @@
                                     <!-- 1. Nombre -->
                                     <div class="sys-form-group">
                                         <label class="sys-label">Nombre del Sistema / Colegio</label>
-                                        <input type="text" wire:model="state.school_name" class="sys-input @error('state.school_name') sys-input-error @enderror">
-                                        @error('state.school_name') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                        <input type="text" wire:model="state.institution_name" class="sys-input @error('state.institution_name') sys-input-error @enderror">
+                                        @error('state.institution_name') <p class="sys-error-text">{{ $message }}</p> @enderror
                                     </div>
 
                                     <!-- 2. Correo Soporte -->
@@ -391,17 +392,39 @@
                                     </div>
 
                                     <!-- 3. Color Principal -->
-                                    {{-- Nota: Este campo aún no está en el controlador state, se agregará próximamente --}}
-                                    {{-- 
                                     <div class="sys-form-group">
                                         <label class="sys-label">Color Institucional (Primario)</label>
                                         <div class="sys-color-wrapper">
-                                            <input type="color" class="sys-color-input" disabled title="Próximamente">
-                                            <input type="text" class="sys-input" placeholder="#1E3A8A" disabled>
+                                            <input type="color" wire:model.live="state.brand_primary_color" class="sys-color-input">
+                                            <input type="text" wire:model.live="state.brand_primary_color" class="sys-input uppercase" placeholder="#1E3A8A">
                                         </div>
-                                        <p class="sys-help-text">Configura el color principal del sistema (Próximamente).</p>
+                                        <p class="sys-help-text">Este color definirá la identidad visual del panel y menú lateral.</p>
+                                        @error('state.brand_primary_color') <p class="sys-error-text">{{ $message }}</p> @enderror
                                     </div>
-                                    --}}
+
+                                    <!-- 4. Logotipo -->
+                                    <div class="sys-form-group sys-col-full">
+                                        <label class="sys-label">Logotipo</label>
+                                        <div class="flex items-center gap-4 p-4 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
+                                            <!-- Preview -->
+                                            <div class="shrink-0">
+                                                @if ($logo)
+                                                    <img src="{{ $logo->temporaryUrl() }}" class="h-16 w-auto object-contain rounded bg-white p-1 shadow-sm">
+                                                @elseif (!empty($state['institution_logo']))
+                                                    <img src="{{ $state['institution_logo'] }}" class="h-16 w-auto object-contain rounded bg-white p-1 shadow-sm">
+                                                @else
+                                                    <div class="h-16 w-16 bg-gray-200 rounded flex items-center justify-center text-gray-400 font-bold text-xs">Sin Logo</div>
+                                                @endif
+                                            </div>
+                                            <!-- Input -->
+                                            <div class="flex-1">
+                                                <input type="file" wire:model="logo" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                                                <div wire:loading wire:target="logo" class="text-xs text-indigo-500 mt-1 font-semibold">Subiendo imagen...</div>
+                                                <p class="sys-help-text mt-1">Recomendado: PNG Transparente. Máx 2MB.</p>
+                                            </div>
+                                        </div>
+                                        @error('logo') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                    </div>
                                 </div>
                             </div>
                         </div>

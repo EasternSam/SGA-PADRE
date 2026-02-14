@@ -3,15 +3,22 @@
 namespace App\Livewire\Admin\Settings;
 
 use Livewire\Component;
-use App\Models\Setting; // Asegúrate de tener este modelo
-use App\Models\ActivityLog; // Asegúrate de tener este modelo
+use Livewire\WithFileUploads; // Vital para subir el logo
+use App\Models\Setting;
+use App\Models\ActivityLog;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 
 #[Layout('layouts.dashboard')]
 class Index extends Component
 {
-    public $activeTab = 'apis'; // apis, finance, general
+    use WithFileUploads;
+
+    public $activeTab = 'general'; // Empezamos en 'general' para ver la personalización
+
+    // Archivo temporal para la subida de logo
+    public $logo;
 
     // Array de datos vinculados al formulario
     public $state = [];
@@ -19,25 +26,27 @@ class Index extends Component
     public function mount()
     {
         // Cargar configuraciones existentes de la BD
-        // Asumiendo que Setting::all() devuelve una colección con 'key' y 'value'
         $settings = Setting::all()->pluck('value', 'key')->toArray();
 
-        // Definir la estructura base de configuraciones esperadas con sus valores por defecto
+        // Definir la estructura base de configuraciones
+        // Usamos las claves que AppServiceProvider espera para la personalización
         $this->state = [
-            // APIs (WordPress / Moodle)
-            'wp_api_url' => $settings['wp_api_url'] ?? '',
+            // --- PERSONALIZACIÓN / MARCA BLANCA ---
+            'institution_name'    => $settings['institution_name'] ?? config('app.name'),
+            'institution_logo'    => $settings['institution_logo'] ?? null,
+            'brand_primary_color' => $settings['brand_primary_color'] ?? '#1e3a8a', // Azul default
+            'support_email'       => $settings['support_email'] ?? 'soporte@institucion.edu',
+
+            // --- APIs ---
+            'wp_api_url'    => $settings['wp_api_url'] ?? '',
             'wp_api_secret' => $settings['wp_api_secret'] ?? '',
-            'moodle_url' => $settings['moodle_url'] ?? '',
-            'moodle_token' => $settings['moodle_token'] ?? '',
+            'moodle_url'    => $settings['moodle_url'] ?? '',
+            'moodle_token'  => $settings['moodle_token'] ?? '',
             
-            // Finanzas (Cardnet / DGII)
+            // --- FINANZAS ---
             'cardnet_merchant_id' => $settings['cardnet_merchant_id'] ?? '',
             'cardnet_terminal_id' => $settings['cardnet_terminal_id'] ?? '',
-            'ecf_rnc_emisor' => $settings['ecf_rnc_emisor'] ?? '101000000',
-            
-            // General (NUEVO: Personalización)
-            'school_name' => $settings['school_name'] ?? 'Mi Institución',
-            'support_email' => $settings['support_email'] ?? 'soporte@institucion.edu',
+            'ecf_rnc_emisor'      => $settings['ecf_rnc_emisor'] ?? '101000000',
         ];
     }
 
@@ -45,44 +54,59 @@ class Index extends Component
     {
         // Reglas de Validación
         $this->validate([
-            'state.wp_api_url' => 'nullable|url',
-            'state.moodle_url' => 'nullable|url',
-            'state.support_email' => 'nullable|email',
-            'state.school_name' => 'required|string|max:100', // Validación para el nombre
+            'state.institution_name'    => 'required|string|max:100',
+            'state.brand_primary_color' => 'required|regex:/^#[a-fA-F0-9]{6}$/',
+            'state.support_email'       => 'nullable|email',
+            'logo'                      => 'nullable|image|max:2048', // Validación del logo
+            'state.wp_api_url'          => 'nullable|url',
+            'state.moodle_url'          => 'nullable|url',
         ]);
 
-        // Guardar cada configuración en la base de datos
+        // 1. Manejo de subida de Logo (si se seleccionó uno nuevo)
+        if ($this->logo) {
+            // Guardar en disco publico
+            $path = $this->logo->store('public/branding');
+            // Obtener URL accesible
+            $url = Storage::url($path);
+            // Actualizar estado para que se guarde en BD
+            $this->state['institution_logo'] = $url;
+        }
+
+        // 2. Guardar configuraciones en la base de datos
         foreach ($this->state as $key => $value) {
             
-            // Determinar el grupo visual (opcional, para organizar en BD)
+            // Determinar grupo visual
             $group = 'general';
             if (str_starts_with($key, 'wp_') || str_starts_with($key, 'moodle_')) $group = 'apis';
             if (str_starts_with($key, 'cardnet_') || str_starts_with($key, 'ecf_')) $group = 'finance';
 
-            // Determinar tipo (para ocultar contraseñas en la UI si fuera necesario)
+            // Determinar tipo
             $type = str_contains($key, 'secret') || str_contains($key, 'token') ? 'password' : 'string';
+            if ($key === 'institution_logo') $type = 'image';
 
-            // Usamos el método estático set del modelo Setting (si existe) o updateOrCreate
-            // Asumo que tienes un método similar a SystemOption::set en tu modelo Setting
-            // Si no, usa updateOrCreate:
             Setting::updateOrCreate(
                 ['key' => $key],
                 ['value' => $value, 'group' => $group, 'type' => $type]
             );
         }
 
-        // Auditoría
+        // 3. Auditoría
         if (class_exists(ActivityLog::class)) {
             ActivityLog::create([
                 'user_id' => Auth::id(),
                 'action' => 'Configuración del Sistema',
-                'description' => 'Actualizó los parámetros de configuración global del sistema (Pestaña: '.strtoupper($this->activeTab).').',
+                'description' => 'Actualizó la personalización y ajustes globales (Tab: '.strtoupper($this->activeTab).').',
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent()
             ]);
         }
 
-        session()->flash('message', 'Configuraciones guardadas correctamente. Los cambios se han aplicado en todo el sistema.');
+        // Limpiar caché para que los cambios de color se vean al instante
+        \Illuminate\Support\Facades\Cache::flush();
+
+        // Recargar para limpiar el input file y ver cambios
+        session()->flash('message', 'Personalización guardada correctamente. El sistema se ha actualizado.');
+        return redirect()->route('admin.settings.index');
     }
 
     public function render()
