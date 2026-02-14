@@ -321,7 +321,7 @@ Route::any('/cardnet/cancel', function (Request $request) {
 // RUTAS DE APLICACIÓN ESTÁNDAR
 // ==============================================================================
 
-// --- RUTA PÚBLICA DE VALIDACIÓN DE CERTIFICADOS (QR) ---
+// --- CERTIFICADOS PÚBLICOS ---
 Route::get('/certificates/verify/{student}/{course}', [CertificatePdfController::class, 'verify'])
     ->name('certificates.verify')
     ->middleware('signed');
