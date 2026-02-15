@@ -17,54 +17,69 @@
         @php
             use App\Models\SystemOption;
 
-            // 1. Intentar obtener el color configurado en el panel de diseño ('navbar_color')
-            $loginBackground = SystemOption::getOption('navbar_color');
+            // 1. Prioridad: Color de la barra de navegación (Navbar/Degradado)
+            $bg = SystemOption::getOption('navbar_color');
 
-            // 2. Si no existe, intentar obtener el color de marca antiguo ('brand_primary_color')
-            if (empty($loginBackground)) {
-                $loginBackground = SystemOption::getOption('brand_primary_color');
+            // 2. Fallback: Color primario antiguo
+            if (empty($bg) || $bg === '#') {
+                $bg = SystemOption::getOption('brand_primary_color');
             }
 
-            // 3. Fallback final: Si todo falla o devuelve vacío, usar el degradado azul por defecto
-            if (empty($loginBackground) || $loginBackground == '#') {
-                $loginBackground = 'linear-gradient(to right, #1e3a8a, #000000)';
+            // 3. Seguridad: Si sigue vacío o es inválido, forzar azul por defecto
+            if (empty($bg) || $bg === '#' || $bg === 'red') {
+                $bg = 'linear-gradient(to right, #1e3a8a, #000000)';
             }
 
-            // Lógica similar para el logo: preferir 'logo' sobre 'institution_logo'
+            // Logo
             $logoUrl = SystemOption::getOption('logo');
             if (empty($logoUrl)) {
                 $logoUrl = SystemOption::getOption('institution_logo');
             }
         @endphp
+        
+        <!-- Estilos críticos en línea para sobrescribir cualquier CSS compilado -->
+        <style>
+            .dynamic-bg {
+                background: {{ $bg }} !important;
+                background-size: cover !important;
+                background-position: center !important;
+                background-repeat: no-repeat !important;
+            }
+        </style>
     </head>
     <body class="font-sans text-gray-900 antialiased">
-        {{-- 
-            Usamos style inline con !important para garantizar que sobrescriba cualquier clase CSS (como bg-red-*) 
-            que pudiera estar viniendo de app.css o clases utilitarias heredadas.
-        --}}
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0"
-             style="background: {{ $loginBackground }} !important; background-size: cover; background-position: center;">
+        {{-- Depuración: Ver en código fuente si el valor llega bien --}}
+        <!-- DEBUG COLOR: {{ $bg }} -->
+
+        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 dynamic-bg">
             
             <!-- Logo -->
-            <div>
-                <a href="/">
-                    <div class="flex items-center gap-2">
+            <div class="mb-6">
+                <a href="/" wire:navigate>
+                    <div class="flex items-center justify-center">
                         @if($logoUrl)
-                            {{-- Logo personalizado con fondo translúcido --}}
+                            {{-- Logo personalizado --}}
                             <img src="{{ asset($logoUrl) }}" 
                                  alt="{{ config('app.name') }}" 
-                                 class="w-20 h-20 fill-current text-white bg-white/10 rounded-lg p-2 shadow-lg object-contain backdrop-blur-sm">
+                                 class="h-24 w-auto object-contain bg-white/10 rounded-xl p-3 backdrop-blur-md shadow-xl border border-white/20">
                         @else
-                            {{-- Logo por defecto (SVG de Laravel/App) --}}
-                            <x-application-logo class="w-20 h-20 fill-current text-white drop-shadow-md" />
+                            {{-- Logo por defecto --}}
+                            <div class="p-3 bg-white/10 rounded-full backdrop-blur-sm">
+                                <x-application-logo class="w-20 h-20 fill-current text-white drop-shadow-lg" />
+                            </div>
                         @endif
                     </div>
                 </a>
             </div>
 
             <!-- Tarjeta de Login -->
-            <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
+            <div class="w-full sm:max-w-md px-6 py-8 bg-white shadow-2xl overflow-hidden sm:rounded-xl border border-gray-100">
                 {{ $slot }}
+            </div>
+            
+            <!-- Footer simple -->
+            <div class="mt-8 text-white/60 text-xs text-center">
+                &copy; {{ date('Y') }} {{ config('app.name') }}. Todos los derechos reservados.
             </div>
         </div>
     </body>
