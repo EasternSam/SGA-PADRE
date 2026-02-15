@@ -16,16 +16,22 @@
 
         @php
             // Obtener configuración de apariencia. 
-            // Si brand_primary_color no existe, usamos un degradado azul por defecto en lugar de un color sólido que podría ser rojo por error en alguna config.
-            $loginBackground = \App\Models\SystemOption::getOption('brand_primary_color', 'linear-gradient(to right, #1e3a8a, #000000)');
+            // Intentamos obtener 'brand_primary_color'. Si falla o está vacío, usamos un degradado por defecto seguro.
+            // Nota: Asegúrate de que en la base de datos la clave 'brand_primary_color' tenga el valor del degradado (ej: "linear-gradient(...)")
+            $loginBackground = \App\Models\SystemOption::getOption('brand_primary_color');
+            
+            // Si no hay valor en la base de datos, ponemos un degradado por defecto
+            if (empty($loginBackground)) {
+                $loginBackground = 'linear-gradient(to right, #1e3a8a, #000000)';
+            }
+
             $logoUrl = \App\Models\SystemOption::getOption('institution_logo');
         @endphp
     </head>
     <body class="font-sans text-gray-900 antialiased">
-        {{-- Usamos style inline para el fondo. Quitamos clases de bg estáticas para evitar conflictos. --}}
-        {{-- Forzamos min-h-screen y flex para centrar. --}}
+        {{-- Usamos style inline para el fondo con !important para asegurar que sobrescriba cualquier clase CSS conflictiva --}}
         <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0"
-             style="background: {{ $loginBackground }};">
+             style="background: {{ $loginBackground }} !important; background-size: cover;">
             
             <!-- Logo -->
             <div>
