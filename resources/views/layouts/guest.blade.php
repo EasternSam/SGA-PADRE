@@ -1,649 +1,162 @@
-import React, { useState, useEffect } from 'react';
-import { Mail, Lock, Eye, EyeOff, Check, UserPlus, LogIn, GraduationCap, Info } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
 
-export default function PortalAcademico() {
-  const [email, setEmail] = useState('admin@admin.com');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+        <title>{{ config('app.name', 'SGA Padre') }}</title>
 
-  // Efecto de paralaje sutil en el fondo basado en el movimiento del mouse
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      setMousePosition({
-        x: (e.clientX / window.innerWidth) * 20,
-        y: (e.clientY / window.innerHeight) * 20,
-      });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+        <!-- Fonts -->
+        <link rel="preconnect" href="https://fonts.bunny.net">
+        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // Simulación de carga
-    setTimeout(() => setIsLoading(false), 2000);
-  };
-
-  return (
-    <div className="login-container">
-      
-      {/* --- Fondo Dinámico --- */}
-      <div className="background-wrapper">
-        <div 
-          className="orb orb-1"
-          style={{ transform: `translate(${mousePosition.x * -1}px, ${mousePosition.y * -1}px)` }}
-        ></div>
-        <div 
-          className="orb orb-2"
-          style={{ transform: `translate(${mousePosition.x}px, ${mousePosition.y}px)` }}
-        ></div>
-        <div 
-          className="orb orb-3"
-        ></div>
-      </div>
-
-      {/* --- Tarjeta Glassmorphic --- */}
-      <div className="card-wrapper">
-        <div className="card-border-glow"></div>
+        <!-- Tailwind CSS CDN -->
+        <script src="https://cdn.tailwindcss.com"></script>
         
-        <div className="glass-card">
-          {/* Brillo interior al hacer hover */}
-          <div className="card-shine"></div>
+        <!-- Alpine.js para interactividad (mouse move) -->
+        <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
-          {/* --- Cabecera --- */}
-          <div className="card-header">
-            <div className="logo-container">
-              <GraduationCap size={32} className="logo-icon" />
-            </div>
-            <h1 className="title">Portal Académico</h1>
-            <p className="subtitle">Ingresa tus credenciales para acceder</p>
-          </div>
+        <!-- Scripts -->
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-          {/* --- Formulario --- */}
-          <form onSubmit={handleSubmit} className="login-form">
+        @php
+            use App\Models\SystemOption;
+
+            // --- LÓGICA DE FONDO DINÁMICO ---
+            $bg = SystemOption::getOption('navbar_color');
+            $type = SystemOption::getOption('navbar_type');
+
+            if ($type === 'gradient' && !str_contains($bg, 'gradient')) {
+                $start = SystemOption::getOption('navbar_gradient_start', '#1e3a8a');
+                $end = SystemOption::getOption('navbar_gradient_end', '#000000');
+                $dir = SystemOption::getOption('navbar_gradient_direction', 'to right');
+                $bg = "linear-gradient({$dir}, {$start}, {$end})";
+            }
+
+            // Fallback
+            if (empty($bg) || $bg === '#' || $bg === 'red' || $bg === '#red') {
+                $bg = 'radial-gradient(circle at 50% 50%, #1e1b4b 0%, #0f172a 100%)'; 
+            }
+
+            // --- LÓGICA DE LOGO ---
+            $logoUrl = SystemOption::getOption('logo');
+            if (empty($logoUrl)) {
+                $logoUrl = SystemOption::getOption('institution_logo');
+            }
+        @endphp
+        
+        <style>
+             body { font-family: 'Figtree', sans-serif; }
+             
+             /* Animaciones personalizadas */
+             @keyframes float-slow {
+                0%, 100% { transform: translate(0, 0); }
+                50% { transform: translate(20px, -20px); }
+             }
+             @keyframes float-medium {
+                0%, 100% { transform: translate(0, 0); }
+                50% { transform: translate(-15px, 25px); }
+             }
+             @keyframes float-fast {
+                0%, 100% { transform: translate(0, 0); }
+                50% { transform: translate(10px, 15px); }
+             }
+             .animate-float-slow { animation: float-slow 8s ease-in-out infinite; }
+             .animate-float-medium { animation: float-medium 6s ease-in-out infinite; }
+             .animate-float-fast { animation: float-fast 4s ease-in-out infinite; }
+        </style>
+    </head>
+    <body class="font-sans antialiased text-white bg-[#0f172a]"
+          x-data="{ 
+              mouseX: 0, 
+              mouseY: 0,
+              handleMouseMove(e) {
+                  this.mouseX = (e.clientX / window.innerWidth) * 20;
+                  this.mouseY = (e.clientY / window.innerHeight) * 20;
+              }
+          }"
+          @mousemove.window="handleMouseMove">
+        
+        <div class="min-h-screen w-full relative flex items-center justify-center overflow-hidden selection:bg-indigo-500 selection:text-white">
             
-            {/* Input Email */}
-            <div className="input-group">
-              <label>Email o Matrícula</label>
-              <div className="input-wrapper">
-                <div className="input-icon">
-                  <Mail size={18} />
+            <!-- --- Fondo Dinámico --- -->
+            <div class="absolute inset-0 w-full h-full pointer-events-none"
+                 style="background: {{ $bg }} !important; background-size: cover;">
+                
+                <!-- Orbes de luz flotantes con animación (Efecto visual) -->
+                <!-- Usamos :style de Alpine.js para la interactividad con JS -->
+                <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-purple-600/30 blur-[100px] animate-float-slow mix-blend-screen transition-transform duration-100 ease-out"
+                     :style="`transform: translate(${mouseX * -1}px, ${mouseY * -1}px)`"></div>
+                
+                <div class="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-indigo-600/30 blur-[120px] animate-float-medium mix-blend-screen transition-transform duration-100 ease-out"
+                     :style="`transform: translate(${mouseX}px, ${mouseY}px)`"></div>
+                
+                <div class="absolute top-[40%] left-[60%] w-[300px] h-[300px] rounded-full bg-pink-600/20 blur-[80px] animate-float-fast mix-blend-screen"></div>
+            </div>
+
+            <!-- --- Tarjeta Glassmorphic --- -->
+            <div class="relative z-10 w-full max-w-md p-4">
+                
+                <!-- Borde brillante sutil -->
+                <div class="absolute inset-0 bg-gradient-to-br from-white/40 via-white/10 to-transparent rounded-3xl blur-[1px]"></div>
+                
+                <div class="relative bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl p-8 sm:p-10 text-white overflow-hidden group">
+                    
+                    <!-- Brillo interior al hacer hover -->
+                    <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+
+                    <!-- --- Cabecera con Logo --- -->
+                    <div class="text-center mb-8 relative">
+                        <div class="inline-flex items-center justify-center mb-4 transform transition-transform duration-500 hover:scale-110">
+                            @if($logoUrl)
+                                <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-20 w-auto object-contain drop-shadow-lg">
+                            @else
+                                <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-lg shadow-indigo-500/30 flex items-center justify-center">
+                                    <x-application-logo class="w-10 h-10 fill-current text-white" />
+                                </div>
+                            @endif
+                        </div>
+                        <h1 class="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-100 to-indigo-200">
+                            {{ config('app.name', 'Portal Académico') }}
+                        </h1>
+                        <p class="text-indigo-200/80 mt-2 text-sm font-medium">
+                            Ingresa tus credenciales para acceder
+                        </p>
+                    </div>
+
+                    <!-- --- Slot del Formulario (Login/Register) --- -->
+                    <div class="relative z-20">
+                        {{ $slot }}
+                    </div>
+
+                    <!-- --- Footer / Links Adicionales (Opcional) --- -->
+                    @if (Route::has('register'))
+                        <div class="relative my-8">
+                            <div class="absolute inset-0 flex items-center">
+                                <div class="w-full border-t border-white/10"></div>
+                            </div>
+                            <div class="relative flex justify-center text-xs uppercase">
+                                <span class="bg-[#1e2038]/60 backdrop-blur-md px-3 text-indigo-300 rounded-full border border-white/5">
+                                    ¿Aún no eres estudiante?
+                                </span>
+                            </div>
+                        </div>
+
+                        <a href="{{ route('register') }}" class="w-full py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/30 text-indigo-100 hover:text-white font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 group/btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400 group-hover/btn:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                            Solicitar Admisión / Nuevo Ingreso
+                        </a>
+                    @endif
+
                 </div>
-                <input
-                  type="text"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="form-input"
-                  placeholder="ejemplo@universidad.edu"
-                />
-              </div>
             </div>
-
-            {/* Input Password */}
-            <div className="input-group">
-              <div className="label-row">
-                <label>Contraseña</label>
-                <a href="#" className="forgot-link">¿Olvidaste tu contraseña?</a>
-              </div>
-              <div className="input-wrapper">
-                <div className="input-icon">
-                  <Lock size={18} />
-                </div>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="form-input password-input"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="toggle-password"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
+            
+            <!-- Footer Copyright -->
+            <div class="absolute bottom-4 text-center text-xs text-white/40">
+                &copy; {{ date('Y') }} {{ config('app.name') }}. Todos los derechos reservados.
             </div>
-
-            {/* Info Box */}
-            <div className="info-box">
-              <Info className="info-icon" size={18} />
-              <p>
-                Si eres nuevo ingreso, tu contraseña inicial es tu <span>número de cédula</span> (sin guiones).
-              </p>
-            </div>
-
-            {/* Checkbox */}
-            <div className="checkbox-container">
-              <label className="checkbox-label">
-                <div className="checkbox-wrapper">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={() => setRememberMe(!rememberMe)}
-                  />
-                  <div className={`custom-checkbox ${rememberMe ? 'checked' : ''}`}>
-                    <Check size={12} className={`check-icon ${rememberMe ? 'visible' : ''}`} />
-                  </div>
-                </div>
-                <span className="checkbox-text">Mantener sesión activa</span>
-              </label>
-            </div>
-
-            {/* Botón Principal */}
-            <button
-              type="button"
-              onClick={handleSubmit}
-              className={`btn-primary ${isLoading ? 'loading' : ''}`}
-            >
-              <div className="btn-shine"></div>
-              <span className="btn-content">
-                {isLoading ? (
-                  <>
-                    <svg className="spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="spinner-track" cx="12" cy="12" r="10"></circle>
-                      <path className="spinner-fill" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Ingresando...
-                  </>
-                ) : (
-                  <>
-                    Ingresar al Portal
-                    <LogIn size={18} />
-                  </>
-                )}
-              </span>
-            </button>
-          </form>
-
-          {/* --- Divider --- */}
-          <div className="divider">
-            <div className="divider-line"></div>
-            <div className="divider-text-wrapper">
-              <span className="divider-text">¿Aún no eres estudiante?</span>
-            </div>
-          </div>
-
-          {/* --- Botón Secundario --- */}
-          <button
-            type="button"
-            className="btn-secondary"
-          >
-            <UserPlus size={18} className="secondary-icon" />
-            Solicitar Admisión / Nuevo Ingreso
-          </button>
 
         </div>
-      </div>
-
-      <style>{`
-        /* Reset & Base */
-        * { box-sizing: border-box; }
-        
-        .login-container {
-          min-height: 100vh;
-          width: 100%;
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: hidden;
-          background-color: #0f172a;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-          color: white;
-        }
-
-        /* Background Effects */
-        .background-wrapper {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          pointer-events: none;
-          background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #0f172a 100%);
-        }
-
-        .orb {
-          position: absolute;
-          border-radius: 50%;
-          mix-blend-mode: screen;
-        }
-
-        .orb-1 {
-          top: -10%;
-          left: -10%;
-          width: 500px;
-          height: 500px;
-          background: rgba(147, 51, 234, 0.3); /* Purple */
-          filter: blur(100px);
-          animation: float-slow 8s ease-in-out infinite;
-        }
-
-        .orb-2 {
-          bottom: -10%;
-          right: -10%;
-          width: 600px;
-          height: 600px;
-          background: rgba(79, 70, 229, 0.3); /* Indigo */
-          filter: blur(120px);
-          animation: float-medium 6s ease-in-out infinite;
-        }
-
-        .orb-3 {
-          top: 40%;
-          left: 60%;
-          width: 300px;
-          height: 300px;
-          background: rgba(219, 39, 119, 0.2); /* Pink */
-          filter: blur(80px);
-          animation: float-fast 4s ease-in-out infinite;
-        }
-
-        /* Card Wrapper & Glass Effect */
-        .card-wrapper {
-          position: relative;
-          z-index: 10;
-          width: 100%;
-          max-width: 450px;
-          padding: 4px;
-        }
-
-        .card-border-glow {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.1), transparent);
-          border-radius: 24px;
-          filter: blur(1px);
-        }
-
-        .glass-card {
-          position: relative;
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(24px);
-          -webkit-backdrop-filter: blur(24px);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-          border-radius: 24px;
-          padding: 40px;
-          color: white;
-          overflow: hidden;
-        }
-
-        /* Hover Shine Effect */
-        .card-shine {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(135deg, rgba(255,255,255,0.05), transparent);
-          opacity: 0;
-          transition: opacity 0.7s;
-          pointer-events: none;
-        }
-        .glass-card:hover .card-shine {
-          opacity: 1;
-        }
-
-        /* Header */
-        .card-header {
-          text-align: center;
-          margin-bottom: 32px;
-          position: relative;
-        }
-
-        .logo-container {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 64px;
-          height: 64px;
-          border-radius: 16px;
-          background: linear-gradient(to top right, #6366f1, #a855f7);
-          box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
-          margin-bottom: 16px;
-          transition: transform 0.5s;
-        }
-        .logo-container:hover {
-          transform: scale(1.1) rotate(3deg);
-        }
-        .logo-icon { color: white; }
-
-        .title {
-          font-size: 1.875rem;
-          font-weight: 700;
-          letter-spacing: -0.025em;
-          margin: 0;
-          background: linear-gradient(to right, #ffffff, #e0e7ff, #c7d2fe);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-
-        .subtitle {
-          color: rgba(199, 210, 254, 0.8);
-          margin-top: 8px;
-          font-size: 0.875rem;
-          font-weight: 500;
-        }
-
-        /* Form */
-        .login-form {
-          position: relative;
-          z-index: 20;
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-        }
-
-        .input-group label {
-          display: block;
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: #e0e7ff;
-          margin-bottom: 8px;
-          margin-left: 4px;
-        }
-
-        .label-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .forgot-link {
-          font-size: 0.75rem;
-          color: #a5b4fc;
-          text-decoration: none;
-          transition: color 0.2s;
-        }
-        .forgot-link:hover {
-          color: white;
-          text-decoration: underline;
-        }
-
-        .input-wrapper {
-          position: relative;
-        }
-
-        .input-icon {
-          position: absolute;
-          top: 0;
-          bottom: 0;
-          left: 0;
-          padding-left: 16px;
-          display: flex;
-          align-items: center;
-          pointer-events: none;
-          color: #a5b4fc;
-          transition: color 0.3s;
-        }
-        .input-wrapper:focus-within .input-icon {
-          color: white;
-        }
-
-        .form-input {
-          width: 100%;
-          padding: 12px 16px 12px 44px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
-          outline: none;
-          color: white;
-          font-size: 1rem;
-          transition: all 0.3s;
-        }
-        .form-input::placeholder {
-          color: rgba(165, 180, 252, 0.3);
-        }
-        .form-input:focus {
-          background: rgba(255, 255, 255, 0.1);
-          border-color: transparent;
-          box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.5);
-        }
-        .password-input {
-          padding-right: 44px;
-          letter-spacing: 0.1em;
-        }
-
-        .toggle-password {
-          position: absolute;
-          top: 0;
-          bottom: 0;
-          right: 0;
-          padding-right: 16px;
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: #a5b4fc;
-          display: flex;
-          align-items: center;
-          transition: color 0.2s;
-        }
-        .toggle-password:hover {
-          color: white;
-        }
-
-        /* Info Box */
-        .info-box {
-          background: rgba(99, 102, 241, 0.2);
-          border: 1px solid rgba(129, 140, 248, 0.3);
-          border-radius: 12px;
-          padding: 16px;
-          display: flex;
-          gap: 12px;
-          align-items: flex-start;
-          backdrop-filter: blur(4px);
-        }
-        .info-icon {
-          color: #a5b4fc;
-          flex-shrink: 0;
-          margin-top: 2px;
-        }
-        .info-box p {
-          font-size: 0.75rem;
-          color: #e0e7ff;
-          margin: 0;
-          line-height: 1.5;
-        }
-        .info-box span {
-          font-weight: 700;
-          color: white;
-        }
-
-        /* Checkbox */
-        .checkbox-container {
-          display: flex;
-          align-items: center;
-        }
-        .checkbox-label {
-          display: flex;
-          align-items: center;
-          cursor: pointer;
-          user-select: none;
-        }
-        .checkbox-wrapper {
-          position: relative;
-        }
-        .checkbox-wrapper input {
-          position: absolute;
-          opacity: 0;
-          cursor: pointer;
-          height: 0;
-          width: 0;
-        }
-        .custom-checkbox {
-          width: 20px;
-          height: 20px;
-          border-radius: 4px;
-          border: 1px solid rgba(165, 180, 252, 0.5);
-          background: rgba(255, 255, 255, 0.05);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.3s;
-        }
-        .checkbox-wrapper:hover .custom-checkbox {
-          border-color: #a5b4fc;
-        }
-        .custom-checkbox.checked {
-          background-color: #6366f1;
-          border-color: #6366f1;
-        }
-        .check-icon {
-          color: white;
-          transform: scale(0);
-          transition: transform 0.2s;
-        }
-        .check-icon.visible {
-          transform: scale(1);
-        }
-        .checkbox-text {
-          margin-left: 12px;
-          font-size: 0.875rem;
-          color: #c7d2fe;
-          transition: color 0.2s;
-        }
-        .checkbox-label:hover .checkbox-text {
-          color: white;
-        }
-
-        /* Primary Button */
-        .btn-primary {
-          width: 100%;
-          position: relative;
-          padding: 14px 16px;
-          background: linear-gradient(to right, #4f46e5, #9333ea);
-          color: white;
-          font-weight: 700;
-          border: none;
-          border-radius: 12px;
-          cursor: pointer;
-          box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
-          transition: all 0.3s;
-          overflow: hidden;
-        }
-        .btn-primary:hover {
-          background: linear-gradient(to right, #4338ca, #7e22ce);
-          transform: translateY(-2px);
-          box-shadow: 0 15px 20px -3px rgba(99, 102, 241, 0.6);
-        }
-        .btn-primary:active {
-          transform: scale(0.98);
-        }
-        
-        .btn-shine {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(255,255,255,0.2);
-          border-radius: 12px;
-          transform: translateY(100%);
-          transition: transform 0.3s;
-        }
-        .btn-primary:hover .btn-shine {
-          transform: translateY(0);
-        }
-
-        .btn-content {
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-        }
-
-        /* Spinner Animation */
-        .spinner {
-          animation: spin 1s linear infinite;
-          height: 20px;
-          width: 20px;
-          color: white;
-        }
-        .spinner-track { opacity: 0.25; stroke: currentColor; stroke-width: 4; }
-        .spinner-fill { opacity: 0.75; }
-
-        /* Divider */
-        .divider {
-          position: relative;
-          margin: 32px 0;
-        }
-        .divider-line {
-          position: absolute;
-          top: 50%;
-          left: 0;
-          width: 100%;
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .divider-text-wrapper {
-          position: relative;
-          display: flex;
-          justify-content: center;
-        }
-        .divider-text {
-          font-size: 0.75rem;
-          text-transform: uppercase;
-          background: rgba(30, 32, 56, 0.6);
-          backdrop-filter: blur(12px);
-          padding: 4px 12px;
-          color: #a5b4fc;
-          border-radius: 9999px;
-          border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        /* Secondary Button */
-        .btn-secondary {
-          width: 100%;
-          padding: 12px 16px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          color: #e0e7ff;
-          font-weight: 600;
-          border-radius: 12px;
-          cursor: pointer;
-          transition: all 0.3s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-        }
-        .btn-secondary:hover {
-          background: rgba(255, 255, 255, 0.1);
-          border-color: rgba(255, 255, 255, 0.3);
-          color: white;
-        }
-        .secondary-icon {
-          color: #818cf8;
-          transition: color 0.3s;
-        }
-        .btn-secondary:hover .secondary-icon {
-          color: white;
-        }
-
-        /* Animations Keyframes */
-        @keyframes float-slow {
-          0%, 100% { transform: translate(0, 0); }
-          50% { transform: translate(20px, -20px); }
-        }
-        @keyframes float-medium {
-          0%, 100% { transform: translate(0, 0); }
-          50% { transform: translate(-15px, 25px); }
-        }
-        @keyframes float-fast {
-          0%, 100% { transform: translate(0, 0); }
-          50% { transform: translate(10px, 15px); }
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-    </div>
-  );
-}
+    </body>
+</html>
