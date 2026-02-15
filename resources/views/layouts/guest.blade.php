@@ -17,19 +17,21 @@
         @php
             use App\Models\SystemOption;
 
-            // 1. Prioridad: Color de la barra de navegación (Navbar/Degradado)
+            // 1. Intentar obtener el color configurado ('navbar_color')
             $bg = SystemOption::getOption('navbar_color');
 
-            // 2. Fallback: Color primario antiguo
+            // 2. Si está vacío, intentar 'brand_primary_color'
             if (empty($bg) || $bg === '#') {
                 $bg = SystemOption::getOption('brand_primary_color');
             }
 
-            // 3. Seguridad: Si sigue vacío o es inválido, forzar azul por defecto
-            if (empty($bg) || $bg === '#' || $bg === 'red') {
-                $bg = 'linear-gradient(to right, #1e3a8a, #000000)';
+            // 3. Validación y Fallback
+            // Si sigue vacío, es inválido, o es explícitamente 'red' o '#red' (valores que causan el problema), usar default.
+            // También verificamos si es un hexadecimal corto inválido o similar.
+            if (empty($bg) || $bg === '#' || $bg === 'red' || $bg === '#red') {
+                $bg = 'linear-gradient(to right, #1e3a8a, #000000)'; // Azul oscuro a negro
             }
-
+            
             // Logo
             $logoUrl = SystemOption::getOption('logo');
             if (empty($logoUrl)) {
@@ -37,19 +39,20 @@
             }
         @endphp
         
-        <!-- Estilos críticos en línea para sobrescribir cualquier CSS compilado -->
+        <!-- Estilos críticos en línea -->
         <style>
             .dynamic-bg {
                 background: {{ $bg }} !important;
                 background-size: cover !important;
                 background-position: center !important;
                 background-repeat: no-repeat !important;
+                min-height: 100vh; /* Asegurar altura mínima */
             }
         </style>
     </head>
     <body class="font-sans text-gray-900 antialiased">
-        {{-- Depuración: Ver en código fuente si el valor llega bien --}}
-        <!-- DEBUG COLOR: {{ $bg }} -->
+        {{-- Depuración: Ver en código fuente --}}
+        <!-- DEBUG COLOR: "{{ $bg }}" -->
 
         <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 dynamic-bg">
             
