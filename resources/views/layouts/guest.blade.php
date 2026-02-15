@@ -156,14 +156,18 @@
 
                 <div class="relative z-10 max-w-lg text-white">
                     <div class="mb-8">
-                        <!-- Icono grande decorativo si no hay logo específico para acá -->
-                        <div class="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/20 mb-6">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path d="M12 14l9-5-9-5-9 5 9 5z" />
-                                <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-                            </svg>
+                        <!-- Logo Dinámico -->
+                        <div class="mb-6 flex justify-start">
+                             @if($logoUrl)
+                                <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-20 w-auto object-contain bg-white/10 rounded-2xl p-2 backdrop-blur-sm border border-white/20">
+                            @else
+                                <div class="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/20">
+                                    <x-application-logo class="w-10 h-10 fill-current text-white" />
+                                </div>
+                            @endif
                         </div>
-                        <h2 class="text-4xl font-bold tracking-tight mb-4">Bienvenido al Portal</h2>
+
+                        <h2 class="text-4xl font-bold tracking-tight mb-4">Bienvenido a {{ config('app.name') }}</h2>
                         <p class="text-indigo-100 text-lg leading-relaxed opacity-90">
                             Gestión académica simplificada para padres y tutores. 
                             Accede al rendimiento escolar, asistencia y comunicados en tiempo real.
@@ -215,20 +219,18 @@
 
                         <!-- Header del Formulario -->
                         <div class="text-center mb-10">
-                            <!-- Logo -->
-                            <div class="inline-flex justify-center items-center mb-6">
+                            <!-- Logo Móvil (Solo visible en pantallas pequeñas) -->
+                            <div class="lg:hidden inline-flex justify-center items-center mb-6">
                                 @if($logoUrl)
-                                    <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-20 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300">
+                                    <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-16 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300">
                                 @else
-                                    <div class="h-16 w-16 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                        </svg>
+                                    <div class="h-12 w-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                                        <x-application-logo class="w-8 h-8 fill-current text-white" />
                                     </div>
                                 @endif
                             </div>
 
-                            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">{{ config('app.name', 'Portal Académico') }}</h1>
+                            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">{{ config('app.name') }}</h1>
                             <p class="text-sm text-gray-500 mt-2">Ingresa tus credenciales para acceder a tu cuenta</p>
                         </div>
 
