@@ -22,8 +22,6 @@
             $type = SystemOption::getOption('navbar_type'); // 'solid' o 'gradient'
 
             // 2. Lógica de AUTO-CORRECCIÓN:
-            // Si el tipo es 'gradient' pero el color guardado NO es un gradiente CSS (ej. es el rojo #e41b1b),
-            // forzamos la reconstrucción del gradiente usando los componentes individuales.
             if ($type === 'gradient' && !str_contains($bg, 'gradient')) {
                 $start = SystemOption::getOption('navbar_gradient_start', '#1e3a8a');
                 $end = SystemOption::getOption('navbar_gradient_end', '#000000');
@@ -33,7 +31,6 @@
             }
 
             // 3. Fallback de seguridad final
-            // Si está vacío o es un valor inválido/roto
             if (empty($bg) || $bg === '#') {
                 $bg = 'linear-gradient(to right, #1e3a8a, #000000)';
             }
@@ -52,28 +49,32 @@
                 background-size: cover !important;
                 background-position: center !important;
                 background-repeat: no-repeat !important;
-                min-height: 100vh; /* Asegurar altura mínima */
+                min-height: 100vh;
+            }
+            /* Efecto Glassmorphism para la tarjeta */
+            .glass-card {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.5);
             }
         </style>
     </head>
     <body class="font-sans text-gray-900 antialiased">
-        {{-- Depuración: Ver en código fuente --}}
-        <!-- DEBUG COLOR: "{{ $bg }}" | TYPE: "{{ $type }}" -->
-
+        {{-- Contenedor Principal con Fondo Dinámico --}}
         <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 dynamic-bg">
             
-            <!-- Logo -->
-            <div class="mb-6">
+            <!-- Logo con efecto flotante -->
+            <div class="mb-8 transform hover:scale-105 transition-transform duration-300">
                 <a href="/" wire:navigate>
                     <div class="flex items-center justify-center">
                         @if($logoUrl)
                             {{-- Logo personalizado --}}
                             <img src="{{ asset($logoUrl) }}" 
                                  alt="{{ config('app.name') }}" 
-                                 class="h-24 w-auto object-contain bg-white/10 rounded-xl p-3 backdrop-blur-md shadow-xl border border-white/20">
+                                 class="h-28 w-auto object-contain bg-white/20 rounded-2xl p-4 backdrop-blur-md shadow-2xl border border-white/30">
                         @else
                             {{-- Logo por defecto --}}
-                            <div class="p-3 bg-white/10 rounded-full backdrop-blur-sm">
+                            <div class="p-4 bg-white/20 rounded-full backdrop-blur-md shadow-xl border border-white/30">
                                 <x-application-logo class="w-20 h-20 fill-current text-white drop-shadow-lg" />
                             </div>
                         @endif
@@ -81,14 +82,17 @@
                 </a>
             </div>
 
-            <!-- Tarjeta de Login -->
-            <div class="w-full sm:max-w-md px-6 py-8 bg-white shadow-2xl overflow-hidden sm:rounded-xl border border-gray-100">
+            <!-- Tarjeta de Login Mejorada -->
+            <div class="w-full sm:max-w-md px-8 py-10 glass-card shadow-2xl overflow-hidden sm:rounded-2xl relative">
+                <!-- Decoración sutil superior -->
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent opacity-50"></div>
+                
                 {{ $slot }}
             </div>
             
             <!-- Footer simple -->
-            <div class="mt-8 text-white/60 text-xs text-center">
-                &copy; {{ date('Y') }} {{ config('app.name') }}. Todos los derechos reservados.
+            <div class="mt-8 text-white/80 text-sm font-medium text-center drop-shadow-md">
+                &copy; {{ date('Y') }} {{ config('app.name') }}. <span class="opacity-75 font-normal">Todos los derechos reservados.</span>
             </div>
         </div>
     </body>
