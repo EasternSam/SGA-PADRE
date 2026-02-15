@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Cache;
 
 class SystemOption extends Model
 {
-    protected $fillable = ['key', 'value', 'type', 'group']; // Added 'group' to fillable as it was used in previous context
+    protected $fillable = ['key', 'value', 'type', 'group']; 
 
     // Helper para obtener un valor rápidamente (con caché)
     public static function get($key, $default = null)
@@ -25,7 +25,7 @@ class SystemOption extends Model
             ['key' => $key],
             [
                 'value' => $value,
-                'group' => $group, // Ensure these columns exist in your DB or remove if not needed
+                'group' => $group, 
                 'type' => $type
             ]
         );
