@@ -23,24 +23,7 @@
         @php
             use App\Models\SystemOption;
 
-            // --- LÓGICA DE FONDO DINÁMICO ---
-            // Recuperamos el color configurado para usarlo como base si es necesario.
-            $bg = SystemOption::getOption('navbar_color');
-            $type = SystemOption::getOption('navbar_type');
-
-            if ($type === 'gradient' && !str_contains($bg, 'gradient')) {
-                $start = SystemOption::getOption('navbar_gradient_start', '#1e3a8a');
-                $end = SystemOption::getOption('navbar_gradient_end', '#000000');
-                $dir = SystemOption::getOption('navbar_gradient_direction', 'to right');
-                $bg = "linear-gradient({$dir}, {$start}, {$end})";
-            }
-
-            // Fallback: Usamos el radial gradient del diseño que te gustó si no hay config
-            if (empty($bg) || $bg === '#' || $bg === 'red' || $bg === '#red') {
-                $bg = 'radial-gradient(circle at 50% 50%, #1e1b4b 0%, #0f172a 100%)'; 
-            }
-
-            // Logo
+            // Logo dinámico
             $logoUrl = SystemOption::getOption('logo');
             if (empty($logoUrl)) {
                 $logoUrl = SystemOption::getOption('institution_logo');
@@ -62,15 +45,15 @@
                 overflow: hidden;
             }
 
-            /* --- Background Effects --- */
+            /* --- Background Effects (Tema Oscuro Forzado) --- */
             .background-wrapper {
                 position: absolute;
                 inset: 0;
                 width: 100%;
                 height: 100%;
                 pointer-events: none;
-                /* Fondo dinámico */
-                background: {{ $bg }} !important; 
+                /* Fondo radial oscuro fijo para garantizar el diseño "espacial" */
+                background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #0f172a 100%) !important;
                 background-size: cover !important;
             }
 
@@ -102,7 +85,7 @@
                 animation: float-fast 4s ease-in-out infinite;
             }
 
-            /* --- Glass Card --- */
+            /* --- Glass Card (Versión Oscura) --- */
             .card-wrapper {
                 position: relative;
                 z-index: 10;
@@ -114,17 +97,19 @@
             .card-border-glow {
                 position: absolute;
                 inset: 0;
-                background: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.1), transparent);
+                /* Borde brillante más sutil */
+                background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05), transparent);
                 border-radius: 24px;
                 filter: blur(1px);
             }
 
             .glass-card {
                 position: relative;
-                background: rgba(255, 255, 255, 0.1);
+                /* Fondo oscuro semitransparente en lugar de blanco */
+                background: rgba(15, 23, 42, 0.6); 
                 backdrop-filter: blur(24px);
                 -webkit-backdrop-filter: blur(24px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.1);
                 box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
                 border-radius: 24px;
                 padding: 40px;
@@ -136,7 +121,7 @@
             .card-shine {
                 position: absolute;
                 top: 0; left: 0; width: 100%; height: 100%;
-                background: linear-gradient(135deg, rgba(255,255,255,0.05), transparent);
+                background: linear-gradient(135deg, rgba(255,255,255,0.03), transparent);
                 opacity: 0; transition: opacity 0.7s; pointer-events: none;
             }
             .glass-card:hover .card-shine { opacity: 1; }
@@ -154,7 +139,6 @@
                 justify-content: center;
                 width: 80px; height: 80px;
                 border-radius: 16px;
-                /* Fondo gradiente para el contenedor del logo */
                 background: linear-gradient(to top right, #6366f1, #a855f7);
                 box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
                 margin-bottom: 16px;
@@ -178,8 +162,6 @@
             }
 
             /* --- ESTILOS FORZADOS PARA EL FORMULARIO (SLOT) --- */
-            /* Estos estilos sobrescriben los defaults de los componentes de Laravel Breeze 
-               para que se adapten al tema oscuro/glass del diseño solicitado. */
             
             .glass-card label {
                 display: block; font-size: 0.875rem; font-weight: 500;
@@ -191,8 +173,8 @@
             .glass-card input[type="password"] {
                 width: 100%;
                 padding: 12px 16px;
-                /* Fondo semitransparente oscuro */
-                background: rgba(255, 255, 255, 0.05) !important;
+                /* Fondo muy oscuro y transparente */
+                background: rgba(0, 0, 0, 0.2) !important;
                 border: 1px solid rgba(255, 255, 255, 0.1) !important;
                 border-radius: 12px !important;
                 outline: none;
@@ -203,13 +185,13 @@
             }
             
             .glass-card input:focus {
-                background: rgba(255, 255, 255, 0.1) !important;
+                background: rgba(0, 0, 0, 0.4) !important;
                 border-color: transparent !important;
                 box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.5) !important; /* Indigo glow */
             }
 
             .glass-card input::placeholder {
-                color: rgba(165, 180, 252, 0.3);
+                color: rgba(165, 180, 252, 0.4);
             }
 
             /* Botón Principal */
@@ -242,15 +224,15 @@
             /* Checkbox */
             .glass-card input[type="checkbox"] {
                 border-radius: 4px;
-                background-color: rgba(255, 255, 255, 0.1);
-                border-color: rgba(255, 255, 255, 0.2);
+                background-color: rgba(0, 0, 0, 0.3);
+                border-color: rgba(255, 255, 255, 0.3);
                 color: #6366f1;
             }
             .glass-card input[type="checkbox"]:checked {
                 background-color: #6366f1;
             }
 
-            /* Enlaces (Olvidaste contraseña / Registrarse) */
+            /* Enlaces */
             .glass-card a {
                 color: #a5b4fc;
                 font-size: 0.875rem;
