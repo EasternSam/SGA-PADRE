@@ -13,21 +13,33 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+        @php
+            // Obtener configuración de apariencia (color/degradado y logo)
+            // Se usa el mismo key que en el sidebar para mantener consistencia
+            $loginBackground = \App\Models\SystemOption::getOption('brand_primary_color', '#1e3a8a');
+            $logoUrl = \App\Models\SystemOption::getOption('institution_logo');
+        @endphp
     </head>
     <!-- --- ¡ACTUALIZADO! --- -->
-    {{-- Fondo rediseñado para 'sga-primary' --}}
     <body class="font-sans text-sga-text antialiased">
-        <div class="flex min-h-screen flex-col items-center justify-center bg-sga-primary p-4 sm:p-6">
+        {{-- Usamos style inline para permitir degradados CSS complejos que vienen de la BD --}}
+        <div class="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6"
+             style="background: {{ $loginBackground }};">
             
             <!-- Logo -->
             <div>
                 <a href="/" wire:navigate>
-                    {{-- --- ¡¡¡CORRECCIÓN!!! --- --}}
-                    {{-- Se eliminó el <span> con el texto y se aseguró que el logo herede el color --}}
                     <div class="flex items-center gap-2 text-white">
-                        {{-- --- ¡ACTUALIZADO! --- Cambiado de h-10 a h-14 --}}
-                        <x-application-logo class="block h-14 w-auto fill-current" />
-                        {{-- <span class="text-2xl font-semibold text-white">{{ config('app.name', 'Laravel') }}</span> --}}
+                        @if($logoUrl)
+                            {{-- Si hay logo personalizado, lo mostramos con un contenedor translúcido --}}
+                            <img src="{{ asset($logoUrl) }}" 
+                                 alt="{{ config('app.name') }}" 
+                                 class="block h-20 w-auto object-contain bg-white/10 rounded-lg p-2 backdrop-blur-sm shadow-lg">
+                        @else
+                            {{-- Logo por defecto --}}
+                            <x-application-logo class="block h-14 w-auto fill-current" />
+                        @endif
                     </div>
                 </a>
             </div>
