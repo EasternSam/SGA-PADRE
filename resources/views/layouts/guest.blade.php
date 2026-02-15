@@ -156,18 +156,14 @@
 
                 <div class="relative z-10 max-w-lg text-white">
                     <div class="mb-8">
-                        <!-- Logo Dinámico -->
-                        <div class="mb-6 flex justify-start">
-                             @if($logoUrl)
-                                <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-20 w-auto object-contain bg-white/10 rounded-2xl p-2 backdrop-blur-sm border border-white/20">
-                            @else
-                                <div class="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/20">
-                                    <x-application-logo class="w-10 h-10 fill-current text-white" />
-                                </div>
-                            @endif
+                        <!-- Icono Decorativo (Restaurado) -->
+                        <div class="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/20 mb-6">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
                         </div>
 
-                        <h2 class="text-4xl font-bold tracking-tight mb-4">Bienvenido a {{ config('app.name') }}</h2>
+                        <h2 class="text-4xl font-bold tracking-tight mb-4">Bienvenido al Portal</h2>
                         <p class="text-indigo-100 text-lg leading-relaxed opacity-90">
                             Gestión académica simplificada para padres y tutores. 
                             Accede al rendimiento escolar, asistencia y comunicados en tiempo real.
@@ -219,19 +215,19 @@
 
                         <!-- Header del Formulario -->
                         <div class="text-center mb-10">
-                            <!-- Logo Móvil (Solo visible en pantallas pequeñas) -->
-                            <div class="lg:hidden inline-flex justify-center items-center mb-6">
+                            <!-- Logo Dinámico (Visible Siempre) -->
+                            <div class="inline-flex justify-center items-center mb-6">
                                 @if($logoUrl)
-                                    <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-16 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300">
+                                    <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-20 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300">
                                 @else
-                                    <div class="h-12 w-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-                                        <x-application-logo class="w-8 h-8 fill-current text-white" />
+                                    <div class="h-16 w-16 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                                        <x-application-logo class="w-10 h-10 fill-current text-white" />
                                     </div>
                                 @endif
                             </div>
 
-                            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">{{ config('app.name') }}</h1>
-                            <p class="text-sm text-gray-500 mt-2">Ingresa tus credenciales para acceder a tu cuenta</p>
+                            <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Academic+</h1>
+                            <p class="text-sm text-gray-500 mt-2 font-medium">{{ config('app.name') }}</p>
                         </div>
 
                         <!-- SLOT del Formulario (Contenedor Wrapper) -->
