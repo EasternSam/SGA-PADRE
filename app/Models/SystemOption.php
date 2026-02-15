@@ -12,6 +12,8 @@ class SystemOption extends Model
     // Helper para obtener un valor rápidamente (con caché)
     public static function get($key, $default = null)
     {
+        // Cache::remember puede ser problemático si no se limpia correctamente al actualizar.
+        // Aumentamos el tiempo o lo ajustamos según necesidad.
         return Cache::remember("sys_opt_{$key}", 3600, function () use ($key, $default) {
             $option = self::where('key', $key)->first();
             return $option ? $option->value : $default;

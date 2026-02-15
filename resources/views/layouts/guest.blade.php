@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+        <title>{{ config('app.name', 'SGA Padre') }}</title>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -15,38 +15,37 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         @php
-            // Obtener configuración de apariencia (color/degradado y logo)
-            // Se usa el mismo key que en el sidebar para mantener consistencia
-            $loginBackground = \App\Models\SystemOption::getOption('brand_primary_color', '#1e3a8a');
+            // Obtener configuración de apariencia. 
+            // Si brand_primary_color no existe, usamos un degradado azul por defecto en lugar de un color sólido que podría ser rojo por error en alguna config.
+            $loginBackground = \App\Models\SystemOption::getOption('brand_primary_color', 'linear-gradient(to right, #1e3a8a, #000000)');
             $logoUrl = \App\Models\SystemOption::getOption('institution_logo');
         @endphp
     </head>
-    <!-- --- ¡ACTUALIZADO! --- -->
-    <body class="font-sans text-sga-text antialiased">
-        {{-- Usamos style inline para permitir degradados CSS complejos que vienen de la BD --}}
-        <div class="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6"
+    <body class="font-sans text-gray-900 antialiased">
+        {{-- Usamos style inline para el fondo. Quitamos clases de bg estáticas para evitar conflictos. --}}
+        {{-- Forzamos min-h-screen y flex para centrar. --}}
+        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0"
              style="background: {{ $loginBackground }};">
             
             <!-- Logo -->
             <div>
-                <a href="/" wire:navigate>
-                    <div class="flex items-center gap-2 text-white">
+                <a href="/">
+                    <div class="flex items-center gap-2">
                         @if($logoUrl)
-                            {{-- Si hay logo personalizado, lo mostramos con un contenedor translúcido --}}
+                            {{-- Logo personalizado con fondo translúcido --}}
                             <img src="{{ asset($logoUrl) }}" 
                                  alt="{{ config('app.name') }}" 
-                                 class="block h-20 w-auto object-contain bg-white/10 rounded-lg p-2 backdrop-blur-sm shadow-lg">
+                                 class="w-20 h-20 fill-current text-white bg-white/10 rounded-lg p-2 shadow-lg object-contain backdrop-blur-sm">
                         @else
-                            {{-- Logo por defecto --}}
-                            <x-application-logo class="block h-14 w-auto fill-current" />
+                            {{-- Logo por defecto (SVG de Laravel/App) --}}
+                            <x-application-logo class="w-20 h-20 fill-current text-white drop-shadow-md" />
                         @endif
                     </div>
                 </a>
             </div>
 
-            <!-- Contenedor/Tarjeta -->
-            {{-- Tarjeta rediseñada con 'sga-card' --}}
-            <div class="w-full sm:max-w-md mt-6 px-6 py-6 bg-sga-card shadow-lg overflow-hidden rounded-lg">
+            <!-- Tarjeta de Login -->
+            <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
                 {{ $slot }}
             </div>
         </div>
