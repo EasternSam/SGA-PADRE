@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-white">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,21 +9,21 @@
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700&display=swap" rel="stylesheet" />
 
-        <!-- Tailwind CSS CDN -->
+        <!-- Tailwind CSS CDN (Para asegurar visualización inmediata) -->
         <script src="https://cdn.tailwindcss.com"></script>
         
         <!-- Alpine.js -->
         <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
-        <!-- Scripts -->
+        <!-- Scripts del Proyecto -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         @php
             use App\Models\SystemOption;
 
-            // Logo dinámico
+            // Lógica de Logo Dinámico
             $logoUrl = SystemOption::getOption('logo');
             if (empty($logoUrl)) {
                 $logoUrl = SystemOption::getOption('institution_logo');
@@ -31,298 +31,219 @@
         @endphp
 
         <style>
-            /* Reset & Base */
-            body { font-family: 'Figtree', sans-serif; margin: 0; background-color: #0f172a; color: white; }
-            * { box-sizing: border-box; }
+            /* --- Configuración de Fuente --- */
+            body { font-family: 'Plus Jakarta Sans', sans-serif; }
             
-            .login-container {
-                min-height: 100vh;
-                width: 100%;
+            /* --- Pattern Background para el lado izquierdo --- */
+            .pattern-grid {
+                background-color: #4f46e5; /* Indigo 600 */
+                background-image: 
+                    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                    radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                    radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
                 position: relative;
-                display: flex;
-                align-items: center;
-                justify-content: center;
                 overflow: hidden;
             }
-
-            /* --- Background Effects (Tema Oscuro Forzado) --- */
-            .background-wrapper {
-                position: absolute;
-                inset: 0;
-                width: 100%;
-                height: 100%;
-                pointer-events: none;
-                /* Fondo radial oscuro fijo para garantizar el diseño "espacial" */
-                background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #0f172a 100%) !important;
-                background-size: cover !important;
-            }
-
-            .orb {
+            
+            /* Elementos decorativos abstractos */
+            .circle-deco {
                 position: absolute;
                 border-radius: 50%;
-                mix-blend-mode: screen;
-                transition: transform 0.1s ease-out; 
+                background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255,255,255,0.1);
             }
 
-            .orb-1 {
-                top: -10%; left: -10%; width: 500px; height: 500px;
-                background: rgba(147, 51, 234, 0.3); /* Purple */
-                filter: blur(100px);
-                animation: float-slow 8s ease-in-out infinite;
-            }
-
-            .orb-2 {
-                bottom: -10%; right: -10%; width: 600px; height: 600px;
-                background: rgba(79, 70, 229, 0.3); /* Indigo */
-                filter: blur(120px);
-                animation: float-medium 6s ease-in-out infinite;
-            }
-
-            .orb-3 {
-                top: 40%; left: 60%; width: 300px; height: 300px;
-                background: rgba(219, 39, 119, 0.2); /* Pink */
-                filter: blur(80px);
-                animation: float-fast 4s ease-in-out infinite;
-            }
-
-            /* --- Glass Card (Versión Oscura) --- */
-            .card-wrapper {
-                position: relative;
-                z-index: 10;
-                width: 100%;
-                max-width: 450px;
-                padding: 1rem;
-            }
-
-            .card-border-glow {
-                position: absolute;
-                inset: 0;
-                /* Borde brillante más sutil */
-                background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05), transparent);
-                border-radius: 24px;
-                filter: blur(1px);
-            }
-
-            .glass-card {
-                position: relative;
-                /* Fondo oscuro semitransparente en lugar de blanco */
-                background: rgba(15, 23, 42, 0.6); 
-                backdrop-filter: blur(24px);
-                -webkit-backdrop-filter: blur(24px);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-                border-radius: 24px;
-                padding: 40px;
-                color: white;
-                overflow: hidden;
-            }
-
-            /* Hover Shine Effect */
-            .card-shine {
-                position: absolute;
-                top: 0; left: 0; width: 100%; height: 100%;
-                background: linear-gradient(135deg, rgba(255,255,255,0.03), transparent);
-                opacity: 0; transition: opacity 0.7s; pointer-events: none;
-            }
-            .glass-card:hover .card-shine { opacity: 1; }
-
-            /* --- Header --- */
-            .card-header {
-                text-align: center;
-                margin-bottom: 32px;
-                position: relative;
-            }
-
-            .logo-container {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 80px; height: 80px;
-                border-radius: 16px;
-                background: linear-gradient(to top right, #6366f1, #a855f7);
-                box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
-                margin-bottom: 16px;
-                transition: transform 0.5s;
-                padding: 12px;
-            }
-            .logo-container:hover { transform: scale(1.1) rotate(3deg); }
-            .logo-icon { width: 100%; height: 100%; object-fit: contain; color: white; }
-
-            .title {
-                font-size: 1.875rem; font-weight: 700; letter-spacing: -0.025em; margin: 0;
-                background: linear-gradient(to right, #ffffff, #e0e7ff, #c7d2fe);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text; color: transparent;
-            }
-
-            .subtitle {
-                color: rgba(199, 210, 254, 0.8);
-                margin-top: 8px; font-size: 0.875rem; font-weight: 500;
-            }
-
-            /* --- ESTILOS FORZADOS PARA EL FORMULARIO (SLOT) --- */
+            /* --- ESTILOS DE ADAPTACIÓN PARA COMPONENTES BREEZE/JETSTREAM --- */
+            /* Estos estilos aseguran que los inputs del slot se vean bien sin editar sus archivos */
             
-            .glass-card label {
-                display: block; font-size: 0.875rem; font-weight: 500;
-                color: #e0e7ff; margin-bottom: 6px; margin-left: 4px;
-            }
-
-            .glass-card input[type="text"],
-            .glass-card input[type="email"],
-            .glass-card input[type="password"] {
-                width: 100%;
-                padding: 12px 16px;
-                /* Fondo muy oscuro y transparente */
-                background: rgba(0, 0, 0, 0.2) !important;
-                border: 1px solid rgba(255, 255, 255, 0.1) !important;
-                border-radius: 12px !important;
-                outline: none;
-                color: white !important;
-                font-size: 1rem;
-                transition: all 0.3s;
-                margin-bottom: 4px;
-            }
-            
-            .glass-card input:focus {
-                background: rgba(0, 0, 0, 0.4) !important;
-                border-color: transparent !important;
-                box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.5) !important; /* Indigo glow */
-            }
-
-            .glass-card input::placeholder {
-                color: rgba(165, 180, 252, 0.4);
-            }
-
-            /* Botón Principal */
-            .glass-card button[type="submit"] {
-                width: 100%;
-                padding: 14px 16px;
-                background: linear-gradient(to right, #4f46e5, #9333ea);
-                color: white;
-                font-weight: 700;
-                border: none;
-                border-radius: 12px;
-                cursor: pointer;
-                box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
-                transition: all 0.3s;
-                margin-top: 1.5rem;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
+            .auth-form-wrapper label {
+                display: block;
                 font-size: 0.875rem;
+                font-weight: 600;
+                color: #374151; /* Gray 700 */
+                margin-bottom: 0.5rem;
             }
-            
-            .glass-card button[type="submit"]:hover {
-                background: linear-gradient(to right, #4338ca, #7e22ce);
-                transform: translateY(-2px);
-                box-shadow: 0 15px 20px -3px rgba(99, 102, 241, 0.6);
+
+            .auth-form-wrapper input[type="text"],
+            .auth-form-wrapper input[type="email"],
+            .auth-form-wrapper input[type="password"] {
+                display: block;
+                width: 100%;
+                border-radius: 0.5rem;
+                border: 1px solid #d1d5db; /* Gray 300 */
+                padding: 0.75rem 1rem;
+                color: #111827;
+                background-color: #f9fafb;
+                transition: all 0.2s;
+                font-size: 0.95rem;
+                margin-bottom: 1rem; /* Espacio entre inputs */
+            }
+
+            .auth-form-wrapper input:focus {
+                outline: none;
+                background-color: white;
+                border-color: #6366f1; /* Indigo 500 */
+                box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
             }
 
             /* Checkbox */
-            .glass-card input[type="checkbox"] {
-                border-radius: 4px;
-                background-color: rgba(0, 0, 0, 0.3);
-                border-color: rgba(255, 255, 255, 0.3);
-                color: #6366f1;
-            }
-            .glass-card input[type="checkbox"]:checked {
-                background-color: #6366f1;
+            .auth-form-wrapper input[type="checkbox"] {
+                border-radius: 0.25rem;
+                border-color: #d1d5db;
+                color: #4f46e5;
+                width: 1rem;
+                height: 1rem;
+                margin-right: 0.5rem;
             }
 
-            /* Enlaces */
-            .glass-card a {
-                color: #a5b4fc;
+            /* Botones primarios dentro del slot */
+            .auth-form-wrapper button[type="submit"], 
+            .auth-form-wrapper .inline-flex {
+                width: 100%;
+                justify-content: center;
+                border-radius: 0.5rem;
+                background-color: #4f46e5; /* Indigo 600 */
+                padding: 0.75rem 1.5rem;
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: white;
+                box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+                transition: all 0.2s;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-top: 1rem;
+                cursor: pointer;
+            }
+
+            .auth-form-wrapper button[type="submit"]:hover {
+                background-color: #4338ca; /* Indigo 700 */
+                transform: translateY(-1px);
+            }
+
+            /* Links (Olvido su contraseña, etc) */
+            .auth-form-wrapper a {
+                color: #6366f1;
                 font-size: 0.875rem;
                 text-decoration: none;
-                transition: color 0.2s;
+                font-weight: 500;
             }
-            .glass-card a:hover {
-                color: white;
+            .auth-form-wrapper a:hover {
+                color: #4338ca;
                 text-decoration: underline;
             }
 
-            /* Animations Keyframes */
-            @keyframes float-slow {
-                0%, 100% { transform: translate(0, 0); }
-                50% { transform: translate(20px, -20px); }
-            }
-            @keyframes float-medium {
-                0%, 100% { transform: translate(0, 0); }
-                50% { transform: translate(-15px, 25px); }
-            }
-            @keyframes float-fast {
-                0%, 100% { transform: translate(0, 0); }
-                50% { transform: translate(10px, 15px); }
+            /* Flexibilidad para la fila de "Recordarme" y links */
+            .auth-form-wrapper .block.mt-4 {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-top: 1.5rem;
+                margin-bottom: 1.5rem;
             }
         </style>
     </head>
-    <body class="font-sans antialiased text-gray-900" 
-          x-data="{ 
-              mouseX: 0, 
-              mouseY: 0, 
-              handleMouseMove(e) {
-                  this.mouseX = (e.clientX / window.innerWidth) * 20;
-                  this.mouseY = (e.clientY / window.innerHeight) * 20;
-              }
-          }"
-          @mousemove.window="handleMouseMove">
+    <body class="h-full">
         
-        <div class="login-container">
+        <div class="flex min-h-screen w-full">
             
-            {{-- Fondo Dinámico con Parallax controlado por Alpine --}}
-            <div class="background-wrapper">
-                <div 
-                    class="orb orb-1"
-                    :style="`transform: translate(-${mouseX}px, -${mouseY}px)`"
-                ></div>
-                <div 
-                    class="orb orb-2"
-                    :style="`transform: translate(${mouseX}px, ${mouseY}px)`"
-                ></div>
-                <div 
-                    class="orb orb-3"
-                ></div>
+            <!-- SECCIÓN IZQUIERDA: Visual y Branding (Oculto en móviles) -->
+            <div class="hidden lg:flex w-1/2 relative pattern-grid items-center justify-center p-12 overflow-hidden">
+                
+                <!-- Decoración animada sutil -->
+                <div class="circle-deco w-96 h-96 -top-20 -left-20" x-data x-animate></div>
+                <div class="circle-deco w-64 h-64 bottom-10 right-10 opacity-50"></div>
+
+                <div class="relative z-10 max-w-lg text-white">
+                    <div class="mb-8">
+                        <!-- Icono grande decorativo si no hay logo específico para acá -->
+                        <div class="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/20 mb-6">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M12 14l9-5-9-5-9 5 9 5z" />
+                                <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                            </svg>
+                        </div>
+                        <h2 class="text-4xl font-bold tracking-tight mb-4">Bienvenido al Portal</h2>
+                        <p class="text-indigo-100 text-lg leading-relaxed opacity-90">
+                            Gestión académica simplificada para padres y tutores. 
+                            Accede al rendimiento escolar, asistencia y comunicados en tiempo real.
+                        </p>
+                    </div>
+                    
+                    <!-- Tarjeta de Info / Aviso -->
+                    <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/10">
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-white">¿Necesitas ayuda?</h3>
+                                <p class="text-sm text-indigo-200 mt-1">Si tienes problemas para ingresar, contacta a secretaría académica.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Copyright footer izquierda -->
+                <div class="absolute bottom-8 left-12 text-indigo-300 text-xs">
+                    &copy; {{ date('Y') }} {{ config('app.name') }}. Sistema de Gestión Académica.
+                </div>
             </div>
 
-            {{-- Tarjeta Glassmorphic --}}
-            <div class="card-wrapper">
-                <div class="card-border-glow"></div>
+            <!-- SECCIÓN DERECHA: Formulario de Login -->
+            <div class="w-full lg:w-1/2 flex flex-col justify-center items-center bg-white p-6 lg:p-12 xl:p-24 relative">
                 
-                <div class="glass-card">
-                    {{-- Brillo interior al hacer hover --}}
-                    <div class="card-shine"></div>
+                <!-- Botón flotante para regresar (opcional, por si es necesario) -->
+                <div class="absolute top-6 right-6">
+                    <a href="/" class="text-sm font-medium text-gray-500 hover:text-indigo-600 transition flex items-center gap-1">
+                        Ir al inicio
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                    </a>
+                </div>
 
-                    {{-- Cabecera con Logo --}}
-                    <div class="card-header">
-                        <div class="logo-container">
-                            @if($logoUrl)
-                                <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="logo-icon">
-                            @else
-                                {{-- Icono GraduationCap (SVG) --}}
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="logo-icon">
-                                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-                                    <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-                                </svg>
-                            @endif
+                <div class="w-full max-w-md mx-auto" x-data="{ show: false }" x-init="setTimeout(() => show = true, 100)">
+                    
+                    <!-- Animación de entrada -->
+                    <div x-show="show" 
+                         x-transition:enter="transition ease-out duration-500"
+                         x-transition:enter-start="opacity-0 translate-y-4"
+                         x-transition:enter-end="opacity-100 translate-y-0">
+
+                        <!-- Header del Formulario -->
+                        <div class="text-center mb-10">
+                            <!-- Logo -->
+                            <div class="inline-flex justify-center items-center mb-6">
+                                @if($logoUrl)
+                                    <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-20 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300">
+                                @else
+                                    <div class="h-16 w-16 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                        </svg>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">{{ config('app.name', 'Portal Académico') }}</h1>
+                            <p class="text-sm text-gray-500 mt-2">Ingresa tus credenciales para acceder a tu cuenta</p>
                         </div>
-                        <h1 class="title">{{ config('app.name', 'Portal Académico') }}</h1>
-                        <p class="subtitle">Ingresa tus credenciales para acceder</p>
-                    </div>
 
-                    {{-- CONTENIDO DEL FORMULARIO INYECTADO --}}
-                    {{-- Los estilos CSS globales (.glass-card input) estilizarán los componentes de Breeze aquí dentro --}}
-                    <div class="relative z-20 text-left">
-                        {{ $slot }}
-                    </div>
+                        <!-- SLOT del Formulario (Contenedor Wrapper) -->
+                        <!-- Aquí es donde Laravel inyecta el form (login.blade.php) -->
+                        <div class="auth-form-wrapper">
+                            {{ $slot }}
+                        </div>
 
-                    {{-- Footer simple --}}
-                    <div class="mt-8 text-center text-xs text-white/40">
-                        &copy; {{ date('Y') }} {{ config('app.name') }}. Todos los derechos reservados.
-                    </div>
+                        <!-- Footer Móvil (visible solo en pantallas pequeñas) -->
+                        <div class="lg:hidden mt-8 text-center text-xs text-gray-400">
+                            &copy; {{ date('Y') }} {{ config('app.name') }}.
+                        </div>
 
+                    </div>
                 </div>
             </div>
         </div>
