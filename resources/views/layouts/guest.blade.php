@@ -24,10 +24,10 @@
             use App\Models\SystemOption;
 
             // --- LÓGICA DE FONDO DINÁMICO ---
-            // Recuperamos el color configurado para usarlo como base si es necesario.
             $bg = SystemOption::getOption('navbar_color');
             $type = SystemOption::getOption('navbar_type');
 
+            // Auto-corrección si es un degradado guardado incorrectamente
             if ($type === 'gradient' && !str_contains($bg, 'gradient')) {
                 $start = SystemOption::getOption('navbar_gradient_start', '#1e3a8a');
                 $end = SystemOption::getOption('navbar_gradient_end', '#000000');
@@ -35,7 +35,7 @@
                 $bg = "linear-gradient({$dir}, {$start}, {$end})";
             }
 
-            // Fallback por si la configuración está vacía o es incorrecta
+            // Fallback
             if (empty($bg) || $bg === '#' || $bg === 'red' || $bg === '#red') {
                 $bg = 'radial-gradient(circle at 50% 50%, #1e1b4b 0%, #0f172a 100%)'; 
             }
@@ -47,10 +47,11 @@
             }
         @endphp
 
+        {{-- CSS Puro del diseño solicitado --}}
         <style>
             /* Reset & Base */
-            body { font-family: 'Figtree', sans-serif; margin: 0; }
             * { box-sizing: border-box; }
+            body { font-family: 'Figtree', sans-serif; margin: 0; }
             
             .login-container {
                 min-height: 100vh;
@@ -60,24 +61,8 @@
                 align-items: center;
                 justify-content: center;
                 overflow: hidden;
-                background-color: #0f172a; /* Fallback color */
+                background-color: #0f172a;
                 color: white;
-            }
-
-            /* Utilidad para flex */
-            .flex-center-gap {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-
-            /* Error messages */
-            .error-msg {
-                color: #f87171;
-                font-size: 0.75rem;
-                margin-top: 4px;
-                margin-left: 4px;
-                display: block;
             }
 
             /* Background Effects */
@@ -87,8 +72,8 @@
                 width: 100%;
                 height: 100%;
                 pointer-events: none;
-                /* Usamos el valor dinámico de PHP */
-                background: {{ $bg }} !important;
+                /* El color de fondo dinámico se inyecta aquí */
+                background: {{ $bg }} !important; 
                 background-size: cover !important;
             }
 
@@ -96,36 +81,22 @@
                 position: absolute;
                 border-radius: 50%;
                 mix-blend-mode: screen;
-                transition: transform 0.1s ease-out; 
+                transition: transform 0.1s ease-out;
             }
 
             .orb-1 {
-                top: -10%;
-                left: -10%;
-                width: 500px;
-                height: 500px;
-                background: rgba(147, 51, 234, 0.3); /* Purple */
-                filter: blur(100px);
+                top: -10%; left: -10%; width: 500px; height: 500px;
+                background: rgba(147, 51, 234, 0.3); filter: blur(100px);
                 animation: float-slow 8s ease-in-out infinite;
             }
-
             .orb-2 {
-                bottom: -10%;
-                right: -10%;
-                width: 600px;
-                height: 600px;
-                background: rgba(79, 70, 229, 0.3); /* Indigo */
-                filter: blur(120px);
+                bottom: -10%; right: -10%; width: 600px; height: 600px;
+                background: rgba(79, 70, 229, 0.3); filter: blur(120px);
                 animation: float-medium 6s ease-in-out infinite;
             }
-
             .orb-3 {
-                top: 40%;
-                left: 60%;
-                width: 300px;
-                height: 300px;
-                background: rgba(219, 39, 119, 0.2); /* Pink */
-                filter: blur(80px);
+                top: 40%; left: 60%; width: 300px; height: 300px;
+                background: rgba(219, 39, 119, 0.2); filter: blur(80px);
                 animation: float-fast 4s ease-in-out infinite;
             }
 
@@ -135,7 +106,7 @@
                 z-index: 10;
                 width: 100%;
                 max-width: 450px;
-                padding: 1rem;
+                padding: 4px;
             }
 
             .card-border-glow {
@@ -159,21 +130,13 @@
                 overflow: hidden;
             }
 
-            /* Hover Shine Effect */
             .card-shine {
                 position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
+                top: 0; left: 0; width: 100%; height: 100%;
                 background: linear-gradient(135deg, rgba(255,255,255,0.05), transparent);
-                opacity: 0;
-                transition: opacity 0.7s;
-                pointer-events: none;
+                opacity: 0; transition: opacity 0.7s; pointer-events: none;
             }
-            .glass-card:hover .card-shine {
-                opacity: 1;
-            }
+            .glass-card:hover .card-shine { opacity: 1; }
 
             /* Header */
             .card-header {
@@ -183,100 +146,73 @@
             }
 
             .logo-container {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 80px;
-                height: 80px;
-                border-radius: 16px;
+                display: inline-flex; align-items: center; justify-content: center;
+                width: 80px; height: 80px; border-radius: 16px;
                 background: linear-gradient(to top right, #6366f1, #a855f7);
                 box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
-                margin-bottom: 16px;
-                transition: transform 0.5s;
+                margin-bottom: 16px; transition: transform 0.5s;
                 padding: 10px;
             }
-            .logo-container:hover {
-                transform: scale(1.1) rotate(3deg);
-            }
+            .logo-container:hover { transform: scale(1.1) rotate(3deg); }
             .logo-icon { color: white; width: 100%; height: 100%; object-fit: contain; }
 
             .title {
-                font-size: 1.875rem;
-                font-weight: 700;
-                letter-spacing: -0.025em;
-                margin: 0;
+                font-size: 1.875rem; font-weight: 700; letter-spacing: -0.025em; margin: 0;
                 background: linear-gradient(to right, #ffffff, #e0e7ff, #c7d2fe);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-                color: transparent;
+                -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+                background-clip: text; color: transparent;
             }
-
             .subtitle {
-                color: rgba(199, 210, 254, 0.8);
-                margin-top: 8px;
-                font-size: 0.875rem;
-                font-weight: 500;
+                color: rgba(199, 210, 254, 0.8); margin-top: 8px; font-size: 0.875rem; font-weight: 500;
             }
 
-            /* Generic overrides for inputs inside the glass card to match design */
+            /* --- ESTILOS PARA LOS INPUTS DE LARAVEL DENTRO DEL SLOT --- */
+            /* Estos estilos sobrescriben los defaults de Tailwind para que se vean como el diseño */
             .glass-card input[type="text"],
             .glass-card input[type="email"],
             .glass-card input[type="password"] {
                 width: 100%;
                 padding: 12px 16px;
-                background: rgba(255, 255, 255, 0.05);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 12px;
+                background: rgba(255, 255, 255, 0.05) !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                border-radius: 12px !important;
                 outline: none;
-                color: white;
+                color: white !important;
                 font-size: 1rem;
                 transition: all 0.3s;
+                margin-bottom: 0.5rem;
             }
             .glass-card input:focus {
-                background: rgba(255, 255, 255, 0.1);
-                border-color: transparent;
-                box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.5);
+                background: rgba(255, 255, 255, 0.1) !important;
+                border-color: transparent !important;
+                box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.5) !important;
             }
             .glass-card label {
-                display: block;
-                font-size: 0.875rem;
-                font-weight: 500;
-                color: #e0e7ff;
-                margin-bottom: 8px;
+                display: block; font-size: 0.875rem; font-weight: 500;
+                color: #e0e7ff; margin-bottom: 4px; margin-left: 4px;
             }
             .glass-card button[type="submit"] {
-                width: 100%;
-                padding: 14px 16px;
+                width: 100%; padding: 14px 16px;
                 background: linear-gradient(to right, #4f46e5, #9333ea);
-                color: white;
-                font-weight: 700;
-                border: none;
-                border-radius: 12px;
-                cursor: pointer;
-                box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
-                transition: all 0.3s;
-                margin-top: 1rem;
+                color: white; font-weight: 700; border: none; border-radius: 12px;
+                cursor: pointer; box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+                transition: all 0.3s; margin-top: 1rem;
             }
             .glass-card button[type="submit"]:hover {
                 background: linear-gradient(to right, #4338ca, #7e22ce);
                 transform: translateY(-2px);
                 box-shadow: 0 15px 20px -3px rgba(99, 102, 241, 0.6);
             }
+            /* Enlaces como "Olvidaste tu contraseña" */
+            .glass-card a {
+                color: #a5b4fc; font-size: 0.875rem; text-decoration: none;
+            }
+            .glass-card a:hover { color: white; text-decoration: underline; }
 
-            /* Animations Keyframes */
-            @keyframes float-slow {
-                0%, 100% { transform: translate(0, 0); }
-                50% { transform: translate(20px, -20px); }
-            }
-            @keyframes float-medium {
-                0%, 100% { transform: translate(0, 0); }
-                50% { transform: translate(-15px, 25px); }
-            }
-            @keyframes float-fast {
-                0%, 100% { transform: translate(0, 0); }
-                50% { transform: translate(10px, 15px); }
-            }
+            /* Animations */
+            @keyframes float-slow { 0%,100% { transform: translate(0,0); } 50% { transform: translate(20px,-20px); } }
+            @keyframes float-medium { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-15px,25px); } }
+            @keyframes float-fast { 0%,100% { transform: translate(0,0); } 50% { transform: translate(10px,15px); } }
         </style>
     </head>
     <body class="font-sans antialiased text-gray-900" 
@@ -294,17 +230,9 @@
             
             {{-- Fondo Dinámico con Parallax controlado por Alpine --}}
             <div class="background-wrapper">
-                <div 
-                    class="orb orb-1"
-                    :style="`transform: translate(-${mouseX}px, -${mouseY}px)`"
-                ></div>
-                <div 
-                    class="orb orb-2"
-                    :style="`transform: translate(${mouseX}px, ${mouseY}px)`"
-                ></div>
-                <div 
-                    class="orb orb-3"
-                ></div>
+                <div class="orb orb-1" :style="'transform: translate(-' + mouseX + 'px, -' + mouseY + 'px)'"></div>
+                <div class="orb orb-2" :style="'transform: translate(' + mouseX + 'px, ' + mouseY + 'px)'"></div>
+                <div class="orb orb-3"></div>
             </div>
 
             {{-- Tarjeta Glassmorphic --}}
@@ -321,15 +249,17 @@
                             @if($logoUrl)
                                 <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="logo-icon">
                             @else
-                                {{-- Icono por defecto --}}
-                                <x-application-logo class="w-10 h-10 fill-current text-white" />
+                                {{-- Icono GraduationCap (SVG) por defecto --}}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="logo-icon"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
                             @endif
                         </div>
-                        <h1 class="title">{{ config('app.name', 'Portal') }}</h1>
+                        <h1 class="title">{{ config('app.name', 'Portal Académico') }}</h1>
                         <p class="subtitle">Ingresa tus credenciales para acceder</p>
                     </div>
 
                     {{-- CONTENIDO DEL FORMULARIO --}}
+                    {{-- El $slot inyecta el contenido de auth/login.blade.php.
+                         Los estilos CSS de arriba (.glass-card input) se encargarán de formatearlo. --}}
                     <div class="relative z-20 text-left">
                         {{ $slot }}
                     </div>
