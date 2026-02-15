@@ -17,19 +17,25 @@
         @php
             use App\Models\SystemOption;
 
-            // 1. Intentar obtener el color configurado ('navbar_color')
+            // 1. Obtener valores base
             $bg = SystemOption::getOption('navbar_color');
+            $type = SystemOption::getOption('navbar_type'); // 'solid' o 'gradient'
 
-            // 2. Si está vacío, intentar 'brand_primary_color'
-            if (empty($bg) || $bg === '#') {
-                $bg = SystemOption::getOption('brand_primary_color');
+            // 2. Lógica de AUTO-CORRECCIÓN:
+            // Si el tipo es 'gradient' pero el color guardado NO es un gradiente CSS (ej. es el rojo #e41b1b),
+            // forzamos la reconstrucción del gradiente usando los componentes individuales.
+            if ($type === 'gradient' && !str_contains($bg, 'gradient')) {
+                $start = SystemOption::getOption('navbar_gradient_start', '#1e3a8a');
+                $end = SystemOption::getOption('navbar_gradient_end', '#000000');
+                $dir = SystemOption::getOption('navbar_gradient_direction', 'to right');
+                
+                $bg = "linear-gradient({$dir}, {$start}, {$end})";
             }
 
-            // 3. Validación y Fallback
-            // Si sigue vacío, es inválido, o es explícitamente 'red' o '#red' (valores que causan el problema), usar default.
-            // También verificamos si es un hexadecimal corto inválido o similar.
-            if (empty($bg) || $bg === '#' || $bg === 'red' || $bg === '#red') {
-                $bg = 'linear-gradient(to right, #1e3a8a, #000000)'; // Azul oscuro a negro
+            // 3. Fallback de seguridad final
+            // Si está vacío o es un valor inválido/roto
+            if (empty($bg) || $bg === '#') {
+                $bg = 'linear-gradient(to right, #1e3a8a, #000000)';
             }
             
             // Logo
@@ -52,7 +58,7 @@
     </head>
     <body class="font-sans text-gray-900 antialiased">
         {{-- Depuración: Ver en código fuente --}}
-        <!-- DEBUG COLOR: "{{ $bg }}" -->
+        <!-- DEBUG COLOR: "{{ $bg }}" | TYPE: "{{ $type }}" -->
 
         <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 dynamic-bg">
             
