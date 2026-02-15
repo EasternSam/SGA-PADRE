@@ -20,7 +20,29 @@
         @php
             use App\Models\SystemOption;
 
-            // Logo
+            // --- LÓGICA DE FONDO DINÁMICO ---
+            
+            // 1. Obtener color configurado ('navbar_color' es el nuevo, 'brand_primary_color' el antiguo)
+            $bg = SystemOption::getOption('navbar_color');
+            $type = SystemOption::getOption('navbar_type');
+
+            // 2. Auto-corrección si es un degradado pero viene como texto plano
+            if ($type === 'gradient' && !str_contains($bg, 'gradient')) {
+                $start = SystemOption::getOption('navbar_gradient_start', '#1e3a8a');
+                $end = SystemOption::getOption('navbar_gradient_end', '#000000');
+                $dir = SystemOption::getOption('navbar_gradient_direction', 'to right');
+                $bg = "linear-gradient({$dir}, {$start}, {$end})";
+            }
+
+            // 3. Fallback de seguridad
+            if (empty($bg) || $bg === '#' || $bg === 'red' || $bg === '#red') {
+                $bg = SystemOption::getOption('brand_primary_color');
+            }
+            if (empty($bg) || $bg === '#') {
+                $bg = 'linear-gradient(to right, #1e3a8a, #000000)';
+            }
+
+            // --- LÓGICA DE LOGO ---
             $logoUrl = SystemOption::getOption('logo');
             if (empty($logoUrl)) {
                 $logoUrl = SystemOption::getOption('institution_logo');
@@ -28,45 +50,61 @@
         @endphp
         
         <style>
-             /* Personalización adicional si es necesaria */
-             body {
-                font-family: 'Figtree', sans-serif;
+             body { font-family: 'Figtree', sans-serif; }
+             /* Clase para aplicar el fondo dinámico vía CSS inline */
+             .dynamic-bg {
+                background: {{ $bg }} !important;
+                background-size: cover !important;
+                background-position: center !important;
              }
         </style>
     </head>
-    <body class="font-sans antialiased text-gray-900 bg-gray-100">
-        <div class="min-h-screen flex">
+    <body class="font-sans antialiased text-gray-900 bg-white">
+        
+        <div class="min-h-screen flex w-full">
             
-            <!-- Sección Izquierda (Imagen de Fondo) -->
-            <div class="hidden lg:block lg:w-1/2 relative">
-                <img 
-                    src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" 
-                    alt="Montañas" 
-                    class="absolute inset-0 w-full h-full object-cover"
-                />
-                <!-- Superposición oscura opcional para mejorar contraste si pones texto encima -->
-                {{-- <div class="absolute inset-0 bg-black bg-opacity-20"></div> --}}
+            <!-- SECCIÓN IZQUIERDA: Fondo Dinámico (Visible solo en escritorio) -->
+            <!-- Aquí aplicamos tu degradado/color personalizado -->
+            <div class="hidden lg:flex w-1/2 flex-col justify-center items-center relative dynamic-bg text-white overflow-hidden">
+                <!-- Overlay sutil para textura (opcional) -->
+                <div class="absolute inset-0 bg-black/10"></div>
+                
+                <!-- Contenido decorativo sobre el degradado -->
+                <div class="relative z-10 text-center px-12">
+                    <h2 class="text-4xl font-bold mb-4 tracking-tight">Bienvenido</h2>
+                    <p class="text-lg opacity-90 font-light">
+                        Accede a tu plataforma de gestión académica.
+                    </p>
+                </div>
+
+                <!-- Decoración de círculos sutiles (opcional, da un toque moderno) -->
+                <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+                <div class="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
             </div>
 
-            <!-- Sección Derecha (Formulario de Login) -->
-            <div class="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 bg-white">
-                <div class="w-full max-w-md">
-                    <!-- Logo -->
-                    <div class="flex justify-center mb-8">
+            <!-- SECCIÓN DERECHA: Formulario de Login -->
+            <div class="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 sm:p-12 bg-white">
+                <div class="w-full max-w-md space-y-8">
+                    
+                    <!-- Logo (Versión para fondo claro) -->
+                    <div class="flex justify-center">
                         <a href="/" wire:navigate>
                             @if($logoUrl)
-                                <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-20 w-auto object-contain">
+                                <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-24 w-auto object-contain hover:scale-105 transition-transform duration-300">
                             @else
-                                <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
+                                {{-- Usamos texto gris oscuro o el color primario si pudiéramos extraerlo --}}
+                                <x-application-logo class="w-20 h-20 fill-current text-gray-700" />
                             @endif
                         </a>
                     </div>
 
-                    <!-- Slot para el contenido del formulario (Login, Registro, etc.) -->
-                    {{ $slot }}
+                    <!-- Slot del Formulario -->
+                    <div class="mt-8">
+                        {{ $slot }}
+                    </div>
 
                     <!-- Footer -->
-                    <div class="mt-8 text-center text-sm text-gray-500">
+                    <div class="mt-6 text-center text-xs text-gray-400">
                         &copy; {{ date('Y') }} {{ config('app.name') }}. Todos los derechos reservados.
                     </div>
                 </div>
