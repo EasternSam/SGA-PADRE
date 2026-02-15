@@ -11,151 +11,77 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-        <!-- Tailwind CSS CDN -->
-        <script src="https://cdn.tailwindcss.com"></script>
-        
-        <!-- Alpine.js para interactividad (mouse move) -->
-        <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         @php
             use App\Models\SystemOption;
 
-            // --- LÓGICA DE FONDO DINÁMICO ---
+            // 1. Obtener valores base de configuración
             $bg = SystemOption::getOption('navbar_color');
-            $type = SystemOption::getOption('navbar_type');
+            $type = SystemOption::getOption('navbar_type'); // 'solid' o 'gradient'
 
+            // 2. Lógica de AUTO-CORRECCIÓN para degradados mal formados
             if ($type === 'gradient' && !str_contains($bg, 'gradient')) {
                 $start = SystemOption::getOption('navbar_gradient_start', '#1e3a8a');
                 $end = SystemOption::getOption('navbar_gradient_end', '#000000');
                 $dir = SystemOption::getOption('navbar_gradient_direction', 'to right');
+                
                 $bg = "linear-gradient({$dir}, {$start}, {$end})";
             }
 
-            // Fallback: Si no hay config, usamos un degradado oscuro similar al ejemplo
-            if (empty($bg) || $bg === '#' || $bg === 'red' || $bg === '#red') {
-                $bg = 'radial-gradient(circle at 50% 50%, #1e1b4b 0%, #0f172a 100%)'; 
+            // 3. Fallback de seguridad final
+            if (empty($bg) || $bg === '#') {
+                $bg = 'linear-gradient(to right, #1e3a8a, #000000)';
             }
-
-            // --- LÓGICA DE LOGO ---
+            
+            // Logo
             $logoUrl = SystemOption::getOption('logo');
             if (empty($logoUrl)) {
                 $logoUrl = SystemOption::getOption('institution_logo');
             }
         @endphp
-        
-        <style>
-             body { font-family: 'Figtree', sans-serif; }
-             
-             /* Animaciones personalizadas */
-             @keyframes float-slow {
-                0%, 100% { transform: translate(0, 0); }
-                50% { transform: translate(20px, -20px); }
-             }
-             @keyframes float-medium {
-                0%, 100% { transform: translate(0, 0); }
-                50% { transform: translate(-15px, 25px); }
-             }
-             @keyframes float-fast {
-                0%, 100% { transform: translate(0, 0); }
-                50% { transform: translate(10px, 15px); }
-             }
-             .animate-float-slow { animation: float-slow 8s ease-in-out infinite; }
-             .animate-float-medium { animation: float-medium 6s ease-in-out infinite; }
-             .animate-float-fast { animation: float-fast 4s ease-in-out infinite; }
-        </style>
     </head>
-    <body class="font-sans antialiased text-white bg-[#0f172a]"
-          x-data="{ 
-              mouseX: 0, 
-              mouseY: 0,
-              handleMouseMove(e) {
-                  this.mouseX = (e.clientX / window.innerWidth) * 20;
-                  this.mouseY = (e.clientY / window.innerHeight) * 20;
-              }
-          }"
-          @mousemove.window="handleMouseMove">
-        
-        <div class="min-h-screen w-full relative flex items-center justify-center overflow-hidden selection:bg-indigo-500 selection:text-white">
+    <body class="font-sans text-gray-900 antialiased">
+        {{-- 
+            Contenedor Principal con Fondo Dinámico.
+            Usamos style inline para el background dinámico (PHP), 
+            pero clases Tailwind para el posicionamiento y tamaño.
+        --}}
+        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-cover bg-center bg-no-repeat"
+             style="background: {{ $bg }} !important;">
             
-            <!-- --- Fondo Dinámico --- -->
-            <div class="absolute inset-0 w-full h-full pointer-events-none"
-                 style="background: {{ $bg }} !important; background-size: cover;">
-                
-                <!-- Orbes de luz flotantes con animación (Efecto visual) -->
-                <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-purple-600/30 blur-[100px] animate-float-slow mix-blend-screen transition-transform duration-100 ease-out"
-                     :style="`transform: translate(${mouseX * -1}px, ${mouseY * -1}px)`"></div>
-                
-                <div class="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-indigo-600/30 blur-[120px] animate-float-medium mix-blend-screen transition-transform duration-100 ease-out"
-                     :style="`transform: translate(${mouseX}px, ${mouseY}px)`"></div>
-                
-                <div class="absolute top-[40%] left-[60%] w-[300px] h-[300px] rounded-full bg-pink-600/20 blur-[80px] animate-float-fast mix-blend-screen"></div>
+            <!-- Logo con efectos Tailwind -->
+            <div class="mb-8 transform hover:scale-105 transition-transform duration-300 ease-in-out">
+                <a href="/" wire:navigate>
+                    <div class="flex items-center justify-center">
+                        @if($logoUrl)
+                            {{-- Logo personalizado --}}
+                            <img src="{{ asset($logoUrl) }}" 
+                                 alt="{{ config('app.name') }}" 
+                                 class="h-28 w-auto object-contain bg-white/10 rounded-2xl p-4 backdrop-blur-md shadow-2xl border border-white/20 ring-1 ring-white/10">
+                        @else
+                            {{-- Logo por defecto --}}
+                            <div class="p-4 bg-white/10 rounded-full backdrop-blur-md shadow-xl border border-white/20 ring-1 ring-white/10">
+                                <x-application-logo class="w-20 h-20 fill-current text-white drop-shadow-md" />
+                            </div>
+                        @endif
+                    </div>
+                </a>
             </div>
 
-            <!-- --- Tarjeta Glassmorphic --- -->
-            <div class="relative z-10 w-full max-w-md p-4">
+            <!-- Tarjeta de Login con "Glassmorphism" usando Tailwind -->
+            <div class="w-full sm:max-w-md px-8 py-10 bg-white/90 backdrop-blur-sm border border-white/50 shadow-2xl overflow-hidden sm:rounded-2xl relative ring-1 ring-black/5">
+                <!-- Decoración sutil superior -->
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gray-300/50 to-transparent"></div>
                 
-                <!-- Borde brillante sutil -->
-                <div class="absolute inset-0 bg-gradient-to-br from-white/40 via-white/10 to-transparent rounded-3xl blur-[1px]"></div>
-                
-                <div class="relative bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl p-8 sm:p-10 text-white overflow-hidden group">
-                    
-                    <!-- Brillo interior al hacer hover -->
-                    <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
-
-                    <!-- --- Cabecera con Logo --- -->
-                    <div class="text-center mb-8 relative">
-                        <div class="inline-flex items-center justify-center mb-4 transform transition-transform duration-500 hover:scale-110">
-                            @if($logoUrl)
-                                <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-20 w-auto object-contain drop-shadow-lg">
-                            @else
-                                <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-lg shadow-indigo-500/30 flex items-center justify-center">
-                                    <x-application-logo class="w-10 h-10 fill-current text-white" />
-                                </div>
-                            @endif
-                        </div>
-                        <h1 class="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-100 to-indigo-200">
-                            {{ config('app.name', 'Portal Académico') }}
-                        </h1>
-                        <p class="text-indigo-200/80 mt-2 text-sm font-medium">
-                            Ingresa tus credenciales para acceder
-                        </p>
-                    </div>
-
-                    <!-- --- Slot del Formulario (Login/Register) --- -->
-                    <div class="relative z-20">
-                        {{ $slot }}
-                    </div>
-
-                    <!-- --- Footer / Links Adicionales (Opcional) --- -->
-                    @if (Route::has('register'))
-                        <div class="relative my-8">
-                            <div class="absolute inset-0 flex items-center">
-                                <div class="w-full border-t border-white/10"></div>
-                            </div>
-                            <div class="relative flex justify-center text-xs uppercase">
-                                <span class="bg-[#1e2038]/60 backdrop-blur-md px-3 text-indigo-300 rounded-full border border-white/5">
-                                    ¿Aún no eres estudiante?
-                                </span>
-                            </div>
-                        </div>
-
-                        <a href="{{ route('register') }}" class="w-full py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/30 text-indigo-100 hover:text-white font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 group/btn">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400 group-hover/btn:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-                            Solicitar Admisión / Nuevo Ingreso
-                        </a>
-                    @endif
-
-                </div>
+                {{ $slot }}
             </div>
             
-            <!-- Footer Copyright -->
-            <div class="absolute bottom-4 text-center text-xs text-white/40">
-                &copy; {{ date('Y') }} {{ config('app.name') }}. Todos los derechos reservados.
+            <!-- Footer -->
+            <div class="mt-8 text-white/90 text-sm font-medium text-center drop-shadow-sm">
+                &copy; {{ date('Y') }} {{ config('app.name') }}. <span class="opacity-80 font-normal">Todos los derechos reservados.</span>
             </div>
-
         </div>
     </body>
 </html>
