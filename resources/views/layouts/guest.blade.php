@@ -209,21 +209,24 @@
     <div class="w-full min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 p-4">
         
         <!-- Logo y Título -->
-        <div class="mb-8 text-center relative z-10 animate-fade-in-down">
+        <div class="mb-6 text-center relative z-10 animate-fade-in-down">
             <a href="/" class="flex flex-col items-center group">
                 @if($logoUrl)
-                    <div class="p-3 bg-white/10 rounded-full backdrop-blur-sm border border-white/10 shadow-xl mb-4 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3">
-                        <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-20 w-auto drop-shadow-md">
+                    <!-- LOGO AUMENTADO DRÁSTICAMENTE (h-44 / ~176px) -->
+                    <div class="p-4 bg-white/5 rounded-3xl backdrop-blur-sm border border-white/10 shadow-2xl mb-6 transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2">
+                        <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-44 w-auto drop-shadow-2xl object-contain">
                     </div>
                 @else
-                    <x-application-logo class="w-20 h-20 fill-current text-gray-200 mb-4" />
+                    <!-- FALLBACK LOGO AUMENTADO -->
+                    <x-application-logo class="w-44 h-44 fill-current text-gray-100 mb-6 drop-shadow-2xl" />
                 @endif
                 
-                <h1 class="text-3xl font-bold text-white tracking-tight drop-shadow-lg">
+                <!-- TEXTO REDUCIDO Y ESTILIZADO (text-xl + tracking wide) -->
+                <h1 class="text-xl font-bold text-white tracking-[0.2em] drop-shadow-md uppercase opacity-90">
                     {{ config('app.name') }}
                 </h1>
-                <p class="text-indigo-200 text-sm font-medium tracking-wide mt-1 uppercase opacity-80">
-                    Acceso Seguro
+                <p class="text-indigo-200/60 text-[0.65rem] font-semibold tracking-[0.3em] mt-2 uppercase">
+                    Portal de Acceso
                 </p>
             </a>
         </div>
