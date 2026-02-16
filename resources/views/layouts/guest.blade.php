@@ -201,8 +201,8 @@
         <!-- Orbe 2 (Opacidad reducida de 40 a 20) -->
         <div class="orb w-[400px] h-[400px] bg-purple-600/20 bottom-0 right-0 animate-float-delayed"></div>
         
-        <!-- Orbe 3 (Centro sutil, opacidad reducida de 20 a 10) -->
-        <div class="orb w-[600px] h-[600px] bg-blue-600/10 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse-slow"></div>
+        <!-- Orbe 3 (Centro sutil, ajustado top-[40%] para subir la luz detrás del formulario) -->
+        <div class="orb w-[600px] h-[600px] bg-blue-600/10 top-[40%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse-slow"></div>
     </div>
 
     <!-- Contenedor Principal -->
@@ -221,11 +221,11 @@
                     <x-application-logo class="w-44 h-44 fill-current text-gray-100 mb-6 drop-shadow-2xl" />
                 @endif
                 
-                <!-- TEXTO REDUCIDO Y ESTILIZADO (text-xl + tracking wide) -->
-                <h1 class="text-xl font-bold text-white tracking-[0.2em] drop-shadow-md uppercase opacity-90">
+                <!-- TEXTO REDUCIDO Y SIN ESPACIADO EXAGERADO -->
+                <h1 class="text-xl font-bold text-white drop-shadow-md uppercase opacity-90">
                     {{ config('app.name') }}
                 </h1>
-                <p class="text-indigo-200/60 text-[0.65rem] font-semibold tracking-[0.3em] mt-2 uppercase">
+                <p class="text-indigo-200/60 text-[0.65rem] font-semibold tracking-wider mt-2 uppercase">
                     Portal de Acceso
                 </p>
             </a>
