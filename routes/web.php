@@ -12,64 +12,41 @@ use Illuminate\Support\Facades\Auth;
 use App\Livewire\Admin\DatabaseImport; 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Str;
-use Illuminate\Support\Facades\DB; // Agregado para el diagnóstico
-// Importamos componentes existentes
+use Illuminate\Support\Facades\DB; 
 use App\Livewire\Admin\CertificateEditor;
 use App\Livewire\Admin\CertificateTemplatesIndex;
 use App\Livewire\Admin\ClassroomManagement;
-// Importamos el componente financiero
 use App\Livewire\Admin\FinanceDashboard;
-// Importamos el probador de correos
 use App\Livewire\Admin\EmailTester;
-// Importar el nuevo controlador para PDF de Pensum
 use App\Http\Controllers\CurriculumPdfController;
-// IMPORTAMOS EL CONTROLADOR DE DOCUMENTOS (Agregado)
 use App\Http\Controllers\AdmissionDocumentController;
-// IMPORTAMOS EL CONTROLADOR DE MOODLE (Agregado)
 use App\Http\Controllers\MoodleController;
-
-// NUEVO: IMPORTAR CONTROLADOR DEL INSTALADOR SAAS
 use App\Http\Controllers\InstallerController;
-// NUEVO: IMPORTAR HELPER SAAS PARA PROTEGER RUTAS
 use App\Helpers\SaaS;
-
 use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
 use App\Livewire\StudentPortal\CourseDetail as StudentPortalCourseDetail;
 use App\Livewire\StudentPortal\Requests as StudentPortalRequests;
 use App\Livewire\StudentPortal\MyPayments as StudentPortalPayments; 
-// ===> NUEVO: IMPORTAR COMPONENTE DE SELECCIÓN <===
 use App\Livewire\StudentPortal\SubjectSelection as StudentPortalSelection;
-
 use App\Livewire\TeacherPortal\Dashboard as TeacherPortalDashboard;
 use App\Livewire\TeacherPortal\Grades as TeacherPortalGrades;
 use App\Livewire\TeacherPortal\Attendance as TeacherPortalAttendance;
-
 use App\Livewire\Admin\RequestsManagement;
 use Illuminate\Support\Facades\URL; 
 use Illuminate\Http\Request;
 use App\Services\EcfService;
 use App\Services\MatriculaService;
 use App\Models\Payment;
-use Illuminate\Support\Facades\Log; // Importante para el debug
-use App\Models\User; // Importante para la recuperación de sesión
-
-// === IMPORTACIONES NECESARIAS PARA ENVIAR CORREOS EN CARDNET ===
+use Illuminate\Support\Facades\Log; 
+use App\Models\User; 
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PaymentReceiptMail;
 use Barryvdh\DomPDF\Facade\Pdf;
-
-// --- NUEVOS IMPORTS PARA ADMISIONES ---
 use App\Livewire\Admissions\Index as AdmissionsIndex;
 use App\Livewire\Admissions\Register as AdmissionsRegister;
-use App\Livewire\Applicant\Dashboard as ApplicantDashboard; // Nuevo componente Portal Aspirante
-
-// Importamos el componente de Calendario
+use App\Livewire\Applicant\Dashboard as ApplicantDashboard; 
 use App\Livewire\Calendar\Index as CalendarIndex;
-
-// Importar componente de Inventario
 use App\Livewire\Admin\Inventory\Index as InventoryIndex;
-
-// ---> NUEVO: Importar Settings <---
 use App\Livewire\Admin\Settings\Index as SystemSettingsIndex;
 
 /*
@@ -88,7 +65,6 @@ Route::get('/system/debug-license', function () {
 
     try {
         $startTime = microtime(true);
-        // Intentamos conectar con un timeout más generoso para ver si es lentitud
         $response = Http::withoutVerifying()
             ->timeout(20) 
             ->post("{$masterUrl}/api/v1/validate-license", [
@@ -145,7 +121,6 @@ Route::post('/install', [InstallerController::class, 'install'])->name('installe
 
 
 // --- RUTA DE AUDITORÍA FRONTEND (CAJA NEGRA) ---
-// Esta ruta recibe los "clics" que envía el JavaScript del navegador
 Route::post('/api/log-click', function (Request $request) {
     $user = auth()->user() ? "ID:".auth()->id() : 'Guest';
     $data = json_decode($request->getContent(), true) ?? [];
@@ -166,8 +141,7 @@ Route::get('/', function () {
     return view('auth.login');
 });
 
-// --- LINK DE REGISTRO PARA ESTUDIANTES (ASPIRANTES - CUENTA DE USUARIO) ---
-// Este crea el usuario en el sistema
+// --- LINK DE REGISTRO PARA ESTUDIANTES ---
 Route::get('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])
     ->middleware('guest')
     ->name('student.register.link');
@@ -180,11 +154,8 @@ Route::post('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserC
 // ==============================================================================
 // RUTAS DE CARDNET (DEFINIDAS EXPLÍCITAMENTE COMO PÚBLICAS Y SIN CSRF)
 // ==============================================================================
-
-// 1. Ruta de Respuesta (Éxito/Fallo) - Acepta POST y GET
 Route::any('/cardnet/response', function (Request $request, EcfService $ecfService, MatriculaService $matriculaService) {
     
-    // DEBUG: Verificar qué llega exactamente
     Log::info('Cardnet Debug: Retorno recibido en /cardnet/response', $request->all());
 
     $orderId = $request->input('OrdenId') ?? $request->input('OrdenID');
@@ -192,10 +163,8 @@ Route::any('/cardnet/response', function (Request $request, EcfService $ecfServi
     $authCode = $request->input('AuthorizationCode');
     $txId = $request->input('TransactionId');
     
-    // Capturar mensaje de respuesta del banco si existe
     $responseMessage = $request->input('ResponseMessage') ?? $request->input('ResponseMsg') ?? 'Transacción declinada sin mensaje específico';
 
-    // 1. Buscar el pago asociado
     $payment = Payment::find($orderId);
 
     if (!$payment) {
@@ -203,9 +172,6 @@ Route::any('/cardnet/response', function (Request $request, EcfService $ecfServi
         return redirect('/')->with('error', 'Error crítico: Pago no encontrado o sesión expirada.');
     }
 
-    // 2. AUTO-LOGIN DE EMERGENCIA
-    // Si la sesión se perdió al volver del banco (Auth::check() es false), 
-    // forzamos el login usando el ID del usuario dueño del pago.
     if (!Auth::check() && $payment->user_id) {
         Log::warning("Cardnet Debug: Sesión perdida detectada. Restaurando usuario ID {$payment->user_id}...");
         Auth::loginUsingId($payment->user_id);
@@ -217,16 +183,13 @@ Route::any('/cardnet/response', function (Request $request, EcfService $ecfServi
         }
     }
 
-    // 3. Procesar Resultado de la Transacción
     if ($responseCode === '00') {
-        // APROBADO
         $payment->update([
             'status' => 'Completado',
             'transaction_id' => $authCode,
             'notes' => "Aprobado Cardnet | Ref: {$txId} | Auth: {$authCode}",
         ]);
 
-        // Lógica de Negocio (Factura, Matrícula, etc.)
         try {
             $ecfService->emitirComprobante($payment);
             
@@ -240,31 +203,22 @@ Route::any('/cardnet/response', function (Request $request, EcfService $ecfServi
                 $matriculaService->generarMatricula($payment);
             }
 
-            // --- NUEVO: ENVIAR CORREO DE RECIBO AL ESTUDIANTE ---
             if ($student && $student->email) {
                 try {
-                    // Cargar relaciones necesarias para el PDF
                     $payment->load('student', 'paymentConcept', 'enrollment.courseSchedule.module');
-                    
-                    // Generar PDF y convertir a Base64
                     $pdfOutput = Pdf::loadView('reports.thermal-invoice', ['payment' => $payment])->output();
                     $pdfBase64 = base64_encode($pdfOutput);
-                    
-                    // Enviar correo
                     Mail::to($student->email)->send(new PaymentReceiptMail($payment, $pdfBase64));
-                    
                     Log::info("Cardnet: Correo de recibo enviado a {$student->email}");
                 } catch (\Exception $e) {
                     Log::error("Cardnet Error enviando correo: " . $e->getMessage());
                 }
             }
-            // -----------------------------------------------------
 
         } catch (\Exception $e) {
             Log::error("Cardnet Error post-proceso: " . $e->getMessage());
         }
 
-        // Redirección según rol (ahora que la sesión debería estar activa)
         $user = Auth::user();
         if ($user && $user->hasRole('Estudiante')) {
             return redirect()->route('student.payments')->with('message', '¡Pago realizado con éxito! Código: ' . $authCode);
@@ -273,48 +227,33 @@ Route::any('/cardnet/response', function (Request $request, EcfService $ecfServi
         }
 
     } else {
-        // RECHAZADO
         $payment->update([
             'status' => 'Pendiente', 
             'notes' => "Intento fallido Cardnet [{$responseCode}]: {$responseMessage}",
         ]);
-        
         Log::warning("Cardnet Rechazo: Orden {$orderId} - Código {$responseCode} - Msg: {$responseMessage}");
-
-        return redirect()->route('student.payments')->with('error', "El pago fue rechazado por el banco. Razón: {$responseMessage} (Código: {$responseCode})");
+        return redirect()->route('student.payments')->with('error', "El pago fue rechazado por el banco. Razón: {$responseMessage}");
     }
 
 })->name('cardnet.response')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]); 
 
-// 2. Ruta de Cancelación
 Route::any('/cardnet/cancel', function (Request $request) {
     Log::info('Cardnet Debug: Cancelación detectada', $request->all());
-    
     $orderId = $request->input('OrdenId') ?? $request->input('OrdenID');
-    
     if ($orderId) {
         $payment = Payment::find($orderId);
-        
-        // Intentar restaurar sesión si se perdió al cancelar
         if (!Auth::check() && $payment && $payment->user_id) {
             Auth::loginUsingId($payment->user_id);
         }
-        
-        // Si cancela, también lo dejamos en Pendiente para que pueda intentar de nuevo
         if ($payment && $payment->status === 'Pendiente') {
-            $payment->update([
-                'status' => 'Pendiente',
-                'notes' => 'Último intento cancelado por el usuario en la pasarela.'
-            ]);
+            $payment->update(['status' => 'Pendiente', 'notes' => 'Cancelado por usuario']);
         }
     }
-    
     if (Auth::check()) {
-        return redirect()->route('student.payments')->with('error', 'Operación cancelada por el usuario. Puede intentar nuevamente.');
+        return redirect()->route('student.payments')->with('error', 'Operación cancelada.');
     } else {
         return redirect('/')->with('error', 'Operación cancelada.');
     }
-
 })->name('cardnet.cancel')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 
@@ -323,7 +262,6 @@ Route::any('/cardnet/cancel', function (Request $request) {
 // ==============================================================================
 
 // --- CERTIFICADOS PÚBLICOS ---
-// PROTEGIDO POR MIDDLEWARE (Upsell Wall)
 Route::middleware(['feature:reports_advanced', 'signed'])->group(function () {
     Route::get('/certificates/verify/{student}/{course}', [CertificatePdfController::class, 'verify'])
         ->name('certificates.verify');
@@ -348,7 +286,6 @@ Route::get('/test', function () {
 });
 
 // --- NUEVA RUTA DE DIAGNÓSTICO WP API ---
-// --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
 Route::middleware(['feature:api_access'])->group(function () {
     Route::get('/test-wp', function () {
         $baseUri = config('services.wordpress.base_uri') ?? env('WP_API_BASE_URI');
@@ -386,30 +323,21 @@ Route::middleware(['feature:api_access'])->group(function () {
             ]);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'test' => 'FALLO CRÍTICO',
-                'error_tipo' => get_class($e),
-                'mensaje' => $e->getMessage(),
-                'url_intentada' => $fullUrl
-            ], 500);
+            return response()->json(['test' => 'FALLO CRÍTICO', 'mensaje' => $e->getMessage()], 500);
         }
     });
 });
 
 // --- NUEVA RUTA DE DIAGNÓSTICO MOODLE ---
-// --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
 Route::middleware(['feature:virtual_classroom'])->group(function () {
     Route::get('/test-moodle', function () {
         $url = config('services.moodle.url');
         $token = config('services.moodle.token');
-        
-        // Preparar URL de prueba para Moodle
-        // Endpoint REST estándar de Moodle
         $endpoint = $url . '/webservice/rest/server.php';
         
         $params = [
             'wstoken' => $token,
-            'wsfunction' => 'core_course_get_courses', // Función básica para probar lectura
+            'wsfunction' => 'core_course_get_courses',
             'moodlewsrestformat' => 'json'
         ];
 
@@ -417,45 +345,25 @@ Route::middleware(['feature:virtual_classroom'])->group(function () {
         try {
             $response = Http::asForm()->post($endpoint, $params);
             $duration = microtime(true) - $startTime;
-
             $json = $response->json();
-            
-            $status = 'EXITO';
-            $message = 'Conexión exitosa con Moodle.';
-            
-            // Verificar si Moodle devolvió un error de excepción
-            if (isset($json['exception'])) {
-                $status = 'ERROR MOODLE';
-                $message = 'Moodle devolvió un error: ' . $json['message'] . ' (Code: ' . $json['errorcode'] . ')';
-            }
+            $status = isset($json['exception']) ? 'ERROR MOODLE' : 'EXITO';
 
             return response()->json([
                 'test' => 'Conexión Moodle API',
                 'status' => $status,
-                'mensaje' => $message,
-                'config' => [
-                    'url_base' => $url,
-                    'token_presente' => !empty($token) ? 'SÍ' : 'NO',
-                    'endpoint_completo' => $endpoint
-                ],
                 'resultado' => [
                     'http_status' => $response->status(),
                     'duracion' => round($duration, 2) . 's',
-                    'respuesta_raw' => $json
                 ]
             ]);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'test' => 'FALLO CRÍTICO DE CONEXIÓN',
-                'error' => $e->getMessage(),
-                'url_intentada' => $endpoint
-            ], 500);
+            return response()->json(['test' => 'FALLO CRÍTICO', 'error' => $e->getMessage()], 500);
         }
     });
 });
 
-// Ruta de 'dashboard' genérica que redirige según el rol
+// Ruta de 'dashboard' genérica
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
         $user = Auth::user();
@@ -469,49 +377,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
         } elseif ($user->hasRole('Solicitante')) {
             return redirect()->route('applicant.portal');
         }
-
-        // Default si no tiene rol o es algo no contemplado
         return redirect()->route('applicant.portal');
-
     })->name('dashboard');
 
-    // --- PORTAL DEL ASPIRANTE/SOLICITANTE ---
-    // Aquí es donde el usuario 'Solicitante' completa su solicitud y ve el estado
     Route::get('/portal-aspirante', ApplicantDashboard::class)->name('applicant.portal');
-    
-    // === NUEVA RUTA: FORMULARIO DE ADMISIÓN DENTRO DEL PORTAL ===
     Route::get('/portal-aspirante/solicitud', AdmissionsRegister::class)->name('applicant.admission-form');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    // --- NUEVO: Descarga Segura de Documentos de Admisión (AGREGADO AQUI) ---
-    Route::get('/admissions/document/{admission}/{key}', [AdmissionDocumentController::class, 'show'])
-        ->name('admissions.document');
+    Route::get('/admissions/document/{admission}/{key}', [AdmissionDocumentController::class, 'show'])->name('admissions.document');
 });
 
 
 // --- RUTAS DE ADMINISTRADOR ---
 Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('admin')->group(function () {
     
-    // El Dashboard principal siempre debería estar accesible si hay login
     Route::get('/dashboard', \App\Livewire\Dashboard\Index::class)->name('admin.dashboard');
 
     // ===> NUEVO: GESTIÓN DE MÓDULOS (Marketplace Local) <===
     // Solo para admins. Permite ver e instalar addons disponibles en la licencia.
     Route::get('/system/modules', \App\Livewire\Admin\SystemModules::class)->name('admin.modules.index');
 
-    // =========================================================
-    // MODULO: GESTIÓN ACADÉMICA (academic)
-    // =========================================================
-    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
+    // --- MODULO: GESTIÓN ACADÉMICA ---
     Route::middleware(['feature:academic'])->group(function () {
         Route::get('/students', \App\Livewire\Students\Index::class)->name('admin.students.index');
         Route::get('/students/profile/{student}', \App\Livewire\StudentProfile\Index::class)->name('admin.students.profile');
-        
         Route::get('/courses', \App\Livewire\Courses\Index::class)->name('admin.courses.index');
-        
         Route::get('/careers', \App\Livewire\Careers\Index::class)->name('admin.careers.index');
         Route::get('/careers/{career}/curriculum', \App\Livewire\Careers\Curriculum::class)->name('admin.careers.curriculum');
         Route::get('/careers/{career}/curriculum/pdf', [CurriculumPdfController::class, 'download'])->name('admin.careers.curriculum.pdf');
@@ -519,44 +411,32 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
         if (class_exists(CalendarIndex::class)) {
             Route::get('/calendar', CalendarIndex::class)->name('admin.calendar.index');
         }
-        
         if (class_exists(AdmissionsIndex::class)) {
             Route::get('/admissions', AdmissionsIndex::class)->name('admin.admissions.index');
         }
 
         Route::get('/teachers', \App\Livewire\Teachers\Index::class)->name('admin.teachers.index');
         Route::get('/teachers/profile/{teacher}', \App\Livewire\TeacherProfile\Index::class)->name('admin.teachers.profile');
-
         Route::get('/requests', \App\Livewire\Admin\RequestsManagement::class)->name('admin.requests');
         Route::get('/classrooms', ClassroomManagement::class)->name('admin.classrooms.index');
     });
 
-    // =========================================================
-    // MODULO: INVENTARIO (inventory)
-    // =========================================================
-    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
+    // --- MODULO: INVENTARIO ---
     Route::middleware(['feature:inventory'])->group(function () {
         if (class_exists(InventoryIndex::class)) {
             Route::get('/inventory', InventoryIndex::class)->name('admin.inventory.index');
         } else {
-            // Fallback por si la clase no se encuentra
             Route::get('/inventory', function() { return 'Módulo de inventario no instalado'; })->name('admin.inventory.index');
         }
     });
     
-    // =========================================================
-    // MODULO: FINANZAS (finance)
-    // =========================================================
-    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
+    // --- MODULO: FINANZAS ---
     Route::middleware(['feature:finance'])->group(function () {
         Route::get('/finance/dashboard', FinanceDashboard::class)->name('admin.finance.dashboard');
         Route::get('/finance/payment-concepts', \App\Livewire\Finance\PaymentConcepts::class)->name('admin.finance.concepts');
     });
 
-    // =========================================================
-    // MODULO: REPORTES AVANZADOS / DIPLOMAS (reports_advanced)
-    // =========================================================
-    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
+    // --- MODULO: REPORTES AVANZADOS / DIPLOMAS ---
     Route::middleware(['feature:reports_advanced'])->group(function () {
         Route::get('/certificates', \App\Livewire\Certificates\Index::class)->name('admin.certificates.index'); 
         Route::get('/certificate-templates', CertificateTemplatesIndex::class)->name('admin.certificates.templates');
@@ -565,47 +445,34 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     });
 
     // --- REPORTES BÁSICOS ---
-    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:reports_basic'])->group(function () {
         Route::get('/reports', \App\Livewire\Reports\Index::class)->name('reports.index');
     });
 
-    // Configuración Global (Siempre visible para Admin)
+    // Configuración Global
     Route::get('/import', DatabaseImport::class)->name('admin.import');
     Route::get('/email-tester', EmailTester::class)->name('admin.email-tester');
     Route::get('/users', \App\Livewire\Admin\Users\Index::class)->name('admin.users.index');
-    
-    // --- RUTA NUEVA: REGISTRO DE ACTIVIDADES ---
     Route::get('/activity-logs', \App\Livewire\Admin\ActivityLogs\Index::class)->name('admin.activity-logs.index');
-
-    // ---> RUTA NUEVA: CONFIGURACIÓN DEL SISTEMA <---
     Route::get('/settings', SystemSettingsIndex::class)->name('admin.settings.index');
-
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
 });
 
 // --- RUTAS DE ESTUDIANTE ---
 Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student.')->group(function () {
     
-    // Core Estudiante (Siempre activo o ligado a academic)
-    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:academic'])->group(function () {
         Route::get('/dashboard', \App\Livewire\StudentPortal\Dashboard::class)->name('dashboard');
         Route::get('/course/{enrollmentId}', \App\Livewire\StudentPortal\CourseDetail::class)->name('course.detail');
         Route::get('/requests', \App\Livewire\StudentPortal\Requests::class)->name('requests');
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-        // ===> RUTA PARA SELECCIÓN DE MATERIAS <===
         Route::get('/selection', StudentPortalSelection::class)->name('selection');
     });
 
-    // Modulo Finanzas Estudiante
-    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:finance'])->group(function () {
         Route::get('/payments', StudentPortalPayments::class)->name('payments');
     });
 
-    // Modulo Moodle
-    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:virtual_classroom'])->group(function () {
         Route::get('/moodle-auth', [MoodleController::class, 'sso'])->name('moodle.auth');
     });
@@ -613,7 +480,6 @@ Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student
 
 // --- RUTAS DE PROFESOR ---
 Route::middleware(['auth', 'role:Profesor|Admin'])->prefix('teacher')->group(function () {
-    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:academic'])->group(function () {
         Route::get('/dashboard', \App\Livewire\TeacherPortal\Dashboard::class)->name('teacher.dashboard');
         Route::get('/grades/{section}', \App\Livewire\TeacherPortal\Grades::class)->name('teacher.grades');
@@ -625,24 +491,20 @@ Route::middleware(['auth', 'role:Profesor|Admin'])->prefix('teacher')->group(fun
 // --- RUTAS DE REPORTES (Generación PDF) ---
 Route::middleware(['auth'])->group(function () {
     
-    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:reports_basic'])->group(function () {
         Route::get('/reports/student-report/{student}', [ReportController::class, 'generateStudentReport'])->name('reports.student-report');
         Route::get('/reports/attendance-report/{section}', [ReportController::class, 'generateAttendanceReport'])->name('reports.attendance-report');
-        
         Route::get('/reports/attendance/{section}/pdf', [AttendancePdfController::class, 'download'])->name('reports.attendance.pdf');
         Route::get('/reports/grades/{section}/pdf', [GradesPdfController::class, 'download'])->name('reports.grades.pdf');
         Route::get('/reports/students-list/{section}/pdf', [StudentListPdfController::class, 'download'])->name('reports.students.pdf');
     });
 
-    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:finance'])->group(function () {
         Route::get('/reports/financial/pdf', [FinancialPdfController::class, 'download'])->name('reports.financial.pdf');
         Route::get('/reports/financial/{student}', [FinancialPdfController::class, 'download'])->name('reports.financial-report');
         Route::get('/finance/ticket/{payment}', [\App\Http\Controllers\FinancialPdfController::class, 'ticket'])->name('finance.ticket');
     });
 
-    // --- PROTEGIDA POR MIDDLEWARE (Upsell Wall) ---
     Route::middleware(['feature:reports_advanced'])->group(function () {
         Route::get('/reports/certificate/{student}/{course}/pdf', [CertificatePdfController::class, 'download'])->name('certificates.download'); 
     });
@@ -656,4 +518,4 @@ Route::middleware(['auth'])->group(function () {
         ->name('password.force_update');
 });
 
-require __DIR__.'/auth.php';"
+require __DIR__.'/auth.php';
