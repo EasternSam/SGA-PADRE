@@ -79,38 +79,7 @@ use App\Livewire\Admin\Settings\Index as SystemSettingsIndex;
 */
 
 // ==============================================================================
-// RUTA DE DIAGNÓSTICO DE BASE DE DATOS (NUEVO)
-// ==============================================================================
-Route::get('/system/debug-db', function () {
-    try {
-        $configName = DB::connection()->getDatabaseName();
-        
-        // Intentamos averiguar la ruta real absoluta que está usando el proceso web
-        $realPath = realpath($configName);
-        
-        // Si realpath falla, intentamos construirla relativa al directorio actual
-        if (!$realPath) {
-            $realPath = realpath(getcwd() . '/' . $configName) ?? 'NO ENCONTRADO (Probablemente nueva ruta relativa)';
-        }
-
-        $studentCount = DB::table('students')->count();
-
-        return response()->json([
-            'TITULO' => 'DIAGNÓSTICO DE BASE DE DATOS (WEB)',
-            'Directorio de Ejecución (CWD)' => getcwd(),
-            'Configuración DB_DATABASE' => $configName,
-            'Ruta Absoluta Detectada' => $realPath,
-            'Conteo de Estudiantes' => $studentCount,
-            'Tamaño del Archivo' => file_exists($realPath) ? round(filesize($realPath) / 1024 / 1024, 2) . ' MB' : 'N/A',
-            'CONCLUSIÓN' => $studentCount > 1000 ? 'ESTA ES LA BD CORRECTA' : 'ESTA ES LA BD VACÍA/INCORRECTA'
-        ]);
-    } catch (\Exception $e) {
-        return response()->json(['ERROR' => $e->getMessage()]);
-    }
-});
-
-// ==============================================================================
-// RUTA DE DIAGNÓSTICO SAAS
+// RUTA DE DIAGNÓSTICO TOTAL (VITAL PARA DEBUG)
 // ==============================================================================
 Route::get('/system/debug-license', function () {
     $licenseKey = env('APP_LICENSE_KEY');
@@ -144,14 +113,13 @@ Route::get('/system/debug-license', function () {
                 'Tiempo de respuesta' => round($duration, 2) . ' segundos',
             ],
             '4. Conclusión' => ($response->successful() && $response->json('status') === 'success') 
-                ? 'EL MAESTRO DICE QUE ESTÁ ACTIVO (Revisa DB del Maestro)' 
-                : 'EL MAESTRO DICE QUE ESTÁ SUSPENDIDO (Debería bloquearse)'
+                ? 'EL MAESTRO DICE QUE ESTÁ ACTIVO' 
+                : 'EL MAESTRO DICE QUE ESTÁ SUSPENDIDO O ERROR'
         ]);
     } catch (\Exception $e) {
         return response()->json([
             'ERROR CRÍTICO' => 'Falló la conexión con el maestro',
             'Mensaje' => $e->getMessage(),
-            'Conclusión' => 'El sistema está activo porque el "Modo a prueba de fallos" permite el acceso cuando hay error de conexión.'
         ], 500);
     }
 });
@@ -527,9 +495,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // --- RUTAS DE ADMINISTRADOR ---
 Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('admin')->group(function () {
     
+    // El Dashboard principal siempre debería estar accesible si hay login
     Route::get('/dashboard', \App\Livewire\Dashboard\Index::class)->name('admin.dashboard');
 
-    // ===> NUEVO: GESTOR DE MÓDULOS (Marketplace Local) <===
+    // ===> NUEVO: GESTIÓN DE MÓDULOS (Marketplace Local) <===
     // Solo para admins. Permite ver e instalar addons disponibles en la licencia.
     Route::get('/system/modules', \App\Livewire\Admin\SystemModules::class)->name('admin.modules.index');
 
@@ -574,7 +543,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
             Route::get('/inventory', function() { return 'Módulo de inventario no instalado'; })->name('admin.inventory.index');
         }
     });
-
+    
     // =========================================================
     // MODULO: FINANZAS (finance)
     // =========================================================
@@ -687,20 +656,4 @@ Route::middleware(['auth'])->group(function () {
         ->name('password.force_update');
 });
 
-
-// RUTA DE RESCATE PARA IMÁGENES (Bypass de cPanel 403)
-Route::get('/storage/branding/{filename}', function ($filename) {
-    $path = storage_path('app/public/branding/' . $filename);
-
-    if (!file_exists($path)) {
-        abort(404);
-    }
-
-    $file = file_get_contents($path);
-    $type = mime_content_type($path);
-
-    return response($file, 200)->header("Content-Type", $type);
-})->where('filename', '.*');
-
-
-require __DIR__.'/auth.php';
+require __DIR__.'/auth.php';"
