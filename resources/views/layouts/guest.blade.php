@@ -73,8 +73,9 @@
         }
 
         .glass-card {
-            background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
-            backdrop-filter: blur(30px);
+            background: linear-gradient(160deg, rgba(15,23,42,0.85), rgba(30,41,59,0.75));
+            backdrop-filter: blur(35px);
+            -webkit-backdrop-filter: blur(35px);
             border: 1px solid rgba(255,255,255,0.08);
         }
 
@@ -148,6 +149,9 @@
       @mousemove.window="handleMove">
 
 <div class="absolute inset-0 -z-10" style="{{ $customBg ? 'background: '.$customBg.'; background-size:cover;' : '' }}">
+
+    <!-- Dark overlay to improve contrast -->
+    <div class="absolute inset-0 bg-gradient-to-b from-slate-900/70 via-slate-900/60 to-slate-950/80"></div>
 
     <div class="absolute -top-40 -left-40 w-[600px] h-[600px] bg-indigo-600 rounded-full orb animate-float-slow"
          :style="`transform: translate(${mouseX*-1}px, ${mouseY*-1}px)`"></div>
