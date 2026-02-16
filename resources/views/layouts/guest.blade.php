@@ -58,29 +58,25 @@
 
     @php
         use App\Models\SystemOption;
+        use App\Models\Setting;
 
-        // Recuperar opciones del sistema de forma segura
-        $bg = null;
-        $type = 'solid';
+        // 1. Lógica del Logo (Mantenida de tu configuración anterior)
         $logoUrl = null;
-
         try {
-            $bg = SystemOption::getOption('navbar_color');
-            $type = SystemOption::getOption('navbar_type');
             $logoUrl = SystemOption::getOption('logo') ?: SystemOption::getOption('institution_logo');
         } catch (\Exception $e) {
-            // Fallback si la base de datos falla o no está migrada
+            // Fallback si la base de datos falla
         }
 
-        $customStyle = '';
-        if ($type === 'gradient' && $bg && str_contains($bg, 'gradient')) {
-            $customStyle = "background: $bg;";
-        } elseif ($type === 'solid' && $bg && $bg !== '#') {
-            $customStyle = "background-color: $bg;";
-        } else {
-            // Fondo por defecto elegante (Dark Blue Navy)
-            $customStyle = "background-color: #0f172a;"; 
-        }
+        // 2. Lógica del Fondo (Sincronizada con navigation.blade.php)
+        // Usamos la misma consulta para obtener el 'brand_primary_color'
+        $navBackground = null;
+        try {
+            $navBackground = Setting::where('key', 'brand_primary_color')->value('value');
+        } catch (\Exception $e) {}
+        
+        // Fallback al azul corporativo si no hay configuración
+        $navBackground = $navBackground ?? '#1e3a8a';
     @endphp
 
     <style>
@@ -175,6 +171,10 @@
             font-size: 0.9rem;
             text-decoration: underline;
         }
+        .glass-link:hover {
+            color: #e2e8f0;
+            text-decoration: underline;
+        }
 
         /* Orbes decorativos */
         .orb {
@@ -188,7 +188,7 @@
 </head>
 
 <body class="font-sans antialiased overflow-x-hidden relative flex items-center justify-center"
-      style="{{ $customStyle }}">
+      style="background: {{ $navBackground }};">
 
     <!-- Fondo Interactivo -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
