@@ -173,9 +173,6 @@
             color: #94a3b8;
             transition: color 0.2s;
             font-size: 0.9rem;
-        }
-        .glass-link:hover {
-            color: #e2e8f0;
             text-decoration: underline;
         }
 
@@ -214,12 +211,12 @@
             <a href="/" class="flex flex-col items-center group">
                 @if($logoUrl)
                     <!-- LOGO AUMENTADO (h-52) con padding reducido para compactar -->
-                    <div class="p-2 bg-white/5 rounded-3xl backdrop-blur-sm border border-white/10 shadow-2xl mb-3 transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2">
+                    <div class="p-2 bg-white/5 rounded-3xl backdrop-blur-sm border border-white/10 shadow-2xl mb-9 transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2">
                         <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-52 w-auto drop-shadow-2xl object-contain">
                     </div>
                 @else
-                    <!-- FALLBACK LOGO AUMENTADO (w-52 h-52) -->
-                    <x-application-logo class="w-52 h-52 fill-current text-gray-100 mb-3 drop-shadow-2xl" />
+                    <!-- FALLBACK LOGO AUMENTADO -->
+                    <x-application-logo class="w-52 h-52 fill-current text-gray-100 drop-shadow-2xl mb-9" />
                 @endif
                 
                 <!-- TEXTO REDUCIDO Y SIN ESPACIADO EXAGERADO -->
