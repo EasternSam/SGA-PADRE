@@ -32,12 +32,17 @@
                         'float': 'float 20s ease-in-out infinite',
                         'float-delayed': 'float 15s ease-in-out infinite reverse',
                         'pulse-slow': 'pulse 10s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'fade-in-down': 'fadeInDown 0.8s ease-out',
                     },
                     keyframes: {
                         float: {
                             '0%, 100%': { transform: 'translate(0, 0) rotate(0deg)' },
                             '33%': { transform: 'translate(30px, -50px) rotate(10deg)' },
                             '66%': { transform: 'translate(-20px, 20px) rotate(-5deg)' },
+                        },
+                        fadeInDown: {
+                            '0%': { opacity: '0', transform: 'translateY(-20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
                         }
                     }
                 }
@@ -190,14 +195,14 @@
 
     <!-- Fondo Interactivo -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-        <!-- Orbe 1 -->
-        <div class="orb w-[500px] h-[500px] bg-indigo-600/40 -top-20 -left-20 animate-float"></div>
+        <!-- Orbe 1 (Opacidad reducida de 40 a 20) -->
+        <div class="orb w-[500px] h-[500px] bg-indigo-600/20 -top-20 -left-20 animate-float"></div>
         
-        <!-- Orbe 2 -->
-        <div class="orb w-[400px] h-[400px] bg-purple-600/40 bottom-0 right-0 animate-float-delayed"></div>
+        <!-- Orbe 2 (Opacidad reducida de 40 a 20) -->
+        <div class="orb w-[400px] h-[400px] bg-purple-600/20 bottom-0 right-0 animate-float-delayed"></div>
         
-        <!-- Orbe 3 (Centro sutil) -->
-        <div class="orb w-[600px] h-[600px] bg-blue-600/20 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse-slow"></div>
+        <!-- Orbe 3 (Centro sutil, opacidad reducida de 20 a 10) -->
+        <div class="orb w-[600px] h-[600px] bg-blue-600/10 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse-slow"></div>
     </div>
 
     <!-- Contenedor Principal -->
@@ -241,22 +246,5 @@
             </div>
         </div>
     </div>
-
-    <!-- Script simple para fade-in -->
-    <style>
-        .animate-fade-in-down {
-            animation: fadeInDown 0.8s ease-out;
-        }
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
 </body>
 </html>
