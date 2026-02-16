@@ -56,4 +56,10 @@ return [
         'token' => env('MOODLE_TOKEN'),
     ],
 
+    // Configuración Aplusmaster
+    'aplusmaster' => [
+        'url' => env('APLUSMASTER_URL', 'https://gestion.90s.agency/api/v1/validate-license'),
+        'key' => env('LICENSE_KEY'),
+    ],
+
 ];

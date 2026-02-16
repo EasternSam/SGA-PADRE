@@ -10,6 +10,7 @@ use Spatie\Permission\Middleware\PermissionMiddleware;
 use App\Http\Middleware\ForcePasswordChange;
 use App\Http\Middleware\AuditLogMiddleware;
 use App\Http\Middleware\CheckSaaSProfile;
+use App\Http\Middleware\VerifyLicense;
 // Importamos el nuevo middleware
 use App\Http\Middleware\EnsureFeatureEnabled; 
 use App\Console\Commands\ImportStudentsFast;
@@ -38,6 +39,11 @@ return Application::configure(basePath: dirname(__DIR__))
         
         $middleware->web(append: [
             AuditLogMiddleware::class,
+            VerifyLicense::class,
+        ]);
+
+        $middleware->api(append: [
+            VerifyLicense::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [
