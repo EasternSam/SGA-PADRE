@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-gray-50">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,7 +9,7 @@
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800&display=swap" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=outfit:400,500,600,700&display=swap" rel="stylesheet" />
 
         <!-- Tailwind CSS CDN -->
         <script src="https://cdn.tailwindcss.com"></script>
@@ -18,17 +18,17 @@
                 theme: {
                     extend: {
                         fontFamily: {
-                            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                            sans: ['"Outfit"', 'sans-serif'],
                         },
                         animation: {
-                            'blob': 'blob 7s infinite',
+                            'float-slow': 'float 8s ease-in-out infinite',
+                            'float-medium': 'float 6s ease-in-out infinite',
+                            'float-fast': 'float 4s ease-in-out infinite',
                         },
                         keyframes: {
-                            blob: {
-                                '0%': { transform: 'translate(0px, 0px) scale(1)' },
-                                '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
-                                '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
-                                '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                            float: {
+                                '0%, 100%': { transform: 'translateY(0)' },
+                                '50%': { transform: 'translateY(-20px)' },
                             }
                         }
                     }
@@ -39,30 +39,26 @@
         <!-- Alpine.js -->
         <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
-        <!-- Scripts del Proyecto -->
+        <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         @php
             use App\Models\SystemOption;
 
-            // --- Lógica de Fondo Dinámico (Recuperada del contexto anterior) ---
+            // --- Lógica de Fondo ---
             $bg = SystemOption::getOption('navbar_color');
             $type = SystemOption::getOption('navbar_type');
 
-            // Reconstruir gradiente si es necesario
-            if ($type === 'gradient' && !str_contains($bg, 'gradient')) {
-                $start = SystemOption::getOption('navbar_gradient_start', '#4f46e5');
-                $end = SystemOption::getOption('navbar_gradient_end', '#0f172a');
-                $dir = SystemOption::getOption('navbar_gradient_direction', 'to bottom right');
-                $bg = "linear-gradient({$dir}, {$start}, {$end})";
+            // Si es gradiente y no está vacío, lo usamos.
+            // Si no, usamos el fondo oscuro por defecto del diseño React.
+            $customBg = null;
+            if ($type === 'gradient' && str_contains($bg, 'gradient')) {
+               $customBg = $bg;
+            } elseif ($type === 'solid' && $bg && $bg !== '#') {
+               $customBg = $bg;
             }
 
-            // Fallback elegante (Indigo profundo a Slate)
-            if (empty($bg) || $bg === '#' || $bg === 'red' || $bg === '#red') {
-                $bg = 'linear-gradient(135deg, #4f46e5 0%, #0f172a 100%)'; 
-            }
-
-            // Lógica de Logo
+            // Logo
             $logoUrl = SystemOption::getOption('logo');
             if (empty($logoUrl)) {
                 $logoUrl = SystemOption::getOption('institution_logo');
@@ -70,240 +66,179 @@
         @endphp
 
         <style>
-            /* --- Clases de Utilidad Personalizadas --- */
-            .dynamic-bg-panel {
-                background: {{ $bg }} !important;
-                position: relative;
-                overflow: hidden;
-            }
-
-            /* Patrón de puntos sutil */
-            .dot-pattern {
-                background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-                background-size: 24px 24px;
-            }
-
-            /* --- Adaptación para Inputs de Laravel Breeze --- */
-            /* Esto estiliza los inputs inyectados en {{ $slot }} para que se vean modernos */
+            /* --- Override de Estilos para Formularios de Breeze/Jetstream --- */
+            /* Esto es crucial para que los inputs blancos de Breeze se vuelvan transparentes/oscuros */
             
-            .auth-form-wrapper label {
-                display: block;
-                font-size: 0.875rem;
-                font-weight: 600;
-                color: #374151;
-                margin-bottom: 0.5rem;
+            .glass-form label {
+                color: #e0e7ff !important; /* Indigo-100 */
+                font-weight: 500 !important;
+                font-size: 0.9rem !important;
             }
 
-            .auth-form-wrapper input[type="text"],
-            .auth-form-wrapper input[type="email"],
-            .auth-form-wrapper input[type="password"] {
-                display: block;
-                width: 100%;
-                border-radius: 0.75rem; /* Más redondeado */
-                border: 1px solid #e5e7eb;
-                padding: 0.875rem 1rem;
-                color: #1f2937;
-                background-color: #ffffff;
-                transition: all 0.2s ease-in-out;
-                font-size: 0.95rem;
-                margin-bottom: 1.25rem;
-                box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            .glass-form input[type="text"],
+            .glass-form input[type="email"],
+            .glass-form input[type="password"] {
+                background-color: rgba(255, 255, 255, 0.03) !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                color: white !important;
+                border-radius: 0.75rem !important; /* Rounded-xl */
+                padding-top: 0.75rem;
+                padding-bottom: 0.75rem;
+                transition: all 0.3s ease;
             }
 
-            .auth-form-wrapper input:focus {
-                outline: none;
-                border-color: #6366f1;
-                box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); /* Ring suave */
+            .glass-form input:focus {
+                background-color: rgba(255, 255, 255, 0.08) !important;
+                border-color: #818cf8 !important; /* Indigo-400 */
+                box-shadow: 0 0 0 1px #818cf8 !important;
+                outline: none !important;
+            }
+            
+            /* Placeholder color override */
+            .glass-form input::placeholder {
+                color: rgba(199, 210, 254, 0.4) !important;
             }
 
             /* Checkbox */
-            .auth-form-wrapper input[type="checkbox"] {
-                border-radius: 0.375rem;
-                border-color: #d1d5db;
-                color: #4f46e5;
-                width: 1.1rem;
-                height: 1.1rem;
-                margin-right: 0.5rem;
-                cursor: pointer;
+            .glass-form input[type="checkbox"] {
+                background-color: rgba(255, 255, 255, 0.1) !important;
+                border-color: rgba(255, 255, 255, 0.3) !important;
+                color: #6366f1 !important; /* Indigo-500 */
+                border-radius: 0.25rem;
             }
 
-            /* Botones */
-            .auth-form-wrapper button[type="submit"], 
-            .auth-form-wrapper .inline-flex {
-                display: flex;
+            /* Botones primarios */
+            .glass-form button[type="submit"] {
+                background: linear-gradient(to right, #4f46e5, #9333ea) !important;
+                border: none !important;
+                color: white !important;
+                font-weight: 600 !important;
+                padding: 0.75rem 1rem !important;
+                border-radius: 0.75rem !important;
                 width: 100%;
-                justify-content: center;
-                border-radius: 0.75rem;
-                background: {{ $bg }}; /* Usa el color del tema también para el botón */
-                padding: 0.875rem 1.5rem;
-                font-size: 0.95rem;
-                font-weight: 600;
-                color: white;
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-                transition: all 0.2s;
-                letter-spacing: 0.025em;
-                margin-top: 1.5rem;
-                cursor: pointer;
-                border: 1px solid rgba(255,255,255,0.1);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                font-size: 0.85rem;
+                transition: transform 0.2s, box-shadow 0.2s;
+                box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);
             }
-
-            .auth-form-wrapper button[type="submit"]:hover {
-                filter: brightness(110%);
-                transform: translateY(-1px);
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            
+            .glass-form button[type="submit"]:hover {
+                box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.5);
+                transform: translateY(-2px);
             }
 
             /* Enlaces */
-            .auth-form-wrapper a {
-                color: #4f46e5;
-                font-size: 0.875rem;
+            .glass-form a {
+                color: #a5b4fc !important; /* Indigo-300 */
                 text-decoration: none;
-                font-weight: 600;
-                transition: color 0.2s;
+                font-size: 0.85rem;
             }
-            .auth-form-wrapper a:hover {
-                color: #4338ca;
+            .glass-form a:hover {
+                color: white !important;
+                text-decoration: underline;
             }
 
-            /* Utilidades para layout interno del slot */
-            .auth-form-wrapper .block.mt-4 {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                margin-top: 1.5rem;
-                margin-bottom: 1.5rem;
+            /* Utilitarios de fondo */
+            .bg-aurora {
+                background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #0f172a 100%);
+            }
+            
+            /* Orbes con mezcla */
+            .orb-blur {
+                filter: blur(100px);
+                mix-blend-mode: screen;
             }
         </style>
     </head>
-    <body class="h-full antialiased font-sans text-gray-900 bg-white">
+    <body class="font-sans antialiased text-gray-100 bg-[#0f172a] overflow-hidden"
+          x-data="{ 
+              mouseX: 0, 
+              mouseY: 0,
+              handleMove(e) {
+                  // Efecto parallax suave y limitado
+                  this.mouseX = (e.clientX - window.innerWidth / 2) / 50;
+                  this.mouseY = (e.clientY - window.innerHeight / 2) / 50;
+              }
+          }"
+          @mousemove.window="handleMove">
         
-        <div class="flex min-h-screen w-full">
+        <div class="min-h-screen w-full relative flex items-center justify-center">
             
-            <!-- SECCIÓN IZQUIERDA: Visual y Branding -->
-            <!-- Utilizamos dynamic-bg-panel para inyectar el color de la BD -->
-            <div class="hidden lg:flex lg:w-1/2 relative dynamic-bg-panel items-center justify-center p-12 z-0">
+            <!-- --- FONDO DINÁMICO --- -->
+            <div class="absolute inset-0 w-full h-full pointer-events-none z-0 bg-aurora"
+                 style="{{ $customBg ? 'background: ' . $customBg . ' !important; background-size: cover;' : '' }}">
                 
-                <!-- Capas Decorativas (Animación Aurora Sutil) -->
-                <div class="absolute inset-0 dot-pattern opacity-30"></div>
+                <!-- Orbes Animados (Solo visibles si no hay un fondo sólido personalizado superpuesto) -->
+                @if(!$customBg || str_contains($customBg, 'gradient'))
+                    <!-- Orbe Morado -->
+                    <div class="absolute top-0 left-0 w-[500px] h-[500px] bg-purple-600/20 rounded-full orb-blur animate-float-slow transition-transform duration-300 ease-out"
+                         :style="`transform: translate(${mouseX * -1}px, ${mouseY * -1}px)`"></div>
+                    
+                    <!-- Orbe Indigo -->
+                    <div class="absolute bottom-0 right-0 w-[600px] h-[600px] bg-indigo-600/20 rounded-full orb-blur animate-float-medium transition-transform duration-300 ease-out"
+                         :style="`transform: translate(${mouseX}px, ${mouseY}px)`"></div>
+                         
+                    <!-- Orbe Rosa Central -->
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-pink-600/10 rounded-full orb-blur animate-float-fast"></div>
+                @endif
                 
-                <!-- Orbes animados con CSS puro (Tailwind config arriba) -->
-                <div class="absolute top-0 -left-4 w-96 h-96 bg-white mix-blend-overlay rounded-full filter blur-[128px] opacity-20 animate-blob"></div>
-                <div class="absolute top-0 -right-4 w-96 h-96 bg-purple-500 mix-blend-overlay rounded-full filter blur-[128px] opacity-20 animate-blob animation-delay-2000"></div>
-                <div class="absolute -bottom-8 left-20 w-96 h-96 bg-pink-500 mix-blend-overlay rounded-full filter blur-[128px] opacity-20 animate-blob animation-delay-4000"></div>
-
-                <!-- Contenido Central del Panel Izquierdo -->
-                <div class="relative z-10 w-full max-w-lg">
-                    <div class="space-y-8" x-data="{ show: false }" x-init="setTimeout(() => show = true, 100)">
-                        
-                        <!-- Icono / Badge -->
-                        <div class="w-20 h-20 bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl flex items-center justify-center shadow-2xl transition-all duration-700 transform"
-                             x-show="show"
-                             x-transition:enter="transition ease-out duration-700"
-                             x-transition:enter-start="opacity-0 translate-y-10 rotate-12"
-                             x-transition:enter-end="opacity-100 translate-y-0 rotate-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
-                        </div>
-
-                        <!-- Texto de Bienvenida -->
-                        <div x-show="show"
-                             x-transition:enter="transition ease-out duration-700 delay-100"
-                             x-transition:enter-start="opacity-0 translate-y-4"
-                             x-transition:enter-end="opacity-100 translate-y-0">
-                            <h2 class="text-5xl font-bold tracking-tight text-white mb-6 leading-tight">
-                                Bienvenido al <br/>
-                                <span class="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">Portal Académico</span>
-                            </h2>
-                            <p class="text-lg text-blue-100 leading-relaxed font-medium max-w-md">
-                                Gestión académica simplificada para padres y tutores. 
-                                Accede al rendimiento escolar, asistencia y comunicados en tiempo real.
-                            </p>
-                        </div>
-
-                        <!-- Tarjeta de Ayuda -->
-                        <div class="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 shadow-lg transform transition hover:bg-white/10 hover:scale-[1.02] duration-300 cursor-default"
-                             x-show="show"
-                             x-transition:enter="transition ease-out duration-700 delay-200"
-                             x-transition:enter-start="opacity-0 translate-y-4"
-                             x-transition:enter-end="opacity-100 translate-y-0">
-                            <div class="flex items-center gap-4">
-                                <div class="p-3 bg-indigo-500/20 rounded-xl">
-                                    <svg class="h-6 w-6 text-indigo-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-white text-base">¿Necesitas asistencia?</h3>
-                                    <p class="text-sm text-blue-200/80 mt-0.5">Contacta con soporte si tienes problemas de acceso.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                <!-- Copyright -->
-                <div class="absolute bottom-8 left-12 text-blue-200/60 text-xs font-medium">
-                    &copy; {{ date('Y') }} {{ config('app.name') }}. Sistema de Gestión Académica.
-                </div>
+                <!-- Ruido sutil para textura -->
+                <div class="absolute inset-0 opacity-[0.03]" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');"></div>
             </div>
 
-            <!-- SECCIÓN DERECHA: Formulario de Login -->
-            <div class="w-full lg:w-1/2 flex flex-col justify-center items-center bg-white p-6 lg:p-16 xl:p-24 relative overflow-y-auto">
+            <!-- --- TARJETA PRINCIPAL (GLASS) --- -->
+            <div class="relative z-10 w-full max-w-md p-4 transition-all duration-700 ease-out transform"
+                 x-data="{ show: false }" x-init="setTimeout(() => show = true, 100)"
+                 x-show="show"
+                 x-transition:enter="opacity-0 scale-95 translate-y-4"
+                 x-transition:enter-end="opacity-100 scale-100 translate-y-0">
                 
-                <!-- Botón 'Ir al inicio' Flotante -->
-                <div class="absolute top-6 right-8">
-                    <a href="/" class="group flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-indigo-600 transition-colors duration-200">
-                        Ir al inicio
-                        <div class="p-1 rounded-full bg-gray-100 group-hover:bg-indigo-50 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                            </svg>
-                        </div>
-                    </a>
-                </div>
-
-                <div class="w-full max-w-[420px] mx-auto" x-data="{ show: false }" x-init="setTimeout(() => show = true, 100)">
+                <!-- Borde Brillante (Glow) -->
+                <div class="absolute -inset-0.5 bg-gradient-to-br from-indigo-500/30 via-purple-500/10 to-pink-500/30 rounded-3xl blur opacity-75"></div>
+                
+                <!-- Contenedor Tarjeta -->
+                <div class="relative bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl p-8 sm:p-10 overflow-hidden">
                     
-                    <div x-show="show" 
-                         x-transition:enter="transition ease-out duration-700 delay-100"
-                         x-transition:enter-start="opacity-0 translate-y-8"
-                         x-transition:enter-end="opacity-100 translate-y-0">
+                    <!-- Brillo superior -->
+                    <div class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
 
-                        <!-- Cabecera Derecha -->
-                        <div class="text-center mb-10">
-                            <!-- Logo Dinámico -->
-                            <div class="inline-flex justify-center items-center mb-6">
-                                @if($logoUrl)
-                                    <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-20 w-auto object-contain drop-shadow-md hover:scale-105 transition-transform duration-300">
-                                @else
-                                    <div class="h-16 w-16 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-200 rotate-3 hover:rotate-6 transition-transform duration-300">
-                                        <x-application-logo class="w-9 h-9 fill-current text-white" />
-                                    </div>
-                                @endif
-                            </div>
-
-                            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">Academic+</h1>
-                            <p class="text-sm font-medium text-gray-500 bg-gray-50 inline-block px-3 py-1 rounded-full">
-                                {{ config('app.name') }}
-                            </p>
+                    <!-- CABECERA -->
+                    <div class="text-center mb-8">
+                        <div class="inline-flex items-center justify-center mb-6 relative group">
+                            <!-- Efecto de resplandor detrás del logo -->
+                            <div class="absolute inset-0 bg-indigo-500 blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
+                            
+                            @if($logoUrl)
+                                <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="relative h-24 w-auto object-contain drop-shadow-2xl transition-transform duration-500 group-hover:scale-105">
+                            @else
+                                <div class="relative w-20 h-20 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-2xl flex items-center justify-center text-white shadow-lg border border-white/10">
+                                    <x-application-logo class="w-10 h-10 fill-current" />
+                                </div>
+                            @endif
                         </div>
 
-                        <!-- Formulario -->
-                        <div class="bg-white rounded-none sm:rounded-lg">
-                            <div class="auth-form-wrapper">
-                                {{ $slot }}
-                            </div>
-                        </div>
-
-                        <!-- Footer Móvil -->
-                        <div class="lg:hidden mt-10 text-center">
-                            <p class="text-xs text-gray-400">
-                                &copy; {{ date('Y') }} {{ config('app.name') }}.
-                            </p>
-                        </div>
+                        <h1 class="text-3xl font-bold tracking-tight text-white mb-2 drop-shadow-md">
+                            {{ config('app.name') }}
+                        </h1>
+                        <p class="text-indigo-200/80 text-sm font-medium">
+                            Portal de Gestión Académica
+                        </p>
                     </div>
+
+                    <!-- FORMULARIO (Slot) -->
+                    <!-- La clase 'glass-form' activa los estilos CSS personalizados del head -->
+                    <div class="glass-form space-y-4">
+                        {{ $slot }}
+                    </div>
+
+                    <!-- FOOTER -->
+                    <div class="mt-8 pt-6 border-t border-white/5 text-center">
+                        <p class="text-xs text-indigo-300/60">
+                            &copy; {{ date('Y') }} {{ config('app.name') }}. Todos los derechos reservados.
+                        </p>
+                    </div>
+
                 </div>
             </div>
         </div>
