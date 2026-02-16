@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full scroll-smooth">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,9 +9,9 @@
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=outfit:400,500,600,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=outfit:300,400,500,600,700&display=swap" rel="stylesheet" />
 
-    <!-- Tailwind CSS CDN -->
+    <!-- Tailwind CSS (CDN de respaldo para estilos rápidos) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -21,24 +21,23 @@
                     fontFamily: {
                         sans: ['"Outfit"', 'sans-serif'],
                     },
-                    boxShadow: {
-                        glow: '0 0 40px rgba(99,102,241,0.35)',
-                        soft: '0 20px 60px -15px rgba(0,0,0,0.6)'
+                    colors: {
+                        glass: {
+                            100: 'rgba(255, 255, 255, 0.1)',
+                            200: 'rgba(255, 255, 255, 0.2)',
+                            border: 'rgba(255, 255, 255, 0.15)',
+                        }
                     },
                     animation: {
-                        'float-slow': 'float 10s ease-in-out infinite',
-                        'float-medium': 'float 7s ease-in-out infinite',
-                        'float-fast': 'float 5s ease-in-out infinite',
-                        'fade-in': 'fadeIn .8s ease-out forwards'
+                        'float': 'float 20s ease-in-out infinite',
+                        'float-delayed': 'float 15s ease-in-out infinite reverse',
+                        'pulse-slow': 'pulse 10s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     },
                     keyframes: {
                         float: {
-                            '0%,100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-25px)' },
-                        },
-                        fadeIn: {
-                            '0%': { opacity: 0, transform: 'translateY(10px)' },
-                            '100%': { opacity: 1, transform: 'translateY(0)' }
+                            '0%, 100%': { transform: 'translate(0, 0) rotate(0deg)' },
+                            '33%': { transform: 'translate(30px, -50px) rotate(10deg)' },
+                            '66%': { transform: 'translate(-20px, 20px) rotate(-5deg)' },
                         }
                     }
                 }
@@ -47,158 +46,217 @@
     </script>
 
     <!-- Alpine.js -->
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
+    <!-- Scripts del Proyecto -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     @php
         use App\Models\SystemOption;
 
-        $bg = SystemOption::getOption('navbar_color');
-        $type = SystemOption::getOption('navbar_type');
+        // Recuperar opciones del sistema de forma segura
+        $bg = null;
+        $type = 'solid';
+        $logoUrl = null;
 
-        $customBg = null;
-        if ($type === 'gradient' && str_contains($bg, 'gradient')) {
-            $customBg = $bg;
-        } elseif ($type === 'solid' && $bg && $bg !== '#') {
-            $customBg = $bg;
+        try {
+            $bg = SystemOption::getOption('navbar_color');
+            $type = SystemOption::getOption('navbar_type');
+            $logoUrl = SystemOption::getOption('logo') ?: SystemOption::getOption('institution_logo');
+        } catch (\Exception $e) {
+            // Fallback si la base de datos falla o no está migrada
         }
 
-        $logoUrl = SystemOption::getOption('logo') ?: SystemOption::getOption('institution_logo');
+        $customStyle = '';
+        if ($type === 'gradient' && $bg && str_contains($bg, 'gradient')) {
+            $customStyle = "background: $bg;";
+        } elseif ($type === 'solid' && $bg && $bg !== '#') {
+            $customStyle = "background-color: $bg;";
+        } else {
+            // Fondo por defecto elegante (Dark Blue Navy)
+            $customStyle = "background-color: #0f172a;"; 
+        }
     @endphp
 
     <style>
         body {
-            background-color: #0b1120;
+            /* Asegura que el fondo cubra todo incluso en scroll */
+            min-height: 100vh;
+            color: #e2e8f0;
         }
 
-        .glass-card {
-            background: linear-gradient(160deg, rgba(15,23,42,0.85), rgba(30,41,59,0.75));
-            backdrop-filter: blur(35px);
-            -webkit-backdrop-filter: blur(35px);
-            border: 1px solid rgba(255,255,255,0.08);
+        /* Glassmorphism Card */
+        .glass-panel {
+            background: rgba(17, 25, 40, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.125);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
-        .glass-form label {
-            color: #c7d2fe !important;
-            font-weight: 500 !important;
-            font-size: 0.85rem !important;
-            letter-spacing: .02em;
-        }
-
-        .glass-form input[type="text"],
-        .glass-form input[type="email"],
-        .glass-form input[type="password"] {
-            background-color: rgba(255, 255, 255, 0.05) !important;
-            border: 1px solid rgba(255, 255, 255, 0.12) !important;
-            color: #fff !important;
-            border-radius: 0.9rem !important;
-            padding: 0.8rem 1rem;
-            transition: all .3s ease;
-        }
-
-        .glass-form input:focus {
-            background-color: rgba(255, 255, 255, 0.1) !important;
-            border-color: #6366f1 !important;
-            box-shadow: 0 0 0 2px rgba(99,102,241,.4) !important;
-            outline: none !important;
-        }
-
-        .glass-form input::placeholder {
-            color: rgba(199,210,254,0.35) !important;
-        }
-
-        .glass-form button[type="submit"] {
-            background: linear-gradient(to right, #4f46e5, #9333ea);
-            border: none !important;
-            color: white !important;
-            font-weight: 600 !important;
-            padding: 0.85rem 1rem !important;
-            border-radius: 0.9rem !important;
+        /* --- FORZAR ESTILOS DE FORMULARIO PARA TEMA OSCURO --- */
+        
+        /* Inputs (Text, Email, Password) */
+        .glass-input {
+            background-color: rgba(0, 0, 0, 0.2) !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            color: #ffffff !important;
+            border-radius: 0.75rem !important; /* rounded-xl */
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+            transition: all 0.3s ease;
             width: 100%;
-            letter-spacing: 0.08em;
-            font-size: 0.8rem;
-            transition: all .25s ease;
-            box-shadow: 0 10px 25px -5px rgba(79,70,229,.45);
         }
 
-        .glass-form button[type="submit"]:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 20px 35px -10px rgba(79,70,229,.6);
+        .glass-input:focus {
+            background-color: rgba(0, 0, 0, 0.35) !important;
+            border-color: #818cf8 !important; /* indigo-400 */
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3) !important;
+            outline: none;
         }
 
-        .glass-form a {
-            color: #a5b4fc !important;
-            font-size: 0.8rem;
-            transition: .2s;
+        .glass-input::placeholder {
+            color: rgba(203, 213, 225, 0.4) !important;
         }
 
-        .glass-form a:hover {
-            color: #fff !important;
+        /* Labels */
+        label {
+            color: #cbd5e1 !important; /* slate-300 */
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-bottom: 0.4rem;
+            display: block;
         }
 
+        /* Checkbox */
+        input[type="checkbox"] {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            color: #6366f1; /* indigo-500 */
+            border-radius: 0.25rem;
+        }
+        input[type="checkbox"]:focus {
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Botón Principal */
+        .glass-button {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            border: none;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+        }
+
+        .glass-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(124, 58, 237, 0.5);
+            filter: brightness(1.1);
+        }
+
+        /* Links */
+        .glass-link {
+            color: #94a3b8;
+            transition: color 0.2s;
+            font-size: 0.9rem;
+        }
+        .glass-link:hover {
+            color: #e2e8f0;
+            text-decoration: underline;
+        }
+
+        /* Orbes decorativos */
         .orb {
-            filter: blur(120px);
-            opacity: .4;
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            opacity: 0.5;
         }
     </style>
 </head>
 
-<body class="font-sans antialiased text-gray-100 min-h-screen relative overflow-x-hidden"
-      x-data="{ mouseX: 0, mouseY: 0, handleMove(e){ this.mouseX=(e.clientX-window.innerWidth/2)/60; this.mouseY=(e.clientY-window.innerHeight/2)/60;} }"
-      @mousemove.window="handleMove">
+<body class="font-sans antialiased overflow-x-hidden relative flex items-center justify-center"
+      style="{{ $customStyle }}">
 
-<div class="absolute inset-0 -z-10" style="{{ $customBg ? 'background: '.$customBg.'; background-size:cover;' : '' }}">
-
-    <div class="absolute -top-40 -left-40 w-[600px] h-[600px] bg-indigo-600 rounded-full orb animate-float-slow"
-         :style="`transform: translate(${mouseX*-1}px, ${mouseY*-1}px)`"></div>
-
-    <div class="absolute -bottom-40 -right-40 w-[700px] h-[700px] bg-purple-600 rounded-full orb animate-float-medium"
-         :style="`transform: translate(${mouseX}px, ${mouseY}px)`"></div>
-
-</div>
-
-<div class="min-h-screen flex items-center justify-center px-4 py-10">
-
-    <div x-data="{show:false}" x-init="setTimeout(()=>show=true,100)"
-         x-show="show"
-         x-transition
-         class="relative w-full max-w-lg animate-fade-in">
-
-        <div class="absolute -inset-1 bg-gradient-to-br from-indigo-500/30 via-purple-500/20 to-pink-500/30 rounded-3xl blur-xl opacity-70"></div>
-
-        <div class="relative glass-card rounded-3xl shadow-soft p-10">
-
-            <div class="text-center mb-10">
-                @if($logoUrl)
-                    <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}"
-                         class="mx-auto h-24 object-contain drop-shadow-2xl mb-6 transition-transform duration-500 hover:scale-105">
-                @endif
-
-                <h1 class="text-4xl font-bold tracking-tight mb-3">
-                    {{ config('app.name') }}
-                </h1>
-
-                <p class="text-indigo-200/70 text-sm tracking-wide">
-                    Sistema de Gestión Académica para Padres
-                </p>
-            </div>
-
-            <div class="glass-form space-y-5">
-                {{ $slot }}
-            </div>
-
-            <div class="mt-10 pt-6 border-t border-white/5 text-center">
-                <p class="text-xs text-indigo-300/50">
-                    &copy; {{ date('Y') }} {{ config('app.name') }} · Plataforma segura y moderna
-                </p>
-            </div>
-
-        </div>
-
+    <!-- Fondo Interactivo -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <!-- Orbe 1 -->
+        <div class="orb w-[500px] h-[500px] bg-indigo-600/40 -top-20 -left-20 animate-float"></div>
+        
+        <!-- Orbe 2 -->
+        <div class="orb w-[400px] h-[400px] bg-purple-600/40 bottom-0 right-0 animate-float-delayed"></div>
+        
+        <!-- Orbe 3 (Centro sutil) -->
+        <div class="orb w-[600px] h-[600px] bg-blue-600/20 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse-slow"></div>
     </div>
 
-</div>
+    <!-- Contenedor Principal -->
+    <div class="w-full min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 p-4">
+        
+        <!-- Logo y Título -->
+        <div class="mb-8 text-center relative z-10 animate-fade-in-down">
+            <a href="/" class="flex flex-col items-center group">
+                @if($logoUrl)
+                    <div class="p-3 bg-white/10 rounded-full backdrop-blur-sm border border-white/10 shadow-xl mb-4 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3">
+                        <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-20 w-auto drop-shadow-md">
+                    </div>
+                @else
+                    <x-application-logo class="w-20 h-20 fill-current text-gray-200 mb-4" />
+                @endif
+                
+                <h1 class="text-3xl font-bold text-white tracking-tight drop-shadow-lg">
+                    {{ config('app.name') }}
+                </h1>
+                <p class="text-indigo-200 text-sm font-medium tracking-wide mt-1 uppercase opacity-80">
+                    Acceso Seguro
+                </p>
+            </a>
+        </div>
 
+        <!-- Tarjeta del Formulario -->
+        <div class="w-full sm:max-w-md relative z-10">
+            <!-- Efecto de borde brillante -->
+            <div class="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-30 animate-pulse"></div>
+            
+            <div class="glass-panel px-8 py-10 shadow-2xl overflow-hidden rounded-2xl relative">
+                <!-- Slot para el contenido (Login/Register/Etc) -->
+                {{ $slot }}
+            </div>
+            
+            <!-- Footer discreto -->
+            <div class="text-center mt-6">
+                <p class="text-xs text-slate-400 font-light">
+                    &copy; {{ date('Y') }} {{ config('app.name') }}. Todos los derechos reservados.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script simple para fade-in -->
+    <style>
+        .animate-fade-in-down {
+            animation: fadeInDown 0.8s ease-out;
+        }
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
 </body>
 </html>
