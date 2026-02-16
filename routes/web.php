@@ -527,8 +527,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // --- RUTAS DE ADMINISTRADOR ---
 Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('admin')->group(function () {
     
-    // El Dashboard principal siempre debería estar accesible si hay login
     Route::get('/dashboard', \App\Livewire\Dashboard\Index::class)->name('admin.dashboard');
+
+    // ===> NUEVO: GESTOR DE MÓDULOS (Marketplace Local) <===
+    // Solo para admins. Permite ver e instalar addons disponibles en la licencia.
+    Route::get('/system/modules', \App\Livewire\Admin\SystemModules::class)->name('admin.modules.index');
 
     // =========================================================
     // MODULO: GESTIÓN ACADÉMICA (academic)
