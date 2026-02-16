@@ -206,27 +206,27 @@
     </div>
 
     <!-- Contenedor Principal -->
-    <div class="w-full min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 p-4">
+    <div class="w-full min-h-screen flex flex-col sm:justify-center items-center pt-4 sm:pt-0 p-4">
         
         <!-- Logo y Título -->
-        <!-- Se añadió 'mt-10' para bajar el logo y se aumentó 'mb' -->
-        <div class="mb-8 mt-10 text-center relative z-10 animate-fade-in-down">
+        <!-- Se han ajustado los márgenes (eliminado mt-10 y reducido mb) para evitar el scroll -->
+        <div class="mb-4 text-center relative z-10 animate-fade-in-down">
             <a href="/" class="flex flex-col items-center group">
                 @if($logoUrl)
-                    <!-- LOGO AUMENTADO (h-52 / ~208px) -->
-                    <div class="p-5 bg-white/5 rounded-3xl backdrop-blur-sm border border-white/10 shadow-2xl mb-6 transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2">
+                    <!-- LOGO AUMENTADO (h-52) con padding reducido para compactar -->
+                    <div class="p-2 bg-white/5 rounded-3xl backdrop-blur-sm border border-white/10 shadow-2xl mb-3 transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2">
                         <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-52 w-auto drop-shadow-2xl object-contain">
                     </div>
                 @else
                     <!-- FALLBACK LOGO AUMENTADO (w-52 h-52) -->
-                    <x-application-logo class="w-52 h-52 fill-current text-gray-100 mb-6 drop-shadow-2xl" />
+                    <x-application-logo class="w-52 h-52 fill-current text-gray-100 mb-3 drop-shadow-2xl" />
                 @endif
                 
                 <!-- TEXTO REDUCIDO Y SIN ESPACIADO EXAGERADO -->
                 <h1 class="text-xl font-bold text-white drop-shadow-md uppercase opacity-90">
                     {{ config('app.name') }}
                 </h1>
-                <p class="text-indigo-200/60 text-[0.65rem] font-semibold tracking-wider mt-2 uppercase">
+                <p class="text-indigo-200/60 text-[0.65rem] font-semibold tracking-wider mt-1 uppercase">
                     Portal de Acceso
                 </p>
             </a>
