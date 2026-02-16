@@ -49,7 +49,7 @@
     <!-- Alpine.js -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
-    <!-- Vite removido para evitar conflictos con Tailwind compilado -->
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     @php
         use App\Models\SystemOption;
@@ -148,24 +148,7 @@
       x-data="{ mouseX: 0, mouseY: 0, handleMove(e){ this.mouseX=(e.clientX-window.innerWidth/2)/60; this.mouseY=(e.clientY-window.innerHeight/2)/60;} }"
       @mousemove.window="handleMove">
 
-<div class="absolute inset-0 -z-10"
-     style="{{ $customBg ? 'background: '.$customBg.'; background-size:cover; background-position:center;' : '' }}">
-
-    @if(!$customBg || str_contains($customBg, 'gradient'))
-        <!-- Dark overlay only when using gradients or default background -->
-        <div class="absolute inset-0 bg-gradient-to-b from-slate-900/70 via-slate-900/60 to-slate-950/80"></div>
-    @endif
-
-    <!-- Floating orbs only if not solid color -->
-    @if(!$customBg || str_contains($customBg, 'gradient'))
-        <div class="absolute -top-40 -left-40 w-[600px] h-[600px] bg-indigo-600 rounded-full orb animate-float-slow"
-             :style="`transform: translate(${mouseX*-1}px, ${mouseY*-1}px)`"></div>
-
-        <div class="absolute -bottom-40 -right-40 w-[700px] h-[700px] bg-purple-600 rounded-full orb animate-float-medium"
-             :style="`transform: translate(${mouseX}px, ${mouseY}px)`"></div>
-    @endif
-
-</div>
+<div class="absolute inset-0 -z-10" style="{{ $customBg ? 'background: '.$customBg.'; background-size:cover;' : '' }}">
 
     <div class="absolute -top-40 -left-40 w-[600px] h-[600px] bg-indigo-600 rounded-full orb animate-float-slow"
          :style="`transform: translate(${mouseX*-1}px, ${mouseY*-1}px)`"></div>
