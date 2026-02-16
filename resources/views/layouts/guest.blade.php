@@ -209,16 +209,17 @@
     <div class="w-full min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 p-4">
         
         <!-- Logo y Título -->
-        <div class="mb-6 text-center relative z-10 animate-fade-in-down">
+        <!-- Se añadió 'mt-10' para bajar el logo y se aumentó 'mb' -->
+        <div class="mb-8 mt-10 text-center relative z-10 animate-fade-in-down">
             <a href="/" class="flex flex-col items-center group">
                 @if($logoUrl)
-                    <!-- LOGO AUMENTADO DRÁSTICAMENTE (h-44 / ~176px) -->
-                    <div class="p-4 bg-white/5 rounded-3xl backdrop-blur-sm border border-white/10 shadow-2xl mb-6 transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2">
-                        <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-44 w-auto drop-shadow-2xl object-contain">
+                    <!-- LOGO AUMENTADO (h-52 / ~208px) -->
+                    <div class="p-5 bg-white/5 rounded-3xl backdrop-blur-sm border border-white/10 shadow-2xl mb-6 transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2">
+                        <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-52 w-auto drop-shadow-2xl object-contain">
                     </div>
                 @else
-                    <!-- FALLBACK LOGO AUMENTADO -->
-                    <x-application-logo class="w-44 h-44 fill-current text-gray-100 mb-6 drop-shadow-2xl" />
+                    <!-- FALLBACK LOGO AUMENTADO (w-52 h-52) -->
+                    <x-application-logo class="w-52 h-52 fill-current text-gray-100 mb-6 drop-shadow-2xl" />
                 @endif
                 
                 <!-- TEXTO REDUCIDO Y SIN ESPACIADO EXAGERADO -->
