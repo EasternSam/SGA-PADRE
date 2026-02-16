@@ -13,13 +13,11 @@ class SystemModules extends Component
 {
     public $availableModules = [];
 
-    // Catálogo local visual (Solo para mostrar nombres bonitos e iconos antes de instalar)
-    // Debe coincidir con los códigos que usas en el Maestro
+    // Catálogo visual local (Solo para mostrar info bonita antes de instalar)
     public $catalog = [
-        'hr' => ['title' => 'Recursos Humanos', 'icon' => '👔', 'desc' => 'Nómina y asistencia docente.'],
-        'inventory' => ['title' => 'Inventario', 'icon' => '📦', 'desc' => 'Control de stock y activos.'],
-        'library' => ['title' => 'Biblioteca', 'icon' => '📚', 'desc' => 'Préstamos de libros.'],
-        'finance' => ['title' => 'Finanzas Avanzadas', 'icon' => '💰', 'desc' => 'Reportes y facturación fiscal.'],
+        'hr' => ['title' => 'Recursos Humanos', 'icon' => '👔', 'desc' => 'Nómina, asistencia docente y gestión de personal.'],
+        'library' => ['title' => 'Biblioteca Digital', 'icon' => '📚', 'desc' => 'Préstamos de libros, catálogo y devoluciones.'],
+        'inventory' => ['title' => 'Control de Inventario', 'icon' => '📦', 'desc' => 'Activos fijos, stock y suministros.'],
     ];
 
     public function mount()
@@ -29,8 +27,7 @@ class SystemModules extends Component
 
     public function refreshStatus()
     {
-        // 1. Obtener features permitidos por la licencia actual
-        // (Esto viene de la caché que llena el Middleware CheckSaaSProfile)
+        // Obtener features permitidos por la licencia
         $allowedFeatures = Cache::get('saas_active_features', []);
         
         $installer = new AddonInstallerService();
@@ -57,8 +54,7 @@ class SystemModules extends Component
 
         if ($result['success']) {
             session()->flash('message', $result['message']);
-            // Recargar para actualizar estado y menú
-            return redirect()->route('admin.modules.index');
+            return redirect()->route('admin.modules.index'); // Recargar para ver cambios
         } else {
             session()->flash('error', $result['message']);
         }

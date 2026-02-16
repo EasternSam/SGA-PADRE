@@ -4,7 +4,6 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Log;
 use ZipArchive;
 use App\Helpers\SaaS;
 
@@ -15,25 +14,21 @@ class AddonInstallerService
 
     public function __construct()
     {
-        $this->masterUrl = rtrim(env('SAAS_MASTER_URL'), '/');
-        $this->licenseKey = env('APP_LICENSE_KEY');
+        $this->masterUrl = rtrim(config('services.saas.master_url', env('SAAS_MASTER_URL', 'https://gestion.90s.agency')), '/');
+        $this->licenseKey = config('services.saas.license_key', env('APP_LICENSE_KEY'));
     }
 
     /**
-     * Descarga e instala un módulo específico.
-     * @param string $featureCode El código del addon (ej: 'hr', 'library')
-     * @return array Status y mensaje
+     * Descarga e instala un módulo específico desde el maestro.
      */
     public function install($featureCode)
     {
-        // 1. Verificar si tenemos permiso (Licencia)
+        // 1. Verificar si la licencia permite este módulo
         if (!SaaS::has($featureCode)) {
             return ['success' => false, 'message' => "Tu licencia no incluye el módulo: $featureCode"];
         }
 
         // 2. Definir rutas
-        // Mapeamos códigos simples a Nombres de Carpeta StudlyCase
-        // Ej: 'hr' -> 'HumanResources', 'library' -> 'Library'
         $moduleName = $this->getModuleName($featureCode);
         $targetPath = app_path("Modules/$moduleName");
         $tempZipPath = storage_path("app/temp_{$featureCode}.zip");
@@ -41,9 +36,10 @@ class AddonInstallerService
         // 3. Descargar el archivo desde el Maestro
         try {
             $domain = request()->getHost();
+            // Endpoint en el maestro que sirve el ZIP (debes tenerlo configurado allá)
             $url = "{$this->masterUrl}/api/v1/addons/download/{$featureCode}?license_key={$this->licenseKey}&domain={$domain}";
             
-            // Usamos 'sink' para guardar el archivo directamente en disco y no saturar la RAM
+            // Usamos 'sink' para guardar el archivo directamente en disco
             $response = Http::withoutVerifying()->sink($tempZipPath)->get($url);
 
             if ($response->failed()) {
@@ -71,32 +67,26 @@ class AddonInstallerService
             // Limpiar ZIP temporal
             File::delete($tempZipPath);
 
-            // 5. Limpiar Caché de Laravel para que reconozca las nuevas rutas/vistas
+            // 5. Limpiar Caché de Laravel para que reconozca las nuevas rutas/vistas automáticamente
             \Illuminate\Support\Facades\Artisan::call('optimize:clear');
 
-            return ['success' => true, 'message' => "Módulo $moduleName instalado correctamente."];
+            return ['success' => true, 'message' => "Módulo $moduleName instalado y activado correctamente."];
         } else {
             return ['success' => false, 'message' => "No se pudo descomprimir el archivo del módulo."];
         }
     }
 
-    /**
-     * Mapeo simple de código a nombre de carpeta.
-     * Puedes expandir esto o hacerlo dinámico si el maestro enviara el nombre real.
-     */
     private function getModuleName($code)
     {
+        // Mapeo de códigos de feature a nombres de carpeta reales
         return match ($code) {
             'hr' => 'HumanResources',
             'library' => 'Library',
             'inventory' => 'Inventory',
-            default => ucfirst($code), // Fallback: 'chat' -> 'Chat'
+            default => ucfirst($code),
         };
     }
 
-    /**
-     * Verifica si el módulo ya existe físicamente en el disco.
-     */
     public function isInstalled($featureCode)
     {
         $moduleName = $this->getModuleName($featureCode);
