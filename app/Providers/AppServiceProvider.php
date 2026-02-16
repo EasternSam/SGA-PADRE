@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 // Modelos y Observadores
-use App\Models\Setting; // <--- CAMBIO CRÍTICO: Usamos Setting, no SystemOption
+use App\Models\Setting;
 use App\Models\Enrollment;
 use App\Observers\EnrollmentObserver;
 use App\Models\Payment;
@@ -30,7 +30,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // 1. Configuración de BD
+        // 1. Configuración de BD - CORRECCIÓN PARA MySQL KEY LENGTH
         Schema::defaultStringLength(191);
 
         // 2. CORRECCIÓN PARA NGROK (Forzar HTTPS si es producción o ngrok)
@@ -49,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
         try {
             // Verificar conexión antes de consultar para no romper despliegues
             // Usamos el driver PDO para chequear conexión rápida
+            // Si falla la conexión, saltará al catch y evitará el error fatal de arranque
             DB::connection()->getPdo();
             
             // Verificamos que la tabla 'settings' exista antes de intentar leerla
@@ -59,34 +60,37 @@ class AppServiceProvider extends ServiceProvider
                 $this->shareDefaultBranding();
             }
         } catch (\Exception $e) {
-            // Si falla la BD (ej. durante migración), cargamos default
+            // Si falla la BD (ej. durante migración o credenciales inválidas), cargamos default
+            // Esto asegura que artisan migrate pueda ejecutarse aunque la app no pueda leer settings
             $this->shareDefaultBranding();
         }
     }
 
     private function bootSystemCustomization()
     {
-        // 1. Cargar Nombre de la Institución (Desde la tabla settings)
-        // Usamos el helper get() del modelo Setting
-        $appName = Setting::get('institution_name');
-        
-        if ($appName) {
-            Config::set('app.name', $appName);
+        try {
+            // 1. Cargar Nombre de la Institución (Desde la tabla settings)
+            $appName = Setting::get('institution_name');
+            
+            if ($appName) {
+                Config::set('app.name', $appName);
+            }
+
+            // 2. Cargar Logo y Colores
+            $brandSettings = [
+                'logo_url' => Setting::get('institution_logo'), 
+                'primary_color' => Setting::get('brand_primary_color', '#1e3a8a'), // Azul default
+            ];
+
+            // 3. Convertir Hex a RGB
+            $brandSettings['primary_rgb'] = $this->hex2rgb($brandSettings['primary_color']);
+
+            // Compartir globalmente
+            View::share('branding', (object) $brandSettings);
+        } catch (\Exception $e) {
+            // Si falla algo al leer settings, fallback a default
+            $this->shareDefaultBranding();
         }
-
-        // 2. Cargar Logo y Colores
-        // Si no existen en BD, usamos los defaults
-        $brandSettings = [
-            'logo_url' => Setting::get('institution_logo'), 
-            'primary_color' => Setting::get('brand_primary_color', '#1e3a8a'), // Azul default
-        ];
-
-        // 3. Convertir Hex a RGB para Tailwind (Ej: #e41b12 -> "228 27 18")
-        // Esto es vital para que las variables CSS --color-primary funcionen
-        $brandSettings['primary_rgb'] = $this->hex2rgb($brandSettings['primary_color']);
-
-        // Compartir la variable $branding globalmente en todos los blades
-        View::share('branding', (object) $brandSettings);
     }
 
     private function shareDefaultBranding()
@@ -98,7 +102,6 @@ class AppServiceProvider extends ServiceProvider
         ]);
     }
 
-    // Función auxiliar para convertir Hex a RGB string
     private function hex2rgb($hex) {
         $hex = str_replace("#", "", $hex);
         if(strlen($hex) == 3) {
