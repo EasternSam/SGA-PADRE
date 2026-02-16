@@ -234,7 +234,7 @@
         <!-- Tarjeta del Formulario -->
         <div class="w-full sm:max-w-md relative z-10">
             <!-- Efecto de borde brillante -->
-            <div class="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-30 animate-pulse"></div>
+            <div class="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-30 animate-pulse" style="height: 625px;"></div>
             
             <div class="glass-panel px-8 py-10 shadow-2xl overflow-hidden rounded-2xl relative">
                 <!-- Slot para el contenido (Login/Register/Etc) -->
