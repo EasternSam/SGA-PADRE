@@ -31,6 +31,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // 1. Configuración de BD - CORRECCIÓN PARA MySQL KEY LENGTH
+        // FIX PARA MYSQL: Limitar la longitud de string por defecto a 191 caracteres
+        // Esto previene el error "Specified key was too long" en migraciones en versiones antiguas de MySQL/MariaDB
         Schema::defaultStringLength(191);
 
         // 2. CORRECCIÓN PARA NGROK (Forzar HTTPS si es producción o ngrok)
