@@ -40,7 +40,7 @@
         <div class="md:flex">
             <!-- Avatar e Info Básica -->
             <div class="md:w-1/3 p-6 bg-gray-50 border-b md:border-b-0 md:border-r border-gray-200 text-center">
-                {{-- MODIFICADO: Usar $user->profile_photo_url si $user está disponible --}}
+                {{-- MODIFICADO: Uso de profile_photo_url del usuario asociado --}}
                 <img class="h-32 w-32 rounded-full mx-auto shadow-md mb-4 object-cover"
                      src="{{ $user ? $user->profile_photo_url : 'https://ui-avatars.com/api/?name='.urlencode($student->fullName).'&background=4f46e5&color=ffffff&size=128' }}"
                      alt="Avatar de {{ $student->fullName }}">

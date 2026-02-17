@@ -105,8 +105,9 @@
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-10 w-10">
+                                            {{-- MODIFICADO: Uso de profile_photo_url del modelo User --}}
                                             <img class="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-sm" 
-                                                 src="https://ui-avatars.com/api/?name={{ urlencode($teacher->name) }}&background=6366f1&color=ffffff&size=128&bold=true" 
+                                                 src="{{ $teacher->profile_photo_url }}" 
                                                  alt="{{ $teacher->name }}">
                                         </div>
                                         <div class="ml-4">
@@ -230,7 +231,7 @@
 
                 <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
                     <button type="button" wire:click="closeModal" class="rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 transition-all duration-200">
-                        Cancelar
+                        {{ __('Cancelar') }}
                     </button>
                     <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-500 hover:shadow-indigo-300 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all duration-200 active:scale-[0.98]" wire:loading.attr="disabled">
                         <span wire:loading.remove wire:target="save">

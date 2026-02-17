@@ -108,8 +108,9 @@
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-10 w-10">
+                                            {{-- MODIFICADO: Uso de profile_photo_url del usuario asociado si existe --}}
                                             <img class="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-sm" 
-                                                 src="https://ui-avatars.com/api/?name={{ urlencode($student->first_name . ' ' . $student->last_name) }}&background=6366f1&color=ffffff&size=128&bold=true" 
+                                                 src="{{ $student->user ? $student->user->profile_photo_url : 'https://ui-avatars.com/api/?name='.urlencode($student->first_name . ' ' . $student->last_name).'&background=6366f1&color=ffffff&size=128&bold=true' }}" 
                                                  alt="{{ $student->first_name }}">
                                         </div>
                                         <div class="ml-4">
