@@ -14,15 +14,20 @@ class LicenseService
 
     public function __construct()
     {
-        // 1. URL: Intentar config, luego env, luego fallback por defecto
+        // 1. URL: Intentar config, luego env
         $configUrl = config('services.aplusmaster.url');
         $envUrl = env('SAAS_MASTER_URL');
         
+        // Si fallan, intentar lectura directa del archivo .env
+        if (empty($configUrl) && empty($envUrl)) {
+            $envUrl = $this->readEnvFile('SAAS_MASTER_URL');
+        }
+
         $baseUrl = $configUrl ?? $envUrl;
         
-        // Fallback final si no hay nada configurado
+        // Fallback final corregido (sin formato markdown)
         if (empty($baseUrl)) {
-            $baseUrl = '[https://gestion.90s.agency/api/v1/validate-license](https://gestion.90s.agency/api/v1/validate-license)'; 
+            $baseUrl = 'https://gestion.90s.agency/api/v1/validate-license'; 
         }
 
         // Limpieza de URL
@@ -35,19 +40,54 @@ class LicenseService
 
         // 2. KEY: Intentar config, luego env directo
         $this->licenseKey = config('services.aplusmaster.key') ?? env('LICENSE_KEY');
-        
-        // Debug agresivo en constructor si está vacía
+
+        // FUERZA BRUTA: Si Laravel falla al leer, leemos el archivo nosotros mismos
         if (empty($this->licenseKey)) {
-            Log::warning("LICENSE DEBUG: La clave está vacía en el constructor.");
-            Log::warning("LICENSE DEBUG: config('services.aplusmaster.key') devuelve: " . var_export(config('services.aplusmaster.key'), true));
-            Log::warning("LICENSE DEBUG: env('LICENSE_KEY') devuelve: " . var_export(env('LICENSE_KEY'), true));
+            $this->licenseKey = $this->readEnvFile('LICENSE_KEY');
         }
+        
+        // Debug final si sigue vacía después del intento manual
+        if (empty($this->licenseKey)) {
+            Log::critical("LICENSE ERROR: No se pudo leer la licencia ni por config(), env() ni lectura directa de .env");
+        }
+    }
+
+    /**
+     * Lee una variable directamente del archivo .env omitiendo el caché de Laravel
+     */
+    protected function readEnvFile($key)
+    {
+        try {
+            $path = base_path('.env');
+            if (!file_exists($path)) {
+                return null;
+            }
+
+            $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            foreach ($lines as $line) {
+                // Ignorar comentarios
+                if (strpos(trim($line), '#') === 0) {
+                    continue;
+                }
+                // Buscar la clave
+                if (strpos($line, $key . '=') !== false) {
+                    list($name, $value) = explode('=', $line, 2);
+                    if (trim($name) === $key) {
+                        // Limpiar comillas y espacios
+                        return trim($value, " \t\n\r\0\x0B\"'");
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            return null;
+        }
+        return null;
     }
 
     public function check(): bool
     {
         if (empty($this->licenseKey)) {
-            $this->errorMessage = 'Clave de licencia no configurada. Revise los logs (storage/logs/laravel.log) para ver detalles.';
+            $this->errorMessage = 'Clave de licencia no configurada (Error crítico de lectura .env).';
             return false;
         }
 
