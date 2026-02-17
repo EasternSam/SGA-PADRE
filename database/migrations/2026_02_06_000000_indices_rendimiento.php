@@ -123,10 +123,32 @@ return new class extends Migration
     protected function indexExists($table, $indexName)
     {
         $conn = Schema::getConnection();
-        $dbSchemaManager = $conn->getDoctrineSchemaManager();
+        // Si no existe getDoctrineSchemaManager, usamos Schema::hasIndex que es nativo en Laravel reciente,
+        // pero hasIndex no existe en todas las versiones. 
+        // Mejor usar una consulta directa para mayor compatibilidad si getDoctrineSchemaManager falla.
+        
         try {
-            $indexes = $dbSchemaManager->listTableIndexes($table);
-            return array_key_exists($indexName, $indexes);
+            // Intento 1: Doctrine (método antiguo pero robusto si está instalado dbal)
+            // Nota: En Laravel 11+ getDoctrineSchemaManager podría no estar disponible por defecto sin dbal.
+            // Si falla, vamos al catch.
+            if (method_exists($conn, 'getDoctrineSchemaManager')) {
+                $dbSchemaManager = $conn->getDoctrineSchemaManager();
+                $indexes = $dbSchemaManager->listTableIndexes($table);
+                return array_key_exists($indexName, $indexes);
+            }
+            
+            // Intento 2: Consulta SQL directa (más seguro sin dependencias)
+            $driver = $conn->getDriverName();
+            if ($driver === 'mysql' || $driver === 'mariadb') {
+                $dbName = $conn->getDatabaseName();
+                $result = DB::select("SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?", [$dbName, $table, $indexName]);
+                return count($result) > 0;
+            } else if ($driver === 'sqlite') {
+                 $result = DB::select("SELECT name FROM sqlite_master WHERE type='index' AND name=?", [$indexName]);
+                 return count($result) > 0;
+            }
+            
+            return false;
         } catch (\Exception $e) {
             return false;
         }

@@ -15,20 +15,30 @@ return new class extends Migration
         $conn = Schema::getConnection();
         $driver = $conn->getDriverName();
 
-        // Intento directo vía SQL para evitar dependencias de Doctrine a veces fallidas en migraciones
+        if ($driver === 'sqlite') {
+            $result = DB::select("SELECT name FROM sqlite_master WHERE type='index' AND name=?", [$indexName]);
+            return count($result) > 0;
+        }
+
+        // Para MySQL/MariaDB y otros
+        // Laravel suele prefijar los índices. Si no usamos un nombre manual, Laravel genera uno.
+        // Aquí asumimos que los nombres pasados son los que Laravel generaría o los manuales.
+        // Una forma segura en MySQL es intentar y capturar, pero para verificar:
         if ($driver === 'mysql' || $driver === 'mariadb') {
             $dbName = $conn->getDatabaseName();
             $result = DB::select("SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?", [$dbName, $table, $indexName]);
             return count($result) > 0;
         }
         
-        // Fallback para SQLite
-        if ($driver === 'sqlite') {
-            $result = DB::select("SELECT name FROM sqlite_master WHERE type='index' AND name=?", [$indexName]);
-            return count($result) > 0;
+        // Fallback: intentar usar Doctrine si está disponible, o asumir false para intentar crear
+        try {
+             if (method_exists($conn, 'getDoctrineSchemaManager')) {
+                return $conn->getDoctrineSchemaManager()->listTableIndexes($table)[$indexName] ?? false;
+             }
+             return false;
+        } catch (\Exception $e) {
+            return false;
         }
-
-        return false;
     }
 
     /**
