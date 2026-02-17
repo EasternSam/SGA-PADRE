@@ -32,22 +32,39 @@ class LicenseService
     public function validateRemote(): bool
     {
         try {
+            $domain = request()->getHost();
+            $ip = request()->ip();
+
+            Log::info("CLIENTE LICENCIA: Validando con Maestro...", [
+                'url' => $this->serverUrl,
+                'key' => $this->licenseKey,
+                'mi_dominio' => $domain
+            ]);
+
             $response = Http::timeout(10)->post($this->serverUrl, [
                 'license_key' => $this->licenseKey,
-                'domain' => request()->getHost(),
-                'ip' => request()->ip(), // Opcional, dependiendo de tu controlador
+                'domain' => $domain,
+                'ip' => $ip,
             ]);
 
             if ($response->successful()) {
                 $data = $response->json();
+                
+                // Loguear respuesta exitosa para ver qué dice el maestro
+                Log::info("CLIENTE LICENCIA: Respuesta Maestro (HTTP 200)", $data);
+
                 return isset($data['status']) && $data['status'] === 'success';
             }
 
-            Log::error('Fallo validación de licencia: ' . $response->body());
+            // Loguear error HTTP (403, 404, 500) y el cuerpo de la respuesta
+            Log::error('CLIENTE LICENCIA: Fallo validación (HTTP ' . $response->status() . ')', [
+                'body' => $response->body()
+            ]);
+            
             return false;
 
         } catch (\Exception $e) {
-            Log::error('Error de conexión con servidor de licencias: ' . $e->getMessage());
+            Log::error('CLIENTE LICENCIA: Error de conexión con servidor de licencias: ' . $e->getMessage());
             return false;
         }
     }

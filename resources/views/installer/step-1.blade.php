@@ -67,7 +67,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- Input oculto para que el controlador sepa que debe usar sqlite -->
                             <input type="hidden" name="db_connection" value="sqlite">
                         @else
                             <!-- MODO MYSQL/MARIADB (FORMULARIO NORMAL) -->
