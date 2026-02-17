@@ -27,7 +27,7 @@ class LicenseService
         
         // Fallback final
         if (empty($baseUrl)) {
-            $baseUrl = 'https://gestion.90s.agency/api/v1/validate-license'; 
+            $baseUrl = '[https://gestion.90s.agency/api/v1/validate-license](https://gestion.90s.agency/api/v1/validate-license)'; 
         }
 
         // Limpieza de URL
@@ -142,10 +142,21 @@ class LicenseService
 
             // CASO 1: Respuesta Exitosa (200 OK)
             if ($response->successful()) {
-                // Log::info("CLIENTE: Respuesta del Maestro (Éxito):", $data ?? []); // Descomentar solo si es necesario depurar
-
+                
                 if ((isset($data['status']) && $data['status'] === 'success') || 
                     (isset($data['valid']) && $data['valid'] === true)) {
+                    
+                    // --- AQUÍ GUARDAMOS LAS FEATURES ---
+                    if (isset($data['data']['features']) && is_array($data['data']['features'])) {
+                        Cache::put('saas_active_features', $data['data']['features'], 300); // 5 min
+                        // Log::info("CLIENTE: Features actualizadas: " . implode(', ', $data['data']['features']));
+                    }
+                    
+                    if (isset($data['data']['plan_name'])) {
+                        Cache::put('saas_plan_name', $data['data']['plan_name'], 300);
+                    }
+                    // ------------------------------------
+
                     return true;
                 }
                 
