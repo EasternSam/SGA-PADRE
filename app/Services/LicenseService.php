@@ -13,8 +13,17 @@ class LicenseService
 
     public function __construct()
     {
-        $this->serverUrl = config('services.aplusmaster.url');
-        $this->licenseKey = config('services.aplusmaster.key');
+        // Obtener URL base y asegurar formato correcto
+        $baseUrl = config('services.aplusmaster.url') ?? env('SAAS_MASTER_URL');
+        $baseUrl = rtrim($baseUrl, '/');
+
+        if (!str_contains($baseUrl, 'api/v1/validate-license')) {
+            $this->serverUrl = $baseUrl . '/api/v1/validate-license';
+        } else {
+            $this->serverUrl = $baseUrl;
+        }
+
+        $this->licenseKey = config('services.aplusmaster.key') ?? env('LICENSE_KEY');
     }
 
     public function check(): bool
@@ -23,8 +32,8 @@ class LicenseService
             return false;
         }
 
-        // Cachear el resultado exitoso por 24 horas para no saturar la red
-        return Cache::remember('license_status_' . $this->licenseKey, 60 * 60 * 24, function () {
+        // Cache corto para pruebas (1 min)
+        return Cache::remember('license_status_' . $this->licenseKey, 60, function () {
             return $this->validateRemote();
         });
     }
@@ -33,46 +42,37 @@ class LicenseService
     {
         try {
             $domain = request()->getHost();
-            $ip = request()->ip();
-
-            Log::info("CLIENTE LICENCIA: Validando con Maestro...", [
-                'url' => $this->serverUrl,
-                'key' => $this->licenseKey,
-                'mi_dominio' => $domain
-            ]);
-
-            // Desactivar verificación SSL agresivamente
+            
+            // Ignorar verificación SSL
             $response = Http::withoutVerifying()
-                ->withOptions([
-                    'verify' => false,
-                    'ssl_verify_peer' => false,
-                    'ssl_verify_host' => false,
-                ])
-                ->timeout(15) // Aumentar timeout por si el handshake SSL es lento
+                ->withOptions(['verify' => false])
+                ->timeout(15)
                 ->post($this->serverUrl, [
                     'license_key' => $this->licenseKey,
                     'domain' => $domain,
-                    'ip' => $ip,
                 ]);
 
             if ($response->successful()) {
                 $data = $response->json();
                 
-                // Loguear respuesta exitosa para ver qué dice el maestro
-                Log::info("CLIENTE LICENCIA: Respuesta Maestro (HTTP 200)", $data);
+                // DIAGNOSTICO: Ver qué nos devuelve exactamente el maestro
+                Log::info("CLIENTE: Respuesta del Maestro:", $data);
 
-                return isset($data['status']) && $data['status'] === 'success';
+                // Aceptar si status es success O si valid es true (flexibilidad)
+                if ((isset($data['status']) && $data['status'] === 'success') || 
+                    (isset($data['valid']) && $data['valid'] === true)) {
+                    return true;
+                }
+                
+                Log::warning("CLIENTE: Respuesta exitosa (200) pero contenido inválido.");
+                return false;
             }
 
-            // Loguear error HTTP (403, 404, 500) y el cuerpo de la respuesta
-            Log::error('CLIENTE LICENCIA: Fallo validación (HTTP ' . $response->status() . ')', [
-                'body' => $response->body()
-            ]);
-            
+            Log::error("CLIENTE: Error HTTP {$response->status()}", ['body' => $response->body()]);
             return false;
 
         } catch (\Exception $e) {
-            Log::error('CLIENTE LICENCIA: Error de conexión con servidor de licencias: ' . $e->getMessage());
+            Log::error('CLIENTE: Excepción conexión: ' . $e->getMessage());
             return false;
         }
     }
