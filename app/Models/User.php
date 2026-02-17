@@ -29,6 +29,7 @@ class User extends Authenticatable
         'email',
         'password',
         'access_expires_at', // <-- AÑADIDO: Para permitir asignación masiva
+        'profile_photo_path', // <-- NUEVO: Permitir guardar la ruta de la foto
     ];
 
     /**
