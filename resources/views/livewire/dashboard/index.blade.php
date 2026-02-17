@@ -240,9 +240,9 @@
 
                                             <div class="flex items-center">
                                                 <div class="flex-shrink-0 h-9 w-9">
-                                                    {{-- MODIFICADO: Usar profile_photo_url del usuario asociado --}}
+                                                    {{-- CORRECCIÓN: Usar la variable $user que ya definimos arriba para evitar errores de encadenamiento nulo --}}
                                                     <img class="h-9 w-9 rounded-full object-cover border border-white shadow-sm ring-1 ring-gray-100" 
-                                                         src="{{ $enrollment->student->user->profile_photo_url ?? 'https://ui-avatars.com/api/?name='.urlencode($studentName).'&background=EBF4FF&color=7F9CF5' }}" 
+                                                         src="{{ $user ? $user->profile_photo_url : 'https://ui-avatars.com/api/?name='.urlencode($studentName).'&background=EBF4FF&color=7F9CF5' }}" 
                                                          alt="{{ $studentName }}">
                                                 </div>
                                                 <div class="ml-4">
