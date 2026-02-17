@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB; // Importar DB
 
 return new class extends Migration
 {
@@ -21,7 +22,25 @@ return new class extends Migration
             $table->index('first_name', 'idx_students_firstname');
 
             // Índice compuesto para búsquedas por nombre completo (muy efectivo para 'LIKE')
-            $table->index(['last_name', 'first_name'], 'idx_students_name_composite');
+            // CORRECCIÓN: Limitar la longitud de las columnas en el índice para MySQL
+            // Laravel permite especificar la longitud en el array del índice
+            // Esto evita el error "Specified key was too long"
+            
+            // Verificamos si es MySQL o MariaDB para aplicar la limitación de longitud
+            $driver = DB::getDriverName();
+
+            if ($driver === 'mysql' || $driver === 'mariadb') {
+                // Para MySQL/MariaDB usamos DB::raw para especificar la longitud del índice
+                // O intentamos la sintaxis de array soportada por versiones recientes de Laravel si es posible,
+                // pero DB::raw es más seguro para compatibilidad.
+                // Sin embargo, Laravel tiene un método index() que acepta raw expressions.
+                
+                // Opción más compatible con migraciones: Crear el índice con raw SQL solo para MySQL
+                DB::statement('CREATE INDEX idx_students_name_composite ON students (last_name(50), first_name(50))');
+            } else {
+                // Para otros motores (como SQLite o PostgreSQL) que manejan esto diferente o no tienen el mismo límite por defecto
+                $table->index(['last_name', 'first_name'], 'idx_students_name_composite');
+            }
         });
     }
 
