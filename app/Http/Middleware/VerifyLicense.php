@@ -41,13 +41,22 @@ class VerifyLicense
         }
 
         if (!$this->licenseService->check()) {
+            // Obtener el mensaje de error específico del servicio
+            $errorMsg = $this->licenseService->errorMessage;
+            
+            if (empty($errorMsg)) {
+                $errorMsg = 'SISTEMA BLOQUEADO: Su licencia no es válida, ha expirado o el dominio (' . request()->getHost() . ') no está autorizado.';
+            } else {
+                // Prefijar para claridad
+                $errorMsg = "SISTEMA BLOQUEADO: " . $errorMsg;
+            }
+
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Licencia inválida o expirada.'], 403);
+                return response()->json(['message' => $errorMsg], 403);
             }
             
-            // Si la licencia falla, podemos redirigir a una página de "Activación" en lugar de abortar
-            // O mostrar el mensaje de error. Por ahora mantenemos el abort para seguridad estricta.
-            abort(403, 'SISTEMA BLOQUEADO: Su licencia no es válida, ha expirado o el dominio (' . request()->getHost() . ') no está autorizado. Contacte a Aplusmaster.');
+            // Abortar con el mensaje específico que viene del servidor (ej: "Dominio no autorizado...")
+            abort(403, $errorMsg . ' Contacte a Aplusmaster.');
         }
 
         return $next($request);
