@@ -14,48 +14,59 @@ class LicenseService
 
     public function __construct()
     {
-        // Obtener URL base y asegurar formato correcto
-        $baseUrl = config('services.aplusmaster.url') ?? env('SAAS_MASTER_URL');
-        $baseUrl = rtrim($baseUrl, '/');
+        // 1. URL: Intentar config, luego env, luego fallback por defecto
+        $configUrl = config('services.aplusmaster.url');
+        $envUrl = env('SAAS_MASTER_URL');
+        
+        $baseUrl = $configUrl ?? $envUrl;
+        
+        // Fallback final si no hay nada configurado
+        if (empty($baseUrl)) {
+            $baseUrl = '[https://gestion.90s.agency/api/v1/validate-license](https://gestion.90s.agency/api/v1/validate-license)'; 
+        }
 
+        // Limpieza de URL
+        $baseUrl = rtrim($baseUrl, '/');
         if (!str_contains($baseUrl, 'api/v1/validate-license')) {
             $this->serverUrl = $baseUrl . '/api/v1/validate-license';
         } else {
             $this->serverUrl = $baseUrl;
         }
 
+        // 2. KEY: Intentar config, luego env directo
         $this->licenseKey = config('services.aplusmaster.key') ?? env('LICENSE_KEY');
+        
+        // Debug agresivo en constructor si está vacía
+        if (empty($this->licenseKey)) {
+            Log::warning("LICENSE DEBUG: La clave está vacía en el constructor.");
+            Log::warning("LICENSE DEBUG: config('services.aplusmaster.key') devuelve: " . var_export(config('services.aplusmaster.key'), true));
+            Log::warning("LICENSE DEBUG: env('LICENSE_KEY') devuelve: " . var_export(env('LICENSE_KEY'), true));
+        }
     }
 
     public function check(): bool
     {
         if (empty($this->licenseKey)) {
-            $this->errorMessage = 'Clave de licencia no configurada.';
+            $this->errorMessage = 'Clave de licencia no configurada. Revise los logs (storage/logs/laravel.log) para ver detalles.';
             return false;
         }
 
-        // Cache: Si es exitoso guardamos por 5 min, si falla no guardamos o guardamos muy poco
-        // para permitir reintentos rápidos al corregir el problema.
+        // Cache: Si es exitoso guardamos por 5 min, si falla 10 segundos
         $cacheKey = 'license_status_' . $this->licenseKey;
         
-        // Intentamos obtener del caché
         $cachedResult = Cache::get($cacheKey);
         
         if ($cachedResult !== null) {
             if ($cachedResult === true) {
                 return true;
             }
-            // Si el caché dice false, verificamos si tenemos un mensaje guardado en caché secundario
             $this->errorMessage = Cache::get($cacheKey . '_msg', 'Error de validación (Caché).');
-            // Aún así, forzamos validación si falló recientemente para no bloquear al usuario si ya pagó
-            // Comentar el return abajo para forzar re-check en caso de fallo previo
+            // Comentar el return para forzar validación si estás depurando
             // return false; 
         }
 
         $isValid = $this->validateRemote();
 
-        // Guardar en caché solo si es válido para evitar bloquear intentos de arreglo
-        // Si es inválido, guardamos por solo 10 segundos
         $ttl = $isValid ? 300 : 10; 
         Cache::put($cacheKey, $isValid, $ttl);
         
@@ -71,7 +82,7 @@ class LicenseService
         try {
             $domain = request()->getHost();
             
-            // Ignorar verificación SSL para evitar problemas en local/dev
+            // Ignorar verificación SSL
             $response = Http::withoutVerifying()
                 ->withOptions(['verify' => false])
                 ->timeout(15)
@@ -96,15 +107,14 @@ class LicenseService
                 return false;
             }
 
-            // CASO 2: Respuesta de Error Controlada (403, 404, 400 del servidor)
-            // Aquí es donde atrapamos "Dominio no autorizado" o "Licencia suspendida"
+            // CASO 2: Respuesta de Error Controlada
             if ($response->status() >= 400 && $response->status() < 500) {
                 $this->errorMessage = $data['message'] ?? 'Licencia rechazada por el servidor maestro.';
                 Log::warning("CLIENTE: Validación fallida: " . $this->errorMessage);
                 return false;
             }
 
-            // CASO 3: Error de Servidor (500)
+            // CASO 3: Error de Servidor
             $this->errorMessage = 'Error de conexión con el servidor de licencias (' . $response->status() . ')';
             Log::error("CLIENTE: Error HTTP {$response->status()}", ['body' => $response->body()]);
             return false;
