@@ -221,7 +221,7 @@
                 @if($logoUrl)
                     <!-- LOGO AUMENTADO (h-52) con padding reducido para compactar -->
                     <!-- MARGEN REDUCIDO de mb-9 a mb-2 para acercar el logo al título -->
-                    <div class="p-2 bg-white/5 rounded-3xl backdrop-blur-sm border border-white/10 shadow-2xl mb-2 transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2">
+                    <div class="p-2 rounded-3xl mb-2 transition-transform duration-500 group-hover:scale-93 group-hover:-rotate-2">
                         <!-- Usamos asset() para asegurar que la ruta sea correcta si es relativa -->
                         <img src="{{ Str::startsWith($logoUrl, 'http') ? $logoUrl : asset($logoUrl) }}" 
                              alt="{{ config('app.name') }}" 
