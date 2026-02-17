@@ -220,7 +220,7 @@
             <a href="/" class="flex flex-col items-center group">
                 @if($logoUrl)
                     <!-- LOGO DISMINUIDO (h-32 en lugar de h-52) -->
-                    <div class="p-2 rounded-3xl mb-2 transition-transform duration-500 group-hover:scale-93 group-hover:-rotate-2">
+                    <div class="p-2 rounded-3xl mb-4 transition-transform duration-500 group-hover:scale-93 group-hover:-rotate-2">
                         <!-- Usamos asset() para asegurar que la ruta sea correcta si es relativa -->
                         <img src="{{ Str::startsWith($logoUrl, 'http') ? $logoUrl : asset($logoUrl) }}" 
                              alt="{{ config('app.name') }}" 
@@ -228,7 +228,7 @@
                     </div>
                 @else
                     <!-- FALLBACK LOGO DISMINUIDO (h-32) -->
-                    <x-application-logo class="w-32 h-32 fill-current text-gray-100 drop-shadow-2xl mb-2" />
+                    <x-application-logo class="w-32 h-32 fill-current text-gray-100 drop-shadow-2xl mb-4" />
                 @endif
                 
                 <!-- TEXTO REDUCIDO Y SIN ESPACIADO EXAGERADO -->
