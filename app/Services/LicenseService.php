@@ -25,7 +25,7 @@ class LicenseService
 
         $baseUrl = $configUrl ?? $envUrl;
         
-        // Fallback final corregido (sin formato markdown)
+        // Fallback final
         if (empty($baseUrl)) {
             $baseUrl = 'https://gestion.90s.agency/api/v1/validate-license'; 
         }
@@ -42,7 +42,7 @@ class LicenseService
         // Primero intentamos la configuración estándar
         $this->licenseKey = config('services.aplusmaster.key');
 
-        // Si falla, intentamos variables de entorno (APP_LICENSE_KEY es la correcta según tu reporte)
+        // Si falla, intentamos variables de entorno
         if (empty($this->licenseKey)) {
             $this->licenseKey = env('APP_LICENSE_KEY') ?? env('LICENSE_KEY');
         }
@@ -56,11 +56,6 @@ class LicenseService
             if (empty($this->licenseKey)) {
                 $this->licenseKey = $this->readEnvFile('LICENSE_KEY');
             }
-        }
-        
-        // Debug final si sigue vacía después del intento manual
-        if (empty($this->licenseKey)) {
-            Log::critical("LICENSE ERROR: No se pudo leer la licencia (APP_LICENSE_KEY o LICENSE_KEY) por ningún método.");
         }
     }
 
@@ -147,7 +142,7 @@ class LicenseService
 
             // CASO 1: Respuesta Exitosa (200 OK)
             if ($response->successful()) {
-                Log::info("CLIENTE: Respuesta del Maestro (Éxito):", $data ?? []);
+                // Log::info("CLIENTE: Respuesta del Maestro (Éxito):", $data ?? []); // Descomentar solo si es necesario depurar
 
                 if ((isset($data['status']) && $data['status'] === 'success') || 
                     (isset($data['valid']) && $data['valid'] === true)) {
