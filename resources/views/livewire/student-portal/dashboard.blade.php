@@ -412,8 +412,9 @@
                     
                     <div class="relative flex flex-col items-center">
                         <div class="h-24 w-24 rounded-full ring-4 ring-white shadow-lg overflow-hidden bg-white mb-3">
+                            {{-- MODIFICADO: Usar profile_photo_url de Auth::user() --}}
                             <img class="h-full w-full object-cover"
-                                 src="https://ui-avatars.com/api/?name={{ urlencode($student->fullName) }}&color=7F9CF5&background=EBF4FF"
+                                 src="{{ Auth::user()->profile_photo_url }}"
                                  alt="Avatar">
                         </div>
                         <h2 class="text-lg font-bold text-gray-900">{{ $student->fullName }}</h2>

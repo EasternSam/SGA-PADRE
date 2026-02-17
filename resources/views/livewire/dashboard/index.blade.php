@@ -220,7 +220,7 @@
                                     <tr class="hover:bg-gray-50/80 transition-colors group">
                                         <td class="px-6 py-4">
                                             @php
-                                                // Lógica unificada para Nombre e Iniciales
+                                                // Lógica unificada para Nombre
                                                 $student = $enrollment->student ?? null;
                                                 $user = $student->user ?? null;
                                                 $studentName = 'N/A';
@@ -235,17 +235,15 @@
                                                     if (empty($studentName) && $student) {
                                                          $studentName = $student->email ?? $user->email ?? 'Sin Nombre';
                                                     }
-                                                    $initialFirst = !empty($first) ? substr($first, 0, 1) : 'U';
-                                                    $initialLast = !empty($last) ? substr($last, 0, 1) : '';
-                                                    $initials = strtoupper($initialFirst . $initialLast);
-                                                } else {
-                                                    $initials = 'NA';
                                                 }
                                             @endphp
 
                                             <div class="flex items-center">
-                                                <div class="h-9 w-9 flex-shrink-0 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 font-bold border border-white shadow-sm ring-1 ring-gray-100 text-xs">
-                                                    {{ $initials }}
+                                                <div class="flex-shrink-0 h-9 w-9">
+                                                    {{-- MODIFICADO: Usar profile_photo_url del usuario asociado --}}
+                                                    <img class="h-9 w-9 rounded-full object-cover border border-white shadow-sm ring-1 ring-gray-100" 
+                                                         src="{{ $enrollment->student->user->profile_photo_url ?? 'https://ui-avatars.com/api/?name='.urlencode($studentName).'&background=EBF4FF&color=7F9CF5' }}" 
+                                                         alt="{{ $studentName }}">
                                                 </div>
                                                 <div class="ml-4">
                                                     <div class="font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">

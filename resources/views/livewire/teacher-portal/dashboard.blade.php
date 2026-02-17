@@ -41,8 +41,9 @@
                 <!-- Avatar -->
                 <div class="flex-shrink-0">
                     <div class="p-1 rounded-full bg-white shadow-sm ring-1 ring-gray-100">
+                        {{-- MODIFICADO: Usar profile_photo_url de Auth::user() --}}
                         <img class="h-20 w-20 rounded-full object-cover"
-                            src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=4f46e5&color=ffffff&size=128&bold=true"
+                            src="{{ Auth::user()->profile_photo_url }}"
                             alt="Avatar de {{ Auth::user()->name }}">
                     </div>
                 </div>

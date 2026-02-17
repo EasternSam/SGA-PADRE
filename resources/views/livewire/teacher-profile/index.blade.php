@@ -29,8 +29,9 @@
         <div class="md:flex">
             <!-- Avatar e Info Básica -->
             <div class="md:w-1/3 p-6 bg-gray-50 border-b md:border-b-0 md:border-r border-gray-200 text-center">
-                <img class="h-32 w-32 rounded-full mx-auto shadow-md mb-4"
-                    src="https://ui-avatars.com/api/?name={{ urlencode($teacher->name) }}&background=1e3a8a&color=ffffff&size=128"
+                {{-- MODIFICADO: Uso de profile_photo_url --}}
+                <img class="h-32 w-32 rounded-full mx-auto shadow-md mb-4 object-cover"
+                    src="{{ $teacher->profile_photo_url }}"
                     alt="Avatar de {{ $teacher->name }}">
 
                 <h1 class="text-2xl font-bold text-gray-900">{{ $teacher->name }}</h1>
