@@ -38,17 +38,29 @@ class LicenseService
             $this->serverUrl = $baseUrl;
         }
 
-        // 2. KEY: Intentar config, luego env directo
-        $this->licenseKey = config('services.aplusmaster.key') ?? env('LICENSE_KEY');
+        // 2. KEY: Intentar config, luego env directo (buscando ambas variantes)
+        // Primero intentamos la configuración estándar
+        $this->licenseKey = config('services.aplusmaster.key');
+
+        // Si falla, intentamos variables de entorno (APP_LICENSE_KEY es la correcta según tu reporte)
+        if (empty($this->licenseKey)) {
+            $this->licenseKey = env('APP_LICENSE_KEY') ?? env('LICENSE_KEY');
+        }
 
         // FUERZA BRUTA: Si Laravel falla al leer, leemos el archivo nosotros mismos
         if (empty($this->licenseKey)) {
-            $this->licenseKey = $this->readEnvFile('LICENSE_KEY');
+            // Intentamos leer con el nombre correcto primero
+            $this->licenseKey = $this->readEnvFile('APP_LICENSE_KEY');
+            
+            // Fallback al nombre antiguo por si acaso
+            if (empty($this->licenseKey)) {
+                $this->licenseKey = $this->readEnvFile('LICENSE_KEY');
+            }
         }
         
         // Debug final si sigue vacía después del intento manual
         if (empty($this->licenseKey)) {
-            Log::critical("LICENSE ERROR: No se pudo leer la licencia ni por config(), env() ni lectura directa de .env");
+            Log::critical("LICENSE ERROR: No se pudo leer la licencia (APP_LICENSE_KEY o LICENSE_KEY) por ningún método.");
         }
     }
 
@@ -87,7 +99,7 @@ class LicenseService
     public function check(): bool
     {
         if (empty($this->licenseKey)) {
-            $this->errorMessage = 'Clave de licencia no configurada (Error crítico de lectura .env).';
+            $this->errorMessage = 'Clave de licencia no configurada (APP_LICENSE_KEY no encontrada).';
             return false;
         }
 
