@@ -1,10 +1,10 @@
 <section>
     <header>
         <h2 class="text-lg font-medium text-sga-text">
-            {{ __('Profile Information') }}
+            {{ __('Información del Perfil') }}
         </h2>
         <p class="mt-1 text-sm text-sga-text-light">
-            {{ __("Update your account's profile information, email address and profile photo.") }}
+            {{ __("Actualice la información de perfil y la dirección de correo electrónico de su cuenta.") }}
         </p>
     </header>
 
@@ -17,7 +17,7 @@
 
         {{-- NUEVO: Sección de Foto de Perfil --}}
         <div>
-            <x-input-label for="photo" :value="__('Profile Photo')" />
+            <x-input-label for="photo" :value="__('Foto de Perfil')" />
             
             <div class="mt-2 flex items-center gap-4">
                 {{-- Previsualización de la imagen actual --}}
@@ -25,7 +25,7 @@
                     <img src="{{ asset('storage/' . $user->profile_photo_path) }}" alt="{{ $user->name }}" class="w-16 h-16 rounded-full object-cover border border-gray-300">
                 @else
                     <div class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
-                        <span class="text-xs">No Photo</span>
+                        <span class="text-xs">Sin Foto</span>
                     </div>
                 @endif
 
@@ -42,14 +42,14 @@
         </div>
 
         <div>
-            <x-input-label for="name" :value="__('Name')" />
+            <x-input-label for="name" :value="__('Nombre')" />
             {{-- Convertido de 'wire:model' a 'name/value' --}}
             <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>
 
         <div>
-            <x-input-label for="email" :value="__('Email')" />
+            <x-input-label for="email" :value="__('Correo Electrónico')" />
             {{-- Convertido de 'wire:model' a 'name/value' --}}
             <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
@@ -57,7 +57,7 @@
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
                 <div>
                     <p class="text-sm mt-2 text-sga-text">
-                        {{ __('Your email address is unverified.') }}
+                        {{ __('Su dirección de correo electrónico no está verificada.') }}
 
                         {{-- Convertido de 'wire:click' a formulario/botón --}}
                         {{-- NOTA: Este formulario anidado podría causar problemas si no se maneja bien en HTML, 
@@ -73,18 +73,18 @@
         @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
              <div class="mt-2">
                 <button form="send-verification" class="underline text-sm text-sga-text-light hover:text-sga-text rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sga-secondary">
-                    {{ __('Click here to re-send the verification email.') }}
+                    {{ __('Haga clic aquí para reenviar el correo de verificación.') }}
                 </button>
                 @if (session('status') === 'verification-link-sent')
                     <p class="mt-2 font-medium text-sm text-sga-success">
-                        {{ __('A new verification link has been sent to your email address.') }}
+                        {{ __('Se ha enviado un nuevo enlace de verificación a su dirección de correo electrónico.') }}
                     </p>
                 @endif
              </div>
         @endif
 
         <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
+            <x-primary-button>{{ __('Guardar') }}</x-primary-button>
 
             <!-- --- ¡¡¡CORRECCIÓN!!! --- -->
             {{-- Se reemplaza 'x-action-message' por un listener de 'session' de Blade --}}
@@ -95,7 +95,7 @@
                     x-transition
                     x-init="setTimeout(() => show = false, 2000)"
                     class="text-sm font-medium text-sga-success"
-                >{{ __('Saved.') }}</p>
+                >{{ __('Guardado.') }}</p>
             @endif
         </div>
     </form>
