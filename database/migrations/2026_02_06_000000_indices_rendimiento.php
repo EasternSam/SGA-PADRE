@@ -12,114 +12,124 @@ return new class extends Migration
      */
     public function up(): void
     {
+        $driver = DB::getDriverName();
+        $isMysql = ($driver === 'mysql' || $driver === 'mariadb');
+
         // 1. TABLA STUDENTS
-        Schema::table('students', function (Blueprint $table) {
+        Schema::table('students', function (Blueprint $table) use ($isMysql) {
+            // Helper para verificar existencia (básico)
+            // Nota: Si usas SQLite en pruebas, DB::statement con sintaxis MySQL podría fallar si no se controla,
+            // por eso el IF es crucial.
+
+            // Índice compuesto nombre completo
             if (! $this->indexExists('students', 'students_first_name_last_name_index')) {
-                $table->index(['first_name', 'last_name'], 'students_first_name_last_name_index');
+                if ($isMysql) {
+                    DB::statement('CREATE INDEX students_first_name_last_name_index ON students (first_name(50), last_name(50))');
+                } else {
+                    $table->index(['first_name', 'last_name'], 'students_first_name_last_name_index');
+                }
             }
+            
+            // Otros índices simples (usualmente seguros si son de 1 sola columna string < 191, o ints)
             if (! $this->indexExists('students', 'students_cedula_index')) {
                 $table->index('cedula', 'students_cedula_index');
             }
             if (! $this->indexExists('students', 'students_student_code_index')) {
                 $table->index('student_code', 'students_student_code_index');
             }
+            // Índice compuesto course_id (int) + status (string). Status suele ser corto, pero limitamos por seguridad en MySQL
             if (! $this->indexExists('students', 'students_course_id_status_index')) {
-                $table->index(['course_id', 'status'], 'students_course_id_status_index');
+                if ($isMysql) {
+                    // Asumiendo status varchar(255), lo limitamos a 50
+                    DB::statement('CREATE INDEX students_course_id_status_index ON students (course_id, status(50))');
+                } else {
+                    $table->index(['course_id', 'status'], 'students_course_id_status_index');
+                }
             }
         });
 
-        // 2. TABLA ENROLLMENTS (Inscripciones)
-        Schema::table('enrollments', function (Blueprint $table) {
+        // 2. TABLA ENROLLMENTS
+        Schema::table('enrollments', function (Blueprint $table) use ($isMysql) {
             if (! $this->indexExists('enrollments', 'enrollments_student_id_status_index')) {
-                $table->index(['student_id', 'status'], 'enrollments_student_id_status_index');
+                if ($isMysql) {
+                     DB::statement('CREATE INDEX enrollments_student_id_status_index ON enrollments (student_id, status(50))');
+                } else {
+                    $table->index(['student_id', 'status'], 'enrollments_student_id_status_index');
+                }
             }
             if (! $this->indexExists('enrollments', 'enrollments_course_schedule_id_status_index')) {
-                $table->index(['course_schedule_id', 'status'], 'enrollments_course_schedule_id_status_index');
+                if ($isMysql) {
+                     DB::statement('CREATE INDEX enrollments_course_schedule_id_status_index ON enrollments (course_schedule_id, status(50))');
+                } else {
+                    $table->index(['course_schedule_id', 'status'], 'enrollments_course_schedule_id_status_index');
+                }
             }
             if (! $this->indexExists('enrollments', 'enrollments_payment_id_index')) {
                 $table->index('payment_id', 'enrollments_payment_id_index');
             }
         });
 
-        // 3. TABLA PAYMENTS (Pagos)
-        Schema::table('payments', function (Blueprint $table) {
-            if (! $this->indexExists('payments', 'payments_created_at_status_index')) {
-                $table->index(['created_at', 'status'], 'payments_created_at_status_index');
-            }
-            if (! $this->indexExists('payments', 'payments_student_id_status_index')) {
-                $table->index(['student_id', 'status'], 'payments_student_id_status_index');
-            }
-            if (! $this->indexExists('payments', 'payments_transaction_id_index')) {
-                $table->index('transaction_id', 'payments_transaction_id_index');
-            }
-            if (! $this->indexExists('payments', 'payments_ncf_ncf_type_index')) {
-                $table->index(['ncf', 'ncf_type'], 'payments_ncf_ncf_type_index');
-            }
+        // 3. TABLA PAYMENTS
+        Schema::table('payments', function (Blueprint $table) use ($isMysql) {
+             if (! $this->indexExists('payments', 'payments_created_at_status_index')) {
+                if ($isMysql) {
+                    DB::statement('CREATE INDEX payments_created_at_status_index ON payments (created_at, status(50))');
+                } else {
+                    $table->index(['created_at', 'status'], 'payments_created_at_status_index');
+                }
+             }
+             if (! $this->indexExists('payments', 'payments_student_id_status_index')) {
+                if ($isMysql) {
+                    DB::statement('CREATE INDEX payments_student_id_status_index ON payments (student_id, status(50))');
+                } else {
+                    $table->index(['student_id', 'status'], 'payments_student_id_status_index');
+                }
+             }
+             if (! $this->indexExists('payments', 'payments_transaction_id_index')) {
+                // Transaction ID suele ser string largo, limitamos.
+                 if ($isMysql) {
+                    DB::statement('CREATE INDEX payments_transaction_id_index ON payments (transaction_id(100))');
+                } else {
+                    $table->index('transaction_id', 'payments_transaction_id_index');
+                }
+             }
         });
 
-        // 4. TABLA ADMISSIONS (Admisiones)
-        Schema::table('admissions', function (Blueprint $table) {
-            if (! $this->indexExists('admissions', 'admissions_status_index')) {
-                $table->index('status', 'admissions_status_index');
-            }
-            if (! $this->indexExists('admissions', 'admissions_email_index')) {
-                $table->index('email', 'admissions_email_index');
-            }
-            if (! $this->indexExists('admissions', 'admissions_identification_id_index')) {
-                $table->index('identification_id', 'admissions_identification_id_index');
-            }
-        });
-
-        // 5. TABLA COURSE_SCHEDULES (Horarios)
-        Schema::table('course_schedules', function (Blueprint $table) {
-            if (! $this->indexExists('course_schedules', 'course_schedules_status_start_date_end_date_index')) {
-                $table->index(['status', 'start_date', 'end_date'], 'course_schedules_status_start_date_end_date_index');
-            }
-            if (! $this->indexExists('course_schedules', 'course_schedules_teacher_id_index')) {
-                $table->index('teacher_id', 'course_schedules_teacher_id_index');
-            }
-            if (! $this->indexExists('course_schedules', 'course_schedules_module_id_index')) {
-                $table->index('module_id', 'course_schedules_module_id_index');
-            }
-        });
+        // 4. TABLA ADMISSIONS
+        // Verifica si la tabla existe primero, ya que es nueva
+        if (Schema::hasTable('admissions')) {
+            Schema::table('admissions', function (Blueprint $table) use ($isMysql) {
+                if (! $this->indexExists('admissions', 'admissions_status_index')) {
+                     if ($isMysql) {
+                        DB::statement('CREATE INDEX admissions_status_index ON admissions (status(50))');
+                    } else {
+                        $table->index('status', 'admissions_status_index');
+                    }
+                }
+                if (! $this->indexExists('admissions', 'admissions_email_index')) {
+                    if ($isMysql) {
+                        DB::statement('CREATE INDEX admissions_email_index ON admissions (email(100))');
+                    } else {
+                        $table->index('email', 'admissions_email_index');
+                    }
+                }
+            });
+        }
     }
 
     /**
-     * Verifica si un índice existe, compatible con SQLite y MySQL sin depender de Doctrine.
+     * Helper simple para verificar índices en MySQL/SQLite
      */
-    protected function indexExists(string $table, string $indexName): bool
+    protected function indexExists($table, $indexName)
     {
-        $driver = DB::connection()->getDriverName();
-
-        // 1. Método nativo de Laravel (si funciona)
+        $conn = Schema::getConnection();
+        $dbSchemaManager = $conn->getDoctrineSchemaManager();
         try {
-            if (Schema::hasIndex($table, $indexName)) {
-                return true;
-            }
+            $indexes = $dbSchemaManager->listTableIndexes($table);
+            return array_key_exists($indexName, $indexes);
         } catch (\Exception $e) {
-            // Si falla (ej: falta doctrine/dbal), usamos fallback manual abajo
+            return false;
         }
-
-        // 2. Fallback manual para SQLite
-        if ($driver === 'sqlite') {
-            // En SQLite los nombres de índice son globales en la base de datos
-            $result = DB::select("SELECT name FROM sqlite_master WHERE type='index' AND name = ?", [$indexName]);
-            return count($result) > 0;
-        }
-
-        // 3. Fallback manual para MySQL/MariaDB
-        if ($driver === 'mysql') {
-            $result = DB::select("SHOW INDEX FROM `{$table}` WHERE Key_name = ?", [$indexName]);
-            return count($result) > 0;
-        }
-
-        // 4. Fallback para PostgreSQL
-        if ($driver === 'pgsql') {
-            $result = DB::select("SELECT indexname FROM pg_indexes WHERE tablename = ? AND indexname = ?", [$table, $indexName]);
-            return count($result) > 0;
-        }
-
-        return false;
     }
 
     /**
@@ -127,6 +137,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // En el down simplemente intentamos borrar los índices
         $tables = [
             'students' => [
                 'students_first_name_last_name_index',
@@ -149,23 +160,19 @@ return new class extends Migration
                 'admissions_status_index',
                 'admissions_email_index',
                 'admissions_identification_id_index'
-            ],
-            'course_schedules' => [
-                'course_schedules_status_start_date_end_date_index',
-                'course_schedules_teacher_id_index',
-                'course_schedules_module_id_index'
             ]
         ];
 
         foreach ($tables as $tableName => $indexes) {
-            Schema::table($tableName, function (Blueprint $table) use ($indexes, $tableName) {
-                 foreach ($indexes as $index) {
-                     // Usamos el mismo helper para verificar antes de borrar
-                     if ($this->indexExists($tableName, $index)) {
-                        $table->dropIndex($index);
+            if (Schema::hasTable($tableName)) {
+                Schema::table($tableName, function (Blueprint $table) use ($indexes, $tableName) {
+                     foreach ($indexes as $index) {
+                         try {
+                             $table->dropIndex($index);
+                         } catch (\Exception $e) {}
                      }
-                 }
-            });
+                });
+            }
         }
     }
 };

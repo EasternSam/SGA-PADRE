@@ -11,8 +11,10 @@ return new class extends Migration
         Schema::create('inventory_items', function (Blueprint $table) {
             $table->id();
             $table->string('name'); // Ej: Monitor Dell 24"
-            $table->string('serial_number')->nullable()->unique(); // Para rastreo único
-            $table->string('asset_tag')->nullable()->unique(); // Código de inventario interno (etiqueta)
+            
+            // CORRECCIÓN: Definir longitud explícita (191) para índices únicos en MySQL
+            $table->string('serial_number', 191)->nullable()->unique(); 
+            $table->string('asset_tag', 191)->nullable()->unique(); 
             
             // Categoría: PC, Monitor, Proyector, Mobiliario, Aire Acondicionado, etc.
             $table->string('category'); 

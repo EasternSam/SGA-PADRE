@@ -3,20 +3,19 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('activity_logs', function (Blueprint $table) {
-            // Envolver cada creación de índice en un try-catch independiente
-            // para que si uno falla (porque existe), los demás continúen.
-        });
+        $isMysql = (DB::getDriverName() === 'mysql' || DB::getDriverName() === 'mariadb');
 
         // Hacemos las llamadas fuera del closure principal para manejar excepciones individualmente
         
         try {
             Schema::table('activity_logs', function (Blueprint $table) {
+                // User ID suele ser INT, no hay problema
                 $table->index('user_id', 'activity_logs_user_id_index');
             });
         } catch (\Exception $e) {}
@@ -28,19 +27,26 @@ return new class extends Migration
         } catch (\Exception $e) {}
 
         try {
-            Schema::table('activity_logs', function (Blueprint $table) {
-                $table->index('action', 'activity_logs_action_index');
+            Schema::table('activity_logs', function (Blueprint $table) use ($isMysql) {
+                // CORRECCIÓN: Action puede ser un string largo. Limitamos.
+                if ($isMysql) {
+                    DB::statement('CREATE INDEX activity_logs_action_index ON activity_logs (action(50))');
+                } else {
+                    $table->index('action', 'activity_logs_action_index');
+                }
             });
         } catch (\Exception $e) {}
 
         try {
             Schema::table('activity_logs', function (Blueprint $table) {
+                // IP suele ser corta (45 chars), seguro.
                 $table->index('ip_address', 'activity_logs_ip_address_index');
             });
         } catch (\Exception $e) {}
 
         try {
             Schema::table('activity_logs', function (Blueprint $table) {
+                // Composite INT + DATETIME, seguro.
                 $table->index(['user_id', 'created_at'], 'activity_logs_user_date_index');
             });
         } catch (\Exception $e) {}
