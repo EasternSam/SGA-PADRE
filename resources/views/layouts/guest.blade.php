@@ -57,26 +57,35 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     @php
-        use App\Models\SystemOption;
-        use App\Models\Setting;
-
-        // 1. Lógica del Logo (Mantenida de tu configuración anterior)
-        $logoUrl = null;
-        try {
-            $logoUrl = SystemOption::getOption('logo') ?: SystemOption::getOption('institution_logo');
-        } catch (\Exception $e) {
-            // Fallback si la base de datos falla
-        }
-
-        // 2. Lógica del Fondo (Sincronizada con navigation.blade.php)
-        // Usamos la misma consulta para obtener el 'brand_primary_color'
-        $navBackground = null;
-        try {
-            $navBackground = Setting::where('key', 'brand_primary_color')->value('value');
-        } catch (\Exception $e) {}
+        // Intentamos obtener la variable branding compartida globalmente (desde AppServiceProvider)
+        // Si no existe, inicializamos valores por defecto o intentamos consultar la BD manualmente.
         
-        // Fallback al azul corporativo si no hay configuración
-        $navBackground = $navBackground ?? '#1e3a8a';
+        $logoUrl = null;
+        $navBackground = '#1e3a8a'; // Azul por defecto
+
+        // 1. Prioridad: Variable global $branding (inyectada por AppServiceProvider)
+        if (isset($branding)) {
+            $logoUrl = $branding->logo_url ?? null;
+            $navBackground = $branding->primary_color ?? '#1e3a8a';
+        } 
+        // 2. Respaldo: Consulta directa si la variable global falló
+        else {
+            try {
+                // Intenta usar Setting primero (nuevo estándar)
+                $logoUrl = \App\Models\Setting::get('institution_logo');
+                if (!$logoUrl) {
+                    // Fallback a SystemOption (legacy)
+                    $logoUrl = \App\Models\SystemOption::getOption('logo');
+                }
+                
+                $color = \App\Models\Setting::get('brand_primary_color');
+                if ($color) {
+                    $navBackground = $color;
+                }
+            } catch (\Exception $e) {
+                // Si la BD falla, se mantienen los nulos/defaults
+            }
+        }
     @endphp
 
     <style>
@@ -213,7 +222,10 @@
                     <!-- LOGO AUMENTADO (h-52) con padding reducido para compactar -->
                     <!-- MARGEN REDUCIDO de mb-9 a mb-2 para acercar el logo al título -->
                     <div class="p-2 bg-white/5 rounded-3xl backdrop-blur-sm border border-white/10 shadow-2xl mb-2 transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2">
-                        <img src="{{ asset($logoUrl) }}" alt="{{ config('app.name') }}" class="h-52 w-auto drop-shadow-2xl object-contain">
+                        <!-- Usamos asset() para asegurar que la ruta sea correcta si es relativa -->
+                        <img src="{{ Str::startsWith($logoUrl, 'http') ? $logoUrl : asset($logoUrl) }}" 
+                             alt="{{ config('app.name') }}" 
+                             class="h-52 w-auto drop-shadow-2xl object-contain">
                     </div>
                 @else
                     <!-- FALLBACK LOGO AUMENTADO -->
