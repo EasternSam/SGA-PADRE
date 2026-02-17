@@ -22,7 +22,6 @@ class WordpressIntegrationController extends Controller
 {
     /**
      * Maneja la solicitud de una nueva inscripción desde WordPress (Fluent Forms).
-     * Este controlador SÍ usa la lógica de CourseMapping.
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -96,18 +95,61 @@ class WordpressIntegrationController extends Controller
                 $student = Student::where('cedula', $data['cedula'])->first();
                 $user = User::where('email', $data['email'])->first();
 
-                if ($student || $user) {
-                    if ($student && $user && $student->user_id != $user->id) {
-                         throw new \Exception('Conflicto de datos. La cédula y el email pertenecen a cuentas diferentes.');
+                if ($student) {
+                    // Caso A: El estudiante ya existe por cédula
+                    Log::info("API WP->Laravel (V1): Estudiante encontrado por Cédula ({$data['cedula']})");
+                    
+                    // Verificación de consistencia (opcional)
+                    if ($user && $student->user_id != $user->id) {
+                        Log::warning("API WP: Conflicto potencial. Cédula {$data['cedula']} pertenece al usuario {$student->user_id}, pero el email {$data['email']} es del usuario {$user->id}. Se usará el estudiante encontrado por cédula.");
                     }
-                    $student = $student ?? $user->student;
+                } elseif ($user) {
+                    // Caso B: El usuario existe por email, pero no encontramos estudiante por cédula
+                    Log::info("API WP->Laravel (V1): Usuario encontrado por Email ({$data['email']}). Buscando perfil de estudiante...");
+                    
+                    $student = $user->student;
+
                     if (!$student) {
-                        throw new \Exception('Conflicto de usuario. Email existe pero no está enlazado a un estudiante.');
+                        // FIX CRÍTICO: Si el usuario existe pero no tiene perfil de estudiante, LO CREAMOS ahora.
+                        Log::info("API WP->Laravel (V1): Usuario existe sin perfil de estudiante. Creando perfil...");
+                        
+                        $student = Student::create([
+                            'user_id' => $user->id,
+                            'first_name' => $data['first_name'],
+                            'last_name' => $data['last_name'],
+                            'cedula' => $data['cedula'],
+                            'email' => $data['email'], // Aseguramos que coincida
+                            'home_phone' => $data['phone'],
+                            'mobile_phone' => $data['phone'], 
+                            'address' => $data['address'] ?? null,
+                            'status' => 'Activo',
+                            'city' => $data['city'] ?? null,
+                            'sector' => $data['sector'] ?? null,
+                            'birth_date' => $data['birth_date'] ?? null,
+                            'gender' => $data['gender'] ?? null,
+                            'nationality' => $data['nationality'] ?? null,
+                            'how_found' => $data['how_found'] ?? null,
+                            'is_minor' => $isMinor,
+                            'tutor_name' => $data['tutor_name'] ?? null,
+                            'tutor_cedula' => $data['tutor_cedula'] ?? null,
+                            'tutor_phone' => $data['tutor_phone'] ?? null,
+                            'tutor_relationship' => $data['tutor_relationship'] ?? null,
+                        ]);
+                        
+                        // Aseguramos que tenga el rol de estudiante
+                        if (!$user->hasRole('Estudiante')) {
+                            $user->assignRole('Estudiante');
+                        }
+                    } else {
+                        // El usuario tiene estudiante, pero la cédula no coincidió en la búsqueda inicial
+                        if ($student->cedula !== $data['cedula']) {
+                             Log::warning("API WP->Laravel (V1): Mismatch de cédula para el usuario {$user->email}. Registrada: {$student->cedula}, Nueva: {$data['cedula']}. Se usará el perfil existente.");
+                        }
                     }
-                    Log::info("API WP->Laravel (V1): Estudiante encontrado (Cédula: {$data['cedula']})");
 
                 } else {
-                    Log::info("API WP->Laravel (V1): Creando nuevo estudiante (Cédula: {$data['cedula']})");
+                    // Caso C: Ni estudiante ni usuario existen. Crear todo nuevo.
+                    Log::info("API WP->Laravel (V1): Creando nuevo usuario y estudiante (Cédula: {$data['cedula']})");
                     
                     $user = User::create([
                         'name' => $data['first_name'] . ' ' . $data['last_name'],
@@ -164,11 +206,10 @@ class WordpressIntegrationController extends Controller
                     'enrollment_date' => now(),
                 ]);
 
-                // 5. Crear el Pago (Payment) - CORREGIDO: Eliminar 'amount' de PaymentConcept
-                
+                // 5. Crear el Pago (Payment)
                 $inscriptionConcept = PaymentConcept::firstOrCreate(
                     ['name' => 'Inscripción'],
-                    ['description' => 'Pago único de inscripción al curso'] // <-- CORREGIDO: Sin 'amount'
+                    ['description' => 'Pago único de inscripción al curso']
                 );
 
                 $amount = $laravelCourse->registration_fee ?? 0;
