@@ -219,18 +219,16 @@
         <div class="mb-4 text-center relative z-10 animate-fade-in-down">
             <a href="/" class="flex flex-col items-center group">
                 @if($logoUrl)
-                    <!-- LOGO AUMENTADO (h-52) con padding reducido para compactar -->
-                    <!-- MARGEN REDUCIDO de mb-9 a mb-2 para acercar el logo al título -->
+                    <!-- LOGO DISMINUIDO (h-32 en lugar de h-52) -->
                     <div class="p-2 rounded-3xl mb-2 transition-transform duration-500 group-hover:scale-93 group-hover:-rotate-2">
                         <!-- Usamos asset() para asegurar que la ruta sea correcta si es relativa -->
                         <img src="{{ Str::startsWith($logoUrl, 'http') ? $logoUrl : asset($logoUrl) }}" 
                              alt="{{ config('app.name') }}" 
-                             class="h-52 w-auto drop-shadow-2xl object-contain">
+                             class="h-32 w-auto drop-shadow-2xl object-contain">
                     </div>
                 @else
-                    <!-- FALLBACK LOGO AUMENTADO -->
-                    <!-- MARGEN REDUCIDO de mb-9 a mb-2 -->
-                    <x-application-logo class="w-52 h-52 fill-current text-gray-100 drop-shadow-2xl mb-2" />
+                    <!-- FALLBACK LOGO DISMINUIDO (h-32) -->
+                    <x-application-logo class="w-32 h-32 fill-current text-gray-100 drop-shadow-2xl mb-2" />
                 @endif
                 
                 <!-- TEXTO REDUCIDO Y SIN ESPACIADO EXAGERADO -->
