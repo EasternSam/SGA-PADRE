@@ -41,11 +41,19 @@ class LicenseService
                 'mi_dominio' => $domain
             ]);
 
-            $response = Http::timeout(10)->post($this->serverUrl, [
-                'license_key' => $this->licenseKey,
-                'domain' => $domain,
-                'ip' => $ip,
-            ]);
+            // Desactivar verificación SSL agresivamente
+            $response = Http::withoutVerifying()
+                ->withOptions([
+                    'verify' => false,
+                    'ssl_verify_peer' => false,
+                    'ssl_verify_host' => false,
+                ])
+                ->timeout(15) // Aumentar timeout por si el handshake SSL es lento
+                ->post($this->serverUrl, [
+                    'license_key' => $this->licenseKey,
+                    'domain' => $domain,
+                    'ip' => $ip,
+                ]);
 
             if ($response->successful()) {
                 $data = $response->json();
