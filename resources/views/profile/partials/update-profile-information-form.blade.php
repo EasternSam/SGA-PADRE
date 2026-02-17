@@ -20,14 +20,8 @@
             <x-input-label for="photo" :value="__('Foto de Perfil')" />
             
             <div class="mt-2 flex items-center gap-4">
-                {{-- Previsualización de la imagen actual --}}
-                @if ($user->profile_photo_path)
-                    <img src="{{ asset('storage/' . $user->profile_photo_path) }}" alt="{{ $user->name }}" class="w-16 h-16 rounded-full object-cover border border-gray-300">
-                @else
-                    <div class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
-                        <span class="text-xs">Sin Foto</span>
-                    </div>
-                @endif
+                {{-- Previsualización de la imagen actual (Usando el Accessor) --}}
+                <img src="{{ $user->profile_photo_url }}" alt="{{ $user->name }}" class="w-16 h-16 rounded-full object-cover border border-gray-300">
 
                 {{-- Input de archivo --}}
                 <input id="photo" name="photo" type="file" class="block w-full text-sm text-gray-500

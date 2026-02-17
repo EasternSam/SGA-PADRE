@@ -182,17 +182,11 @@
                                             <p class="text-xs text-gray-400 mt-0.5 truncate max-w-[150px]">{{ Auth::user()->email }}</p>
                                         </div>
                                         <div class="relative">
-                                            @if (Auth::user()->profile_photo_path)
-                                                <img class="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-gray-100" 
-                                                     src="{{ asset('storage/' . Auth::user()->profile_photo_path) }}" 
-                                                     alt="{{ Auth::user()->name }}"
-                                                     loading="lazy">
-                                            @else
-                                                <img class="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-gray-100" 
-                                                     src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&color=FFFFFF&background={{ isset($branding) && property_exists($branding, 'primary_color') ? str_replace('#', '', $branding->primary_color) : '1E3A8A' }}&bold=true" 
-                                                     alt="{{ Auth::user()->name }}"
-                                                     loading="lazy">
-                                            @endif
+                                            <!-- USO DEL ACCESSOR: Ahora usamos profile_photo_url -->
+                                            <img class="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-gray-100" 
+                                                 src="{{ Auth::user()->profile_photo_url }}" 
+                                                 alt="{{ Auth::user()->name }}"
+                                                 loading="lazy">
                                             <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-400 ring-2 ring-white"></span>
                                         </div>
                                         <i class="fas fa-chevron-down text-gray-400 text-xs hidden lg:block ml-1"></i>

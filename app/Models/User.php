@@ -10,6 +10,7 @@ use Spatie\Permission\Traits\HasRoles;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Casts\Attribute; // <-- IMPORTAR Attribute
 use App\Models\Student;
 use App\Models\CourseSchedule;
 use App\Models\Payment;
@@ -40,6 +41,15 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+    ];
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = [
+        'profile_photo_url',
     ];
 
     /**
@@ -92,5 +102,20 @@ class User extends Authenticatable
         }
         // Si tiene fecha, verifica que no haya pasado
         return $this->access_expires_at->isFuture();
+    }
+
+    /**
+     * Obtener la URL de la foto de perfil.
+     * Si tiene foto subida, devuelve esa. Si no, devuelve UI Avatars.
+     */
+    protected function profilePhotoUrl(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                return $this->profile_photo_path
+                    ? asset('storage/' . $this->profile_photo_path)
+                    : 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=FFFFFF&background=1E3A8A&bold=true';
+            }
+        );
     }
 }
