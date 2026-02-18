@@ -28,12 +28,9 @@ return new class extends Migration
 
         try {
             Schema::table('activity_logs', function (Blueprint $table) use ($isMysql) {
-                // CORRECCIÓN: Action puede ser un string largo. Limitamos.
-                if ($isMysql) {
-                    DB::statement('CREATE INDEX activity_logs_action_index ON activity_logs (action(50))');
-                } else {
-                    $table->index('action', 'activity_logs_action_index');
-                }
+                // CORRECCIÓN: Usamos sintaxis estándar de Laravel para mayor compatibilidad
+                // Laravel y MySQL moderno manejan índices de strings sin necesidad de prefijos fijos en la mayoría de los casos
+                $table->index('action', 'activity_logs_action_index');
             });
         } catch (\Exception $e) {}
 

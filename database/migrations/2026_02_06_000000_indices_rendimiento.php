@@ -18,14 +18,11 @@ return new class extends Migration
         // 1. TABLA STUDENTS
         Schema::table('students', function (Blueprint $table) use ($isMysql) {
             
-            // Índice compuesto nombre completo (VARCHARS, aquí sí es útil el prefijo si son largos)
+            // Índice compuesto nombre completo
             if (! $this->indexExists('students', 'students_first_name_last_name_index')) {
-                if ($isMysql) {
-                    // first_name y last_name son STRINGS, el prefijo es válido y recomendado para evitar error 1071
-                    DB::statement('CREATE INDEX students_first_name_last_name_index ON students (first_name(50), last_name(50))');
-                } else {
-                    $table->index(['first_name', 'last_name'], 'students_first_name_last_name_index');
-                }
+                // En MySQL moderno, generalmente no es necesario especificar la longitud para índices normales de string
+                // a menos que sean BLOB/TEXT muy largos. Para VARCHARs típicos (191/255), el índice completo está bien.
+                $table->index(['first_name', 'last_name'], 'students_first_name_last_name_index');
             }
             
             if (! $this->indexExists('students', 'students_cedula_index')) {
@@ -37,32 +34,18 @@ return new class extends Migration
             
             // Índice compuesto course_id (INT) + status (STRING)
             if (! $this->indexExists('students', 'students_course_id_status_index')) {
-                if ($isMysql) {
-                    // course_id es INT -> NO LLEVA PREFIJO. status es string -> PUEDE LLEVAR PREFIJO.
-                    DB::statement('CREATE INDEX students_course_id_status_index ON students (course_id, status(20))');
-                } else {
-                    $table->index(['course_id', 'status'], 'students_course_id_status_index');
-                }
+                // Eliminamos la restricción de longitud (20) que causaba el error 1089
+                $table->index(['course_id', 'status'], 'students_course_id_status_index');
             }
         });
 
         // 2. TABLA ENROLLMENTS
         Schema::table('enrollments', function (Blueprint $table) use ($isMysql) {
             if (! $this->indexExists('enrollments', 'enrollments_student_id_status_index')) {
-                if ($isMysql) {
-                     // student_id es INT -> NO PREFIJO. status es string -> SI PREFIJO.
-                     DB::statement('CREATE INDEX enrollments_student_id_status_index ON enrollments (student_id, status(20))');
-                } else {
-                    $table->index(['student_id', 'status'], 'enrollments_student_id_status_index');
-                }
+                $table->index(['student_id', 'status'], 'enrollments_student_id_status_index');
             }
             if (! $this->indexExists('enrollments', 'enrollments_course_schedule_id_status_index')) {
-                if ($isMysql) {
-                     // course_schedule_id es INT -> NO PREFIJO. status es string -> SI PREFIJO.
-                     DB::statement('CREATE INDEX enrollments_course_schedule_id_status_index ON enrollments (course_schedule_id, status(20))');
-                } else {
-                    $table->index(['course_schedule_id', 'status'], 'enrollments_course_schedule_id_status_index');
-                }
+                $table->index(['course_schedule_id', 'status'], 'enrollments_course_schedule_id_status_index');
             }
             if (! $this->indexExists('enrollments', 'enrollments_payment_id_index')) {
                 $table->index('payment_id', 'enrollments_payment_id_index');
@@ -72,29 +55,13 @@ return new class extends Migration
         // 3. TABLA PAYMENTS
         Schema::table('payments', function (Blueprint $table) use ($isMysql) {
              if (! $this->indexExists('payments', 'payments_created_at_status_index')) {
-                // created_at es DATETIME/TIMESTAMP -> NO DEBE LLEVAR PREFIJO.
-                // status es STRING -> SI PUEDE LLEVAR.
-                if ($isMysql) {
-                    DB::statement('CREATE INDEX payments_created_at_status_index ON payments (created_at, status(20))');
-                } else {
-                    $table->index(['created_at', 'status'], 'payments_created_at_status_index');
-                }
+                $table->index(['created_at', 'status'], 'payments_created_at_status_index');
              }
              if (! $this->indexExists('payments', 'payments_student_id_status_index')) {
-                if ($isMysql) {
-                    // student_id es INT -> NO PREFIJO.
-                    DB::statement('CREATE INDEX payments_student_id_status_index ON payments (student_id, status(20))');
-                } else {
-                    $table->index(['student_id', 'status'], 'payments_student_id_status_index');
-                }
+                $table->index(['student_id', 'status'], 'payments_student_id_status_index');
              }
              if (! $this->indexExists('payments', 'payments_transaction_id_index')) {
-                // Transaction ID es string largo -> SI PREFIJO.
-                 if ($isMysql) {
-                    DB::statement('CREATE INDEX payments_transaction_id_index ON payments (transaction_id(50))');
-                } else {
-                    $table->index('transaction_id', 'payments_transaction_id_index');
-                }
+                $table->index('transaction_id', 'payments_transaction_id_index');
              }
         });
 
@@ -102,20 +69,11 @@ return new class extends Migration
         if (Schema::hasTable('admissions')) {
             Schema::table('admissions', function (Blueprint $table) use ($isMysql) {
                 if (! $this->indexExists('admissions', 'admissions_status_index')) {
-                     if ($isMysql) {
-                        // status string -> SI PREFIJO.
-                        DB::statement('CREATE INDEX admissions_status_index ON admissions (status(20))');
-                    } else {
-                        $table->index('status', 'admissions_status_index');
-                    }
+                    // Corrección principal: quitamos status(20) que causaba el error "Incorrect prefix key"
+                    $table->index('status', 'admissions_status_index');
                 }
                 if (! $this->indexExists('admissions', 'admissions_email_index')) {
-                    if ($isMysql) {
-                        // email string -> SI PREFIJO.
-                        DB::statement('CREATE INDEX admissions_email_index ON admissions (email(50))');
-                    } else {
-                        $table->index('email', 'admissions_email_index');
-                    }
+                    $table->index('email', 'admissions_email_index');
                 }
             });
         }
