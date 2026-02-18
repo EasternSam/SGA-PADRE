@@ -23,6 +23,10 @@ return new class extends Migration
             $table->string('name'); // Ej: "Excel Avanzado"
             $table->string('code')->unique()->nullable(); // Ej: "INF-101"
             $table->text('description')->nullable();
+
+            // --- AGREGADO: Columna 'order' necesaria para el Curriculum ---
+            $table->integer('order')->default(0); 
+            
             $table->decimal('price', 10, 2)->default(0); // El precio está en el módulo
             $table->integer('duration_hours')->nullable(); // Duración total
             
