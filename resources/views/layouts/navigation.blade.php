@@ -1,6 +1,4 @@
 @php
-    // Obtener el color directamente de la base de datos para aplicarlo inline
-    // Esto asegura que si es un degradado complejo, se aplique correctamente como 'background' y no como clase CSS
     $navBackground = \App\Models\Setting::where('key', 'brand_primary_color')->value('value') ?? '#1e3a8a';
 @endphp
 
@@ -17,8 +15,6 @@
     style="display: none;">
 </div>
 
-<!-- Contenido del Sidebar -->
-<!-- Se eliminó bg-sga-primary y se reemplazó por style="background: ..." para soportar degradados -->
 <aside
     class="fixed inset-y-0 left-0 z-40 flex h-screen w-64 transform flex-col overflow-y-auto border-r border-white/10 pt-4 transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-auto lg:h-screen lg:w-64 lg:shadow-xl [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/40"
     style="background: {{ $navBackground }}; color: white;"
@@ -28,15 +24,11 @@
     <!-- Logo Sidebar -->
     <div class="mb-6 flex flex-col items-center justify-center px-6">
         <a href="{{ route('dashboard') }}" class="flex items-center gap-2 transition-transform hover:scale-105">
-            {{-- LÓGICA DINÁMICA DE LOGO --}}
-            {{-- Verifica si la variable branding existe y tiene un logo_url válido --}}
             @if(isset($branding) && !empty($branding->logo_url))
-                {{-- Usamos asset() para generar la URL absoluta completa (https://dominio.com/storage/...) --}}
                 <img src="{{ asset($branding->logo_url) }}" 
                      alt="{{ config('app.name') }}" 
                      class="block h-16 w-auto object-contain rounded-lg p-1 backdrop-blur-sm shadow-sm">
             @else
-                {{-- Fallback al logo por defecto si no hay personalización --}}
                 <x-application-logo class="block h-10 w-auto fill-current text-white" />
             @endif
         </a>
@@ -60,7 +52,6 @@
         @hasanyrole('Admin|Registro|Contabilidad|Caja')
             <div class="pt-4 space-y-1">
                 
-                {{-- SAAS: Protección por feature 'academic' --}}
                 @if(\App\Helpers\SaaS::has('academic'))
                     <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white/80">
                         {{ __('Gestión Académica') }}
@@ -87,7 +78,7 @@
                             <span>{{ __('Docentes') }}</span>
                         </x-responsive-nav-link>
 
-                        <!-- DESPLEGABLE CURSOS -->
+                        <!-- DESPLEGABLE ACADÉMICO DINÁMICO -->
                         <div x-data="{ openAcademic: {{ request()->routeIs(['admin.courses.*', 'admin.careers.*']) ? 'true' : 'false' }} }">
                             <button @click="openAcademic = !openAcademic" 
                                 class="flex w-full items-center justify-between px-4 py-2 text-sm font-medium transition duration-150 ease-in-out rounded-md focus:outline-none {{ request()->routeIs(['admin.courses.*', 'admin.careers.*']) ? 'bg-white text-gray-900' : 'text-white hover:bg-white/10 focus:bg-white/10' }}">
@@ -104,16 +95,20 @@
                             
                             <div x-show="openAcademic" x-collapse class="pl-10 space-y-1 mt-1">
                                 <!-- Cursos (Instituto) -->
-                                <a href="{{ route('admin.courses.index') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.courses.index') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('Cursos') }}
-                                </a>
+                                @if(\App\Helpers\SaaS::showCourses())
+                                    <a href="{{ route('admin.courses.index') }}" wire:navigate 
+                                        class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.courses.index') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
+                                        {{ __('Cursos') }}
+                                    </a>
+                                @endif
                                 
                                 <!-- Carreras (Universidad) -->
-                                <a href="{{ route('admin.careers.index') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.careers.*') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/10' }}">
-                                    {{ __('Carreras') }}
-                                </a>
+                                @if(\App\Helpers\SaaS::showCareers())
+                                    <a href="{{ route('admin.careers.index') }}" wire:navigate 
+                                        class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.careers.*') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/10' }}">
+                                        {{ __('Carreras') }}
+                                    </a>
+                                @endif
                             </div>
                         </div>
 
@@ -143,7 +138,6 @@
                             <span>{{ __('Admisiones') }}</span>
                         </x-responsive-nav-link>
 
-                        {{-- SAAS: Solo mostrar Inventario si tiene el feature 'inventory' activado --}}
                         @if(\App\Helpers\SaaS::has('inventory'))
                             <x-responsive-nav-link :href="route('admin.inventory.index')" :active="request()->routeIs('admin.inventory.index')" wire:navigate>
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -156,9 +150,8 @@
                     @endhasanyrole
                 @endif
 
-                {{-- MÓDULO FINANCIERO: Admin, Contabilidad, Caja --}}
+                {{-- MÓDULO FINANCIERO --}}
                 @hasanyrole('Admin|Contabilidad|Caja')
-                    {{-- SAAS: Solo mostrar Finanzas si tiene el feature 'finance' activado --}}
                     @if(\App\Helpers\SaaS::has('finance'))
                         <p class="px-3 pt-4 pb-2 text-xs font-bold uppercase tracking-wider text-white/80">
                             {{ __('Finanzas') }}
@@ -173,7 +166,6 @@
                             <span>{{ __('Panel Financiero') }}</span>
                         </x-responsive-nav-link>
                         
-                        {{-- Configuración de Pagos (Solo Admin y Contabilidad) --}}
                         @hasanyrole('Admin|Contabilidad')
                             <x-responsive-nav-link :href="route('admin.finance.concepts')" :active="request()->routeIs('admin.finance.concepts')" wire:navigate>
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -185,9 +177,8 @@
                     @endif
                 @endhasanyrole
 
-                {{-- MÓDULO REPORTES: Admin, Registro, Contabilidad --}}
+                {{-- MÓDULO REPORTES --}}
                 @hasanyrole('Admin|Registro|Contabilidad')
-                    {{-- SAAS: Solo mostrar Reportes si tiene el feature 'reports_basic' activado --}}
                     @if(\App\Helpers\SaaS::has('reports_basic'))
                         <p class="px-3 pt-4 pb-2 text-xs font-bold uppercase tracking-wider text-white/80">
                             {{ __('Reportes') }}
@@ -201,7 +192,7 @@
                     @endif
                 @endhasanyrole
 
-                {{-- SOLO ADMIN: Gestión Personal, Importar, Correos --}}
+                {{-- SOLO ADMIN --}}
                 @role('Admin')
                     <p class="px-3 pt-4 pb-2 text-xs font-bold uppercase tracking-wider text-white/80">
                         {{ __('Configuración') }}
@@ -220,8 +211,6 @@
                         <span>{{ __('Aulas') }}</span>
                     </x-responsive-nav-link>
 
-                    {{-- DESPLEGABLE DIPLOMAS --}}
-                    {{-- SAAS: Solo mostrar Diplomas si tiene el feature 'reports_advanced' activado --}}
                     @if(\App\Helpers\SaaS::has('reports_advanced'))
                         <div x-data="{ openDiplomas: {{ request()->routeIs('admin.certificates.*') ? 'true' : 'false' }} }">
                             <button @click="openDiplomas = !openDiplomas" 
@@ -239,7 +228,7 @@
                             
                             <div x-show="openDiplomas" x-collapse class="pl-10 space-y-1 mt-1">
                                 <a href="{{ route('admin.certificates.index') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.certificates.index') ? 'bg-white text-gray-900 font-bold' : 'text-white/80 hover:bg-white/10' }}">
+                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.certificates.index') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/10' }}">
                                     {{ __('Emitidos') }}
                                 </a>
                                 <a href="{{ route('admin.certificates.templates') }}" wire:navigate 
@@ -292,7 +281,6 @@
                     {{ __('Mi Portal') }}
                 </p>
 
-                {{-- SAAS: Finanzas de Estudiante también protegidas --}}
                 @if(\App\Helpers\SaaS::has('finance'))
                     <x-responsive-nav-link :href="route('student.payments')" :active="request()->routeIs('student.payments')" wire:navigate>
                         <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -313,7 +301,7 @@
             </div>
         @endrole
 
-        <!-- Sección Solicitante (NUEVO) -->
+        <!-- Sección Solicitante -->
         @role('Solicitante')
             <div class="pt-4 space-y-1">
                 <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white/80">
