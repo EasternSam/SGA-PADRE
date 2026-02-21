@@ -16,10 +16,24 @@ class EnsureFeatureEnabled
      */
     public function handle(Request $request, Closure $next, string $feature): Response
     {
-        // Usamos el Helper que ya creamos.
-        // Si NO tiene el feature, mostramos la vista de bloqueo.
-        if (! SaaS::has($feature)) {
-            return response()->view('errors.feature-locked', ['feature' => $feature], 403);
+        $allowed = true;
+        $featureLabel = $feature;
+
+        // Lógica específica para segmentación académica
+        if ($feature === 'academic_courses') {
+            $allowed = SaaS::showCourses();
+            $featureLabel = 'Módulo de Cursos (Instituto)';
+        } elseif ($feature === 'academic_careers') {
+            $allowed = SaaS::showCareers();
+            $featureLabel = 'Módulo de Carreras (Universidad)';
+        } else {
+            // Lógica para features estándar (finance, inventory, etc)
+            $allowed = SaaS::has($feature);
+        }
+
+        // Si NO tiene el permiso o modo activo, mostramos la vista de bloqueo.
+        if (!$allowed) {
+            return response()->view('errors.feature-locked', ['feature' => $featureLabel], 403);
         }
 
         return $next($request);

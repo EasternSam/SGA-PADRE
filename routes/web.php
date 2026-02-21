@@ -403,10 +403,18 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     Route::middleware(['feature:academic'])->group(function () {
         Route::get('/students', \App\Livewire\Students\Index::class)->name('admin.students.index');
         Route::get('/students/profile/{student}', \App\Livewire\StudentProfile\Index::class)->name('admin.students.profile');
-        Route::get('/courses', \App\Livewire\Courses\Index::class)->name('admin.courses.index');
-        Route::get('/careers', \App\Livewire\Careers\Index::class)->name('admin.careers.index');
-        Route::get('/careers/{career}/curriculum', \App\Livewire\Careers\Curriculum::class)->name('admin.careers.curriculum');
-        Route::get('/careers/{career}/curriculum/pdf', [CurriculumPdfController::class, 'download'])->name('admin.careers.curriculum.pdf');
+        
+        // --- RESTRICCIÓN ACADÉMICA: CURSOS (INSTITUTO) ---
+        Route::middleware(['feature:academic_courses'])->group(function () {
+            Route::get('/courses', \App\Livewire\Courses\Index::class)->name('admin.courses.index');
+        });
+
+        // --- RESTRICCIÓN ACADÉMICA: CARRERAS (UNIVERSIDAD) ---
+        Route::middleware(['feature:academic_careers'])->group(function () {
+            Route::get('/careers', \App\Livewire\Careers\Index::class)->name('admin.careers.index');
+            Route::get('/careers/{career}/curriculum', \App\Livewire\Careers\Curriculum::class)->name('admin.careers.curriculum');
+            Route::get('/careers/{career}/curriculum/pdf', [CurriculumPdfController::class, 'download'])->name('admin.careers.curriculum.pdf');
+        });
         
         if (class_exists(CalendarIndex::class)) {
             Route::get('/calendar', CalendarIndex::class)->name('admin.calendar.index');
