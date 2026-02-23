@@ -10,26 +10,34 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use App\Models\Student;
-use Carbon\Carbon;
+use App\Models\Student; // AÑADIDO: Asegúrate de que el modelo Student está importado
+use Carbon\Carbon; // AÑADIDO: Para la lógica de ->isPast()
 
 class LoginRequest extends FormRequest
 {
+    /**
+     * Determine if the user is authorized to make this request.
+     */
     public function authorize(): bool
     {
         return true;
     }
 
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\Rule|array|string>
+     */
     public function rules(): array
     {
         return [
-            'login' => ['required', 'string'],
+            'login' => ['required', 'string'], // MODIFICADO: de 'email' a 'login'
             'password' => ['required', 'string'],
         ];
     }
 
     /**
-     * Intenta autenticar las credenciales de la solicitud.
+     * Attempt to authenticate the request's credentials.
      *
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -40,57 +48,65 @@ class LoginRequest extends FormRequest
         $login = $this->input('login');
         $password = $this->input('password');
 
-        // NORMALIZACIÓN: Si el login no es un email, quitamos caracteres no alfanuméricos
-        $cleanLogin = !filter_var($login, FILTER_VALIDATE_EMAIL) 
-            ? preg_replace('/[^A-Za-z0-9]/', '', $login) 
-            : $login;
+        // --- INICIO DE MODIFICACIÓN (Normalización para Cédulas) ---
+        // Limpiamos el login por si es una cédula con guiones pero el usuario la escribe sin ellos (o viceversa)
+        $cleanLogin = preg_replace('/[^A-Za-z0-9@.]/', '', $login);
 
-        /**
-         * Buscamos al usuario de forma exhaustiva:
-         * 1. Por Email exacto.
-         * 2. Por campo 'cedula' o 'username' directamente en la tabla Users (para solicitantes/nuevos).
-         * 3. Por relación con Estudiante (Cédula o Matrícula).
-         * 4. Por relación con Admisión (Cédula).
-         */
+        // 1. Encontrar al usuario por email, cédula o matrícula en UNA sola consulta
         $user = User::where('email', $login)
-            ->orWhere('cedula', $login)
-            ->orWhere('cedula', $cleanLogin)
-            ->orWhere('username', $login)
-            ->orWhere('username', $cleanLogin)
             ->orWhereHas('student', function ($query) use ($login, $cleanLogin) {
                 $query->where('cedula', $login)
                       ->orWhere('cedula', $cleanLogin)
-                      ->orWhere('student_code', $login)
-                      ->orWhere('student_code', $cleanLogin);
-            })
-            ->orWhereHas('admission', function ($query) use ($login, $cleanLogin) {
-                $query->where('cedula', $login)
-                      ->orWhere('cedula', $cleanLogin);
+                      ->orWhere('student_code', $login);
             })
             ->first();
+        // --- FIN DE MODIFICACIÓN ---
 
-        // Verificar si el usuario existe y la contraseña es correcta
-        if (! $user || ! Hash::check($password, $user->password)) {
+        // 2. Verificar si el usuario existe y la contraseña es correcta
+        // MEJORA: Verificamos el password tal cual, y si falla, probamos normalizándolo (por si se guardó sin guiones)
+        $isValidPassword = false;
+        if ($user) {
+            if (Hash::check($password, $user->password)) {
+                $isValidPassword = true;
+            } else {
+                // Si el usuario ingresó la cédula como password, probamos quitándole los guiones
+                $cleanPassword = preg_replace('/[^A-Za-z0-9]/', '', $password);
+                if (Hash::check($cleanPassword, $user->password)) {
+                    $isValidPassword = true;
+                }
+            }
+        }
+
+        if (! $user || ! $isValidPassword) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'login' => trans('auth.failed'),
+                'login' => trans('auth.failed'), // Usamos 'login'
             ]);
         }
 
-        // Verificar si la cuenta temporal ha expirado (SaaS o Acceso Temporal)
+        // 3. Verificar si la cuenta temporal ha expirado (¡MEJORA!)
+        // Esta comprobación se hace DESPUÉS de validar la contraseña.
+        // No se penaliza (RateLimiter) a un usuario válido.
         if ($user->access_expires_at && $user->access_expires_at->isPast()) {
+            
+            // ¡No se llama a RateLimiter::hit() aquí!
+
             throw ValidationException::withMessages([
+                // Mensaje personalizado más claro que 'auth.failed'
                 'login' => 'Tu acceso temporal ha expirado. Por favor, realiza el pago de tu inscripción para reactivar el acceso.',
             ]);
         }
 
+        // 4. Autenticar al usuario
         Auth::login($user, $this->boolean('remember'));
         RateLimiter::clear($this->throttleKey());
     }
 
     /**
-     * Asegura que la solicitud de inicio de sesión no esté limitada por intentos fallidos.
+     * Ensure the login request is not rate limited.
+     *
+     * @throws \Illuminate\Validation\ValidationException
      */
     public function ensureIsNotRateLimited(): void
     {
@@ -99,10 +115,11 @@ class LoginRequest extends FormRequest
         }
 
         event(new Lockout($this));
+
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'login' => trans('auth.throttle', [
+            'login' => trans('auth.throttle', [ // MODIFICADO: de 'email' a 'login'
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),
@@ -110,10 +127,11 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Obtiene la clave de limitación de tasa para la solicitud.
+     * Get the rate limiting throttle key for the request.
      */
     public function throttleKey(): string
     {
+        // MODIFICADO: Usar 'login' en lugar de 'email' para el throttle key
         return Str::transliterate(Str::lower($this->input('login')).'|'.$this->ip());
     }
 }
