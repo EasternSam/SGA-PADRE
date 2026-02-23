@@ -12,24 +12,35 @@ use Illuminate\Support\Facades\Log;
 
 class AuthenticatedSessionController extends Controller
 {
+    /**
+     * Display the login view.
+     */
     public function create(): View
     {
         return view('auth.login');
     }
 
+    /**
+     * Handle an incoming authentication request.
+     */
     public function store(LoginRequest $request): RedirectResponse
     {
-        // FIX LOG: Usamos 'login' que es lo que viene del formulario
-        Log::info('--- INTENTO DE LOGIN ---');
-        Log::info('Identificador: ' . $request->input('login'));
+        Log::info('--- INTENTO DE LOGIN (Standard) ---');
+        Log::info('Identificador: ' . $request->input('login')); // FIX: Usamos login en lugar de email
 
         try {
             $request->authenticate();
             
+            Log::info('Autenticación exitosa.');
+
             $request->session()->regenerate();
+
             $user = $request->user();
             
-            Log::info('Usuario ID: ' . $user->id . ' entró al sistema.');
+            $roles = method_exists($user, 'getRoleNames') ? $user->getRoleNames()->toArray() : [];
+            Log::info('Usuario ID: ' . $user->id . ' | Roles: ' . implode(',', $roles));
+
+            // --- LÓGICA DE REDIRECCIÓN ---
 
             if ($user->hasRole('Admin') || $user->hasAnyRole(['Registro', 'Contabilidad', 'Caja'])) {
                 return redirect()->route('admin.dashboard');
@@ -43,10 +54,13 @@ class AuthenticatedSessionController extends Controller
                 return redirect()->route('student.dashboard');
             }
 
+            // --- NUEVO: Redirección para el rol Solicitante ---
             if ($user->hasRole('Solicitante')) {
+                Log::info('Rol Solicitante detectado -> Redirigiendo a applicant.portal');
                 return redirect()->route('applicant.portal');
             }
 
+            Log::info('Redirigiendo a dashboard general (Usuario sin rol específico).');
             return redirect()->intended(route('dashboard'));
 
         } catch (\Exception $e) {
@@ -55,11 +69,17 @@ class AuthenticatedSessionController extends Controller
         }
     }
 
+    /**
+     * Destroy an authenticated session.
+     */
     public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
+
         $request->session()->invalidate();
+
         $request->session()->regenerateToken();
+
         return redirect('/');
     }
 }

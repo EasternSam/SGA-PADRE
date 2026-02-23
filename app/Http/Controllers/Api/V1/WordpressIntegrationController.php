@@ -76,8 +76,8 @@ class WordpressIntegrationController extends Controller
             
             // Buscar la sección (schedule) usando el mapeo
             $scheduleMapping = ScheduleMapping::where('wp_course_id', $data['wp_course_id'])
-                                              ->where('wp_schedule_string', $data['wp_schedule_string'])
-                                              ->first();
+                                               ->where('wp_schedule_string', $data['wp_schedule_string'])
+                                               ->first();
 
             if (!$scheduleMapping) {
                 Log::error("API WP->Laravel (V1): No se encontró mapeo de SECCIÓN.", [
@@ -92,7 +92,9 @@ class WordpressIntegrationController extends Controller
             $result = DB::transaction(function () use ($data, $isMinor, $laravelCourse, $laravel_schedule_id) {
 
                 // 3. Encontrar o Crear al Estudiante y Usuario
-                $student = Student::where('cedula', $data['cedula'])->first();
+                // MODIFICACIÓN: Normalizamos la cédula para búsquedas y para la contraseña
+                $cleanCedula = preg_replace('/[^0-9]/', '', $data['cedula']);
+                $student = Student::where('cedula', $data['cedula'])->orWhere('cedula', $cleanCedula)->first();
                 $user = User::where('email', $data['email'])->first();
 
                 if ($student) {
@@ -154,8 +156,9 @@ class WordpressIntegrationController extends Controller
                     $user = User::create([
                         'name' => $data['first_name'] . ' ' . $data['last_name'],
                         'email' => $data['email'],
-                        'password' => Hash::make($data['cedula']), 
+                        'password' => Hash::make($cleanCedula), // MODIFICADO: Guardamos la contraseña sin guiones para evitar errores en login
                         'access_expires_at' => Carbon::now()->addMonths(3), 
+                        'email_verified_at' => now(), // AÑADIDO: Marcamos verificado para saltar middleware verified
                     ]);
                     $user->assignRole('Estudiante');
 
@@ -185,9 +188,9 @@ class WordpressIntegrationController extends Controller
 
                 // 4. Verificar inscripción pendiente
                 $existingEnrollment = Enrollment::where('student_id', $student->id)
-                                                ->where('course_schedule_id', $laravel_schedule_id)
-                                                ->where('status', 'Pendiente')
-                                                ->exists();
+                                                 ->where('course_schedule_id', $laravel_schedule_id)
+                                                 ->where('status', 'Pendiente')
+                                                 ->exists();
 
                 if ($existingEnrollment) {
                     return [
