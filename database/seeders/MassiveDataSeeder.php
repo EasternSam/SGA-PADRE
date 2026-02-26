@@ -91,7 +91,7 @@ class MassiveDataSeeder extends Seeder
                         'amount' => $conceptCuota->amount,
                         'currency' => 'DOP',
                         'status' => $isPaid ? 'Pagado' : 'Pendiente',
-                        'gateway' => $isPaid ? ['CardNet', 'Transferencia', 'Cash'][rand(0, 2)] : null,
+                        'gateway' => $isPaid ? ['CardNet', 'Transferencia', 'Cash'][rand(0, 2)] : 'Pendiente',
                         'due_date' => $dueDate,
                         'created_at' => $dueDate->copy()->subDays(5), // Factura emitida 5 días antes
                         'updated_at' => $isPaid ? $dueDate->copy()->addDays(rand(0, 3)) : $dueDate->copy()->subDays(5),
