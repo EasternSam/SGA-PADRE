@@ -85,7 +85,86 @@
                         </div>
                     </div>
                 @endif
-                <div id="financeChart" wire:ignore class="w-full h-full"></div>
+                <div 
+                    id="financeChart" 
+                    wire:ignore 
+                    class="w-full h-full"
+                    x-data="{
+                        chart: null,
+                        initChart(chartData) {
+                            if(!this.$refs.chartContainer) return;
+                            
+                            if(this.chart) {
+                                this.chart.destroy();
+                            }
+
+                            const options = {
+                                series: [{
+                                    name: 'Ingresos',
+                                    data: chartData.income || []
+                                }, {
+                                    name: 'Pendiente de Cobro',
+                                    data: chartData.pending || []
+                                }],
+                                chart: {
+                                    type: 'bar',
+                                    height: 350,
+                                    fontFamily: 'Inter, sans-serif',
+                                    toolbar: { show: false },
+                                    zoom: { enabled: false }
+                                },
+                                colors: ['#10b981', '#f59e0b'],
+                                plotOptions: {
+                                    bar: {
+                                        horizontal: false,
+                                        columnWidth: '55%',
+                                        endingShape: 'rounded',
+                                        borderRadius: 4
+                                    },
+                                },
+                                dataLabels: { enabled: false },
+                                stroke: { show: true, width: 2, colors: ['transparent'] },
+                                xaxis: {
+                                    categories: chartData.labels || [],
+                                    axisBorder: { show: false },
+                                    axisTicks: { show: false },
+                                    labels: { style: { colors: '#64748b', fontSize: '12px' } }
+                                },
+                                yaxis: {
+                                    labels: {
+                                        style: { colors: '#64748b', fontSize: '12px' },
+                                        formatter: (value) => { return '$' + value.toLocaleString() }
+                                    }
+                                },
+                                fill: { opacity: 1 },
+                                tooltip: {
+                                    y: { formatter: function (val) { return '$ ' + val.toLocaleString() } }
+                                },
+                                grid: { borderColor: '#f1f5f9', strokeDashArray: 4 },
+                                legend: { position: 'top' }
+                            };
+
+                            this.chart = new ApexCharts(this.$refs.chartContainer, options);
+                            this.chart.render();
+                        }
+                    }"
+                    x-ref="chartContainer"
+                    @finance-chart-loaded.window="initChart($event.detail[0])"
+                    x-init="
+                        $watch('chart', value => {
+                            if(!value) $wire.dispatch('triggerLoadChart');
+                        });
+                        if(typeof Livewire !== 'undefined') {
+                            Livewire.on('printTicket', (event) => {
+                                const url = event.url || event[0]?.url;
+                                if (url) {
+                                    const printWindow = window.open(url, 'Ticket', 'width=400,height=600');
+                                    if (printWindow) printWindow.focus();
+                                }
+                            });
+                        }
+                    "
+                ></div>
             </div>
         </div>
 
@@ -217,87 +296,4 @@
 
     <!-- Script para Gráficos (ApexCharts) -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <script>
-        document.addEventListener('livewire:init', () => {
-            let financeChartInstance = null;
-
-            Livewire.on('finance-chart-loaded', (data) => {
-                const chartData = data[0];
-                const chartElement = document.querySelector("#financeChart");
-                if(!chartElement) return;
-
-                // Si ya existe un gráfico previo, lo destruimos para evitar duplicados
-                if(financeChartInstance) {
-                    financeChartInstance.destroy();
-                }
-
-                const options = {
-                    series: [{
-                        name: 'Ingresos',
-                        data: chartData.income || []
-                    }, {
-                        name: 'Pendiente de Cobro',
-                        data: chartData.pending || []
-                    }],
-                    chart: {
-                        type: 'bar',
-                        height: 350,
-                        fontFamily: 'Inter, sans-serif',
-                        toolbar: { show: false },
-                        zoom: { enabled: false }
-                    },
-                    colors: ['#10b981', '#f59e0b'], // Emerald, Amber
-                    plotOptions: {
-                        bar: {
-                            horizontal: false,
-                            columnWidth: '55%',
-                            endingShape: 'rounded',
-                            borderRadius: 4
-                        },
-                    },
-                    dataLabels: { enabled: false },
-                    stroke: { show: true, width: 2, colors: ['transparent'] },
-                    xaxis: {
-                        categories: chartData.labels || [],
-                        axisBorder: { show: false },
-                        axisTicks: { show: false },
-                        labels: { style: { colors: '#64748b', fontSize: '12px' } }
-                    },
-                    yaxis: {
-                        labels: {
-                            style: { colors: '#64748b', fontSize: '12px' },
-                            formatter: (value) => { return '$' + value.toLocaleString() }
-                        }
-                    },
-                    fill: { opacity: 1 },
-                    tooltip: {
-                        y: { formatter: function (val) { return "$ " + val.toLocaleString() } }
-                    },
-                    grid: { borderColor: '#f1f5f9', strokeDashArray: 4 },
-                    legend: { position: 'top' }
-                };
-
-                financeChartInstance = new ApexCharts(chartElement, options);
-                financeChartInstance.render();
-            });
-
-            // Manejar impresión de tickets
-            Livewire.on('printTicket', (event) => {
-                const url = event.url || event[0]?.url; // Compatibilidad Livewire 3
-                if (url) {
-                    const printWindow = window.open(url, 'Ticket', 'width=400,height=600');
-                    if (printWindow) {
-                        printWindow.focus();
-                    }
-                }
-            });
-        });
-
-        // Asegurar que el componente Livewire vuelva a disparar su `wire:init` cuando volvemos atrás navegando
-        document.addEventListener('livewire:navigated', () => {
-            if (typeof Livewire !== 'undefined') {
-                Livewire.dispatch('triggerLoadChart');
-            }
-        });
-    </script>
 </div>

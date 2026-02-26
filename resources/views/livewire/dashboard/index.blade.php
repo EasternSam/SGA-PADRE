@@ -161,7 +161,112 @@
                         @endfor
                     </div>
                 @else
-                    <div id="enrollmentChart" wire:ignore class="w-full h-full"></div>
+                    <div 
+                        id="enrollmentChart" 
+                        wire:ignore 
+                        class="w-full h-full"
+                        x-data="{
+                            chart: null,
+                            initChart(chartData) {
+                                if(!this.$refs.chartContainer) return;
+                                
+                                const dataWeb = chartData?.web || [];
+                                const dataSystem = chartData?.system || [];
+                                const labels = chartData?.labels || [];
+
+                                if (this.chart) {
+                                    this.chart.destroy();
+                                }
+
+                                const options = {
+                                    series: [{
+                                        name: 'Web (API)',
+                                        data: dataWeb || []
+                                    }, {
+                                        name: 'Físico (Sistema)',
+                                        data: dataSystem || []
+                                    }],
+                                    chart: {
+                                        type: 'area',
+                                        height: 380,
+                                        fontFamily: 'Inter, sans-serif',
+                                        toolbar: { show: false },
+                                        zoom: { enabled: false },
+                                        animations: {
+                                            enabled: true,
+                                            easing: 'easeinout',
+                                            speed: 800,
+                                            animateGradually: { enabled: true, delay: 150 },
+                                            dynamicAnimation: { enabled: true, speed: 350 }
+                                        },
+                                        dropShadow: {
+                                            enabled: true,
+                                            color: '#000',
+                                            top: 18,
+                                            left: 7,
+                                            blur: 10,
+                                            opacity: 0.05
+                                        }
+                                    },
+                                    colors: ['#6366f1', '#10b981'],
+                                    dataLabels: { enabled: false },
+                                    stroke: { curve: 'smooth', width: 3 },
+                                    fill: {
+                                        type: 'gradient',
+                                        gradient: {
+                                            shadeIntensity: 1,
+                                            opacityFrom: 0.6,
+                                            opacityTo: 0.1,
+                                            stops: [0, 90, 100]
+                                        }
+                                    },
+                                    xaxis: {
+                                        categories: labels || [],
+                                        axisBorder: { show: false },
+                                        axisTicks: { show: false },
+                                        labels: {
+                                            style: { colors: '#64748b', fontSize: '12px', fontFamily: 'Inter, sans-serif' },
+                                            offsetY: 5
+                                        },
+                                        tooltip: { enabled: false }
+                                    },
+                                    yaxis: {
+                                        labels: {
+                                            style: { colors: '#64748b', fontSize: '12px', fontFamily: 'Inter, sans-serif' },
+                                            formatter: (val) => { return val ? val.toFixed(0) : 0 },
+                                            offsetX: -10
+                                        },
+                                        min: 0
+                                    },
+                                    grid: {
+                                        borderColor: '#f1f5f9',
+                                        strokeDashArray: 5,
+                                        yaxis: { lines: { show: true } },
+                                        xaxis: { lines: { show: false } },
+                                        padding: { top: 0, right: 20, bottom: 10, left: 20 }
+                                    },
+                                    tooltip: {
+                                        theme: 'light',
+                                        style: { fontSize: '12px', fontFamily: 'Inter, sans-serif' },
+                                        x: { show: true },
+                                        y: { formatter: function (val) { return val + ' alumnos'; } },
+                                        marker: { show: true },
+                                    },
+                                    legend: { show: false },
+                                    markers: {
+                                        size: 0,
+                                        hover: { size: 6, sizeOffset: 3 }
+                                    }
+                                };
+
+                                this.chart = new ApexCharts(this.$refs.chartContainer, options);
+                                this.chart.render();
+                            }
+                        }"
+                        x-ref="chartContainer"
+                        @stats-loaded.window="initChart($event.detail[0])"
+                        x-init="$watch('chart', value => { if(!value) $wire.dispatch('triggerLoadStats'); })"
+                    ></div>
                 @endif
             </div>
         </div>
@@ -466,164 +571,4 @@
     <!-- Script de Gráficos (ApexCharts) -->
     <!-- Usamos CDN para evitar problemas de compilación local y errores de sintaxis module/export -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-
-    <script>
-        let dashboardChartInstance = null;
-
-        // Función segura de inicialización
-        window.initDashboardChart = function(chartData) {
-            const chartElement = document.querySelector("#enrollmentChart");
-            
-            if (!chartElement) return;
-
-            const dataWeb = chartData?.web || [];
-            const dataSystem = chartData?.system || [];
-            const labels = chartData?.labels || [];
-
-            // Limpiar si ya existe algo para evitar duplicados en SPA
-            if (dashboardChartInstance) {
-                dashboardChartInstance.destroy();
-            }
-            chartElement.innerHTML = '';
-
-            const options = {
-                series: [{
-                    name: 'Web (API)',
-                    data: dataWeb || []
-                }, {
-                    name: 'Físico (Sistema)',
-                    data: dataSystem || []
-                }],
-                chart: {
-                    type: 'area',
-                    height: 380, // Altura aumentada
-                    fontFamily: 'Inter, sans-serif',
-                    toolbar: { show: false },
-                    zoom: { enabled: false },
-                    animations: {
-                        enabled: true,
-                        easing: 'easeinout',
-                        speed: 800,
-                        animateGradually: {
-                            enabled: true,
-                            delay: 150
-                        },
-                        dynamicAnimation: {
-                            enabled: true,
-                            speed: 350
-                        }
-                    },
-                    dropShadow: {
-                        enabled: true,
-                        color: '#000',
-                        top: 18,
-                        left: 7,
-                        blur: 10,
-                        opacity: 0.05
-                    }
-                },
-                colors: ['#6366f1', '#10b981'], // Indigo-500 y Emerald-500
-                dataLabels: { enabled: false },
-                stroke: {
-                    curve: 'smooth',
-                    width: 3
-                },
-                fill: {
-                    type: 'gradient',
-                    gradient: {
-                        shadeIntensity: 1,
-                        opacityFrom: 0.6, // Más opaco al inicio
-                        opacityTo: 0.1,   // Más transparente al final
-                        stops: [0, 90, 100]
-                    }
-                },
-                xaxis: {
-                    categories: labels || [],
-                    axisBorder: { show: false },
-                    axisTicks: { show: false },
-                    labels: {
-                        style: { 
-                            colors: '#64748b', 
-                            fontSize: '12px',
-                            fontFamily: 'Inter, sans-serif'
-                        },
-                        offsetY: 5
-                    },
-                    tooltip: {
-                        enabled: false
-                    }
-                },
-                yaxis: {
-                    labels: {
-                        style: { 
-                            colors: '#64748b', 
-                            fontSize: '12px',
-                            fontFamily: 'Inter, sans-serif'
-                        },
-                        formatter: (val) => { return val ? val.toFixed(0) : 0 },
-                        offsetX: -10
-                    },
-                    min: 0 // Asegura que empiece en 0
-                },
-                grid: {
-                    borderColor: '#f1f5f9', // Gray-100 más suave
-                    strokeDashArray: 5,     // Líneas discontinuas
-                    yaxis: { lines: { show: true } },
-                    xaxis: { lines: { show: false } },
-                    padding: { top: 0, right: 20, bottom: 10, left: 20 }
-                },
-                tooltip: {
-                    theme: 'light',
-                    style: {
-                        fontSize: '12px',
-                        fontFamily: 'Inter, sans-serif',
-                    },
-                    x: {
-                        show: true
-                    },
-                    y: {
-                        formatter: function (val) {
-                            return val + " alumnos";
-                        }
-                    },
-                    marker: {
-                        show: true,
-                    },
-                },
-                legend: { show: false }, // Oculta leyenda default porque hicimos una personalizada
-                markers: {
-                    size: 0,
-                    hover: {
-                        size: 6,
-                        sizeOffset: 3
-                    }
-                }
-            };
-
-            dashboardChartInstance = new ApexCharts(chartElement, options);
-            dashboardChartInstance.render();
-        };
-
-        // Escuchar evento personalizado
-        document.addEventListener('livewire:init', () => {
-            Livewire.on('stats-loaded', (event) => {
-                // Livewire v3 pasa los params dentro de un array en event[0]
-                const chartData = event[0]; 
-                
-                // Usamos setTimeout para asegurar que el DOM se haya actualizado (el div #enrollmentChart exista)
-                // antes de intentar renderizar el gráfico.
-                setTimeout(() => {
-                    window.initDashboardChart(chartData);
-                }, 50);
-            });
-        });
-
-        // Asegurarse de que el componente Livewire vuelva a disparar su carga cuando volvemos navegando con wire:navigate
-        document.addEventListener('livewire:navigated', () => {
-             if (typeof Livewire !== 'undefined') {
-                // Livewire dispara una solicitud al servidor para reevaluar componentes
-                Livewire.dispatch('triggerLoadStats');
-            }
-        });
-    </script>
 </div>
