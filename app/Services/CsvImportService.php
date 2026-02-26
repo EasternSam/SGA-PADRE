@@ -31,31 +31,26 @@ class CsvImportService
             'students_csv' => [
                 'label' => 'Importar CSV Estudiantes (Formato Específico)',
                 'fields' => [
-                    'Matricula' => 'Matrícula (student_code)',
-                    'Nombre' => 'Nombres',
-                    'Apellido' => 'Apellidos',
-                    'Direccion' => 'Dirección',
-                    'Fecha Nacimiento' => 'Fecha Nacimiento (d/m/Y)',
-                    'Telefono' => 'Teléfono',
-                    'Celular' => 'Celular',
-                    'Correo' => 'Email (Si es ND se genera auto)',
+                    'Nombre' => 'Nombre',
+                    'Apellido' => 'Apellido',
                     'Cedula' => 'Cédula',
-                    'Sexo' => 'Género',
-                    'Nacionalidad' => 'Nacionalidad'
+                    'Telefono' => 'Teléfono',
+                    'Email' => 'Email',
+                    'Grupo_ID' => 'Grupo ID (Sección)',
+                    'Asignatura_ID' => 'Asignatura ID'
                 ],
                 'method' => 'importStudentFromCsvSpecific'
             ],
-            // ... resto de configuraciones igual ...
             'financial_csv' => [
-                'label' => 'Importar Historial Financiero (Formato Específico)',
+                'label' => 'Importar Pagos (Formato Específico)',
                 'fields' => [
-                    'Matricula' => 'Matrícula Estudiante',
-                    'Curso' => 'Concepto / Curso',
-                    'Valor' => 'Monto Total',
-                    'Abonos' => 'Monto Pagado',
-                    'Balance' => 'Deuda Pendiente',
-                    'Año' => 'Año (Referencia)',
-                    'Seccion' => 'Sección (Referencia)'
+                    'Cedula_Estudiante' => 'Cédula Estudiante',
+                    'Monto' => 'Monto Pagado',
+                    'Fecha' => 'Fecha de Pago',
+                    'Concepto' => 'Concepto / Curso',
+                    'Metodo_Pago' => 'Método de Pago',
+                    'Estado' => 'Estado',
+                    'NCF' => 'NCF (Opcional)'
                 ],
                 'method' => 'importFinancialHistory'
             ],
@@ -160,11 +155,10 @@ class CsvImportService
     
     private function importStudentFromCsvSpecific($data)
     {
-        $matricula = $this->cleanField($data['Matricula'] ?? null);
-        if (!$matricula) return; 
-
         $cedula = $this->cleanField($data['Cedula'] ?? null);
-        $email = $this->cleanField($data['Correo'] ?? null);
+        if (!$cedula) return; 
+
+        $email = $this->cleanField($data['Email'] ?? null);
         
         $nombreRaw = $this->cleanField($data['Nombre'] ?? 'Estudiante');
         $nombre = $nombreRaw ? Str::title(Str::lower($nombreRaw)) : 'Estudiante';
@@ -173,22 +167,13 @@ class CsvImportService
         $apellido = $apellidoRaw ? Str::title(Str::lower($apellidoRaw)) : '';
 
         if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $email = strtolower($matricula) . '@sga.local';
-        }
-
-        $birthDate = null;
-        if (!empty($data['Fecha Nacimiento'])) {
-            try {
-                $birthDate = Carbon::createFromFormat('d/m/Y', $data['Fecha Nacimiento'])->format('Y-m-d');
-            } catch (\Exception $e) { 
-                try { $birthDate = Carbon::parse($data['Fecha Nacimiento'])->format('Y-m-d'); } catch (\Exception $e) {}
-            }
+            $email = strtolower(str_replace(['-', ' '], '', $cedula)) . '@sga.local';
         }
 
         $user = User::where('email', $email)->first();
 
         if (!$user) {
-            $passwordRaw = $cedula ? str_replace(['-', ' '], '', $cedula) : $matricula;
+            $passwordRaw = str_replace(['-', ' '], '', $cedula);
             $user = User::create([
                 'email' => $email,
                 'name' => "$nombre $apellido",
@@ -201,90 +186,84 @@ class CsvImportService
             $user->assignRole('Estudiante');
         }
 
-        $address = $this->cleanField($data['Direccion'] ?? null);
-        if ($address) {
-            $address = ucfirst(Str::lower($address));
-        }
-
-        Student::updateOrCreate(
-            ['student_code' => $matricula],
+        $student = Student::updateOrCreate(
+            ['cedula' => $cedula],
             [
+                // Generar un código dummy si la base de datos requiere student_code (matricula)
+                'student_code' => 'STU-' . Str::upper(Str::random(6)),
                 'user_id' => $user->id,
                 'first_name' => $nombre,
                 'last_name' => $apellido,
-                'cedula' => $cedula ?? 'SIN-CEDULA-'.$matricula,
                 'email' => $email,
-                'address' => $address,
-                'birth_date' => $birthDate,
-                
-                // --- AGREGADO: Soporte para Teléfonos ---
                 'phone' => $this->cleanField($data['Telefono'] ?? null),
-                'mobile' => $this->cleanField($data['Celular'] ?? null),
-                // ----------------------------------------
-
-                'gender' => $this->cleanField($data['Sexo']),
-                'nationality' => $this->cleanField($data['Nacionalidad']),
                 'status' => 'Activa'
             ]
         );
+
+        $grupoId = $this->cleanField($data['Grupo_ID'] ?? null);
+        if ($grupoId) {
+            \App\Models\Enrollment::firstOrCreate([
+                'student_id' => $student->id,
+                'course_schedule_id' => $grupoId,
+            ], [
+                'status' => 'Cursando'
+            ]);
+        }
     }
 
     // ... El resto de métodos (importFinancialHistory, cleanField, etc.) se quedan igual ...
     private function importFinancialHistory($data)
     {
-        $matricula = $this->cleanField($data['Matricula'] ?? null);
-        if (!$matricula) return;
+        $cedula = $this->cleanField($data['Cedula_Estudiante'] ?? null);
+        if (!$cedula) return;
 
-        $student = Student::where('student_code', $matricula)->first();
+        $student = Student::where('cedula', $cedula)->first();
         if (!$student) return; 
 
-        $valor = (float) str_replace(',', '', $data['Valor'] ?? 0);
-        $abonos = (float) str_replace(',', '', $data['Abonos'] ?? 0);
+        $valor = (float) str_replace(',', '', $data['Monto'] ?? 0);
         
-        $conceptoNombreRaw = $this->cleanField($data['Curso']) ?? 'Concepto General';
+        $conceptoNombreRaw = $this->cleanField($data['Concepto']) ?? 'Concepto General';
         $conceptoNombre = ($conceptoNombreRaw !== 'Concepto General') 
             ? Str::title(Str::lower($conceptoNombreRaw)) 
             : 'Concepto General';
-
-        if ($conceptoNombre && $conceptoNombre !== 'Concepto General') {
-            $course = Course::firstOrCreate(
-                ['name' => $conceptoNombre],
-                ['description' => 'Importado Auto', 'status' => 'Activo']
-            );
-            
-            if ($course->wasRecentlyCreated) {
-                $wpMatch = $this->findWpCourseMatch($conceptoNombre);
-                if ($wpMatch && class_exists(CourseMapping::class)) {
-                    CourseMapping::create(['course_id' => $course->id, 'wp_post_id' => $wpMatch['id']]);
-                }
-            }
-        }
         
         $concept = PaymentConcept::firstOrCreate(
             ['name' => $conceptoNombre],
             [
-                'description' => 'Importado. Sección: ' . ($data['Seccion'] ?? ''),
+                'description' => 'Importado mediante CSV',
                 'default_amount' => $valor,
                 'is_fixed_amount' => false
             ]
         );
 
+        $estadoRaw = strtolower($this->cleanField($data['Estado']) ?? 'pagado');
+        $estadoMap = [
+            'pagado' => 'paid',
+            'completado' => 'paid',
+            'pendiente' => 'pending',
+            'cancelado' => 'voided',
+            'anulado' => 'voided',
+        ];
+        $estadoFinal = $estadoMap[$estadoRaw] ?? 'paid';
+        
+        $fecha = $this->cleanField($data['Fecha'] ?? null);
+        $paymentDate = current(array_filter([
+            $fecha ? (function() use ($fecha) { try { return \Carbon\Carbon::parse($fecha)->format('Y-m-d H:i:s'); } catch (\Exception $e) { return null; } })() : null,
+            now()->format('Y-m-d H:i:s')
+        ]));
+
         if ($valor > 0) {
-            Payment::firstOrCreate(
-                [
-                    'student_id' => $student->id,
-                    'payment_concept_id' => $concept->id,
-                    'amount' => $valor,
-                    'notes' => "Sección: {$data['Seccion']}, Año: {$data['Año']}"
-                ],
-                [
-                    'paid_amount' => $abonos,
-                    'status' => ($abonos >= $valor) ? 'paid' : 'pending',
-                    'payment_date' => now(),
-                    'currency' => 'DOP',
-                    'gateway' => 'Importación'
-                ]
-            );
+            Payment::create([
+                'student_id' => $student->id,
+                'payment_concept_id' => $concept->id,
+                'amount' => $valor,
+                'paid_amount' => $estadoFinal === 'paid' ? $valor : 0,
+                'status' => $estadoFinal,
+                'payment_date' => $paymentDate,
+                'currency' => 'DOP',
+                'gateway' => Str::title(Str::lower($this->cleanField($data['Metodo_Pago'] ?? 'Transferencia'))),
+                'ncf' => $this->cleanField($data['NCF'] ?? null),
+            ]);
         }
     }
 

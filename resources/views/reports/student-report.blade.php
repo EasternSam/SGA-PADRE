@@ -120,7 +120,7 @@
     <header>
         {{-- --- ¡MODIFICACIÓN! Usando 'centuu.png' --- --}}
         {{-- Asegúrate de que 'centuu.png' exista en tu carpeta 'public' --}}
-        <img src="{{ public_path('centuu.png') }}" class="logo">
+        <img src="{{ public_path($branding->logo_url ?? 'centuu.png') }}" class="logo">
         {{-- --- FIN DE LA MODIFICACIÓN --- --}}
         
         <h1>Expediente Académico</h1>

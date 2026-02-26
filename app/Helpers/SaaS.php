@@ -46,6 +46,13 @@ class SaaS
      */
     public static function showCareers(): bool
     {
+        // 1. Verificar la configuración local (override manual del administrador)
+        $localToggle = \App\Models\Setting::get('enable_careers', 'true');
+        if ($localToggle === 'false') {
+            return false;
+        }
+
+        // 2. Verificar la licencia SaaS en la nube
         $mode = self::academicMode();
         return $mode === 'careers' || $mode === 'both';
     }

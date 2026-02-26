@@ -252,7 +252,7 @@
         <table class="header-layout">
             <tr>
                 <td class="logo-cell">
-                    <img src="{{ public_path('centuu.png') }}" onerror="this.style.display='none'" alt="Logo">
+                    <img src="{{ public_path($branding->logo_url ?? 'centuu.png') }}" onerror="this.style.display='none'" alt="Logo">
                 </td>
                 <td class="title-cell">
                     <div class="institution-name">{{ config('app.name', 'Sistema Académico') }}</div>

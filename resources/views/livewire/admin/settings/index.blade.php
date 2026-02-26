@@ -77,6 +77,10 @@
                         <svg class="sys-tab-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg>
                         Integraciones API
                     </button>
+                    <button type="button" wire:click="$set('activeTab', 'smtp')" class="sys-tab {{ $activeTab === 'smtp' ? 'active' : '' }}">
+                        <svg class="sys-tab-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" /></svg>
+                        Correo Electrónico (SMTP)
+                    </button>
                     <button type="button" wire:click="$set('activeTab', 'finance')" class="sys-tab {{ $activeTab === 'finance' ? 'active' : '' }}">
                         <svg class="sys-tab-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" /></svg>
                         Pasarelas y Finanzas
@@ -112,6 +116,66 @@
                                         <label class="sys-label">Correo de Soporte/Contacto</label>
                                         <input type="email" wire:model="state.support_email" class="sys-input @error('state.support_email') sys-input-error @enderror">
                                         @error('state.support_email') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                    </div>
+
+                                    <div class="sys-form-group">
+                                        <label class="sys-label">Teléfono Principal</label>
+                                        <input type="text" wire:model="state.contact_phone" class="sys-input @error('state.contact_phone') sys-input-error @enderror" placeholder="(000) 000-0000">
+                                        @error('state.contact_phone') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                    </div>
+
+                                    <div class="sys-form-group">
+                                        <label class="sys-label">Dirección / Ubicación</label>
+                                        <input type="text" wire:model="state.contact_address" class="sys-input @error('state.contact_address') sys-input-error @enderror" placeholder="Ej. Av. Principal 123, Ciudad">
+                                        @error('state.contact_address') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                    </div>
+
+                                    <div class="sys-form-group">
+                                        <label class="sys-label">Sitio Web Oficial</label>
+                                        <input type="url" wire:model="state.website_url" class="sys-input @error('state.website_url') sys-input-error @enderror" placeholder="https://www.institucion.edu">
+                                        @error('state.website_url') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                    </div>
+
+                                    <hr class="sys-divider my-4 border-gray-200" style="grid-column: 1 / -1;">
+                                    
+                                    <div class="sys-form-group">
+                                        <label class="sys-label">Perfil de Facebook (URL)</label>
+                                        <input type="url" wire:model="state.social_facebook" class="sys-input @error('state.social_facebook') sys-input-error @enderror" placeholder="https://facebook.com/institucion">
+                                        @error('state.social_facebook') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                    </div>
+
+                                    <div class="sys-form-group">
+                                        <label class="sys-label">Perfil de Instagram (URL)</label>
+                                        <input type="url" wire:model="state.social_instagram" class="sys-input @error('state.social_instagram') sys-input-error @enderror" placeholder="https://instagram.com/institucion">
+                                        @error('state.social_instagram') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                    </div>
+
+                                    <!-- MÓDULO UNIVERSITARIO TOGGLE -->
+                                    <div class="sys-form-group sys-col-full p-4 border rounded bg-white mt-2">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h4 class="font-semibold text-gray-700">Módulo Universitario (Carreras)</h4>
+                                                <p class="sys-help-text">Habilita o deshabilita la gestión de Carreras, el flujo de Admisiones, la Selección de Materias y el Portal del Aspirante.</p>
+                                            </div>
+                                            <!-- Toggle Switch -->
+                                            <div class="flex items-center">
+                                                <label for="enable_careers_toggle" class="flex items-center cursor-pointer">
+                                                    <div class="relative">
+                                                        <input type="checkbox" id="enable_careers_toggle" class="sr-only" 
+                                                               @if($state['enable_careers'] === 'true') checked @endif
+                                                               wire:click="$set('state.enable_careers', $event.target.checked ? 'true' : 'false')">
+                                                        <div class="block bg-gray-300 w-14 h-8 rounded-full transition-colors duration-300"
+                                                             :class="{ 'bg-green-500': '{{ $state['enable_careers'] }}' === 'true' }"></div>
+                                                        <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition transform duration-300 pointer-events-none"
+                                                             :class="{ 'translate-x-6': '{{ $state['enable_careers'] }}' === 'true' }"></div>
+                                                    </div>
+                                                    <div class="ml-3 text-sm font-medium" 
+                                                         :class="'{{ $state['enable_careers'] }}' === 'true' ? 'text-green-600' : 'text-gray-500'"
+                                                         x-text="'{{ $state['enable_careers'] }}' === 'true' ? 'Habilitado' : 'Deshabilitado'">
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <!-- APARIENCIA DEL MENÚ -->
@@ -258,6 +322,51 @@
                                     <div class="sys-form-group sys-col-full">
                                         <label class="sys-label">Token</label>
                                         <input type="password" wire:model="state.moodle_token" class="sys-input">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB: CORREO / SMTP -->
+                        <div x-show="$wire.activeTab === 'smtp'" class="sys-fade-in" style="display: none;">
+                            <div class="sys-section">
+                                <h3 class="sys-section-title">
+                                    <svg class="sys-section-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" /></svg>
+                                    Configuración de Correo Electrónico (SMTP)
+                                </h3>
+                                <p class="sys-help-text mb-4">Configura los detalles del servidor de correo para que el sistema pueda enviar notificaciones a estudiantes y docentes (recuperación de contraseñas, recibos de pago, etc).</p>
+                                
+                                <div class="sys-grid sys-grid-2">
+                                    <div class="sys-form-group">
+                                        <label class="sys-label">Servidor SMTP (Host)</label>
+                                        <input type="text" wire:model="state.smtp_host" class="sys-input" placeholder="ej. smtp.mailtrap.io">
+                                        @error('state.smtp_host') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                    </div>
+                                    <div class="sys-form-group">
+                                        <label class="sys-label">Puerto</label>
+                                        <input type="text" wire:model="state.smtp_port" class="sys-input" placeholder="ej. 587, 465, 2525">
+                                        @error('state.smtp_port') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                    </div>
+                                    <div class="sys-form-group">
+                                        <label class="sys-label">Usuario</label>
+                                        <input type="text" wire:model="state.smtp_username" class="sys-input" autocomplete="off">
+                                    </div>
+                                    <div class="sys-form-group">
+                                        <label class="sys-label">Contraseña</label>
+                                        <input type="password" wire:model="state.smtp_password" class="sys-input" autocomplete="new-password">
+                                    </div>
+                                    <div class="sys-form-group">
+                                        <label class="sys-label">Encriptación</label>
+                                        <select wire:model="state.smtp_encryption" class="sys-input">
+                                            <option value="">Ninguna</option>
+                                            <option value="tls">TLS</option>
+                                            <option value="ssl">SSL</option>
+                                        </select>
+                                    </div>
+                                    <div class="sys-form-group">
+                                        <label class="sys-label">Dirección de Remitente (De)</label>
+                                        <input type="email" wire:model="state.smtp_from_address" class="sys-input" placeholder="no-reply@institucion.edu">
+                                        <p class="sys-help-text mt-1">El nombre del remitente será el Nombre de la Institución.</p>
                                     </div>
                                 </div>
                             </div>

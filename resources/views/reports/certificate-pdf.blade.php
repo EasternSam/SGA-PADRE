@@ -246,8 +246,8 @@
             
             <!-- Logo -->
             <div style="height: 60px; margin-bottom: 20px;">
-                @if(file_exists(public_path('centuu.png')))
-                    <img src="{{ public_path('centuu.png') }}" style="height: 100%; object-fit: contain;" alt="Logo">
+                @if(file_exists(public_path($branding->logo_url ?? 'centuu.png')))
+                    <img src="{{ public_path($branding->logo_url ?? 'centuu.png') }}" style="height: 100%; object-fit: contain;" alt="Logo">
                 @else
                     <div style="font-size: 24pt; font-family: 'Cinzel Decorative'; color: #b49b5a;">SGA</div>
                 @endif

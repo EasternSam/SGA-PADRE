@@ -1,4 +1,9 @@
-<x-app-layout>
+@if(auth()->check())
+    <x-app-layout>
+@else
+    <x-guest-layout>
+@endif
+
     <div class="relative min-h-[80vh] flex items-center justify-center p-4">
         
         <!-- Fondo con patrón sutil -->
@@ -21,19 +26,14 @@
             </h2>
             
             <p class="text-lg text-gray-500 mb-8 leading-relaxed">
-                Esta sección <span class="font-semibold text-indigo-600">no está incluida</span> en tu plan actual.
-                <br>
-                Para acceder a estas funciones avanzadas, por favor contacta con soporte para un upgrade.
+                El <span class="font-semibold text-indigo-600">{{ $feature ?? 'módulo solicitado' }}</span> 
+                se encuentra actualmente deshabilitado en el sistema.
             </p>
 
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="{{ route('dashboard') }}" class="inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition-colors">
+                <a href="{{ auth()->check() ? route('dashboard') : url('/') }}" class="inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition-colors">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                     Volver al Inicio
-                </a>
-                
-                <a href="mailto:soporte@90s.agency?subject=Solicitud%20de%20Upgrade%20SaaS&body=Hola,%20quisiera%20activar%20el%20módulo..." class="inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg hover:shadow-indigo-500/30 transition-all">
-                    Solicitar Activación
                 </a>
             </div>
 
@@ -44,4 +44,9 @@
             </div>
         </div>
     </div>
-</x-app-layout>
+
+@if(auth()->check())
+    </x-app-layout>
+@else
+    </x-guest-layout>
+@endif

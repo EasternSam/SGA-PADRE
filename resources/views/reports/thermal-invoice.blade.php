@@ -64,9 +64,9 @@
     <!-- ENCABEZADO FISCAL -->
     <div class="header">
         @php
-            $logoPath = public_path('centuu.png');
+            $logoPath = public_path($branding->logo_url ?? 'centuu.png');
             $logoData = '';
-            if (file_exists($logoPath)) {
+            if (file_exists($logoPath) && is_file($logoPath)) {
                 $type = pathinfo($logoPath, PATHINFO_EXTENSION);
                 $data = file_get_contents($logoPath);
                 $logoData = 'data:image/' . $type . ';base64,' . base64_encode($data);

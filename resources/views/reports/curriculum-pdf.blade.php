@@ -336,7 +336,7 @@
             <tr>
                 <!-- Lado Izquierdo: LOGO -->
                 <td class="header-left">
-                    <img src="{{ public_path('centuu.png') }}" class="header-logo-img" alt="Logo Centuu">
+                    <img src="{{ public_path($branding->logo_url ?? 'centuu.png') }}" class="header-logo-img" alt="Logo Centuu">
                 </td>
 
                 <!-- Lado Derecho: Información -->

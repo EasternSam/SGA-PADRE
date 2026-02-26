@@ -142,13 +142,13 @@ Route::get('/', function () {
 });
 
 // --- LINK DE REGISTRO PARA ESTUDIANTES ---
-Route::get('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])
-    ->middleware('guest')
-    ->name('student.register.link');
+Route::middleware(['feature:academic_careers', 'guest'])->group(function () {
+    Route::get('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])
+        ->name('student.register.link');
 
-Route::post('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'store'])
-    ->middleware('guest')
-    ->name('student.register.store');
+    Route::post('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'store'])
+        ->name('student.register.store');
+});
 
 
 // ==============================================================================
@@ -375,13 +375,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         } elseif ($user->hasRole('Profesor')) {
             return redirect()->route('teacher.dashboard');
         } elseif ($user->hasRole('Solicitante')) {
-            return redirect()->route('applicant.portal');
+            if (\App\Helpers\SaaS::showCareers()) {
+                return redirect()->route('applicant.portal');
+            } else {
+                return abort(403, 'El portal de admisiones se encuentra deshabilitado.');
+            }
         }
-        return redirect()->route('applicant.portal');
+        return abort(403, 'Rol no autorizado.');
     })->name('dashboard');
 
-    Route::get('/portal-aspirante', ApplicantDashboard::class)->name('applicant.portal');
-    Route::get('/portal-aspirante/solicitud', AdmissionsRegister::class)->name('applicant.admission-form');
+    Route::middleware(['feature:academic_careers'])->group(function () {
+        Route::get('/portal-aspirante', ApplicantDashboard::class)->name('applicant.portal');
+        Route::get('/portal-aspirante/solicitud', AdmissionsRegister::class)->name('applicant.admission-form');
+    });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -419,9 +425,11 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
         if (class_exists(CalendarIndex::class)) {
             Route::get('/calendar', CalendarIndex::class)->name('admin.calendar.index');
         }
-        if (class_exists(AdmissionsIndex::class)) {
-            Route::get('/admissions', AdmissionsIndex::class)->name('admin.admissions.index');
-        }
+        Route::middleware(['feature:academic_careers'])->group(function () {
+            if (class_exists(AdmissionsIndex::class)) {
+                Route::get('/admissions', AdmissionsIndex::class)->name('admin.admissions.index');
+            }
+        });
 
         Route::get('/teachers', \App\Livewire\Teachers\Index::class)->name('admin.teachers.index');
         Route::get('/teachers/profile/{teacher}', \App\Livewire\TeacherProfile\Index::class)->name('admin.teachers.profile');
@@ -474,7 +482,10 @@ Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student
         Route::get('/course/{enrollmentId}', \App\Livewire\StudentPortal\CourseDetail::class)->name('course.detail');
         Route::get('/requests', \App\Livewire\StudentPortal\Requests::class)->name('requests');
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-        Route::get('/selection', StudentPortalSelection::class)->name('selection');
+        
+        Route::middleware(['feature:academic_careers'])->group(function () {
+            Route::get('/selection', StudentPortalSelection::class)->name('selection');
+        });
     });
 
     Route::middleware(['feature:finance'])->group(function () {

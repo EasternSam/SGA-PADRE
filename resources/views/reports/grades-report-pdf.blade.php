@@ -121,7 +121,7 @@
     <table class="header-table">
         <tr>
             <td class="header-logo-cell">
-                <img src="{{ public_path('centuu.png') }}" class="logo" alt="Logo">
+                <img src="{{ public_path($branding->logo_url ?? 'centuu.png') }}" class="logo" alt="Logo">
             </td>
             <td class="header-text-cell">
                 <div class="header">

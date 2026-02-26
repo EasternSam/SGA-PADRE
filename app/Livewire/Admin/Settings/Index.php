@@ -42,6 +42,18 @@ class Index extends Component
             'institution_logo'    => $settings['institution_logo'] ?? null,
             'brand_primary_color' => $settings['brand_primary_color'] ?? '#1e3a8a',
             'support_email'       => $settings['support_email'] ?? 'soporte@institucion.edu',
+            'contact_phone'       => $settings['contact_phone'] ?? '',
+            'contact_address'     => $settings['contact_address'] ?? '',
+            'website_url'         => $settings['website_url'] ?? '',
+            'social_facebook'     => $settings['social_facebook'] ?? '',
+            'social_instagram'    => $settings['social_instagram'] ?? '',
+            'enable_careers'      => $settings['enable_careers'] ?? 'true',
+            'smtp_host'           => !empty($settings['smtp_host']) ? $settings['smtp_host'] : env('MAIL_HOST', '127.0.0.1'),
+            'smtp_port'           => !empty($settings['smtp_port']) ? $settings['smtp_port'] : env('MAIL_PORT', 2525),
+            'smtp_username'       => !empty($settings['smtp_username']) ? $settings['smtp_username'] : env('MAIL_USERNAME', ''),
+            'smtp_password'       => !empty($settings['smtp_password']) ? $settings['smtp_password'] : env('MAIL_PASSWORD', ''),
+            'smtp_encryption'     => !empty($settings['smtp_encryption']) ? $settings['smtp_encryption'] : env('MAIL_ENCRYPTION', 'tls'),
+            'smtp_from_address'   => !empty($settings['smtp_from_address']) ? $settings['smtp_from_address'] : env('MAIL_FROM_ADDRESS', 'hello@example.com'),
             'wp_api_url'    => $settings['wp_api_url'] ?? '',
             'wp_api_secret' => $settings['wp_api_secret'] ?? '',
             'moodle_url'    => $settings['moodle_url'] ?? '',
@@ -98,6 +110,19 @@ class Index extends Component
         $this->state['institution_name'] = 'SGA Academic+';
         $this->state['brand_primary_color'] = '#1e3a8a'; // Azul Original
         $this->state['institution_logo'] = null;
+        $this->state['support_email'] = 'soporte@institucion.edu';
+        $this->state['contact_phone'] = '';
+        $this->state['contact_address'] = '';
+        $this->state['website_url'] = '';
+        $this->state['social_facebook'] = '';
+        $this->state['social_instagram'] = '';
+        $this->state['enable_careers'] = 'true';
+        $this->state['smtp_host'] = '';
+        $this->state['smtp_port'] = '587';
+        $this->state['smtp_username'] = '';
+        $this->state['smtp_password'] = '';
+        $this->state['smtp_encryption'] = 'tls';
+        $this->state['smtp_from_address'] = '';
         $this->logo = null;
 
         // Restaurar valores de degradado
@@ -106,7 +131,7 @@ class Index extends Component
         $this->navbar_gradient_end = '#000000';
         $this->navbar_gradient_direction = 'to right';
 
-        session()->flash('message', 'Valores por defecto restablecidos. Pulsa "Guardar" para aplicar.');
+        return $this->save();
     }
 
     public function save()
@@ -118,6 +143,18 @@ class Index extends Component
             'state.institution_name'    => 'required|string|max:100',
             'state.brand_primary_color' => $colorRule,
             'state.support_email'       => 'nullable|email',
+            'state.contact_phone'       => 'nullable|string|max:50',
+            'state.contact_address'     => 'nullable|string|max:255',
+            'state.website_url'         => 'nullable|url|max:255',
+            'state.social_facebook'     => 'nullable|url|max:255',
+            'state.social_instagram'    => 'nullable|url|max:255',
+            'state.enable_careers'      => 'in:true,false',
+            'state.smtp_host'           => 'nullable|string|max:255',
+            'state.smtp_port'           => 'nullable|numeric',
+            'state.smtp_username'       => 'nullable|string|max:255',
+            'state.smtp_password'       => 'nullable|string|max:255',
+            'state.smtp_encryption'     => 'nullable|string|max:50',
+            'state.smtp_from_address'   => 'nullable|email|max:255',
             'logo'                      => 'nullable|image|max:2048', 
             'state.wp_api_url'          => 'nullable|url',
             'state.moodle_url'          => 'nullable|url',

@@ -18,14 +18,17 @@ class RegistrationTest extends TestCase
 
     public function test_new_users_can_register(): void
     {
+        // Seeding roles so we can assign 'Solicitante'
+        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+
         $response = $this->post('/register', [
-            'name' => 'Test User',
+            'first_name' => 'First',
+            'last_name' => 'Last',
             'email' => 'test@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
+            'cedula' => '12345678901',
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('applicant.portal', absolute: false));
     }
 }

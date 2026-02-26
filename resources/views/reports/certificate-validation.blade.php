@@ -49,7 +49,7 @@
         <div class="bg-slate-50 p-8 pb-6 text-center border-b border-slate-100">
             <div class="inline-block p-3 bg-white rounded-xl shadow-sm border border-slate-100 mb-6">
                 <!-- Usamos asset() para cargar el logo que tienes en public -->
-                <img src="{{ asset('centuu.png') }}" alt="Logo Institución" class="h-16 w-auto object-contain">
+                <img src="{{ asset($branding->logo_url ?? 'centuu.png') }}" alt="Logo Institución" class="h-16 w-auto object-contain">
             </div>
             
             <div class="flex items-center justify-center gap-2 mb-2">

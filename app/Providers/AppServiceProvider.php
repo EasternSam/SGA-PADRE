@@ -57,6 +57,7 @@ class AppServiceProvider extends ServiceProvider
             // Verificamos que la tabla 'settings' exista antes de intentar leerla
             if (Schema::hasTable('settings')) {
                 $this->bootSystemCustomization();
+                $this->bootSmtpConfiguration();
             } else {
                 // Si no hay tabla, cargamos branding por defecto (Azul)
                 $this->shareDefaultBranding();
@@ -92,6 +93,34 @@ class AppServiceProvider extends ServiceProvider
         } catch (\Exception $e) {
             // Si falla algo al leer settings, fallback a default
             $this->shareDefaultBranding();
+        }
+    }
+
+    private function bootSmtpConfiguration()
+    {
+        try {
+            $settings = [
+                'mail.mailers.smtp.host' => Setting::get('smtp_host'),
+                'mail.mailers.smtp.port' => Setting::get('smtp_port'),
+                'mail.mailers.smtp.encryption' => Setting::get('smtp_encryption'),
+                'mail.mailers.smtp.username' => Setting::get('smtp_username'),
+                'mail.mailers.smtp.password' => Setting::get('smtp_password'),
+                'mail.from.address' => Setting::get('smtp_from_address'),
+            ];
+
+            foreach ($settings as $configKey => $dbValue) {
+                if (!empty($dbValue)) {
+                    Config::set($configKey, $dbValue);
+                }
+            }
+
+            // El nombre del remitente (from_name) es opcional, si la dirección está pero el nombre no, Laravel usa app.name por defecto
+            $fromName = Setting::get('smtp_from_name');
+            if (!empty($fromName)) {
+                Config::set('mail.from.name', $fromName);
+            }
+        } catch (\Exception $e) {
+            // Falla en silencio y usa la configuración por defecto (.env) si hay error
         }
     }
 
