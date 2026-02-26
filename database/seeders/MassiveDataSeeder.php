@@ -25,12 +25,12 @@ class MassiveDataSeeder extends Seeder
         // --- 1. Crear Conceptos de Pago Base si no existen ---
         $conceptInscripcion = PaymentConcept::firstOrCreate(
             ['name' => 'Inscripción General'],
-            ['amount' => 1500, 'type' => 'ingreso']
+            ['amount' => 1500]
         );
         
         $conceptCuota = PaymentConcept::firstOrCreate(
             ['name' => 'Cuota Mensual'],
-            ['amount' => 2500, 'type' => 'ingreso']
+            ['amount' => 2500]
         );
 
         if ($students->isEmpty() || $schedules->isEmpty()) {
@@ -103,11 +103,11 @@ class MassiveDataSeeder extends Seeder
                     $classDate = Carbon::now()->subDays($d * 3); // Simular clases cada 3 días
                     
                     Attendance::create([
-                        'student_id' => $student->id,
+                        'enrollment_id' => $enrollment->id,
                         'course_schedule_id' => $schedule->id,
-                        'date' => $classDate->toDateString(),
-                        'status' => ['presente', 'presente', 'presente', 'ausente', 'tarde'][rand(0, 4)], // 60% presente
-                        'observations' => rand(1, 10) > 8 ? 'Llegó muy tarde' : null,
+                        'attendance_date' => $classDate->toDateString(),
+                        'status' => ['Presente', 'Presente', 'Presente', 'Ausente', 'Tardanza'][rand(0, 4)], // 60% presente
+                        'notes' => rand(1, 10) > 8 ? 'Llegó muy tarde' : null,
                     ]);
                 }
             }
