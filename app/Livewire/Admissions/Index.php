@@ -144,9 +144,20 @@ class Index extends Component
                     ]);
                 }
 
-                // 4. GENERAR DEUDA DE INSCRIPCIÓN (OFICIAL)
-                if ($student && $admission->course_id) {
+                // --- CALCULAR NEXT BILLING DATE BASADO EN EL CURSO ---
+                $nextBillingDate = null;
+                $course = null;
+                $scheduleId = null; // Asumimos que la admisión aún no tiene schedule_id directo en este flujo base, o se asigna después.
+                
+                if ($admission->course_id) {
                     $course = Course::find($admission->course_id);
+                    // Si el admission tuviera un schedule_id, lo usaríamos. Como es generico, usamos la fecha de hoy + 1 mes como base temporal 
+                    // hasta que se le asigne la sección real o le cobramos 1 mes desde hoy si no hay schedule.
+                    $nextBillingDate = now()->addMonth(); 
+                }
+
+                // 4. GENERAR DEUDA DE INSCRIPCIÓN (OFICIAL)
+                if ($student && $course) {
                     
                     if ($course && $course->registration_fee > 0) {
                         $concept = PaymentConcept::firstOrCreate(

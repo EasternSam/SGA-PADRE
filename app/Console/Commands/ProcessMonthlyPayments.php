@@ -30,7 +30,7 @@ class ProcessMonthlyPayments extends Command
      */
     public function handle()
     {
-        $this->info('Iniciando proceso de cobro de mensualidades...');
+        $this->info('Iniciando proceso de cobro de mensualidades (Delta Billing)...');
         Log::info('CRON Mensualidades: Iniciando ejecución.');
 
         // 1. Obtener concepto de 'Mensualidad'
@@ -39,15 +39,19 @@ class ProcessMonthlyPayments extends Command
             ['description' => 'Pago recurrente del curso']
         );
 
-        // 2. Buscar inscripciones activas (Cursando)
-        // Cargamos la relación profunda para llegar al precio del curso
-        $activeEnrollments = Enrollment::where('status', 'Cursando')
+        $today = Carbon::today();
+
+        // 2. Buscar inscripciones activas (Cursando) cuya próxima fecha de facturación sea HASTA hoy.
+        // Esto soluciona problemas de caídas del servidor: si el cron no corrió ayer, hoy lo cobrará de todos modos.
+        $dueEnrollments = Enrollment::whereIn('status', ['Cursando', 'Activo']) // Algunos lugares usan Activo o Cursando
+            ->whereNotNull('next_billing_date')
+            ->whereDate('next_billing_date', '<=', $today)
             ->with(['courseSchedule.module.course', 'student'])
             ->get();
 
         $count = 0;
 
-        foreach ($activeEnrollments as $enrollment) {
+        foreach ($dueEnrollments as $enrollment) {
             $schedule = $enrollment->courseSchedule;
             
             // Validaciones de integridad
@@ -62,55 +66,50 @@ class ProcessMonthlyPayments extends Command
                 continue;
             }
 
-            // Fechas clave
-            $startDate = Carbon::parse($schedule->start_date);
-            $endDate = Carbon::parse($schedule->end_date);
-            $today = Carbon::today();
-
-            // A. ¿Estamos dentro del periodo del curso?
-            // Si hoy es antes del inicio O después del fin, no cobramos.
-            if ($today->lt($startDate) || $today->gt($endDate)) {
-                continue;
+            // Validar si la inscripción está dentro del periodo general del curso
+            // Para no seguir cobrando una vez que el curso terminó
+            $endDate = $schedule->end_date ? Carbon::parse($schedule->end_date) : null;
+            if ($endDate && $today->gt($endDate)) {
+                 $this->info("Saltado: Estudiante #{$enrollment->student_id} - El curso ya finalizó el {$endDate->toDateString()}");
+                 continue;
             }
 
-            // B. ¿Hoy toca cobrar?
-            // Cobramos el mismo día del mes en que inició el curso.
-            // Ej: Si inició el 15, cobramos los 15 de cada mes.
-            $paymentDay = $startDate->day;
-            
-            // Ajuste para fin de mes (ej: si inició el 31 y estamos en Febrero, cobramos el 28/29)
-            if ($today->day !== $paymentDay) {
-                // Si hoy NO es el día de pago, verificamos si es fin de mes y el día de pago era mayor
-                // Ej: Inició el 31, hoy es 28 Feb (fin de mes). 31 > 28, entonces sí cobramos hoy.
-                if (! ($today->isLastOfMonth() && $paymentDay > $today->day) ) {
-                    continue; // No es día de cobro
-                }
-            }
-
-            // C. Evitar duplicados del mes actual
-            // Verificamos si ya existe un pago de "Mensualidad" para este estudiante/inscripción en este mes/año.
-            $alreadyBilled = Payment::where('enrollment_id', $enrollment->id)
-                ->where('payment_concept_id', $monthlyConcept->id)
-                ->whereMonth('created_at', $today->month)
-                ->whereYear('created_at', $today->year)
-                ->exists();
-
-            if ($alreadyBilled) {
-                continue;
-            }
-
-            // D. GENERAR EL COBRO
             try {
-                Payment::create([
-                    'student_id' => $enrollment->student_id,
-                    'enrollment_id' => $enrollment->id,
-                    'payment_concept_id' => $monthlyConcept->id,
-                    'amount' => $course->monthly_fee,
-                    'currency' => 'DOP',
-                    'status' => 'Pendiente', // Se genera como deuda
-                    'gateway' => 'Sistema Automático',
-                    'due_date' => $today->copy()->addDays(5), // 5 días para pagar antes de vencerse
-                ]);
+                // Generar el cobro atómicamente y avanzar el contador al próximo mes
+                DB::transaction(function () use ($enrollment, $course, $monthlyConcept) {
+                    
+                    // PREVENCIÓN DE DUPLICADOS EXTREMA: 
+                    // Asegurarnos que en los últimos X días no se le haya generado una mensualidad ya.
+                    // Aunque esto teóricamente es imposible ahora por el avance automático de la fecha.
+                    $recentPayment = Payment::where('student_id', $enrollment->student_id)
+                        ->where('payment_concept_id', $monthlyConcept->id)
+                        ->whereMonth('created_at', now()->month)
+                        ->whereYear('created_at', now()->year)
+                        ->exists();
+                        
+                    if (!$recentPayment) {
+                        Payment::create([
+                            'student_id' => $enrollment->student_id,
+                            'enrollment_id' => $enrollment->id,
+                            'payment_concept_id' => $monthlyConcept->id,
+                            'amount' => $course->monthly_fee,
+                            'currency' => 'DOP',
+                            'status' => 'Pendiente', // Se genera como deuda
+                            'gateway' => 'Sistema Automático',
+                            'due_date' => now()->addDays(5), // 5 días para pagar antes de vencerse
+                        ]);
+                    }
+
+                    // AVANZAR DE MES (Delta Tracking)
+                    // Le sumamos 1 mes exactamente a la fecha que le correspondía, NO a la fecha de hoy.
+                    // Esto evita desfases si el cron se retrasó 2 días.
+                    $currentBillingDate = Carbon::parse($enrollment->next_billing_date);
+                    $newBillingDate = $currentBillingDate->addMonth();
+
+                    $enrollment->update([
+                        'next_billing_date' => $newBillingDate
+                    ]);
+                });
 
                 $this->info("Cobro generado: Estudiante #{$enrollment->student_id} - Curso {$course->name}");
                 Log::info("CRON Mensualidades: Cobro generado enrollment #{$enrollment->id}");
@@ -122,6 +121,6 @@ class ProcessMonthlyPayments extends Command
         }
 
         $this->info("Proceso finalizado. Se generaron {$count} cobros.");
-        Log::info("CRON Mensualidades: Finalizado. Total generados: {$count}");
+        Log::info("CRON Mensualidades: Finalizado. Total generados: {$count} usando Delta Tracking.");
     }
 }

@@ -121,12 +121,17 @@ class EnrollmentController extends Controller
                 
                 $this->validateCourseRules($schedule, $student, true);
                 
+                // Calcular Next Billing Date basado en el inicio de clases
+                $startDate = $schedule->start_date ? Carbon::parse($schedule->start_date) : now();
+                $nextBillingDate = $startDate->copy()->addMonth();
+
                 $enrollment = Enrollment::create([
                     'student_id' => $student->id,
                     'course_id' => $course->id,
                     'course_schedule_id' => $schedule->id, 
                     'status' => 'Pendiente',
                     'enrollment_date' => now(),
+                    'next_billing_date' => $nextBillingDate,
                 ]);
 
                 // --- GENERAR PAGO DE INSCRIPCIÓN (LÓGICA CORREGIDA) ---
@@ -219,6 +224,10 @@ class EnrollmentController extends Controller
                     throw new \Exception('Este estudiante ya está inscrito en esta sección.');
                 }
 
+                // Calcular Next Billing Date basado en el inicio de clases
+                $startDate = $schedule->start_date ? Carbon::parse($schedule->start_date) : now();
+                $nextBillingDate = $startDate->copy()->addMonth();
+
                 $enrollment = Enrollment::create([
                     'student_id' => $student->id,
                     'course_id' => $course->id,
@@ -226,6 +235,7 @@ class EnrollmentController extends Controller
                     'status' => 'Pendiente', 
                     'final_grade' => null,
                     'enrollment_date' => now(),
+                    'next_billing_date' => $nextBillingDate,
                 ]);
 
                 // 8. Crear el registro de Pago (Payment) - CORREGIDO
