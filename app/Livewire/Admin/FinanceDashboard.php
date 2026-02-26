@@ -12,6 +12,8 @@ use Livewire\Attributes\Layout;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache; // <-- Importante
 
+use Livewire\Attributes\On;
+
 #[Layout('layouts.dashboard')]
 class FinanceDashboard extends Component
 {
@@ -33,13 +35,6 @@ class FinanceDashboard extends Component
     public $totalPending = 0;
     public $transactionsCount = 0;
 
-    // Listener para actualizar si se registra un pago en otra pestaña/modal o si volvemos a la pagina
-    protected $listeners = [
-        'paymentAdded' => 'refreshData', 
-        'triggerLoadChart' => 'reloadChartForNavigation',
-        '$refresh'
-    ];
-
     protected $queryString = [
         'search' => ['except' => ''],
         'statusFilter' => ['except' => ''],
@@ -51,6 +46,7 @@ class FinanceDashboard extends Component
         $this->calculateKPIs();
     }
 
+    #[On('paymentAdded')]
     public function refreshData()
     {
         $this->calculateKPIs();
@@ -93,6 +89,7 @@ class FinanceDashboard extends Component
     /**
      * Re-emite los datos del gráfico cuando el usuario navega hacia atrás usando SPA.
      */
+    #[On('triggerLoadChart')]
     public function reloadChartForNavigation()
     {
         if ($this->readyToLoad && !empty($this->chartLabels)) {
@@ -202,7 +199,7 @@ class FinanceDashboard extends Component
     {
         // La lista paginada NO se cachea porque depende de la página actual y es ligera
         $paymentsQuery = Payment::with(['student.user', 'paymentConcept'])
-            ->latest();
+            ->latest('updated_at');
 
         $this->applyDateFilter($paymentsQuery);
 

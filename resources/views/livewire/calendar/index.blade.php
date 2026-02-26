@@ -294,9 +294,22 @@
             .calendar-section {
                 border-right: none;
                 border-bottom: 1px solid #e5e7eb;
-                padding: 0.75rem;
-                min-height: 400px; /* Ensure calendar has enough height before scrolling to details */
+                padding: 0; /* Removes padding to give maximum screen width to the scroller */
                 flex: none; /* Let it size naturally */
+            }
+            .calendar-container {
+                overflow-x: auto; /* Enable smooth horizontal scrolling */
+                -webkit-overflow-scrolling: touch;
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+            }
+            .week-header {
+                min-width: 700px; /* Force minimum width to trigger scroll instead of squeezing */
+            }
+            .days-grid {
+                min-width: 700px;
+                min-height: 400px; /* Maintain standard calendar height */
             }
             .details-panel {
                 width: 100%;
@@ -314,11 +327,8 @@
                 justify-content: space-between;
             }
             .day-name {
-                font-size: 0.65rem;
-                padding: 0.25rem;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: clip; /* Trim names to fit */
+                font-size: 0.75rem; /* Restored size since width is now guaranteed */
+                padding: 0.5rem;
             }
             .calendar-header {
                 padding: 0.75rem;

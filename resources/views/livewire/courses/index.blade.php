@@ -20,9 +20,9 @@
 
     {{-- Encabezado y Búsqueda --}}
     <header class="bg-white shadow-sm mb-6 sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <h1 class="text-xl font-semibold text-gray-900">Gestión Académica</h1>
-            <div class="w-1/3 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <h1 class="text-xl font-semibold text-gray-900 w-full sm:w-auto">Gestión Académica</h1>
+            <div class="w-full sm:w-1/3 relative">
                 <input wire:model.live.debounce.300ms="search" 
                        type="text" 
                        placeholder="Buscar cursos por nombre o código..." 
