@@ -32,7 +32,7 @@ class StudentListPdfController extends Controller
 
         $section->load(['module.course', 'teacher']);
 
-        $enrollments = Enrollment::with(['student', 'payment'])
+        $enrollments = Enrollment::with(['student', 'payment', 'individualPayments'])
             ->where('course_schedule_id', $section->id)
             ->whereNotIn('enrollments.status', ['Pendiente', 'pendiente']) 
             ->join('students', 'enrollments.student_id', '=', 'students.id')

@@ -174,21 +174,7 @@
                         {{ \Carbon\Carbon::parse($enrollment->created_at)->format('d/m/Y') }}
                     </td>
                     <td class="text-center">
-                        @php
-                            $isPaid = false;
-                            if ($enrollment->payment) {
-                                // Lista extendida de estados que se consideran pagados (case-insensitive)
-                                $paidStatuses = ['paid', 'pagado', 'completado', 'aprobado', 'succeeded', 'active', 'activo'];
-                                $paymentStatus = strtolower($enrollment->payment->status ?? '');
-                                
-                                // Se considera pagado si el estado coincide O si tiene fecha de pago registrada
-                                if (in_array($paymentStatus, $paidStatuses) || !empty($enrollment->payment->payment_date)) {
-                                    $isPaid = true;
-                                }
-                            }
-                        @endphp
-
-                        @if($isPaid)
+                        @if($enrollment->is_paid)
                             <span class="payment-paid">PAGADO</span>
                         @else
                             <span class="payment-pending">PENDIENTE</span>

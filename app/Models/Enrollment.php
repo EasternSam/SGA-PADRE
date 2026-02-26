@@ -88,4 +88,29 @@ class Enrollment extends Model
     {
         return $this->hasMany(Payment::class, 'enrollment_id');
     }
+
+    /**
+     * Determina si la inscripción está pagada verificando ambos tipos de pagos (Agrupados e Individuales).
+     */
+    public function getIsPaidAttribute(): bool
+    {
+        $paidStatuses = ['paid', 'pagado', 'completado', 'aprobado', 'succeeded', 'active', 'activo'];
+
+        // 1. Revisar pago agrupado ($this->payment)
+        if ($this->payment && in_array(strtolower($this->payment->status ?? ''), $paidStatuses)) {
+            return true;
+        }
+
+        // 2. Revisar pagos individuales en la colección cargada o con consulta lazy loading
+        if ($this->relationLoaded('individualPayments')) {
+            return $this->individualPayments->contains(function ($payment) use ($paidStatuses) {
+                return in_array(strtolower($payment->status ?? ''), $paidStatuses);
+            });
+        }
+
+        // Fallback por si no se cargó con eager loading
+        return $this->individualPayments()
+            ->whereIn('status', ['Completado', 'Pagado', 'Aprobado', 'Paid', 'Succeeded', 'completado', 'pagado', 'aprobado', 'paid', 'succeeded', 'activo', 'active'])
+            ->exists();
+    }
 }
