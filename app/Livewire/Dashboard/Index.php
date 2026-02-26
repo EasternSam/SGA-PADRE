@@ -48,6 +48,7 @@ class Index extends Component
         'studentAdded' => 'refreshStats', 
         'courseAdded' => 'refreshStats', 
         'enrollmentUpdated' => 'refreshStats',
+        'triggerLoadStats' => 'reloadStatsForNavigation',
         '$refresh'
     ];
 
@@ -131,6 +132,23 @@ class Index extends Component
             'system' => $this->chartDataSystem,
             'labels' => $this->chartLabels
         ]);
+    }
+
+    /**
+     * Re-emite los datos del gráfico cuando el usuario navega hacia atrás usando SPA.
+     */
+    public function reloadStatsForNavigation()
+    {
+        if ($this->readyToLoad && !empty($this->chartLabels)) {
+            $this->dispatch('stats-loaded', [
+                'web' => $this->chartDataWeb,
+                'system' => $this->chartDataSystem,
+                'labels' => $this->chartLabels
+            ]);
+        } else {
+            // Si por alguna razón no estaban cargados en esta instancia
+            $this->loadStats(app(WordpressApiService::class));
+        }
     }
 
     private function loadRecentActivities()

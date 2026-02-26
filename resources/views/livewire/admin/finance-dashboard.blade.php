@@ -219,10 +219,17 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script>
         document.addEventListener('livewire:init', () => {
+            let financeChartInstance = null;
+
             Livewire.on('finance-chart-loaded', (data) => {
                 const chartData = data[0];
                 const chartElement = document.querySelector("#financeChart");
                 if(!chartElement) return;
+
+                // Si ya existe un gráfico previo, lo destruimos para evitar duplicados
+                if(financeChartInstance) {
+                    financeChartInstance.destroy();
+                }
 
                 const options = {
                     series: [{
@@ -270,13 +277,13 @@
                     legend: { position: 'top' }
                 };
 
-                const chart = new ApexCharts(chartElement, options);
-                chart.render();
+                financeChartInstance = new ApexCharts(chartElement, options);
+                financeChartInstance.render();
             });
 
             // Manejar impresión de tickets
             Livewire.on('printTicket', (event) => {
-                const url = event.url;
+                const url = event.url || event[0]?.url; // Compatibilidad Livewire 3
                 if (url) {
                     const printWindow = window.open(url, 'Ticket', 'width=400,height=600');
                     if (printWindow) {
@@ -284,6 +291,13 @@
                     }
                 }
             });
+        });
+
+        // Asegurar que el componente Livewire vuelva a disparar su `wire:init` cuando volvemos atrás navegando
+        document.addEventListener('livewire:navigated', () => {
+            if (typeof Livewire !== 'undefined') {
+                Livewire.dispatch('triggerLoadChart');
+            }
         });
     </script>
 </div>

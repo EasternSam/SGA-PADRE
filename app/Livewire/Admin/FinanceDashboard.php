@@ -33,8 +33,12 @@ class FinanceDashboard extends Component
     public $totalPending = 0;
     public $transactionsCount = 0;
 
-    // Listener para actualizar si se registra un pago en otra pestaña/modal
-    protected $listeners = ['paymentAdded' => 'refreshData', '$refresh'];
+    // Listener para actualizar si se registra un pago en otra pestaña/modal o si volvemos a la pagina
+    protected $listeners = [
+        'paymentAdded' => 'refreshData', 
+        'triggerLoadChart' => 'reloadChartForNavigation',
+        '$refresh'
+    ];
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -84,6 +88,22 @@ class FinanceDashboard extends Component
         $this->chartLabels = $chartData['labels'];
         
         $this->dispatch('finance-chart-loaded', $chartData);
+    }
+
+    /**
+     * Re-emite los datos del gráfico cuando el usuario navega hacia atrás usando SPA.
+     */
+    public function reloadChartForNavigation()
+    {
+        if ($this->readyToLoad && !empty($this->chartLabels)) {
+            $this->dispatch('finance-chart-loaded', [
+                'income' => $this->chartDataIncome,
+                'pending' => $this->chartDataPending,
+                'labels' => $this->chartLabels
+            ]);
+        } else {
+            $this->loadChart();
+        }
     }
 
     public function updatedSearch() { $this->resetPage(); }

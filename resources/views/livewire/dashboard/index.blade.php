@@ -468,6 +468,8 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
     <script>
+        let dashboardChartInstance = null;
+
         // Función segura de inicialización
         window.initDashboardChart = function(chartData) {
             const chartElement = document.querySelector("#enrollmentChart");
@@ -479,6 +481,9 @@
             const labels = chartData?.labels || [];
 
             // Limpiar si ya existe algo para evitar duplicados en SPA
+            if (dashboardChartInstance) {
+                dashboardChartInstance.destroy();
+            }
             chartElement.innerHTML = '';
 
             const options = {
@@ -595,8 +600,8 @@
                 }
             };
 
-            const chart = new ApexCharts(chartElement, options);
-            chart.render();
+            dashboardChartInstance = new ApexCharts(chartElement, options);
+            dashboardChartInstance.render();
         };
 
         // Escuchar evento personalizado
@@ -611,6 +616,14 @@
                     window.initDashboardChart(chartData);
                 }, 50);
             });
+        });
+
+        // Asegurarse de que el componente Livewire vuelva a disparar su carga cuando volvemos navegando con wire:navigate
+        document.addEventListener('livewire:navigated', () => {
+             if (typeof Livewire !== 'undefined') {
+                // Livewire dispara una solicitud al servidor para reevaluar componentes
+                Livewire.dispatch('triggerLoadStats');
+            }
         });
     </script>
 </div>
