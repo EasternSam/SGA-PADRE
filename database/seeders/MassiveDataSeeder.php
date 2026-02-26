@@ -10,7 +10,6 @@ use App\Models\Payment;
 use App\Models\PaymentConcept;
 use App\Models\Attendance;
 use Carbon\Carbon;
-use Faker\Factory as Faker;
 
 class MassiveDataSeeder extends Seeder
 {
@@ -20,8 +19,6 @@ class MassiveDataSeeder extends Seeder
      */
     public function run(): void
     {
-        $faker = Faker::create('es_ES');
-        
         $students = Student::all();
         $schedules = CourseSchedule::all();
         

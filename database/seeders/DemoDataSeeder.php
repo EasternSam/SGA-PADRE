@@ -12,7 +12,6 @@ use App\Models\Module;
 use App\Models\CourseSchedule;
 use Illuminate\Support\Str;
 use Carbon\Carbon; // Importar Carbon
-use Faker\Factory as Faker; // ¡Importante! Añadir Faker
 
 class DemoDataSeeder extends Seeder
 {
@@ -24,8 +23,9 @@ class DemoDataSeeder extends Seeder
      */
     public function run(): void
     {
-        // Inicializar Faker, preferiblemente con localización en español
-        $faker = Faker::create('es_ES');
+        // Random names arrays for native generation
+        $firstNames = ['Juan', 'Pedro', 'Maria', 'Laura', 'Luis', 'Ana', 'Carlos', 'Jose', 'Marta', 'Lucia', 'Miguel', 'Sofia', 'Elena', 'David', 'Andres', 'Jorge', 'Silvia'];
+        $lastNames = ['Perez', 'Gomez', 'Rodriguez', 'Fernandez', 'Lopez', 'Martinez', 'Sanchez', 'Diaz', 'Torres', 'Ramirez', 'Castillo', 'Brito', 'Peña'];
 
         // --- 1. Obtener Roles ---
         $teacherRole = Role::where('name', 'Profesor')->first();
@@ -62,8 +62,8 @@ class DemoDataSeeder extends Seeder
 
         for ($i = 1; $i <= $totalStudents; $i++) {
             
-            $firstName = $faker->firstName;
-            $lastName = $faker->lastName;
+            $firstName = $firstNames[array_rand($firstNames)];
+            $lastName = $lastNames[array_rand($lastNames)];
             $name = $firstName . ' ' . $lastName;
             $email = 'estudiante' . $i . '@sga.com'; // Email único basado en el índice
             
@@ -88,9 +88,9 @@ class DemoDataSeeder extends Seeder
                     'last_name' => $lastName,
                     'email' => $email,
                     'cedula' => $testCedula, 
-                    'birth_date' => $faker->dateTimeBetween('-25 years', '-18 years'), // Edades entre 18 y 25
-                    'mobile_phone' => $faker->numerify('809-555-####'), // Teléfono ficticio
-                    'address' => $faker->address, // Dirección ficticia
+                    'birth_date' => Carbon::now()->subYears(rand(18, 25))->subDays(rand(1, 365)), // Edades entre 18 y 25
+                    'mobile_phone' => '809-555-' . str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT), // Teléfono ficticio
+                    'address' => 'Calle ' . rand(1, 100) . ', Ciudad de Santo Domingo', // Dirección ficticia
                     'status' => 'Activa',
                     'is_minor' => false,
                 ]
@@ -114,6 +114,8 @@ class DemoDataSeeder extends Seeder
 
         $this->command->getOutput()->progressStart($totalCourses); // Barra de progreso
 
+        $bsWords = ['Plataforma Interactiva', 'Gestión Avanzada', 'Sistemas Digitales', 'Desarrollo Web', 'Marketing Estratégico', 'Diseño Gráfico', 'Arquitectura de Datos', 'Inteligencia Artificial', 'Finanzas Modernas', 'Contabilidad Base'];
+
         // Bucle para crear 70 cursos
         for ($c = 1; $c <= $totalCourses; $c++) {
             
@@ -121,7 +123,7 @@ class DemoDataSeeder extends Seeder
             $courseCode = 'C-' . str_pad($c, 3, '0', STR_PAD_LEFT); // "C-001", "C-002"...
 
             // Generar nombre de curso ficticio
-            $courseBaseName = $faker->bs; // Nombres como "Plataforma Interactiva"
+            $courseBaseName = $bsWords[array_rand($bsWords)] . ' ' . rand(1, 99); 
             
             // Añadir el código al nombre para GARANTIZAR que sea único
             $courseName = 'Curso de ' . $courseBaseName . ' (' . $courseCode . ')'; 
@@ -143,7 +145,7 @@ class DemoDataSeeder extends Seeder
             $numModules = rand(3, 5);
             for ($m = 1; $m <= $numModules; $m++) {
                 
-                $moduleName = 'Módulo ' . $m . ': ' . $faker->sentence(4); // Nombre de módulo ficticio
+                $moduleName = 'Módulo ' . $m . ': Tema de Estudio ' . rand(100, 999); // Nombre de módulo ficticio
 
                 $module = Module::firstOrCreate(
                     ['course_id' => $course->id, 'name' => $moduleName],
