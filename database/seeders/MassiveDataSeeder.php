@@ -24,13 +24,13 @@ class MassiveDataSeeder extends Seeder
         
         // --- 1. Crear Conceptos de Pago Base si no existen ---
         $conceptInscripcion = PaymentConcept::firstOrCreate(
-            ['code' => 'INSC'],
-            ['name' => 'Inscripción General', 'amount' => 1500, 'type' => 'ingreso']
+            ['name' => 'Inscripción General'],
+            ['amount' => 1500, 'type' => 'ingreso']
         );
         
         $conceptCuota = PaymentConcept::firstOrCreate(
-            ['code' => 'MENS'],
-            ['name' => 'Cuota Mensual', 'amount' => 2500, 'type' => 'ingreso']
+            ['name' => 'Cuota Mensual'],
+            ['amount' => 2500, 'type' => 'ingreso']
         );
 
         if ($students->isEmpty() || $schedules->isEmpty()) {
