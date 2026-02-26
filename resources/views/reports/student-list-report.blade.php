@@ -9,20 +9,36 @@
         <thead class="bg-gray-100">
             <tr>
                 <th class="border border-gray-300 p-2 w-10">No.</th>
-                <th class="border border-gray-300 p-2 text-left">Apellidos y Nombres</th>
-                <th class="border border-gray-300 p-2 text-left">Correo Electrónico</th>
-                <th class="border border-gray-300 p-2 text-left">Teléfono</th>
-                <th class="border border-gray-300 p-2 text-center">Estado</th>
+                <th class="border border-gray-300 p-2 text-left w-24">Matrícula</th>
+                <th class="border border-gray-300 p-2 text-left">Nombre del Estudiante</th>
+                <th class="border border-gray-300 p-2 text-left w-24">Teléfono</th>
+                <th class="border border-gray-300 p-2 text-center w-24">Inscripción</th>
+                <th class="border border-gray-300 p-2 text-center w-24">Estado Pago</th>
             </tr>
         </thead>
         <tbody>
             @foreach($data['enrollments'] as $index => $enrollment)
                 <tr>
                     <td class="border border-gray-300 p-2 text-center">{{ $index + 1 }}</td>
-                    <td class="border border-gray-300 p-2 font-bold uppercase text-gray-800">{{ $enrollment->student->last_name }}, {{ $enrollment->student->first_name }}</td>
-                    <td class="border border-gray-300 p-2">{{ $enrollment->student->email }}</td>
-                    <td class="border border-gray-300 p-2">{{ $enrollment->student->phone ?? '-' }}</td>
-                    <td class="border border-gray-300 p-2 text-center">{{ $enrollment->status }}</td>
+                    <td class="border border-gray-300 p-2 text-left font-mono">
+                        {{ $enrollment->student->student_code ?? $enrollment->student->cedula ?? $enrollment->student->id }}
+                    </td>
+                    <td class="border border-gray-300 p-2 font-bold uppercase text-gray-800">
+                        {{ $enrollment->student->last_name }}, {{ $enrollment->student->first_name }}
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        {{ $enrollment->student->mobile_phone ?? $enrollment->student->phone ?? '-' }}
+                    </td>
+                    <td class="border border-gray-300 p-2 text-center">
+                        {{ \Carbon\Carbon::parse($enrollment->created_at)->format('d/m/Y') }}
+                    </td>
+                    <td class="border border-gray-300 p-2 text-center">
+                        @if($enrollment->is_paid)
+                            <span class="text-green-600 font-bold text-xs uppercase">Pagado</span>
+                        @else
+                            <span class="text-red-600 font-bold text-xs uppercase">Pendiente</span>
+                        @endif
+                    </td>
                 </tr>
             @endforeach
         </tbody>

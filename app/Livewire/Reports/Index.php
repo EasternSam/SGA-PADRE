@@ -464,7 +464,7 @@ class Index extends Component
     {
         $schedule = CourseSchedule::with(['module.course'])->find($this->schedule_id);
         
-        $enrollments = Enrollment::with('student')
+        $enrollments = Enrollment::with(['student', 'payment', 'individualPayments'])
             ->where('course_schedule_id', $this->schedule_id)
             ->whereNotIn('status', ['Pendiente', 'pendiente']) // Excluir pendientes
             ->get()
