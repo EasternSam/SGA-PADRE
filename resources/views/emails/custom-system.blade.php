@@ -96,7 +96,8 @@
                         @if($logo)
                             <img src="{{ url($logo) }}" alt="{{ config('app.name') }}" title="{{ config('app.name') }}">
                         @else
-                            <h1 style="margin: 0; color: {{ $brandColor }}; font-size: 24px;">{{ config('app.name') }}</h1>
+                            <!-- Fallback en caso de que borren el logo, intentamos buscar uno por defecto -->
+                            <img src="{{ asset('img/logo.png') }}" alt="{{ config('app.name') }}" title="{{ config('app.name') }}" style="max-width: 200px;">
                         @endif
                     </td>
                 </tr>
