@@ -285,6 +285,53 @@
         .btn-cancel { background-color: white; border: 1px solid #d1d5db; color: #374151; }
         .btn-save { background-color: #2563eb; border: 1px solid transparent; color: white; }
 
+        /* --- RESPONSIVIDAD (MOBILE) --- */
+        @media (max-width: 768px) {
+            .content-layout {
+                flex-direction: column !important;
+                overflow-y: auto;
+            }
+            .calendar-section {
+                border-right: none;
+                border-bottom: 1px solid #e5e7eb;
+                padding: 0.75rem;
+                min-height: 400px; /* Ensure calendar has enough height before scrolling to details */
+                flex: none; /* Let it size naturally */
+            }
+            .details-panel {
+                width: 100%;
+                border-left: none;
+                flex: none; /* Let it flow naturally in column direction */
+                min-height: 300px;
+            }
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .day-name {
+                font-size: 0.65rem;
+                padding: 0.25rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: clip; /* Trim names to fit */
+            }
+            .calendar-header {
+                padding: 0.75rem;
+            }
+            .calendar-wrapper {
+                height: calc(100vh - 56px); /* Adjust for mobile header sizes usually being slightly smaller */
+                overflow-y: auto; /* Allow the wrapper itself to scroll vertically */
+            }
+            .content-layout {
+                height: auto; /* Remove 100% height limit so it can scroll down to details panel */
+            }
+        }
+
         [x-cloak] { display: none !important; }
     </style>
     
