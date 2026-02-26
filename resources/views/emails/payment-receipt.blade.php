@@ -33,7 +33,12 @@
 <body>
     @php
         $brandColor = \App\Models\Setting::val('brand_primary_color', '#1e40af');
-        $logo = \App\Models\Setting::val('brand_logo');
+        
+        $logo = \App\Models\Setting::get('institution_logo');
+        if (!$logo && class_exists('\App\Models\SystemOption')) {
+            $logo = \App\Models\SystemOption::getOption('logo');
+        }
+        $logoUrl = $logo ? (\Illuminate\Support\Str::startsWith($logo, 'http') ? $logo : asset($logo)) : asset('centuu.png');
     @endphp
 
     <center class="wrapper">
@@ -42,11 +47,7 @@
                 <!-- CABECERA C/ LOGO -->
                 <tr>
                     <td class="header">
-                        @if($logo)
-                            <img src="{{ url($logo) }}" alt="{{ config('app.name') }}" title="{{ config('app.name') }}">
-                        @else
-                            <img src="{{ asset('img/logo.png') }}" alt="{{ config('app.name') }}" title="{{ config('app.name') }}" style="max-width: 200px;">
-                        @endif
+                        <img src="{{ $logoUrl }}" alt="{{ config('app.name') }}" title="{{ config('app.name') }}" style="max-width: 200px; height: auto;">
                     </td>
                 </tr>
 
