@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
         // --- AÑADIDO ---
         // Llama al nuevo seeder para crear datos de demostración
         $this->call(DemoDataSeeder::class);
+        $this->call(MassiveDataSeeder::class); // <-- AÑADIDO: Seeder Masivo
         // --- FIN DE LO AÑADIDO ---
     }
 }
