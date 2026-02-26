@@ -11,14 +11,38 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('notifications', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->string('type');
-            $table->morphs('notifiable');
-            $table->text('data');
-            $table->timestamp('read_at')->nullable();
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('notifications')) {
+            Schema::create('notifications', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('type');
+                $table->morphs('notifiable');
+                $table->text('data');
+                $table->timestamp('read_at')->nullable();
+                $table->timestamps();
+            });
+        } else {
+            Schema::table('notifications', function (Blueprint $table) {
+                if (!Schema::hasColumn('notifications', 'id')) {
+                    $table->uuid('id')->primary();
+                }
+                if (!Schema::hasColumn('notifications', 'type')) {
+                    $table->string('type');
+                }
+                if (!Schema::hasColumn('notifications', 'notifiable_type')) {
+                    // morphs creates _type and _id
+                    $table->morphs('notifiable');
+                }
+                if (!Schema::hasColumn('notifications', 'data')) {
+                    $table->text('data');
+                }
+                if (!Schema::hasColumn('notifications', 'read_at')) {
+                    $table->timestamp('read_at')->nullable();
+                }
+                if (!Schema::hasColumn('notifications', 'created_at')) {
+                    $table->timestamps();
+                }
+            });
+        }
     }
 
     /**
