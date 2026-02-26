@@ -91,20 +91,36 @@
                     class="w-full h-full"
                     x-data="{
                         chart: null,
-                        initChart(chartData) {
-                            if(!this.$refs.chartContainer) return;
+                        chartData: null,
+                        initChart(data) {
+                            if (!this.$refs.chartContainer) return;
                             
-                            if(this.chart) {
+                            this.chartData = data;
+
+                            // Ensure chart only renders when the container is actually visible
+                            // This prevents SPA race conditions where dimensions are 0
+                            const observer = new IntersectionObserver((entries) => {
+                                if (entries[0].isIntersecting) {
+                                    this.renderChart();
+                                    observer.disconnect();
+                                }
+                            });
+                            observer.observe(this.$refs.chartContainer);
+                        },
+                        renderChart() {
+                            if (!this.chartData || !this.$refs.chartContainer) return;
+                            
+                            if (this.chart) {
                                 this.chart.destroy();
                             }
 
                             const options = {
                                 series: [{
                                     name: 'Ingresos',
-                                    data: chartData.income || []
+                                    data: this.chartData.income || []
                                 }, {
                                     name: 'Pendiente de Cobro',
-                                    data: chartData.pending || []
+                                    data: this.chartData.pending || []
                                 }],
                                 chart: {
                                     type: 'bar',
@@ -125,7 +141,7 @@
                                 dataLabels: { enabled: false },
                                 stroke: { show: true, width: 2, colors: ['transparent'] },
                                 xaxis: {
-                                    categories: chartData.labels || [],
+                                    categories: this.chartData.labels || [],
                                     axisBorder: { show: false },
                                     axisTicks: { show: false },
                                     labels: { style: { colors: '#64748b', fontSize: '12px' } }
@@ -144,16 +160,20 @@
                                 legend: { position: 'top' }
                             };
 
-                            this.chart = new ApexCharts(this.$refs.chartContainer, options);
-                            this.chart.render();
+                            // Small delay to ensure Livewire DOM morph is fully settled
+                            setTimeout(() => {
+                                this.chart = new ApexCharts(this.$refs.chartContainer, options);
+                                this.chart.render();
+                            }, 50);
                         }
                     }"
                     x-ref="chartContainer"
                     @finance-chart-loaded.window="initChart($event.detail[0])"
                     x-init="
-                        $watch('chart', value => {
-                            if(!value) $wire.dispatch('triggerLoadChart');
-                        });
+                        setTimeout(() => {
+                            if(!chart) $wire.dispatch('triggerLoadChart');
+                        }, 100);
+
                         if(typeof Livewire !== 'undefined') {
                             Livewire.on('printTicket', (event) => {
                                 const url = event.url || event[0]?.url;

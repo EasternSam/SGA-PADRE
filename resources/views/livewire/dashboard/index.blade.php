@@ -167,12 +167,27 @@
                         class="w-full h-full"
                         x-data="{
                             chart: null,
-                            initChart(chartData) {
+                            chartData: null,
+                            initChart(data) {
                                 if(!this.$refs.chartContainer) return;
                                 
-                                const dataWeb = chartData?.web || [];
-                                const dataSystem = chartData?.system || [];
-                                const labels = chartData?.labels || [];
+                                this.chartData = data;
+
+                                // Intersection observer guarantees the div has dimensions before plotting
+                                const observer = new IntersectionObserver((entries) => {
+                                    if (entries[0].isIntersecting) {
+                                        this.renderChart();
+                                        observer.disconnect();
+                                    }
+                                });
+                                observer.observe(this.$refs.chartContainer);
+                            },
+                            renderChart() {
+                                if (!this.chartData || !this.$refs.chartContainer) return;
+
+                                const dataWeb = this.chartData?.web || [];
+                                const dataSystem = this.chartData?.system || [];
+                                const labels = this.chartData?.labels || [];
 
                                 if (this.chart) {
                                     this.chart.destroy();
@@ -259,13 +274,19 @@
                                     }
                                 };
 
-                                this.chart = new ApexCharts(this.$refs.chartContainer, options);
-                                this.chart.render();
+                                setTimeout(() => {
+                                    this.chart = new ApexCharts(this.$refs.chartContainer, options);
+                                    this.chart.render();
+                                }, 50);
                             }
                         }"
                         x-ref="chartContainer"
                         @stats-loaded.window="initChart($event.detail[0])"
-                        x-init="$watch('chart', value => { if(!value) $wire.dispatch('triggerLoadStats'); })"
+                        x-init="
+                            setTimeout(() => {
+                                if(!chart) $wire.dispatch('triggerLoadStats');
+                            }, 100);
+                        "
                     ></div>
                 @endif
             </div>
