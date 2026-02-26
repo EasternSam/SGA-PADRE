@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\RecordsActivity; // <-- IMPORTANTE
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Payment extends Model
 {
-    use HasFactory, RecordsActivity; // <-- ACTIVAR AUDITORÍA
+    use HasFactory, RecordsActivity, LogsActivity; // <-- ACTIVAR AUDITORÍA (Spatie + Custom)
 
     protected $fillable = [
         'student_id',
@@ -42,6 +44,14 @@ class Payment extends Model
         'ncf_expiration' => 'date',
         'amount' => 'decimal:2',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['amount', 'status', 'gateway', 'transaction_id'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
 
     public function student()
     {

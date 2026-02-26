@@ -3,13 +3,13 @@
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-                <h1 class="text-2xl font-bold tracking-tight text-gray-900">Registro de Actividades</h1>
-                <p class="mt-1 text-sm text-gray-500">Auditoría completa de acciones realizadas en el sistema.</p>
+                <h1 class="text-2xl font-bold tracking-tight text-gray-900">Registro de Actividades y Auditoría</h1>
+                <p class="mt-1 text-sm text-gray-500">Auditoría estricta de acciones y modificaciones profundas realizadas en el sistema (Time-Travel).</p>
             </div>
             <div class="flex items-center gap-2">
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                     <svg class="mr-1.5 h-2 w-2 text-indigo-400" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3" /></svg>
-                    Monitoreo Activo
+                    Monitoreo Estricto Activo
                 </span>
             </div>
         </div>
@@ -23,31 +23,20 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
                 Filtros Avanzados
             </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {{-- Búsqueda --}}
                 <div class="lg:col-span-1">
                     <label class="block text-xs font-medium text-gray-500 mb-1">Buscar</label>
-                    <input type="text" wire:model.live.debounce.300ms="search" placeholder="Descripción, IP..." class="w-full text-sm border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                    <input type="text" wire:model.live.debounce.300ms="search" placeholder="Buscar transacción, acción..." class="w-full text-sm border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                 </div>
 
                 {{-- Usuario --}}
                 <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">Usuario</label>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Responsable</label>
                     <select wire:model.live="user_id" class="w-full text-sm border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                         <option value="">Todos los usuarios</option>
                         @foreach($users as $user)
                             <option value="{{ $user->id }}">{{ $user->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                {{-- Acción --}}
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">Tipo de Acción</label>
-                    <select wire:model.live="action_filter" class="w-full text-sm border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                        <option value="">Todas las acciones</option>
-                        @foreach($actions as $action)
-                            <option value="{{ $action }}">{{ $action }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -70,35 +59,34 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acción</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsable</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acción / Evento</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modelo Afectado</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha / Hora</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP / Origen</th>
                             <th scope="col" class="relative px-6 py-3">
-                                <span class="sr-only">Ver</span>
+                                <span class="sr-only">Detalles</span>
                             </th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @forelse($logs as $log)
+                    @forelse($logs as $log)
+                        <tbody x-data="{ open: false }" class="bg-white divide-y divide-gray-200">
                             <tr class="hover:bg-gray-50 transition-colors">
                                 {{-- Usuario --}}
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs shrink-0">
-                                            @if($log->user)
-                                                {{ substr($log->user->name, 0, 1) }}
+                                            @if($log->causer)
+                                                {{ substr($log->causer->name, 0, 1) }}
                                             @else
                                                 ?
                                             @endif
                                         </div>
                                         <div class="ml-3">
                                             <div class="text-sm font-medium text-gray-900">
-                                                {{ $log->user ? $log->user->name : 'Sistema / Anónimo' }}
+                                                {{ $log->causer ? $log->causer->name : 'Sistema / Automático' }}
                                             </div>
                                             <div class="text-xs text-gray-500">
-                                                {{ $log->user ? $log->user->email : '' }}
+                                                {{ $log->causer ? $log->causer->email : '' }}
                                             </div>
                                         </div>
                                     </div>
@@ -107,65 +95,110 @@
                                 {{-- Acción --}}
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     @php
-                                        $colors = [
-                                            'create' => 'bg-green-100 text-green-800',
-                                            'update' => 'bg-blue-100 text-blue-800',
-                                            'delete' => 'bg-red-100 text-red-800',
-                                            'login' => 'bg-purple-100 text-purple-800',
-                                            'logout' => 'bg-gray-100 text-gray-800',
-                                            'payment' => 'bg-yellow-100 text-yellow-800',
-                                        ];
-                                        // Detectar color basado en palabras clave
-                                        $badgeColor = 'bg-gray-100 text-gray-800';
-                                        foreach($colors as $key => $color) {
-                                            if(stripos($log->action, $key) !== false) {
-                                                $badgeColor = $color;
-                                                break;
-                                            }
-                                        }
+                                        $color = match($log->event) {
+                                            'created' => 'bg-green-100 text-green-800',
+                                            'updated' => 'bg-blue-100 text-blue-800',
+                                            'deleted' => 'bg-red-100 text-red-800',
+                                            default => 'bg-gray-100 text-gray-800'
+                                        };
+                                        $actionText = match($log->event) {
+                                            'created' => 'Creó un Registro',
+                                            'updated' => 'Actualizó un Registro',
+                                            'deleted' => 'Eliminó un Registro',
+                                            default => ucfirst($log->event)
+                                        };
+                                        // Legacy description si existe
+                                        $legacyParams = $log->description !== $log->event ? $log->description : null;
                                     @endphp
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $badgeColor }}">
-                                        {{ $log->action }}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $color }}">
+                                        {{ $actionText }}
                                     </span>
+                                    @if($legacyParams)
+                                        <div class="text-[10px] text-gray-500 mt-1 max-w-xs truncate" title="{{ $legacyParams }}">{{ $legacyParams }}</div>
+                                    @endif
                                 </td>
 
-                                {{-- Descripción --}}
+                                {{-- Modelo Afectado --}}
                                 <td class="px-6 py-4">
-                                    <div class="text-sm text-gray-900 max-w-xs truncate" title="{{ $log->description }}">
-                                        {{ $log->description }}
+                                    <div class="text-sm text-gray-900 font-mono text-xs">
+                                        {{ class_basename($log->subject_type) }} <span class="text-gray-400">#{{ $log->subject_id }}</span>
                                     </div>
                                 </td>
 
                                 {{-- Fecha y Día --}}
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900 font-medium">{{ $log->created_at->format('d/m/Y H:i:s') }}</div>
-                                    <div class="text-xs text-gray-500 capitalize">{{ $log->created_at->isoFormat('dddd') }}</div>
                                     <div class="text-[10px] text-gray-400">{{ $log->created_at->diffForHumans() }}</div>
                                 </td>
 
-                                {{-- IP --}}
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <div class="font-mono text-xs">{{ $log->ip_address }}</div>
-                                </td>
-
-                                {{-- Acciones --}}
+                                {{-- Acciones (Ver Cambios) --}}
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button wire:click="viewDetails({{ $log->id }})" class="text-indigo-600 hover:text-indigo-900 font-medium hover:underline">
-                                        Detalles
+                                    @if($log->changes()->isNotEmpty())
+                                        <button @click="open = !open" type="button" class="text-indigo-600 hover:text-indigo-900 focus:outline-none flex outline-none ml-auto items-center hover:underline">
+                                            <span x-text="open ? 'Ocultar Nivel Profundo' : 'Ver Nivel Profundo'">Ver Nivel Profundo</span>
+                                            <svg class="ml-1 h-5 w-5 transform transition-transform" :class="{'rotate-180': open}" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                    @else
+                                        <span class="text-gray-400 text-xs italic">Sin detalle profundo</span>
+                                    @endif
+                                    
+                                    <button wire:click="viewDetails({{ $log->id }})" class="text-gray-500 hover:text-gray-700 font-medium hover:underline block mt-2 ml-auto text-xs">
+                                        Data Cruda (Modal)
                                     </button>
                                 </td>
                             </tr>
-                        @empty
+                            
+                            {{-- Fila desplegable con el Time-Travel (Viejo vs Nuevo) --}}
+                            @if($log->changes()->isNotEmpty())
+                                <tr x-show="open" style="display: none;" class="bg-gray-50 border-b border-gray-200 shadow-inner">
+                                    <td colspan="5" class="px-6 py-4">
+                                        <div class="rounded-md bg-white p-4 ring-1 ring-black ring-opacity-5 relative shadow">
+                                            <h4 class="text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Desglose de Modificaciones Exactas</h4>
+                                            
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <!-- Valor Anterior -->
+                                                @if(isset($log->changes()['old']))
+                                                    <div class="rounded-md border border-red-200 bg-red-50 p-3 relative overflow-hidden">
+                                                        <div class="absolute top-0 left-0 w-1 h-full bg-red-400"></div>
+                                                        <div class="text-xs font-bold text-red-800 mb-2 flex items-center">
+                                                            <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                            ANTES (VALOR VIEJO)
+                                                        </div>
+                                                        <pre class="text-xs text-red-700 font-mono whitespace-pre-wrap">@json($log->changes()['old'], JSON_PRETTY_PRINT)</pre>
+                                                    </div>
+                                                @endif
+
+                                                <!-- Valor Nuevo -->
+                                                @if(isset($log->changes()['attributes']))
+                                                    <div class="rounded-md border border-green-200 bg-green-50 p-3 relative overflow-hidden">
+                                                        <div class="absolute top-0 left-0 w-1 h-full bg-green-400"></div>
+                                                        <div class="text-xs font-bold text-green-800 mb-2 flex items-center">
+                                                            <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                            DESPUÉS (NUEVO VALOR)
+                                                        </div>
+                                                        <pre class="text-xs text-green-700 font-mono whitespace-pre-wrap">@json($log->changes()['attributes'], JSON_PRETTY_PRINT)</pre>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endif
+                        </tbody>
+                    @empty
+                        <tbody class="bg-white divide-y divide-gray-200">
                             <tr>
-                                <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                                <td colspan="5" class="px-6 py-12 text-center text-gray-500">
                                     <div class="flex flex-col items-center justify-center">
                                         <svg class="h-10 w-10 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
                                         <p>No se encontraron registros de actividad con los filtros seleccionados.</p>
                                     </div>
                                 </td>
                             </tr>
-                        @endforelse
-                    </tbody>
+                        </tbody>
+                    @endforelse
                 </table>
             </div>
             
@@ -194,47 +227,43 @@
                             </div>
                             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                                 <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                                    Detalles de la Actividad #{{ $selectedLog->id }}
+                                    Data Cruda #{{ $selectedLog->id }}
                                 </h3>
                                 <div class="mt-4 space-y-3">
                                     <div class="grid grid-cols-2 gap-4 text-sm">
                                         <div>
-                                            <p class="text-xs text-gray-500 uppercase font-bold">Usuario</p>
-                                            <p class="text-gray-900">{{ $selectedLog->user ? $selectedLog->user->name : 'Sistema' }}</p>
+                                            <p class="text-xs text-gray-500 uppercase font-bold">Responsable</p>
+                                            <p class="text-gray-900">{{ $selectedLog->causer ? $selectedLog->causer->name : 'Sistema Automático' }}</p>
                                         </div>
                                         <div>
                                             <p class="text-xs text-gray-500 uppercase font-bold">Fecha</p>
                                             <p class="text-gray-900">{{ $selectedLog->created_at->format('d/m/Y h:i A') }}</p>
                                         </div>
                                         <div>
-                                            <p class="text-xs text-gray-500 uppercase font-bold">Acción</p>
-                                            <p class="text-gray-900 font-semibold">{{ $selectedLog->action }}</p>
+                                            <p class="text-xs text-gray-500 uppercase font-bold">Evento</p>
+                                            <p class="text-gray-900 font-semibold">{{ $selectedLog->event }}</p>
                                         </div>
                                         <div>
-                                            <p class="text-xs text-gray-500 uppercase font-bold">IP Address</p>
-                                            <p class="font-mono text-gray-600">{{ $selectedLog->ip_address }}</p>
+                                            <p class="text-xs text-gray-500 uppercase font-bold">Modelo Afectado</p>
+                                            <p class="font-mono text-gray-600">{{ $selectedLog->subject_type }} (ID: {{ $selectedLog->subject_id }})</p>
                                         </div>
                                     </div>
 
-                                    <div>
-                                        <p class="text-xs text-gray-500 uppercase font-bold mb-1">Descripción</p>
-                                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 text-sm text-gray-800">
-                                            {{ $selectedLog->description }}
-                                        </div>
-                                    </div>
-
-                                    @if($selectedLog->user_agent)
+                                    @if($selectedLog->description && $selectedLog->description !== $selectedLog->event)
                                         <div>
-                                            <p class="text-xs text-gray-500 uppercase font-bold mb-1">Navegador / Dispositivo</p>
-                                            <p class="text-xs text-gray-500 break-all">{{ $selectedLog->user_agent }}</p>
+                                            <p class="text-xs text-gray-500 uppercase font-bold mb-1">Descripción / Notas Adicionales</p>
+                                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 text-sm text-gray-800">
+                                                {{ $selectedLog->description }}
+                                            </div>
                                         </div>
                                     @endif
 
-                                    {{-- Aquí podrías mostrar el payload JSON si tu tabla lo tiene --}}
-                                    @if(isset($selectedLog->payload) || isset($selectedLog->changes))
+                                    @if(isset($selectedLog->properties))
                                         <div>
-                                            <p class="text-xs text-gray-500 uppercase font-bold mb-1">Datos Técnicos</p>
-                                            <pre class="bg-gray-800 text-green-400 p-3 rounded-lg text-xs overflow-x-auto font-mono">{{ json_encode(json_decode($selectedLog->payload ?? $selectedLog->changes ?? '{}'), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                                            <p class="text-xs text-gray-500 uppercase font-bold mb-1">Payload JSON Completo</p>
+                                            <div class="max-h-64 overflow-y-auto w-full bg-gray-800 rounded-lg">
+                                                <pre class="text-green-400 p-3 text-xs overflow-x-auto font-mono w-full">@json($selectedLog->properties, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)</pre>
+                                            </div>
                                         </div>
                                     @endif
                                 </div>

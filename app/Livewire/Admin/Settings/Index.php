@@ -134,6 +134,20 @@ class Index extends Component
         return $this->save();
     }
 
+    public function removeLogo()
+    {
+        $this->state['institution_logo'] = null;
+        $this->logo = null;
+        
+        try {
+            Setting::set('institution_logo', null, 'general', 'image');
+            Cache::flush();
+            session()->flash('message', 'Logotipo eliminado correctamente. Se utilizará el logo por defecto o formato de texto.');
+        } catch (\Exception $e) {
+            session()->flash('error', 'Error al eliminar el logotipo: ' . $e->getMessage());
+        }
+    }
+
     public function save()
     {
         // Validar color solo si es sólido (hexadecimal). Si es degradado, omitimos la validación regex.

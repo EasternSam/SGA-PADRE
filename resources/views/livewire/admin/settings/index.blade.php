@@ -283,6 +283,15 @@
                                                 <input type="file" wire:model="logo" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
                                                 <div wire:loading wire:target="logo" class="text-xs text-indigo-500 mt-1 font-semibold">Subiendo imagen...</div>
                                                 <p class="sys-help-text mt-1">Recomendado: PNG Transparente. Máx 2MB.</p>
+                                                
+                                                @if($logo || !empty($state['institution_logo']))
+                                                    <button type="button" wire:click="removeLogo" class="mt-2 inline-flex items-center text-xs font-semibold text-red-600 hover:text-red-800 focus:outline-none">
+                                                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                        Eliminar Logo Personalizado
+                                                    </button>
+                                                @endif
                                             </div>
                                         </div>
                                         @error('logo') <p class="sys-error-text">{{ $message }}</p> @enderror

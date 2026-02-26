@@ -10,10 +10,12 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Models\Attendance;
 use App\Models\Payment;
 use App\Traits\RecordsActivity; // <-- Importar el Trait de Auditoría
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Enrollment extends Model
 {
-    use HasFactory, RecordsActivity; // <-- Activar Auditoría Automática
+    use HasFactory, RecordsActivity, LogsActivity; // <-- Activar Auditoría Automática (Spatie + Custom)
 
     /**
      * The attributes that are mass assignable.
@@ -37,6 +39,14 @@ class Enrollment extends Model
     protected $casts = [
         'next_billing_date' => 'date',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['status', 'final_grade'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
 
     /**
      * Método "booted" para lógica automática del modelo.

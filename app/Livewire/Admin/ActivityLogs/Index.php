@@ -4,10 +4,9 @@ namespace App\Livewire\Admin\ActivityLogs;
 
 use Livewire\Component;
 use Livewire\WithPagination;
-use App\Models\ActivityLog;
+use Spatie\Activitylog\Models\Activity;
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class Index extends Component
 {
@@ -52,7 +51,7 @@ class Index extends Component
 
     public function viewDetails($logId)
     {
-        $this->selectedLog = ActivityLog::with('user')->find($logId);
+        $this->selectedLog = Activity::with('causer')->find($logId);
         $this->showDetailsModal = true;
     }
 
@@ -64,7 +63,7 @@ class Index extends Component
 
     public function render()
     {
-        $query = ActivityLog::with('user')
+        $query = Activity::with('causer')
             ->orderBy('created_at', 'desc');
 
         // 1. Filtro de Búsqueda ESTRICTO
@@ -73,33 +72,21 @@ class Index extends Component
             $query->where(function($q) use ($term) {
                 // Búsqueda general en la descripción o acción del log
                 $q->where('description', 'like', '%'.$term.'%')
-                  ->orWhere('action', 'like', '%'.$term.'%')
-                  ->orWhere('ip_address', 'like', '%'.$term.'%')
+                  ->orWhere('event', 'like', '%'.$term.'%')
                   
                   // Búsqueda en Usuarios (ADMINISTRATIVOS) por nombre o email
-                  ->orWhereHas('user', function($u) use ($term) {
+                  ->orWhereHas('causer', function($u) use ($term) {
                       $u->where(function($qu) use ($term) {
                           $qu->where('name', 'like', '%'.$term.'%')
                              ->orWhere('email', 'like', '%'.$term.'%');
-                      })
-                      // IMPORTANTE: Excluir estudiantes de la búsqueda por nombre parcial
-                      // para evitar ruido, a menos que sea una búsqueda exacta.
-                      ->whereDoesntHave('roles', function ($r) {
-                          $r->where('name', 'Estudiante');
                       });
-                  })
-                  
-                  // Búsqueda de ESTUDIANTES solo por Cédula o Matrícula
-                  ->orWhereHas('user.student', function($s) use ($term) {
-                       $s->where('student_code', 'like', $term.'%') // Matricula (Empieza con...)
-                         ->orWhere('cedula', 'like', $term.'%'); // Cedula (Empieza con...)
                   });
             });
         }
 
         // 2. Filtro de Dropdown de Usuario
         if ($this->user_id) {
-            $query->where('user_id', $this->user_id);
+            $query->where('causer_id', $this->user_id);
         }
 
         // 3. Filtro de Fechas
@@ -118,7 +105,7 @@ class Index extends Component
                 $q->whereIn('name', ['Estudiante', 'Solicitante']);
             })
             ->orderBy('name')
-            ->select('id', 'name')
+            ->select('id', 'name', 'email')
             ->get();
 
         return view('livewire.admin.activity-logs.index', [
