@@ -10,178 +10,151 @@ use App\Models\Student;
 use App\Models\Course;
 use App\Models\Module;
 use App\Models\CourseSchedule;
+use App\Models\Building;
+use App\Models\Classroom;
 use Illuminate\Support\Str;
-use Carbon\Carbon; // Importar Carbon
+use Carbon\Carbon;
 
 class DemoDataSeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     *
-     * Este seeder crea datos de demostración para probar la aplicación.
-     * Debe ejecutarse DESPUÉS de RolesAndPermissionsSeeder.
      */
     public function run(): void
     {
-        // Random names arrays for native generation
         $firstNames = ['Juan', 'Pedro', 'Maria', 'Laura', 'Luis', 'Ana', 'Carlos', 'Jose', 'Marta', 'Lucia', 'Miguel', 'Sofia', 'Elena', 'David', 'Andres', 'Jorge', 'Silvia'];
         $lastNames = ['Perez', 'Gomez', 'Rodriguez', 'Fernandez', 'Lopez', 'Martinez', 'Sanchez', 'Diaz', 'Torres', 'Ramirez', 'Castillo', 'Brito', 'Peña'];
 
-        // --- 1. Obtener Roles ---
         $teacherRole = Role::where('name', 'Profesor')->first();
         $studentRole = Role::where('name', 'Estudiante')->first();
 
         if (!$teacherRole || !$studentRole) {
-            $this->command->error('Los roles "Profesor" o "Estudiante" no se encontraron.');
-            $this->command->error('Asegúrate de ejecutar RolesAndPermissionsSeeder primero.');
+            $this->command->error('Los roles "Profesor" o "Estudiante" no se encontraron (Ejecuta RolesAndPermissionsSeeder).');
             return;
         }
 
-        // --- 2. Crear Profesores ---
-        // (Mantenemos los 10 profesores originales)
+        // --- 1. Crear Profesores ---
         $teachers = collect();
         $teacherNames = ['Ana Gómez', 'Carlos Ruiz', 'María López', 'Juan Torres', 'Lucía Fernández', 'Pedro Sánchez', 'Elena Vidal', 'Miguel Costa', 'Sofía Romero', 'David Martín'];
-        
         foreach ($teacherNames as $index => $name) {
             $teachers->push(
-                User::firstOrCreate(
-                    ['email' => 'profesor' . ($index + 1) . '@sga.com'],
-                    [
-                        'name' => $name,
-                        'password' => Hash::make('password'),
-                    ]
-                )->assignRole($teacherRole)
+                User::firstOrCreate(['email' => 'profesor' . ($index + 1) . '@sga.com'], ['name' => $name, 'password' => Hash::make('password')])->assignRole($teacherRole)
             );
         }
-        $this->command->info(count($teacherNames) . ' profesores creados.');
 
-        // --- 3. Crear Estudiantes ---
-        // Bucle para crear 50 estudiantes (AJUSTADO)
-        $totalStudents = 50; // <--- CAMBIO REALIZADO AQUÍ
-        $this->command->getOutput()->progressStart($totalStudents); // Barra de progreso
-
-        for ($i = 1; $i <= $totalStudents; $i++) {
-            
-            $firstName = $firstNames[array_rand($firstNames)];
-            $lastName = $lastNames[array_rand($lastNames)];
-            $name = $firstName . ' ' . $lastName;
-            $email = 'estudiante' . $i . '@sga.com'; // Email único basado en el índice
-            
-            // Usamos firstOrCreate para evitar duplicados si el seeder se corre varias veces
-            $user = User::firstOrCreate(
-                ['email' => $email],
-                [
-                    'name' => $name,
-                    'password' => Hash::make('password'),
-                ]
-            );
-            $user->assignRole($studentRole);
-
-            // Generar una cédula única para la prueba
-            $testCedula = '001-' . str_pad($i, 7, '0', STR_PAD_LEFT) . '-0';
-
-            // Crear el perfil de estudiante asociado
-            Student::firstOrCreate(
-                ['user_id' => $user->id], // Usamos user_id como clave única para el perfil
-                [
-                    'first_name' => $firstName,
-                    'last_name' => $lastName,
-                    'email' => $email,
-                    'cedula' => $testCedula, 
-                    'birth_date' => Carbon::now()->subYears(rand(18, 25))->subDays(rand(1, 365)), // Edades entre 18 y 25
-                    'mobile_phone' => '809-555-' . str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT), // Teléfono ficticio
-                    'address' => 'Calle ' . rand(1, 100) . ', Ciudad de Santo Domingo', // Dirección ficticia
-                    'status' => 'Activa',
-                    'is_minor' => false,
-                ]
-            );
-            
-            $this->command->getOutput()->progressAdvance(); // Avanzar barra de progreso
+        // --- 2. Crear Edificios y Aulas ---
+        $buildingA = Building::firstOrCreate(['name' => 'Edificio Principal (Sede)']);
+        $buildingB = Building::firstOrCreate(['name' => 'Campus Norte (Anexo)']);
+        
+        $classrooms = collect();
+        for ($i = 1; $i <= 10; $i++) {
+            $classrooms->push(Classroom::firstOrCreate([
+                'building_id' => $i <= 5 ? $buildingA->id : $buildingB->id,
+                'name' => ($i <= 5 ? 'Aula A-' : 'Lab B-') . (100 + $i),
+                'capacity' => rand(25, 45),
+                'type' => $i <= 5 ? 'Aula' : 'Laboratorio',
+                'is_active' => true,
+            ]));
         }
-        
-        $this->command->getOutput()->progressFinish(); // Terminar barra de progreso
-        $this->command->info($totalStudents . ' estudiantes creados.');
 
-        // --- 4. Crear Cursos, Módulos y Secciones ---
-        
+        // --- 3. Crear Cursos, Módulos y Secciones ---
         $diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-        $horasInicio = ['08:00', '10:00', '12:00', '14:00', '16:00'];
-        
-        $courseCount = 0;
-        $moduleCount = 0;
-        $scheduleCount = 0;
-        $totalCourses = 70; // Mantenemos los 70 cursos
-
-        $this->command->getOutput()->progressStart($totalCourses); // Barra de progreso
-
+        $horasInicio = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00'];
         $bsWords = ['Plataforma Interactiva', 'Gestión Avanzada', 'Sistemas Digitales', 'Desarrollo Web', 'Marketing Estratégico', 'Diseño Gráfico', 'Arquitectura de Datos', 'Inteligencia Artificial', 'Finanzas Modernas', 'Contabilidad Base'];
 
-        // Bucle para crear 70 cursos
+        $totalCourses = 70;
+        $this->command->getOutput()->progressStart($totalCourses);
+        $courses = collect();
+
         for ($c = 1; $c <= $totalCourses; $c++) {
-            
-            // --- INICIO DE LA CORRECCIÓN ---
-            $courseCode = 'C-' . str_pad($c, 3, '0', STR_PAD_LEFT); // "C-001", "C-002"...
-
-            // Generar nombre de curso ficticio
+            $courseCode = 'C-' . str_pad($c, 3, '0', STR_PAD_LEFT);
             $courseBaseName = $bsWords[array_rand($bsWords)] . ' ' . rand(1, 99); 
-            
-            // Añadir el código al nombre para GARANTIZAR que sea único
             $courseName = 'Curso de ' . $courseBaseName . ' (' . $courseCode . ')'; 
-            // Resultado: "Curso de iterate B2C architectures (C-030)"
-            // --- FIN DE LA CORRECCIÓN ---
 
-            $course = Course::firstOrCreate(
-                ['code' => $courseCode], // Usamos el código como clave única
+            // Diferenciar entre Carreras y Técnicos
+            $isDegree = rand(1, 100) > 70; // 30% son carreras universitarias
+
+            $course = Course::updateOrCreate(
+                ['code' => $courseCode],
                 [
-                    'name' => $courseName, // El nombre ahora es único
-                    'credits' => rand(3, 5),
+                    'name' => $courseName,
+                    'program_type' => $isDegree ? 'degree' : 'technical',
+                    'degree_title' => $isDegree ? 'Licenciatura en ' . $courseBaseName : null,
+                    'total_credits' => $isDegree ? rand(120, 160) : 0,
+                    'duration_periods' => $isDegree ? rand(8, 12) : null,
+                    'is_sequential' => true,
+                    'status' => 'Activo',
                 ]
             );
-            $courseCount++;
-            // --- FIN DE LA CORRECCIÓN ---
+            $courses->push($course);
 
-
-            // Crear entre 3 y 5 módulos por curso
             $numModules = rand(3, 5);
             for ($m = 1; $m <= $numModules; $m++) {
-                
-                $moduleName = 'Módulo ' . $m . ': Tema de Estudio ' . rand(100, 999); // Nombre de módulo ficticio
-
                 $module = Module::firstOrCreate(
-                    ['course_id' => $course->id, 'name' => $moduleName],
-                    [] // No se necesitan más campos para el firstOrCreate
+                    ['course_id' => $course->id, 'name' => 'Módulo ' . $m . ': Tema ' . rand(100, 999)],
+                    ['credits' => rand(2, 4), 'period_number' => $isDegree ? rand(1, 10) : null]
                 );
-                $moduleCount++;
 
-                // Crear 1 o 2 secciones (horarios) por módulo
                 for ($s = 0; $s < rand(1, 2); $s++) {
-                    $randomDay1 = $diasSemana[array_rand($diasSemana)];
-                    $randomDay2 = $diasSemana[array_rand($diasSemana)];
                     $randomStart = $horasInicio[array_rand($horasInicio)];
+                    // Fechas dinámicas base a HOY para que el calendario las pinte correctamente!!
+                    $startDate = Carbon::now()->startOfMonth();
+                    $endDate = Carbon::now()->addMonths(4)->endOfMonth();
 
-                    CourseSchedule::firstOrCreate(
+                    CourseSchedule::updateOrCreate(
                         [
                             'module_id' => $module->id,
                             'section_name' => 'Sección ' . ($s + 1),
                         ],
                         [
                             'teacher_id' => $teachers->random()->id,
-                            'days_of_week' => [$randomDay1, $randomDay2], // Usa la columna JSON
+                            'classroom_id' => $classrooms->random()->id,
+                            'days_of_week' => [$diasSemana[array_rand($diasSemana)], $diasSemana[array_rand($diasSemana)]],
                             'start_time' => $randomStart,
                             'end_time' => Carbon::parse($randomStart)->addHours(2)->format('H:i'),
-                            'start_date' => '2025-01-15',
-                            'end_date' => '2025-05-30',
+                            'start_date' => $startDate,
+                            'end_date' => $endDate,
                             'status' => 'Programada',
-                            'capacity' => rand(20, 40), // Aumenté un poco la capacidad
+                            'capacity' => rand(20, 40),
                         ]
                     );
-                    $scheduleCount++;
                 }
             }
-            $this->command->getOutput()->progressAdvance(); // Avanzar barra de progreso
+            $this->command->getOutput()->progressAdvance();
         }
-        
-        $this->command->getOutput()->progressFinish(); // Terminar barra de progreso
-        $this->command->info("$courseCount cursos, $moduleCount módulos y $scheduleCount secciones creadas.");
+        $this->command->getOutput()->progressFinish();
+
+        // --- 4. Crear Estudiantes ---
+        $totalStudents = 100;
+        $this->command->getOutput()->progressStart($totalStudents);
+
+        for ($i = 1; $i <= $totalStudents; $i++) {
+            $firstName = $firstNames[array_rand($firstNames)];
+            $lastName = $lastNames[array_rand($lastNames)];
+            $user = User::firstOrCreate(
+                ['email' => 'estudiante' . $i . '@sga.com'],
+                ['name' => $firstName . ' ' . $lastName, 'password' => Hash::make('password')]
+            )->assignRole($studentRole);
+
+            Student::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'course_id' => $courses->random()->id, // Asignar a Carrera
+                    'first_name' => $firstName,
+                    'last_name' => $lastName,
+                    'email' => $user->email,
+                    'cedula' => '001-' . str_pad($i, 7, '0', STR_PAD_LEFT) . '-0', 
+                    'birth_date' => Carbon::now()->subYears(rand(18, 25))->subDays(rand(1, 365)),
+                    'mobile_phone' => '809-555-' . str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT),
+                    'address' => 'Calle ' . rand(1, 100) . ', SDO',
+                    'status' => 'Activa',
+                    'is_minor' => false,
+                ]
+            );
+            $this->command->getOutput()->progressAdvance();
+        }
+        $this->command->getOutput()->progressFinish();
+
+        $this->command->info('Mega Seeder Ejecutado: Edificios, Aulas, Carreras y Calendarios creados exitosamente.');
     }
 }
