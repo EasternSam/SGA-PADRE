@@ -26,6 +26,16 @@ class Enrollment extends Model
         'payment_id', // <-- NUEVO: Vinculación a pago agrupado
         'status', // Ej. Pendiente, Cursando, Completado
         'final_grade',
+        'next_billing_date', // <-- NUEVO: Facturación Delta
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'next_billing_date' => 'date',
     ];
 
     /**
