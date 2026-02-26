@@ -178,7 +178,7 @@ class Index extends Component
                 : collect();
 
             for ($i = 1; $i <= $daysInMonth; $i++) {
-                $currentDate = Carbon::createFromDate($this->currentYear, $this->currentMonth, $i);
+                $currentDate = Carbon::createFromDate($this->currentYear, $this->currentMonth, $i)->startOfDay();
                 $dateStr = $currentDate->format('Y-m-d');
                 
                 // Verificaciones en memoria (mucho más rápido que DB)
@@ -314,13 +314,18 @@ class Index extends Component
 
     private function translateDay($englishDay)
     {
+        // Normalizar la entrada a minúsculas
+        $day = mb_strtolower($englishDay);
+
         $map = [
-            'Monday' => 'Lunes', 'Tuesday' => 'Martes', 'Wednesday' => 'Miércoles',
-            'Thursday' => 'Jueves', 'Friday' => 'Viernes', 'Saturday' => 'Sábado', 'Sunday' => 'Domingo',
-            'lunes' => 'Lunes', 'martes' => 'Martes', 'miércoles' => 'Miércoles',
-            'jueves' => 'Jueves', 'viernes' => 'Viernes', 'sábado' => 'Sábado', 'domingo' => 'Domingo'
+            'monday' => 'Lunes', 'tuesday' => 'Martes', 'wednesday' => 'Miércoles',
+            'thursday' => 'Jueves', 'friday' => 'Viernes', 'saturday' => 'Sábado', 'sunday' => 'Domingo',
+            'lunes' => 'Lunes', 'martes' => 'Martes', 'miércoles' => 'Miércoles', 'miercoles' => 'Miércoles',
+            'jueves' => 'Jueves', 'viernes' => 'Viernes', 'sábado' => 'Sábado', 'sabado' => 'Sábado',
+            'domingo' => 'Domingo'
         ];
-        return $map[ucfirst($englishDay)] ?? $englishDay;
+
+        return $map[$day] ?? ucfirst($englishDay);
     }
 
     public function render()
