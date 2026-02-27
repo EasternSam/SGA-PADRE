@@ -114,6 +114,27 @@ class Index extends Component
             session()->flash('error', 'No se pudieron cargar los datos del estudiante.');
         }
     }
+
+    public function resetKioskPin()
+    {
+        try {
+            $freshStudent = Student::with('user')->findOrFail($this->student->id);
+            
+            if ($freshStudent->user) {
+                $freshStudent->user->kiosk_pin = str_pad(mt_rand(0, 9999), 4, '0', STR_PAD_LEFT);
+                $freshStudent->user->save();
+                
+                $this->loadStudentData($this->student->id); // Recargar
+                session()->flash('message', 'PIN de Kiosco regenerado exitosamente: ' . $freshStudent->user->kiosk_pin);
+            } else {
+                session()->flash('error', 'Este estudiante no tiene un usuario web asociado.');
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al resetear PIN: ' . $e->getMessage());
+            session()->flash('error', 'Ocurrió un error al regenerar el PIN.');
+        }
+    }
+
     
     #[On('paymentAdded')]
     #[On('studentUpdated')]

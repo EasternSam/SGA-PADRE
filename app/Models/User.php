@@ -21,6 +21,19 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     /**
+     * Bootstrap the model and its traits.
+     */
+    protected static function booted()
+    {
+        static::creating(function ($user) {
+            // Auto-generar un PIN de Kiosco de 4 dígitos si no se especificó uno
+            if (empty($user->kiosk_pin)) {
+                $user->kiosk_pin = str_pad(mt_rand(0, 9999), 4, '0', STR_PAD_LEFT);
+            }
+        });
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -31,6 +44,7 @@ class User extends Authenticatable
         'password',
         'access_expires_at', // <-- AÑADIDO: Para permitir asignación masiva
         'profile_photo_path', // <-- NUEVO: Permitir guardar la ruta de la foto
+        'kiosk_pin', // <-- NUEVO: Para el Kiosco de Autoservicio
     ];
 
     /**
@@ -41,6 +55,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'kiosk_pin',
     ];
 
     /**

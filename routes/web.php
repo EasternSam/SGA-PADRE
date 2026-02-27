@@ -409,6 +409,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     Route::middleware(['feature:academic'])->group(function () {
         Route::get('/students', \App\Livewire\Students\Index::class)->name('admin.students.index');
         Route::get('/students/profile/{student}', \App\Livewire\StudentProfile\Index::class)->name('admin.students.profile');
+        Route::get('/students/{student}/kiosk-pin-pdf', [ReportController::class, 'printKioskPin'])->name('admin.students.kiosk-pin.print');
         
         // --- RESTRICCIÓN ACADÉMICA: CURSOS (INSTITUTO) ---
         Route::middleware(['feature:academic_courses'])->group(function () {
@@ -472,6 +473,21 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     Route::get('/activity-logs', \App\Livewire\Admin\ActivityLogs\Index::class)->name('admin.activity-logs.index');
     Route::get('/settings', SystemSettingsIndex::class)->name('admin.settings.index');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
+});
+
+// ==========================================
+// KIOSK / SELF-SERVICE TOUCHSCREEN ROUTES
+// ==========================================
+Route::prefix('kiosk')->group(function () {
+    // Auth
+    Route::get('/login', \App\Livewire\Kiosk\Auth\Login::class)->name('kiosk.login');
+    
+    // Protected Kiosk Routes
+    Route::middleware(['auth.kiosk'])->group(function () {
+        Route::get('/dashboard', \App\Livewire\Kiosk\Dashboard::class)->name('kiosk.dashboard');
+        Route::get('/finances', \App\Livewire\Kiosk\Finances::class)->name('kiosk.finances');
+        Route::get('/schedule', \App\Livewire\Kiosk\Schedule::class)->name('kiosk.schedule');
+    });
 });
 
 // --- RUTAS DE ESTUDIANTE ---

@@ -426,8 +426,8 @@
                                 <span class="text-gray-400">Teléfono</span>
                             </div>
                             <div>
-                                <span class="block font-bold text-gray-900">{{ $student->city ?? '-' }}</span>
-                                <span class="text-gray-400">Ciudad</span>
+                                <span class="block font-bold text-indigo-600 tracking-widest text-sm">{{ Auth::user()->kiosk_pin ?? 'N/A' }}</span>
+                                <span class="text-gray-400">PIN Kiosco</span>
                             </div>
                         </div>
 

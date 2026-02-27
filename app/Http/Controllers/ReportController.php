@@ -31,6 +31,7 @@ class ReportController extends Controller
     {
         // Cargar relaciones necesarias
         $student->load([
+            'course', // Otorga acceso a ver si es de Grado (Carrera) o Técnico
             'enrollments.courseSchedule.module.course',
             'enrollments.courseSchedule.teacher',
             'payments.paymentConcept'
@@ -154,5 +155,35 @@ class ReportController extends Controller
         $pdf->setPaper('A4', 'landscape'); // Paisaje para que quepan las columnas
 
         return $pdf->stream('asistencia-' . $section->section_name . '.pdf');
+    }
+
+    /**
+     * Imprime el código PIN del Kiosco para un estudiante.
+     *
+     * @param Student $student
+     * @return \Illuminate\Http\Response
+     */
+    public function printKioskPin(Student $student)
+    {
+        // Verificar que el estudiante tiene usuario y PIN
+        $student->load('user');
+        
+        if (!$student->user || !$student->user->kiosk_pin) {
+            abort(404, 'El estudiante no tiene un PIN de Kiosco asignado.');
+        }
+
+        $data = [
+            'studentName' => $student->fullName,
+            'studentCode' => $student->student_code ?? $student->cedula ?? 'N/A',
+            'pin' => $student->user->kiosk_pin
+        ];
+
+        // Usamos la vista simple que hemos creado para ticket térmico
+        $pdf = Pdf::loadView('reports.kiosk-pin', $data);
+        
+        // Formato para rollo térmico de 80mm (226.77 puntos de ancho)
+        $pdf->setPaper([0, 0, 226.77, 400], 'portrait'); 
+
+        return $pdf->stream('pin-kiosco-' . $student->id . '.pdf');
     }
 }

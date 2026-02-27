@@ -32,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             // ===> NUEVO ALIAS PARA PROTEGER RUTAS <===
             'feature' => EnsureFeatureEnabled::class, 
+            'auth.kiosk' => \App\Http\Middleware\RedirectIfUnauthenticatedKiosk::class,
         ]);
 
         $middleware->appendToGroup('web', ForcePasswordChange::class);

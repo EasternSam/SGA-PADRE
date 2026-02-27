@@ -364,6 +364,24 @@ class Index extends Component
         $this->password_confirmation = '';
     }
 
+    public function resetKioskPin($id)
+    {
+        try {
+            $student = Student::with('user')->findOrFail($id);
+            if ($student->user) {
+                // Generar nuevo PIN de 4 dígitos
+                $student->user->kiosk_pin = str_pad(mt_rand(0, 9999), 4, '0', STR_PAD_LEFT);
+                $student->user->save();
+                session()->flash('message', 'PIN de Kiosco regenerado exitosamente: ' . $student->user->kiosk_pin);
+            } else {
+                session()->flash('error', 'Este estudiante no tiene un usuario web asociado.');
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al resetear PIN: ' . $e->getMessage());
+            session()->flash('error', 'Ocurrió un error al regenerar el PIN.');
+        }
+    }
+
     public function updated($propertyName)
     {
         if (in_array($propertyName, ['email', 'cedula', 'password', 'password_confirmation'])) {

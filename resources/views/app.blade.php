@@ -130,6 +130,9 @@
     
     <!-- Scripts de Livewire -->
     @livewireScripts
+    
+    <!-- Stack para scripts adicionales -->
+    @stack('scripts')
 </body>
 
 </html>

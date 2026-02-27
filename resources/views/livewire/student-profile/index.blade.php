@@ -114,6 +114,43 @@
 
                 <hr class="my-6 border-gray-200">
 
+                {{-- TARJETA DE PIN DE KIOSCO --}}
+                <div class="mb-6 bg-indigo-50 border border-indigo-100 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-indigo-200 rounded-full opacity-50 blur-xl"></div>
+                    
+                    <div class="flex items-center gap-4 relative z-10">
+                        <div class="bg-white p-3 rounded-lg shadow-sm text-indigo-600">
+                            <i class="fas fa-key text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-indigo-900">PIN de Acceso al Kiosco</p>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-3xl font-black text-indigo-700 tracking-[0.2em] font-mono leading-none">
+                                    {{ $user ? ($user->kiosk_pin ?? '----') : '----' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 relative z-10">
+                        @if ($user)
+                            <button wire:click="resetKioskPin" 
+                                    class="inline-flex items-center justify-center px-4 py-2 border border-indigo-200 text-sm font-medium rounded-lg text-indigo-700 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm">
+                                <i class="fas fa-sync-alt mr-2"></i> Regenerar
+                            </button>
+                            
+                            @if($user->kiosk_pin)
+                                <a href="{{ route('admin.students.kiosk-pin.print', $student->id) }}" target="_blank"
+                                   class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm">
+                                    <i class="fas fa-print mr-2"></i> Imprimir
+                                </a>
+                            @endif
+                        @else
+                            <span class="text-sm text-red-600 font-medium">Requiere usuario web</span>
+                        @endif
+                    </div>
+                </div>
+
                 <div class="flex flex-wrap gap-2">
                     <button wire:click="openEnrollmentModal" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
                         <i class="fas fa-plus-circle mr-2"></i>Inscribir a Curso
@@ -726,4 +763,5 @@
         </div>
     </div>
 
+    {{-- Script para Imprimir la Tarjeta del PIN --}}
 </div>
