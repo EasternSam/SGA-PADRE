@@ -64,6 +64,6 @@ class QrAuthorization extends Component
     public function render()
     {
         return view('livewire.mobile.qr-authorization')
-               ->layout('layouts.app'); // Use standard mobile app layout
+               ->layout('layouts.dashboard'); // Use standard mobile app layout
     }
 }
