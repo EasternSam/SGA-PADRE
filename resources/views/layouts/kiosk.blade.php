@@ -7,6 +7,11 @@
 
     <title>{{ config('app.name', 'SGA KIOSK') }} - Terminal de Autoservicio</title>
 
+    <!-- Google Fonts: Outfit (Tecnológica, Redondeada, Moderna) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+
     <!-- Usaremos TailwindCSS vía CDN en Modo Kiosco para garantizar un aislamiento visual y estilos gigantes sin interferir con el CSS central si no lo requerimos -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -20,6 +25,52 @@
                             500: '#0ea5e9',
                             600: '#0284c7',
                             900: '#0c4a6e',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    animation: {
+                        'blob': 'blob 15s infinite alternate',
+                        'blob-slow': 'blob-slow 20s infinite alternate',
+                        'blob-reverse': 'blob-reverse 25s infinite alternate',
+                        'fade-in': 'fadeIn 0.8s ease-out forwards',
+                        'slide-up': 'slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'floating': 'floating 3s ease-in-out infinite',
+                        'pulse-glow': 'pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        },
+                        'blob-slow': {
+                            '0%': { transform: 'translate(0px, 0px) scale(1) rotate(0deg)' },
+                            '50%': { transform: 'translate(-40px, 60px) scale(1.2) rotate(180deg)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1) rotate(360deg)' },
+                        },
+                        'blob-reverse': {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '50%': { transform: 'translate(50px, 50px) scale(0.8)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(40px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        floating: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+                            '50%': { opacity: '.6', transform: 'scale(1.05)', filter: 'brightness(1.5)' },
                         }
                     }
                 }
@@ -57,32 +108,48 @@
 
     @livewireStyles
 </head>
-<body class="h-full font-sans antialiased text-white select-none relative bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950" 
-      x-data="inactivityLogout(120)" 
+<body class="h-full font-sans antialiased text-white select-none relative bg-[#0B0F19] overflow-hidden" 
+      x-data="initKiosk()" 
       @mousemove="resetTimer()" 
       @mousedown="resetTimer()" 
       @touchstart="resetTimer()" 
       @click="resetTimer()" 
       @keydown="resetTimer()">
 
-    <!-- Formas de fondo abstractas para dar profundidad al glassmorphism -->
+    <!-- Fondo Dinámico "Nivel Dios" -->
     <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-        <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-indigo-600/20 blur-[120px]"></div>
-        <div class="absolute top-[60%] -right-[10%] w-[40%] h-[60%] rounded-full bg-blue-600/10 blur-[100px]"></div>
-        <div class="absolute bottom-[-20%] left-[20%] w-[60%] h-[40%] rounded-full bg-emerald-600/10 blur-[120px]"></div>
+        
+        <!-- Grid pattern overlay -->
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDQwIEwgNDAgNDAgNDAgMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDMpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-50"></div>
+
+        <!-- Super Blobs Animados -->
+        <div class="absolute top-[10%] left-[15%] w-[40rem] h-[40rem] rounded-full bg-gradient-to-r from-indigo-600/30 to-purple-600/30 blur-[100px] mix-blend-screen animate-blob"></div>
+        <div class="absolute top-[40%] right-[10%] w-[35rem] h-[35rem] rounded-full bg-gradient-to-r from-cyan-500/20 to-blue-600/20 blur-[120px] mix-blend-screen animate-blob-slow"></div>
+        <div class="absolute bottom-[-10%] left-[30%] w-[45rem] h-[45rem] rounded-full bg-gradient-to-r from-emerald-500/10 to-teal-500/10 blur-[130px] mix-blend-screen animate-blob-reverse"></div>
+        
+        <!-- Vignette effect for depth -->
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]"></div>
     </div>
 
-    <div class="flex flex-col h-screen">
-        <!-- Header del Kiosco (Glass) -->
-        <header class="bg-white/5 backdrop-blur-md border-b border-white/10 shadow-lg py-5 px-10 flex justify-between items-center shrink-0 z-10 transition-all duration-300">
-            <div class="flex items-center gap-5">
-                <div class="h-16 w-16 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center p-2.5 border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.05)]">
-                    <x-application-logo class="block h-auto w-full drop-shadow-md" />
+    <div class="flex flex-col h-screen relative z-10 animate-fade-in">
+        <!-- Header del Kiosco (Ultra Glass) -->
+        <header class="bg-slate-900/40 backdrop-blur-2xl border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.5)] py-4 px-10 flex justify-between items-center shrink-0 z-20">
+            <div class="flex items-center gap-6">
+                <!-- Logo Flotante -->
+                <div class="h-16 w-16 bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-md rounded-2xl flex items-center justify-center p-3 border border-white/20 shadow-[0_8px_32px_rgba(255,255,255,0.1)] relative group">
+                    <div class="absolute inset-0 rounded-2xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <x-application-logo class="block h-auto w-full drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]" />
                 </div>
                 <div>
-                    <h1 class="text-3xl font-black tracking-widest text-white drop-shadow-sm uppercase">CENTU</h1>
-                    <p class="text-indigo-200 font-medium text-lg leading-tight uppercase tracking-[0.2em] opacity-80">Terminal de Autoservicio</p>
+                    <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 drop-shadow-sm uppercase tracking-widest">CENTU</h1>
+                    <p class="text-indigo-300 font-bold text-sm leading-tight uppercase tracking-[0.3em]">Terminal Kiosco</p>
                 </div>
+            </div>
+
+            <!-- Reloj Digital Central -->
+            <div class="absolute left-1/2 transform -translate-x-1/2 hidden md:flex flex-col items-center">
+                <span x-text="currentTime" class="text-2xl font-black tracking-widest text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] font-mono"></span>
+                <span x-text="currentDate" class="text-xs uppercase tracking-[0.2em] text-indigo-200/80 font-bold"></span>
             </div>
 
             @auth
@@ -138,17 +205,30 @@
     <!-- Script de Cierre de Sesión por Inactividad -->
     <script>
         document.addEventListener('alpine:init', () => {
-            Alpine.data('inactivityLogout', (timeoutSeconds = 120) => ({
+    <!-- Script de Cierre de Sesión por Inactividad y Funciones Globales (Reloj) -->
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('initKiosk', (timeoutSeconds = 120) => ({
                 timeoutId: null,
                 timeLeft: timeoutSeconds,
                 countdownId: null,
                 isAuth: {{ Auth::check() ? 'true' : 'false' }},
+                currentTime: '',
+                currentDate: '',
 
                 init() {
                     if (this.isAuth) {
                         this.startTimer();
                         this.startCountdown();
                     }
+                    this.updateClock();
+                    setInterval(() => this.updateClock(), 1000);
+                },
+
+                updateClock() {
+                    const now = new Date();
+                    this.currentTime = now.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    this.currentDate = now.toLocaleDateString('es-DO', { weekday: 'long', day: 'numeric', month: 'short' }).replace(',', '');
                 },
 
                 startTimer() {
@@ -171,17 +251,14 @@
                     if (this.isAuth) {
                         this.timeLeft = timeoutSeconds;
                         this.startTimer();
-                        // El contador se resetea automáticamente porque timeLeft vuelve al máximo
                     }
                 },
 
                 logout() {
                     const logoutForm = document.getElementById('kiosk-logout-form');
                     if(logoutForm) {
-                        // Opcional: Mostrar un Toast de desconexión antes del post
                         logoutForm.submit();
                     } else {
-                        // Si por error no hay form de logout en la vista, forzar recarga al home
                         window.location.href = "{{ route('kiosk.login') }}";
                     }
                 }

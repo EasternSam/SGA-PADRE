@@ -32,7 +32,7 @@ class CardnetRedirectionService
         }
     }
 
-    public function prepareFormData($amount, $orderId, $ipAddress = '127.0.0.1')
+    public function prepareFormData($amount, $orderId, $ipAddress = '127.0.0.1', $returnRoute = 'cardnet.response', $cancelRoute = 'cardnet.cancel')
     {
         // 1. MONTO: 12 dígitos, ceros a la izquierda, sin puntos.
         $amountClean = number_format($amount, 2, '', ''); 
@@ -46,8 +46,8 @@ class CardnetRedirectionService
         $transactionId = substr((string)time(), -6);
 
         // 4. URLs de retorno
-        $returnUrl = route('cardnet.response');
-        $cancelUrl = route('cardnet.cancel');
+        $returnUrl = route($returnRoute);
+        $cancelUrl = route($cancelRoute);
 
         if (app()->environment('production') || str_contains(config('app.url'), 'https')) {
             $returnUrl = str_replace('http://', 'https://', $returnUrl);

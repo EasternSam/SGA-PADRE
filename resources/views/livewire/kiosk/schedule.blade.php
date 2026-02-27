@@ -1,12 +1,12 @@
 <div class="h-full flex flex-col p-8 max-w-7xl mx-auto w-full relative z-10">
     
     <!-- Encabezado con Botón Volver -->
-    <div class="flex items-center justify-between mb-8 shrink-0">
+    <div class="flex items-center justify-between mb-10 shrink-0 animate-[slideUp_0.4s_ease-out_forwards]">
         <div>
-            <h2 class="text-4xl md:text-5xl font-black text-white drop-shadow-md tracking-wide">Mi Horario de Clases</h2>
-            <p class="text-xl text-indigo-200 mt-2 font-medium">Aulas y horarios de tus materias activas</p>
+            <h2 class="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-slate-400 drop-shadow-2xl tracking-tight">Mi Horario de Clases</h2>
+            <p class="text-xl md:text-2xl text-indigo-200/90 mt-2 font-medium tracking-wide">Aulas y horarios de tus materias activas</p>
         </div>
-        <button wire:click="goBack" class="bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-md text-white border border-white/20 font-bold py-4 px-8 rounded-[1.5rem] text-2xl shadow-[0_4px_16px_rgba(0,0,0,0.2)] transition-all duration-200 transform active:scale-95 flex items-center gap-3 drop-shadow-sm">
+        <button wire:click="goBack" class="bg-white/[0.03] hover:bg-white/10 active:bg-white/20 backdrop-blur-2xl text-white border border-white/20 hover:border-white/40 font-black tracking-widest py-4 px-8 rounded-[1.5rem] text-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all duration-300 transform hover:-translate-y-1 active:translate-y-1 active:scale-95 flex items-center gap-3 drop-shadow-sm touch-manipulation">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
             VOLVER
         </button>
@@ -14,7 +14,7 @@
 
     <!-- Lista de Materias (Scrollable) -->
     <div class="flex-1 overflow-y-auto pr-4 space-y-6 pb-20 custom-kiosk-scrollbar">
-        @forelse($activeEnrollments as $enrollment)
+        @forelse($activeEnrollments as $index => $enrollment)
             @php
                 $schedule = $enrollment->courseSchedule;
                 $module = $schedule?->module;
@@ -33,10 +33,10 @@
             @endphp
 
             @if($schedule && $module)
-            <div class="bg-white/5 backdrop-blur-lg rounded-[2rem] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10 relative overflow-hidden group hover:bg-white/10 transition-colors duration-300">
+            <div class="bg-white/[0.05] backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_32px_rgba(0,0,0,0.3)] flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10 relative overflow-hidden group hover:bg-white/[0.08] transition-colors duration-300 animate-[slideUp_0.6s_ease-out_{{ $index * 0.1 }}s_forwards] opacity-0">
                 
                 <!-- Highlight lateral -->
-                <div class="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-indigo-500 to-cyan-500 rounded-l-[2rem]"></div>
+                <div class="absolute inset-y-0 left-0 w-2 bg-gradient-to-b from-indigo-500 to-cyan-500 rounded-l-[2rem] group-hover:w-3 border-r border-indigo-400/50 shadow-[0_0_15px_rgba(99,102,241,0.5)] transition-all duration-300"></div>
 
                 <!-- Info Materia -->
                 <div class="flex-1 w-full pl-4 z-10">
@@ -58,26 +58,26 @@
                 <!-- Info Horario y Aula -->
                 <div class="flex flex-col md:flex-row gap-4 shrink-0 z-10">
                     <!-- Bloque Horario Glass -->
-                    <div class="bg-white/5 backdrop-blur-md rounded-[1.5rem] p-5 border border-white/10 flex items-center gap-4 min-w-[250px] shadow-[0_4px_16px_rgba(0,0,0,0.1)]">
-                        <div class="bg-indigo-500/20 p-3 rounded-full text-indigo-300 border border-indigo-400/20 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <div class="bg-white/[0.04] backdrop-blur-xl rounded-[1.5rem] p-6 border border-white/10 flex items-center gap-5 min-w-[280px] shadow-[0_4px_16px_rgba(0,0,0,0.2)]">
+                        <div class="bg-indigo-500/20 p-4 rounded-full text-indigo-300 border border-indigo-400/30 shadow-[0_0_20px_rgba(99,102,241,0.3)] animate-pulse-glow">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9 drop-shadow-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         </div>
                         <div>
-                            <p class="text-indigo-200/80 font-bold text-lg mb-1 uppercase tracking-widest drop-shadow-sm">{{ $daysStr }}</p>
-                            <p class="text-white text-2xl font-black drop-shadow-md">{{ $start }} - {{ $end }}</p>
+                            <p class="text-indigo-200/90 font-black text-sm mb-1 uppercase tracking-widest drop-shadow-sm">{{ $daysStr }}</p>
+                            <p class="text-white text-3xl font-black drop-shadow-md tracking-tight">{{ $start }} <span class="text-indigo-400 opacity-70 px-1">-</span> {{ $end }}</p>
                         </div>
                     </div>
 
                     <!-- Bloque Aula Glass -->
-                    <div class="bg-white/5 backdrop-blur-md rounded-[1.5rem] p-5 border border-white/10 flex items-center gap-4 min-w-[200px] shadow-[0_4px_16px_rgba(0,0,0,0.1)] relative overflow-hidden">
-                        <div class="absolute -right-6 -bottom-6 w-20 h-20 bg-cyan-500/10 rounded-full blur-[20px] pointer-events-none"></div>
+                    <div class="bg-white/[0.04] backdrop-blur-xl rounded-[1.5rem] p-6 border border-white/10 flex items-center gap-5 min-w-[220px] shadow-[0_4px_16px_rgba(0,0,0,0.2)] relative overflow-hidden">
+                        <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-cyan-500/20 rounded-full blur-[30px] pointer-events-none group-hover:bg-cyan-400/30 transition-colors duration-300"></div>
 
-                        <div class="bg-cyan-500/20 p-3 rounded-full text-cyan-300 border border-cyan-400/20 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                        <div class="bg-cyan-500/20 p-4 rounded-full text-cyan-300 border border-cyan-400/30 shadow-[0_0_20px_rgba(6,182,212,0.3)] animate-pulse-glow" style="animation-delay: 1s">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9 drop-shadow-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                         </div>
                         <div class="z-10 relative">
-                            <p class="text-cyan-200/80 font-bold text-lg mb-1 uppercase tracking-widest drop-shadow-sm">Aula</p>
-                            <p class="text-white text-3xl font-black truncate drop-shadow-md">{{ $classroom?->name ?? 'TBA' }}</p>
+                            <p class="text-cyan-200/90 font-black text-sm mb-1 uppercase tracking-widest drop-shadow-sm">Aula</p>
+                            <p class="text-white text-4xl font-black truncate drop-shadow-md tracking-tight">{{ $classroom?->name ?? 'TBA' }}</p>
                         </div>
                     </div>
                 </div>

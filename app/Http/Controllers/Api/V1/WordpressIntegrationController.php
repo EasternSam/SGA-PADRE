@@ -230,6 +230,13 @@ class WordpressIntegrationController extends Controller
                 
                 Log::info("API WP->Laravel (V1): Nueva inscripción creada con cargo de Inscripción (Monto: $amount)");
 
+                // --- INJECTION: GOD TIER ACCOUNTING ENGINE ---
+                try {
+                    app(\App\Services\AccountingEngine::class)->registerStudentDebt($enrollment, $amount);
+                } catch (\Exception $e) {
+                    Log::error("Accounting Engine Error on WP Enrollment: " . $e->getMessage());
+                }
+
                 return [
                     'status' => 'success',
                     'message' => 'Inscripción procesada. Cargo de inscripción generado.',

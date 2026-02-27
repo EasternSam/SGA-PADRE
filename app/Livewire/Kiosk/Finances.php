@@ -21,13 +21,20 @@ class Finances extends Component
         $user = Auth::user();
         $this->student = $user?->student;
 
-        if ($this->student) {
-            $this->pendingPayments = Payment::with('paymentConcept')
-                ->where('student_id', $this->student->id)
-                ->where('status', 'Pendiente')
-                ->orderBy('due_date', 'asc')
-                ->get();
+        if ($user) {
+            $query = Payment::with('paymentConcept')
+                ->where('status', 'Pendiente');
+                
+            if ($this->student) {
+                $query->where(function ($q) use ($user) {
+                    $q->where('student_id', $this->student->id)
+                      ->orWhere('user_id', $user->id);
+                });
+            } else {
+                $query->where('user_id', $user->id);
+            }
 
+            $this->pendingPayments = $query->orderBy('due_date', 'asc')->get();
             $this->totalDebt = $this->pendingPayments->sum('amount');
         }
     }
@@ -39,11 +46,24 @@ class Finances extends Component
 
     public function initiatePayment($paymentId, \App\Services\CardnetRedirectionService $cardnetService)
     {
-        if (!$this->student) return;
+        $user = Auth::user();
+        if (!$user) return;
 
         $payment = Payment::find($paymentId);
         
-        if (!$payment || $payment->status === 'Completado' || $payment->student_id !== $this->student->id) {
+        $isAuthorized = false;
+        if ($payment) {
+            // Safe check for the typed property
+            $student = $user->student;
+            
+            if ($student && $payment->student_id === $student->id) {
+                $isAuthorized = true;
+            } elseif ($payment->user_id === $user->id) {
+                $isAuthorized = true;
+            }
+        }
+
+        if (!$payment || $payment->status === 'Completado' || !$isAuthorized) {
             $this->dispatch('notify', message: 'El pago no es válido o ya fue realizado.', type: 'error');
             return;
         }
@@ -56,7 +76,13 @@ class Finances extends Component
                 'ncf_type' => '32', // B02 Consumidor Final por defecto en kiosco
             ]);
 
-            $formInfo = $cardnetService->prepareFormData($payment->amount, $payment->id, request()->ip());
+            $formInfo = $cardnetService->prepareFormData(
+                $payment->amount, 
+                $payment->id, 
+                request()->ip(),
+                'kiosk.cardnet.response', // Custom Return Route
+                'kiosk.cardnet.cancel'    // Custom Cancel Route
+            );
             
             // Emitimos evento para que Alpine/JS arme el form invisible de Cardnet y haga submit
             $this->dispatch('submit-cardnet-form', data: $formInfo);

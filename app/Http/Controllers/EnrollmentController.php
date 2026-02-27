@@ -153,6 +153,14 @@ class EnrollmentController extends Controller
                     'due_date' => now()->addDays(3),
                 ]);
                 
+                // --- INJECTION: GOD TIER ACCOUNTING ENGINE ---
+                try {
+                    // La deuda total de la inscripción es el fee de inscripción cargado.
+                    app(\App\Services\AccountingEngine::class)->registerStudentDebt($enrollment, $amount);
+                } catch (\Exception $e) {
+                    Log::error("Accounting Engine Error on New Enrollment: " . $e->getMessage());
+                }
+                
                 return [
                     'status' => 'success',
                     'message' => 'Pre-inscripción realizada exitosamente.',
@@ -257,6 +265,13 @@ class EnrollmentController extends Controller
                     'gateway' => 'Por Pagar',
                     'due_date' => now()->addDays(3),
                 ]);
+                
+                // --- INJECTION: GOD TIER ACCOUNTING ENGINE ---
+                try {
+                    app(\App\Services\AccountingEngine::class)->registerStudentDebt($enrollment, $amount);
+                } catch (\Exception $e) {
+                    Log::error("Accounting Engine Error on Existing Enrollment: " . $e->getMessage());
+                }
                 
                 return [
                     'status' => 'success',

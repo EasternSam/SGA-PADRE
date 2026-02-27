@@ -237,6 +237,23 @@ Route::any('/cardnet/response', function (Request $request, EcfService $ecfServi
 
 })->name('cardnet.response')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]); 
 
+// RUTA ESPECÍFICA PARA CALLBACKS DEL KIOSCO (NO REQUIERE CSRF)
+Route::any('/kiosk/cardnet/response', \App\Livewire\Kiosk\PaymentResult::class)
+    ->name('kiosk.cardnet.response')
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
+Route::any('/kiosk/cardnet/cancel', function (Request $request) {
+    Log::info('Kiosk Cardnet Debug: Cancelación detectada', $request->all());
+    $orderId = $request->input('OrdenId') ?? $request->input('OrdenID');
+    if ($orderId) {
+        $payment = \App\Models\Payment::find($orderId);
+        if ($payment && $payment->status === 'Pendiente') {
+            $payment->update(['status' => 'Pendiente', 'notes' => 'Cancelado por usuario en Kiosco']);
+        }
+    }
+    return redirect()->route('kiosk.finances')->with('notify', ['message' => 'Operación cancelada.', 'type' => 'warning']);
+})->name('kiosk.cardnet.cancel')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
 Route::any('/cardnet/cancel', function (Request $request) {
     Log::info('Cardnet Debug: Cancelación detectada', $request->all());
     $orderId = $request->input('OrdenId') ?? $request->input('OrdenID');
@@ -365,6 +382,8 @@ Route::middleware(['feature:virtual_classroom'])->group(function () {
 
 // Ruta de 'dashboard' genérica
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/kiosk/auth/qr/{token}', \App\Livewire\Mobile\QrAuthorization::class)->name('kiosk.auth.mobile');
+
     Route::get('/dashboard', function () {
         $user = Auth::user();
 
@@ -451,6 +470,13 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     Route::middleware(['feature:finance'])->group(function () {
         Route::get('/finance/dashboard', FinanceDashboard::class)->name('admin.finance.dashboard');
         Route::get('/finance/payment-concepts', \App\Livewire\Finance\PaymentConcepts::class)->name('admin.finance.concepts');
+        Route::get('/finance/chart-of-accounts', \App\Livewire\Admin\ChartOfAccounts::class)->name('admin.finance.chart-of-accounts');
+        Route::get('/finance/manual-entry', \App\Livewire\Admin\ManualJournalEntry::class)->name('admin.finance.manual-entry');
+        Route::get('/finance/expenses', \App\Livewire\Admin\Finance\Expenses::class)->name('admin.finance.expenses');
+        Route::get('/finance/period-closing', \App\Livewire\Admin\Finance\PeriodClosing::class)->name('admin.finance.period-closing');
+        Route::get('/finance/dgii-reports', \App\Livewire\Admin\Finance\DgiiReports::class)->name('admin.finance.dgii-reports');
+        Route::get('/finance/statements', \App\Livewire\Admin\FinancialStatements::class)->name('admin.finance.statements');
+        Route::get('/finance/ledger', \App\Livewire\Admin\AccountingLedger::class)->name('admin.finance.ledger');
     });
 
     // --- MODULO: REPORTES AVANZADOS / DIPLOMAS ---
@@ -487,6 +513,8 @@ Route::prefix('kiosk')->group(function () {
         Route::get('/dashboard', \App\Livewire\Kiosk\Dashboard::class)->name('kiosk.dashboard');
         Route::get('/finances', \App\Livewire\Kiosk\Finances::class)->name('kiosk.finances');
         Route::get('/schedule', \App\Livewire\Kiosk\Schedule::class)->name('kiosk.schedule');
+        Route::get('/grades', \App\Livewire\Kiosk\Grades::class)->name('kiosk.grades');
+        Route::get('/academic-offer', \App\Livewire\Kiosk\AcademicOffer::class)->name('kiosk.academic-offer');
     });
 });
 

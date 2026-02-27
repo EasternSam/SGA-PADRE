@@ -368,6 +368,8 @@ class PaymentModal extends Component
                     } else {
                         $matriculaService->activarInscripcion($payment);
                     }
+
+                    // Accounting is now automatically handled globally by the Payment Model's Observer (App\Models\Payment::booted)
                 }
                 
                 return $payment;

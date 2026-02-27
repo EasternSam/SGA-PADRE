@@ -8,6 +8,7 @@
     "require": {
         "php": "^8.2",
         "barryvdh/laravel-dompdf": "*",
+        "chillerlan/php-qrcode": "^5.0",
         "doctrine/dbal": "^4.4",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/fortify": "1.x-dev",

@@ -45,6 +45,71 @@ class Payment extends Model
         'amount' => 'decimal:2',
     ];
 
+    /**
+     * DGII NCF & Accounting Auto-Generation Logic
+     */
+    protected static function booted()
+    {
+        // 1. Antes de Guardar (Para asignar NCFs atómicamente a la fila)
+        static::creating(function ($payment) {
+            self::processPaymentFiscal($payment);
+        });
+
+        static::updating(function ($payment) {
+            self::processPaymentFiscal($payment);
+        });
+
+        // 2. Después de Guardar (Para tener un ID de pago real para el Asiento Contable)
+        static::created(function ($payment) {
+            self::processPaymentAccounting($payment);
+        });
+
+        static::updated(function ($payment) {
+            self::processPaymentAccounting($payment);
+        });
+    }
+
+    protected static function processPaymentFiscal($payment)
+    {
+        // Require 'paid' status
+        if ($payment->status === 'paid' || $payment->status === 'Completado') {
+            
+            // 1. DGII NCF Generation
+            if (empty($payment->ncf)) {
+                $typeCode = ($payment->ncf_type_requested === '01') ? '31' : '32';
+                
+                $sequence = \App\Models\NcfSequence::where('type_code', $typeCode)
+                                                   ->where('is_active', true)
+                                                   ->first();
+                
+                if ($sequence) {
+                    $ncf = $sequence->getNextNcf(); // ATOMIC and thread-safe
+                    if ($ncf) {
+                        $payment->ncf = $ncf;
+                        $payment->ncf_type = $typeCode;
+                        $payment->security_code = str_pad((string)mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
+                        $payment->ncf_expiration = $sequence->expiration_date;
+                    }
+                }
+            }
+        }
+    }
+
+    protected static function processPaymentAccounting($payment)
+    {
+        // Require 'paid' status
+        if ($payment->status === 'paid' || $payment->status === 'Completado') {
+            // Check if already has an accounting entry to prevent duplicates on `updated`
+            $alreadyExists = \App\Models\AccountingEntry::where('reference_type', self::class)
+                                ->where('reference_id', $payment->id)
+                                ->exists();
+
+            if (!$alreadyExists) {
+                app(\App\Services\AccountingEngine::class)->registerStudentPayment($payment);
+            }
+        }
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

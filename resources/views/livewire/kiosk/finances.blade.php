@@ -24,19 +24,19 @@
     </div>
 
     <!-- Encabezado con Botón Volver -->
-    <div class="flex items-center justify-between mb-8 shrink-0">
+    <div class="flex items-center justify-between mb-10 shrink-0 animate-[slideUp_0.4s_ease-out_forwards]">
         <div>
-            <h2 class="text-4xl md:text-5xl font-black text-white drop-shadow-md tracking-wide">Estado de Cuenta</h2>
-            <p class="text-xl text-indigo-200 mt-2 font-medium">Revisa tus cuotas y realiza pagos al instante</p>
+            <h2 class="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-slate-400 drop-shadow-2xl tracking-tight">Estado de Cuenta</h2>
+            <p class="text-xl md:text-2xl text-indigo-200/90 mt-2 font-medium tracking-wide">Revisa tus cuotas y realiza pagos al instante</p>
         </div>
-        <button wire:click="goBack" class="bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-md text-white border border-white/20 font-bold py-4 px-8 rounded-[1.5rem] text-2xl shadow-[0_4px_16px_rgba(0,0,0,0.2)] transition-all duration-200 transform active:scale-95 flex items-center gap-3 drop-shadow-sm">
+        <button wire:click="goBack" class="bg-white/[0.03] hover:bg-white/10 active:bg-white/20 backdrop-blur-2xl text-white border border-white/20 hover:border-white/40 font-black tracking-widest py-4 px-8 rounded-[1.5rem] text-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all duration-300 transform hover:-translate-y-1 active:translate-y-1 active:scale-95 flex items-center gap-3 drop-shadow-sm touch-manipulation">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
             VOLVER
         </button>
     </div>
 
     <!-- Resumen Total Glass -->
-    <div class="relative bg-white/10 backdrop-blur-xl backdrop-saturate-150 rounded-[2rem] p-8 shadow-[0_8px_32px_rgba(0,0,0,0.3)] mb-8 shrink-0 flex items-center justify-between border border-red-500/30 overflow-hidden">
+    <div class="relative bg-white/[0.03] backdrop-blur-2xl backdrop-saturate-200 rounded-[2.5rem] p-8 shadow-[0_8px_32px_rgba(0,0,0,0.4)] mb-8 shrink-0 flex items-center justify-between border border-red-500/30 overflow-hidden animate-[slideUp_0.5s_ease-out_forwards]">
         <!-- Glow Fuerte de Deuda -->
         <div class="absolute -top-32 -left-10 w-80 h-80 bg-red-600/30 rounded-full blur-[80px] pointer-events-none"></div>
         <div class="absolute -bottom-20 -right-10 w-64 h-64 bg-rose-600/20 rounded-full blur-[60px] pointer-events-none"></div>
@@ -54,21 +54,27 @@
 
     <!-- Lista de Cuotas (Scrollable) -->
     <div class="flex-1 overflow-y-auto pr-4 space-y-6 pb-20 custom-kiosk-scrollbar">
-        @forelse($pendingPayments as $payment)
-            <div class="bg-white/5 backdrop-blur-lg rounded-[2rem] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.2)] flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10 relative overflow-hidden group hover:bg-white/10 transition-colors duration-300">
+        @forelse($pendingPayments as $index => $payment)
+            <div class="bg-white/[0.05] backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_32px_rgba(0,0,0,0.3)] flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10 relative overflow-hidden group hover:bg-white/[0.08] transition-colors duration-300 animate-[slideUp_0.6s_ease-out_{{ $index * 0.1 }}s_forwards] opacity-0">
                 
                 <!-- Highlight de la tarjeta -->
-                <div class="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-red-500 to-rose-500 rounded-l-[2rem]"></div>
+                <div class="absolute inset-y-0 left-0 w-2 bg-gradient-to-b from-red-500 to-rose-500 rounded-l-[2rem] group-hover:w-3 border-r border-red-400/50 shadow-[0_0_15px_rgba(239,68,68,0.5)] transition-all duration-300"></div>
 
                 <!-- Info Cuota -->
                 <div class="flex-1 w-full pl-4 z-10">
                     <div class="flex items-center gap-3 mb-2">
-                        <span class="bg-red-500/20 text-red-100 text-lg font-bold px-4 py-1.5 rounded-full border border-red-500/30 backdrop-blur-md shadow-sm">
-                            {{ $payment->paymentConcept->name ?? 'Cuota Pendiente' }}
-                        </span>
+                        @if($payment->enrollment && $payment->enrollment->courseSchedule)
+                            <span class="bg-indigo-500/20 text-indigo-100 text-lg font-bold px-4 py-1.5 rounded-full border border-indigo-500/30 backdrop-blur-md shadow-sm">
+                                {{ $payment->enrollment->courseSchedule->module->name ?? 'Materia' }}
+                            </span>
+                        @else
+                            <span class="bg-amber-500/20 text-amber-100 text-lg font-bold px-4 py-1.5 rounded-full border border-amber-500/30 backdrop-blur-md shadow-sm">
+                                {{ $payment->category ?? 'Cargo Administrativo' }}
+                            </span>
+                        @endif
                     </div>
                     <h3 class="text-3xl font-black text-white mb-2 drop-shadow-md">
-                        {{ optional($payment->enrollment)->courseSchedule->module->name ?? 'Cargo General' }}
+                        {{ $payment->paymentConcept->name ?? 'Cargo General' }}
                     </h3>
                     <p class="text-xl text-indigo-100/70 font-medium">
                         Vencimiento: <strong class="{{ $payment->due_date && $payment->due_date->isPast() ? 'text-red-400 drop-shadow-sm' : 'text-white' }}">{{ $payment->due_date ? $payment->due_date->format('d/m/Y') : 'N/A' }}</strong>
@@ -84,10 +90,10 @@
 
                     <button wire:click="initiatePayment({{ $payment->id }})" 
                             wire:loading.attr="disabled"
-                            class="relative overflow-hidden bg-gradient-to-r from-emerald-500/80 to-teal-500/80 hover:from-emerald-400/90 hover:to-teal-400/90 active:from-emerald-600 active:to-teal-600 backdrop-blur-md text-white border border-emerald-400/50 font-black py-5 px-10 rounded-[1.5rem] text-2xl shadow-[0_8px_32px_rgba(16,185,129,0.3)] transition-all duration-300 transform active:scale-95 flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed min-w-[240px] justify-center group/btn">
+                            class="relative overflow-hidden bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:from-emerald-600 active:to-teal-600 border border-emerald-400/50 text-white font-black tracking-widest py-6 px-12 rounded-[1.5rem] text-3xl shadow-[0_8px_32px_rgba(16,185,129,0.5)] transition-all duration-300 transform hover:-translate-y-1 active:translate-y-1 active:scale-95 flex items-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed min-w-[260px] justify-center group/btn touch-manipulation">
                         
                         <!-- Shine effect -->
-                        <div class="absolute inset-0 -translate-x-full group-hover/btn:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none"></div>
+                        <div class="absolute inset-0 -translate-x-full group-hover/btn:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none"></div>
 
                         <span wire:loading.remove wire:target="initiatePayment({{ $payment->id }})" class="flex items-center gap-2 drop-shadow-md">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>

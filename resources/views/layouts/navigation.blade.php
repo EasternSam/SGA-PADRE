@@ -176,6 +176,58 @@
                                 </svg>
                                 <span>{{ __('Conceptos Pago') }}</span>
                             </x-responsive-nav-link>
+
+                            <x-responsive-nav-link :href="route('admin.finance.chart-of-accounts')" :active="request()->routeIs('admin.finance.chart-of-accounts')" wire:navigate>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                  <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clip-rule="evenodd" />
+                                </svg>
+                                <span>{{ __('Catálogo CC') }}</span>
+                            </x-responsive-nav-link>
+
+                            <x-responsive-nav-link :href="route('admin.finance.manual-entry')" :active="request()->routeIs('admin.finance.manual-entry')" wire:navigate>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M21.731 2.269a2.625 2.625 0 00-3.712 0l-1.157 1.158 3.71 3.71 1.159-1.157a2.625 2.625 0 000-3.711z" />
+                                  <path d="M10.75 13a4.156 4.156 0 011.66-3.329l5.122-5.123-3.71-3.71-5.123 5.122A4.156 4.156 0 015.371 7.62l-1.766 1.767c-.22.22-.36.505-.407.817L2.03 15.65a.75.75 0 00.865.865l5.446-1.168a1.5 1.5 0 00.817-.407l1.767-1.766z" />
+                                </svg>
+                                <span>{{ __('Asiento Manual') }}</span>
+                            </x-responsive-nav-link>
+
+                            <x-responsive-nav-link :href="route('admin.finance.expenses')" :active="request()->routeIs('admin.finance.expenses')" wire:navigate>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                  <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM9 7.5A1.5 1.5 0 0 0 7.5 9v1.5h9V9A1.5 1.5 0 0 0 15 7.5H9Zm6.5 4.5h-7A1.5 1.5 0 0 0 7 13.5V15h10v-1.5A1.5 1.5 0 0 0 15.5 12Z" clip-rule="evenodd" />
+                                </svg>
+                                <span>{{ __('Cuentas por Pagar') }}</span>
+                            </x-responsive-nav-link>
+
+                            <x-responsive-nav-link :href="route('admin.finance.statements')" :active="request()->routeIs('admin.finance.statements')" wire:navigate>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                  <path fill-rule="evenodd" d="M7.5 5.25a3 3 0 0 1 3-3h3a3 3 0 0 1 3 3v.205c.933.085 1.857.197 2.774.334 1.454.218 2.476 1.483 2.476 2.917v3.033c0 1.211-.734 2.352-1.936 2.752A24.726 24.726 0 0 1 12 15.75c-2.73 0-5.36-.442-7.814-1.259-1.202-.4-1.936-1.541-1.936-2.752V8.706c0-1.434 1.022-2.7 2.476-2.917A48.814 48.814 0 0 1 7.5 5.455V5.25Zm7.5 0v.09a49.014 49.014 0 0 0-6 0v-.09a1.5 1.5 0 0 1 1.5-1.5h3a1.5 1.5 0 0 1 1.5 1.5Zm-3 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
+                                  <path d="M3 18.4v-2.796a4.3 4.3 0 0 0 .713.31A26.226 26.226 0 0 0 12 17.25c2.892 0 5.68-.468 8.287-1.335.252-.084.49-.189.713-.311V18.4c0 1.452-1.047 2.728-2.523 2.923-2.12.282-4.282.427-6.477.427a49.19 49.19 0 0 1-6.477-.427C4.047 21.128 3 19.852 3 18.4Z" />
+                                </svg>
+                                <span>{{ __('Estados Financieros') }}</span>
+                            </x-responsive-nav-link>
+
+                            <x-responsive-nav-link :href="route('admin.finance.ledger')" :active="request()->routeIs('admin.finance.ledger')" wire:navigate>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M10.464 8.746c.227-.18.497-.311.786-.394v2.795a2.252 2.252 0 0 1-.786-.393c-.394-.313-.546-.681-.546-1.004 0-.323.152-.691.546-1.004ZM12.75 15.662v-2.824c.347.085.664.228.921.421.427.32.579.686.579.991 0 .305-.152.671-.579.991a2.534 2.534 0 0 1-.921.42Z" />
+                                  <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v.816a3.836 3.836 0 0 0-1.72.756c-.712.566-1.112 1.35-1.112 2.178 0 .829.4 1.612 1.113 2.178.502.4 1.102.647 1.719.756v2.978a2.536 2.536 0 0 1-.921-.421l-.879-.66a.75.75 0 0 0-.9 1.2l.879.66c.533.4 1.169.645 1.821.75V18a.75.75 0 0 0 1.5 0v-.81a4.124 4.124 0 0 0 1.821-.749c.745-.559 1.179-1.344 1.179-2.191 0-.847-.434-1.632-1.179-2.191a4.122 4.122 0 0 0-1.821-.75V8.354c.29.082.559.213.786.393l.415.33a.75.75 0 0 0 .933-1.175l-.415-.33a3.836 3.836 0 0 0-1.719-.755V6Z" clip-rule="evenodd" />
+                                </svg>
+                                <span>{{ __('Libro Mayor') }}</span>
+                            </x-responsive-nav-link>
+
+                            <x-responsive-nav-link :href="route('admin.finance.period-closing')" :active="request()->routeIs('admin.finance.period-closing')" wire:navigate>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                  <path fill-rule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z" clip-rule="evenodd" />
+                                </svg>
+                                <span>{{ __('Cierre de Período') }}</span>
+                            </x-responsive-nav-link>
+
+                            <x-responsive-nav-link :href="route('admin.finance.dgii-reports')" :active="request()->routeIs('admin.finance.dgii-reports')" wire:navigate>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                </svg>
+                                <span>{{ __('Reportes DGII') }}</span>
+                            </x-responsive-nav-link>
                         @endhasanyrole
                     @endif
                 @endhasanyrole
