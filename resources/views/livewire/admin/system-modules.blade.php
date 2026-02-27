@@ -1,4 +1,4 @@
-<div class="max-w-7xl mx-auto">
+<div class="w-full">
     <div class="mb-8">
         <h2 class="text-2xl font-bold text-gray-800">Centro de Módulos</h2>
         <p class="text-sm text-gray-500">Instala y gestiona las funcionalidades adicionales incluidas en tu plan.</p>

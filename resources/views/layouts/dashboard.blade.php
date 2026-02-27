@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-sga-background overscroll-none">
 
 <head>
@@ -26,7 +26,7 @@
     @livewireStyles
 
     <!-- ========================================================= -->
-    <!-- PERSONALIZACIÓN DINÁMICA -->
+    <!-- PERSONALIZACIÃ“N DINÃMICA -->
     <!-- ========================================================= -->
     <style>
         [x-cloak] { display: none !important; }
@@ -41,7 +41,7 @@
         .text-sga-primary { color: rgb(var(--color-primary)) !important; }
         .border-sga-primary { border-color: rgb(var(--color-primary)) !important; }
         
-        /* Animación de carga */
+        /* AnimaciÃ³n de carga */
         @keyframes progress-indeterminate {
             0% { left: -35%; right: 100%; }
             60% { left: 100%; right: -90%; }
@@ -90,7 +90,7 @@
                                 <i class="fas fa-check-circle text-green-400 text-xl"></i>
                             </div>
                             <div class="ml-3 w-0 flex-1 pt-0.5">
-                                <p class="text-sm font-medium text-gray-900">¡Éxito!</p>
+                                <p class="text-sm font-medium text-gray-900">Â¡Ã‰xito!</p>
                                 <p class="mt-1 text-sm text-gray-500">{{ session('success') }}</p>
                             </div>
                             <div class="ml-4 flex flex-shrink-0">
@@ -112,7 +112,7 @@
                                 <i class="fas fa-exclamation-circle text-red-500 text-xl"></i>
                             </div>
                             <div class="ml-3 w-0 flex-1 pt-0.5">
-                                <p class="text-sm font-medium text-gray-900">Atención</p>
+                                <p class="text-sm font-medium text-gray-900">AtenciÃ³n</p>
                                 <p class="mt-1 text-sm text-gray-500">{{ session('error') }}</p>
                             </div>
                             <div class="ml-4 flex flex-shrink-0">
@@ -136,7 +136,7 @@
         @include('layouts.navigation')
 
         <!-- Main Content Area -->
-        <!-- CORRECCIÓN: Eliminada clase lg:pl-64 para evitar doble espaciado -->
+        <!-- CORRECCIÃ“N: Eliminada clase lg:pl-64 para evitar doble espaciado -->
         <div class="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out h-full">
 
             <!-- Top bar -->
@@ -147,7 +147,7 @@
                     <div class="flex items-center gap-4">
                         <button @click.stop="open = !open" type="button"
                             class="-m-2.5 p-2.5 text-gray-500 lg:hidden hover:text-sga-primary transition-colors rounded-md hover:bg-gray-100">
-                            <span class="sr-only">Abrir menú</span>
+                            <span class="sr-only">Abrir menÃº</span>
                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                             </svg>
@@ -206,7 +206,7 @@
                                         <x-dropdown-link :href="route('logout')"
                                             onclick="event.preventDefault(); this.closest('form').submit();"
                                             class="text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center gap-2">
-                                            <i class="fas fa-sign-out-alt"></i> {{ __('Cerrar Sesión') }}
+                                            <i class="fas fa-sign-out-alt"></i> {{ __('Cerrar SesiÃ³n') }}
                                         </x-dropdown-link>
                                     </form>
                                 </x-slot>
@@ -218,18 +218,18 @@
 
             <!-- Page Content -->
             <main class="flex-1 flex flex-col overflow-y-auto focus:outline-none scroll-smooth bg-gray-50">
-                <div class="py-6 sm:py-8 w-full">
-                    <div class="w-full px-4 sm:px-6 lg:px-8">
+                <div class="w-full">
+                    <div class="w-full">
                         {{ $slot }}
                     </div>
                 </div>
 
-                <!-- FOOTER DINÁMICO -->
+                <!-- FOOTER DINÃMICO -->
                 <footer class="mt-auto border-t border-gray-200 py-6 w-full">
                     <div class="w-full px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
                         <div class="text-left w-full md:w-auto order-2 md:order-1">
                             <p class="text-xs text-gray-400 leading-relaxed">
-                                {{-- NOMBRE DINÁMICO --}}
+                                {{-- NOMBRE DINÃMICO --}}
                                 &copy; {{ date('Y') }} <span class="font-medium text-gray-600">{{ config('app.name', 'SGA Academic+') }}</span>. 
                                 Todos los derechos reservados.
                             </p>
