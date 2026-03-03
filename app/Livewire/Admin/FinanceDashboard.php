@@ -164,13 +164,26 @@ class FinanceDashboard extends Component
         $startDate = Carbon::now()->subMonths($months - 1)->startOfMonth();
         $endDate = Carbon::now()->endOfMonth();
 
-        // Extraemos los datos agrupados por año y mes
-        $stats = Payment::selectRaw("
+        $driver = DB::connection()->getDriverName();
+
+        if ($driver === 'sqlite') {
+            $selectRaw = "
+                cast(strftime('%Y', created_at) as integer) as year,
+                cast(strftime('%m', created_at) as integer) as month,
+                SUM(CASE WHEN status IN ('Completado', 'Pagado') THEN amount ELSE 0 END) as income,
+                SUM(CASE WHEN LOWER(status) = 'pendiente' THEN amount ELSE 0 END) as pending
+            ";
+        } else {
+            $selectRaw = "
                 YEAR(created_at) as year,
                 MONTH(created_at) as month,
                 SUM(CASE WHEN status IN ('Completado', 'Pagado') THEN amount ELSE 0 END) as income,
                 SUM(CASE WHEN LOWER(status) = 'pendiente' THEN amount ELSE 0 END) as pending
-            ")
+            ";
+        }
+
+        // Extraemos los datos agrupados por año y mes
+        $stats = Payment::selectRaw($selectRaw)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->groupBy('year', 'month')
             ->get()
