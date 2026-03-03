@@ -131,8 +131,6 @@ class PaymentModal extends Component
 
         if ($student && $student->exists) {
             $this->selectStudent($student->id);
-        } else {
-            $this->payment_concepts = PaymentConcept::orderBy('name')->get();
         }
     }
 
@@ -262,6 +260,30 @@ class PaymentModal extends Component
         $this->ncfType = 'B02'; // Reset NCF
         $this->rnc = $this->student->rnc ?? ''; // Reset RNC but keep user's if present
         $this->companyName = '';
+    }
+
+    public function lookupRnc(\App\Services\DgiiRncLookupService $rncService)
+    {
+        $this->resetValidation('rnc');
+        
+        $cleanRnc = preg_replace('/[^0-9]/', '', $this->rnc);
+
+        if (strlen($cleanRnc) < 9) {
+            return; 
+        }
+
+        // Query DGII API using Service
+        $result = $rncService->lookup($cleanRnc);
+        
+        if ($result && isset($result['nombre'])) {
+            $this->companyName = $result['nombre'];
+            $this->rnc = $cleanRnc; // Normalize the format
+            $this->resetErrorBag('rnc');
+            $this->resetErrorBag('companyName');
+        } else {
+            $this->addError('rnc', 'Múltiples intentos fallidos o RNC inválido en DGII.');
+            $this->companyName = '';
+        }
     }
 
     public function updatedPaymentConceptId($value)

@@ -25,6 +25,8 @@ class Expenses extends Component
     // Form inputs
     public $expense_id;
     public $supplier_id = '';
+    public $supplier_rnc = '';      // NEW
+    public $supplier_name = '';     // NEW
     public $reference_number = '';
     public $ncf = '';
     public $expense_type_606 = '02';
@@ -66,7 +68,8 @@ class Expenses extends Component
     ];
 
     protected $rules = [
-        'supplier_id' => 'required|exists:suppliers,id',
+        'supplier_rnc' => 'required|string',
+        'supplier_name' => 'required|string',
         'reference_number' => 'nullable|string|max:100',
         'ncf' => 'nullable|string|max:19',
         'expense_type_606' => 'required|string|size:2',
@@ -113,7 +116,7 @@ class Expenses extends Component
     public function create()
     {
         $this->resetValidation();
-        $this->reset(['expense_id', 'supplier_id', 'reference_number', 'ncf', 'due_date', 'expense_account_id', 'payment_account_id', 'subtotal', 'itbis_amount', 'itbis_retained', 'isr_retained', 'total_amount', 'description']);
+        $this->reset(['expense_id', 'supplier_id', 'supplier_rnc', 'supplier_name', 'reference_number', 'ncf', 'due_date', 'expense_account_id', 'payment_account_id', 'subtotal', 'itbis_amount', 'itbis_retained', 'isr_retained', 'total_amount', 'description']);
         $this->expense_date = date('Y-m-d');
         $this->status = 'paid';
         $this->showModal = true;
@@ -139,6 +142,36 @@ class Expenses extends Component
     public function updatedItbisRetained() { $this->calculateTotal(); }
     public function updatedIsrRetained() { $this->calculateTotal(); }
 
+    public function lookupRnc(\App\Services\DgiiRncLookupService $rncService)
+    {
+        $this->resetValidation('supplier_rnc');
+        
+        $cleanRnc = preg_replace('/[^0-9]/', '', $this->supplier_rnc);
+        
+        if (strlen($cleanRnc) < 9) {
+            return; // Not long enough
+        }
+
+        // First, check local DB
+        $existing = \App\Models\Supplier::where('rnc_cedula', $cleanRnc)->first();
+        if ($existing) {
+            $this->supplier_id = $existing->id;
+            $this->supplier_name = $existing->name;
+            return;
+        }
+
+        // Query DGII API using Service
+        $result = $rncService->lookup($cleanRnc);
+        
+        if ($result && isset($result['nombre'])) {
+            $this->supplier_id = ''; // Disconnect from old
+            $this->supplier_name = $result['nombre'];
+        } else {
+            $this->addError('supplier_rnc', 'Múltiples intentos fallidos o RNC inválido en DGII.');
+            $this->supplier_name = '';
+        }
+    }
+
     public function save(AccountingEngine $engine)
     {
         $this->calculateTotal();
@@ -146,6 +179,16 @@ class Expenses extends Component
 
         try {
             DB::beginTransaction();
+
+            // 0. Auto-Create Supplier if it doesn't exist
+            if (empty($this->supplier_id)) {
+                $supplier = \App\Models\Supplier::create([
+                    'rnc_cedula' => preg_replace('/[^0-9]/', '', $this->supplier_rnc),
+                    'name' => mb_convert_case($this->supplier_name, MB_CASE_TITLE, "UTF-8"),
+                    'type' => strlen(preg_replace('/[^0-9]/', '', $this->supplier_rnc)) === 9 ? 'Juridica' : 'Fisica',
+                ]);
+                $this->supplier_id = $supplier->id;
+            }
 
             // 1. Crear el Gasto (Expense Módulo Local)
             $expense = Expense::create([

@@ -135,11 +135,16 @@ class FinanceDashboard extends Component
                 });
             }
 
-            // Usamos clones para consultas limpias de agregación
+            $aggregate = (clone $query)->selectRaw("
+                COALESCE(SUM(CASE WHEN status IN ('Completado', 'Pagado') THEN amount ELSE 0 END), 0) as income,
+                COALESCE(SUM(CASE WHEN LOWER(status) = 'pendiente' THEN amount ELSE 0 END), 0) as pending,
+                COUNT(*) as total_count
+            ")->first();
+
             return [
-                'income' => (clone $query)->whereIn('status', ['Completado', 'Pagado'])->sum('amount'),
-                'pending' => (clone $query)->whereIn('status', ['Pendiente', 'pendiente'])->sum('amount'),
-                'count' => (clone $query)->count()
+                'income' => $aggregate->income ?? 0,
+                'pending' => $aggregate->pending ?? 0,
+                'count' => $aggregate->total_count ?? 0
             ];
         });
 
@@ -155,25 +160,32 @@ class FinanceDashboard extends Component
         $this->chartDataIncome = [];
         $this->chartDataPending = [];
 
+        // Hacemos una única consulta agrupada para los 6 meses
+        $startDate = Carbon::now()->subMonths($months - 1)->startOfMonth();
+        $endDate = Carbon::now()->endOfMonth();
+
+        // Extraemos los datos agrupados por año y mes
+        $stats = Payment::selectRaw("
+                YEAR(created_at) as year,
+                MONTH(created_at) as month,
+                SUM(CASE WHEN status IN ('Completado', 'Pagado') THEN amount ELSE 0 END) as income,
+                SUM(CASE WHEN LOWER(status) = 'pendiente' THEN amount ELSE 0 END) as pending
+            ")
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->groupBy('year', 'month')
+            ->get()
+            ->keyBy(function($item) {
+                return $item->year . '-' . str_pad($item->month, 2, '0', STR_PAD_LEFT);
+            });
+
         for ($i = $months - 1; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
             $monthName = ucfirst($date->locale('es')->isoFormat('MMM'));
+            $key = $date->format('Y-m');
+
             $this->chartLabels[] = $monthName;
-
-            // Optimizamos usando rangos de fecha (aprovecha índices de BD)
-            $start = $date->copy()->startOfMonth();
-            $end = $date->copy()->endOfMonth();
-
-            $income = Payment::whereBetween('created_at', [$start, $end])
-                ->whereIn('status', ['Completado', 'Pagado'])
-                ->sum('amount');
-            
-            $pending = Payment::whereBetween('created_at', [$start, $end])
-                ->whereIn('status', ['Pendiente', 'pendiente'])
-                ->sum('amount');
-
-            $this->chartDataIncome[] = $income;
-            $this->chartDataPending[] = $pending;
+            $this->chartDataIncome[] = $stats->has($key) ? $stats[$key]->income : 0;
+            $this->chartDataPending[] = $stats->has($key) ? $stats[$key]->pending : 0;
         }
     }
 
@@ -216,7 +228,7 @@ class FinanceDashboard extends Component
             $paymentsQuery->where('status', $this->statusFilter);
         }
 
-        $payments = $paymentsQuery->paginate(15);
+        $payments = $paymentsQuery->simplePaginate(15);
 
         return view('livewire.admin.finance-dashboard', [
             'payments' => $payments

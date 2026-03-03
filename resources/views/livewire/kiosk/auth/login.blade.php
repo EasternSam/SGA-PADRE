@@ -176,6 +176,15 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     <span>CÓDIGO DINÁMICO ACTIVO</span>
                 </div>
+
+                <!-- Botón de Registro para Nuevos Estudiantes -->
+                <div class="mt-12 w-full pt-8 border-t border-white/10 flex flex-col items-center">
+                    <p class="text-indigo-200/60 text-sm font-semibold uppercase tracking-widest mb-4">¿No eres estudiante aún?</p>
+                    <a href="{{ route('kiosk.signup') }}" class="w-full max-w-[80%] bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 hover:from-indigo-500/40 hover:to-cyan-500/40 border border-indigo-400/30 text-white font-bold tracking-widest text-lg py-4 rounded-2xl shadow-[0_0_20px_rgba(99,102,241,0.1)] transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3 group">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+                        INSCRÍBETE AQUÍ
+                    </a>
+                </div>
             </div>
 
         </div>

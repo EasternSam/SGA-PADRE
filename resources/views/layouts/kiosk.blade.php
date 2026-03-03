@@ -163,7 +163,7 @@
                     </span>
                 </div>
                 <!-- Botón de Salir (Glass effect) -->
-                <form method="POST" action="{{ route('logout') }}" id="kiosk-logout-form">
+                <form method="POST" action="{{ route('kiosk.logout') }}" id="kiosk-logout-form">
                     @csrf
                     <input type="hidden" name="redirect_to" value="{{ route('kiosk.login') }}">
                     <button type="submit" class="bg-red-500/20 hover:bg-red-500/40 active:bg-red-500/60 text-red-100 border border-red-500/50 backdrop-blur-md font-bold py-3.5 px-8 rounded-2xl text-xl shadow-[0_8px_32px_rgba(220,38,38,0.15)] transition-all transform active:scale-95 flex items-center gap-3">
