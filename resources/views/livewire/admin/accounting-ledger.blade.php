@@ -188,7 +188,7 @@
                 <h3 class="mt-4 text-lg font-bold text-gray-900 tracking-tight">Registro Contable Vacío</h3>
                 <p class="mt-2 text-sm text-gray-500 max-w-sm mx-auto">Aún no se han generado transacciones financieras a través de matriculaciones, pagos o asientos manuales con los filtros seleccionados.</p>
                 <div class="mt-8">
-                    <a href="{{ route('admin.finance.manual_entry') }}" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-xl shadow-indigo-200 hover:bg-indigo-500 hover:-translate-y-0.5 transition-all">
+                    <a href="{{ route('admin.finance.manual-entry') }}" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-xl shadow-indigo-200 hover:bg-indigo-500 hover:-translate-y-0.5 transition-all">
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                         Crear Primer Asiento Manual
                     </a>
