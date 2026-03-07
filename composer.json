@@ -3,7 +3,10 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.2",
@@ -11,10 +14,10 @@
         "chillerlan/php-qrcode": "^5.0",
         "doctrine/dbal": "^4.4",
         "inertiajs/inertia-laravel": "^2.0",
-        "laravel/fortify": "1.x-dev",
+        "laravel/fortify": "^1.24",
         "laravel/framework": "^12.0",
-        "laravel/jetstream": "5.x-dev",
-        "laravel/sanctum": "4.x-dev",
+        "laravel/jetstream": "^5.3",
+        "laravel/sanctum": "^4.1",
         "laravel/tinker": "^2.10.1",
         "livewire/livewire": "^3.6",
         "spatie/laravel-activitylog": "^4.12",
