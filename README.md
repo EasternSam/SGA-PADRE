@@ -1,8 +1,5 @@
-<p align="center">
-  <img src="https://sga.90s.agency/centuu.png" alt="SGA Academic+" width="120">
-</p>
 
-<h1 align="center">🎓 Academic+ by GridBase Digital Solutions</h1>
+<h1 align="center">Academic+ by GridBase Digital Solutions</h1>
 
 <p align="center">
   <strong>Sistema de Gestión Académica integral para centros educativos</strong><br>
