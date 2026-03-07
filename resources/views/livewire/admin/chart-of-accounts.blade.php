@@ -69,6 +69,7 @@
                     <option value="liability">🔸 Pasivos (Liabilities)</option>
                     <option value="equity">🟣 Capital (Equity)</option>
                     <option value="revenue">🟢 Ingresos (Revenue)</option>
+                    <option value="cost">🟤 Costos (Cost)</option>
                     <option value="expense">🔴 Gastos (Expense)</option>
                 </select>
             </div>
@@ -141,6 +142,10 @@
                             @elseif($account->type == 'revenue') 
                                 <span class="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 ring-1 ring-inset ring-green-600/20 shadow-sm">
                                     <span class="h-1.5 w-1.5 rounded-full bg-green-500"></span> Ingreso (Acreedora)
+                                </span>
+                            @elseif($account->type == 'cost') 
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-stone-50 px-3 py-1.5 text-xs font-bold text-stone-700 ring-1 ring-inset ring-stone-600/20 shadow-sm">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-stone-500"></span> Costo (Deudora)
                                 </span>
                             @elseif($account->type == 'expense') 
                                 <span class="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 ring-1 ring-inset ring-red-600/20 shadow-sm">
@@ -252,7 +257,8 @@
                                     <option value="liability">Pasivo (Liability - Naturaleza Acreedora)</option>
                                     <option value="equity">Capital (Equity - Naturaleza Acreedora)</option>
                                     <option value="revenue">Ingresos (Revenue - Naturaleza Acreedora)</option>
-                                    <option value="expense">Gastos/Costos (Expense - Naturaleza Deudora)</option>
+                                    <option value="cost">Costos (Cost - Naturaleza Deudora)</option>
+                                    <option value="expense">Gastos (Expense - Naturaleza Deudora)</option>
                                 </select>
                                 @error('type') <span class="text-red-500 font-medium text-xs block mt-1">{{ $message }}</span> @enderror
                                 @if($parent_id)

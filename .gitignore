@@ -21,3 +21,32 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# ===========================================
+# SEGURIDAD: Archivos que NUNCA deben subirse
+# ===========================================
+
+# Scripts de prueba/debug sueltos en la raíz
+/test*.php
+/test*.txt
+/scrape*.php
+/verify_*.php
+/get_users.php
+/create_accountant.php
+/remove_padding.php
+
+# Archivos de debug DGII
+/dgii_*.html
+/dgii_*.log
+
+# Datos sensibles
+*.csv
+/cookies.txt
+
+# Logs de errores
+*.log
+!/storage/logs/.gitkeep
+
+# Archivos de build/output
+/build_error.log
+/import_errors.log

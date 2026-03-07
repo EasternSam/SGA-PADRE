@@ -35,7 +35,10 @@ class AccountingSeeder extends Seeder
         $ingreso = AccountingAccount::firstOrCreate(['code' => '4.0.0.0'], ['name' => 'Ingresos', 'type' => 'revenue']);
         AccountingAccount::firstOrCreate(['code' => '4.1.0.0', 'parent_id' => $ingreso->id], ['name' => 'Ingresos Académicos (Colegiaturas)', 'type' => 'revenue']);
 
-        // 5. Gastos
-        AccountingAccount::firstOrCreate(['code' => '5.0.0.0'], ['name' => 'Gastos', 'type' => 'expense']);
+        // 5. Costos
+        AccountingAccount::firstOrCreate(['code' => '5.0.0.0'], ['name' => 'Costos', 'type' => 'cost']);
+
+        // 6. Gastos
+        AccountingAccount::firstOrCreate(['code' => '6.0.0.0'], ['name' => 'Gastos', 'type' => 'expense']);
     }
 }

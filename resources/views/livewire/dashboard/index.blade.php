@@ -476,6 +476,7 @@
                             </div>
                         </a>
 
+                        @hasanyrole('Admin|Contabilidad|Caja')
                         <a href="{{ route('admin.finance.concepts') }}" wire:navigate class="group flex items-center justify-between rounded-xl border border-gray-100 bg-white p-3 hover:border-emerald-200 hover:bg-emerald-50/30 hover:shadow-md transition-all duration-300">
                             <div class="flex items-center gap-4">
                                 <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 group-hover:scale-110 transition-transform duration-300 shadow-sm">
@@ -492,6 +493,7 @@
                                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                             </div>
                         </a>
+                        @endhasanyrole
 
                         <a href="{{ route('admin.courses.index') }}" wire:navigate class="group flex items-center justify-between rounded-xl border border-gray-100 bg-white p-3 hover:border-purple-200 hover:bg-purple-50/30 hover:shadow-md transition-all duration-300">
                             <div class="flex items-center gap-4">

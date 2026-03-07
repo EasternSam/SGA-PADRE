@@ -27,7 +27,7 @@ class ChartOfAccounts extends Component
         return [
             'code' => 'required|string|max:50|unique:accounting_accounts,code,' . $this->account_id,
             'name' => 'required|string|max:255',
-            'type' => 'required|in:asset,liability,equity,revenue,expense',
+            'type' => 'required|in:asset,liability,equity,revenue,expense,cost',
             'parent_id' => 'nullable|exists:accounting_accounts,id',
             'is_active' => 'boolean',
         ];

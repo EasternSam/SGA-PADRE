@@ -160,9 +160,11 @@
                         <i class="fas fa-file-pdf mr-2"></i>Generar Reporte
                     </button>
 
+                    @hasanyrole('Admin|Contabilidad|Caja')
                     <button wire:click="$dispatch('openPaymentModal')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
                         <i class="fas fa-dollar-sign mr-2"></i>Registrar Pago
                     </button>
+                    @endhasanyrole
                 </div>
             </div>
         </div>
@@ -227,12 +229,14 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
+                                        @hasanyrole('Admin|Contabilidad|Caja')
                                         <button 
                                             wire:click="$dispatch('payEnrollment', { enrollmentId: {{ $enrollment->id }} })" 
                                             class="text-yellow-600 hover:text-yellow-900 transition ease-in-out duration-150" 
                                             title="Registrar Pago">
                                             <i class="fas fa-dollar-sign"></i> Pagar
                                         </button>
+                                        @endhasanyrole
                                         
                                         <button wire:click="confirmUnenroll({{ $enrollment->id }})" class="text-red-600 hover:text-red-900 transition ease-in-out duration-150" title="Anular Inscripción">
                                             <i class="fas fa-times-circle"></i> Anular
@@ -347,11 +351,11 @@
         <div class="p-6" x-show="activeTab === 'payments'" x-cloak>
              <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-gray-800">Historial de Pagos</h3>
-                @can('create payments')
+                @hasanyrole('Admin|Contabilidad|Caja')
                     <button wire:click="$dispatch('openPaymentModal')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
                         <i class="fas fa-plus-circle mr-2"></i>Registrar Pago
                     </button>
-                @endcan
+                @endhasanyrole
             </div>
 
             <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200">
