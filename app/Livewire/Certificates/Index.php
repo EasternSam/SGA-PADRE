@@ -22,7 +22,7 @@ class Index extends Component
         $enrollments = Enrollment::query()
             ->with(['student', 'courseSchedule.module.course']) 
             ->whereHas('student', function (Builder $query) {
-                $query->where('name', 'like', '%' . $this->search . '%')
+                $query->where('first_name', 'like', '%' . $this->search . '%')
                       ->orWhere('last_name', 'like', '%' . $this->search . '%')
                       ->orWhere('email', 'like', '%' . $this->search . '%');
             })

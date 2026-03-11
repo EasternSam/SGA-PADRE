@@ -11,47 +11,9 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=outfit:300,400,500,600,700&display=swap" rel="stylesheet" />
 
-    <!-- Tailwind CSS (CDN de respaldo para estilos rápidos) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['"Outfit"', 'sans-serif'],
-                    },
-                    colors: {
-                        glass: {
-                            100: 'rgba(255, 255, 255, 0.1)',
-                            200: 'rgba(255, 255, 255, 0.2)',
-                            border: 'rgba(255, 255, 255, 0.15)',
-                        }
-                    },
-                    animation: {
-                        'float': 'float 20s ease-in-out infinite',
-                        'float-delayed': 'float 15s ease-in-out infinite reverse',
-                        'pulse-slow': 'pulse 10s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'fade-in-down': 'fadeInDown 0.8s ease-out',
-                    },
-                    keyframes: {
-                        float: {
-                            '0%, 100%': { transform: 'translate(0, 0) rotate(0deg)' },
-                            '33%': { transform: 'translate(30px, -50px) rotate(10deg)' },
-                            '66%': { transform: 'translate(-20px, 20px) rotate(-5deg)' },
-                        },
-                        fadeInDown: {
-                            '0%': { opacity: '0', transform: 'translateY(-20px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
-                        }
-                    }
-                }
-            }
-        }
-    </script>
 
     <!-- Alpine.js -->
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <!-- Scripts del Proyecto -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
