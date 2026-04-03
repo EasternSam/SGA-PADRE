@@ -1,123 +1,12 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Reporte Financiero</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 9pt; /* Letra un poco más pequeña para ajustar más columnas */
-            color: #333;
-            background: white;
-        }
-        @page {
-            margin: 1cm; /* Márgenes más estrechos para landscape */
-        }
-        /* Encabezado */
-        .header-table {
-            width: 100%;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #1e3a8a;
-            padding-bottom: 10px;
-        }
-        .header-logo-cell {
-            width: 180px;
-            vertical-align: middle;
-            text-align: left;
-        }
-        .header-text-cell {
-            text-align: right;
-            vertical-align: middle;
-        }
-        .logo {
-            width: 150px;
-            height: auto;
-        }
-        .header h1 {
-            font-size: 16pt;
-            font-weight: bold;
-            color: #1e3a8a;
-            margin: 0;
-            text-transform: uppercase;
-        }
-        .header p {
-            font-size: 10pt;
-            margin: 5px 0 0 0;
-            color: #374151;
-        }
+@extends('reports.layouts.pdf')
 
-        /* Tabla de Datos */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        .data-table th, 
-        .data-table td {
-            border: 1px solid #cbd5e0;
-            padding: 6px;
-            vertical-align: middle;
-        }
-        .data-table th {
-            background-color: #f7fafc;
-            color: #2d3748;
-            font-weight: bold;
-            text-transform: uppercase;
-            font-size: 8pt;
-            text-align: left;
-        }
-        
-        /* Alineaciones */
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .text-left { text-align: left; }
-        .font-mono { font-family: 'Courier New', Courier, monospace; }
-        .font-bold { font-weight: bold; }
-        
-        /* Colores de Estado */
-        .text-green { color: #166534; }
-        .text-red { color: #991b1b; }
-        .text-gray { color: #718096; }
-        
-        /* Totales */
-        .totals-row td {
-            background-color: #edf2f7;
-            font-weight: bold;
-            border-top: 2px solid #4a5568;
-        }
+@section('title', 'Reporte Financiero')
+@section('subtitle')
+Estado: {{ strtoupper($data['filter_status'] == 'all' ? 'Todos' : $data['filter_status']) }} <br>
+Periodo: {{ \Carbon\Carbon::parse($data['date_from'])->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($data['date_to'])->format('d/m/Y') }}
+@endsection
 
-        .meta-info {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            font-size: 7pt;
-            color: #a0aec0;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 5px;
-            text-align: right;
-        }
-        tr { page-break-inside: avoid; }
-    </style>
-</head>
-<body>
-    <table class="header-table">
-        <tr>
-            <td class="header-logo-cell">
-                <img src="{{ public_path($branding->logo_url ?? 'centuu.png') }}" class="logo" alt="Logo">
-            </td>
-            <td class="header-text-cell">
-                <div class="header">
-                    <h1>Reporte Financiero</h1>
-                    <p>
-                        Estado: {{ strtoupper($data['filter_status'] == 'all' ? 'Todos' : $data['filter_status']) }} <br>
-                        Periodo: {{ \Carbon\Carbon::parse($data['date_from'])->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($data['date_to'])->format('d/m/Y') }}
-                    </p>
-                </div>
-            </td>
-        </tr>
-    </table>
-
+@section('content')
     <table class="data-table">
         <thead>
             <tr>
@@ -139,7 +28,7 @@
 
             @forelse($data['financials'] as $record)
                 @php
-                    $totalCost = (float) $record->total_cost;
+                    $totalCost = (float) $record->total_cost ?? (float) $record->expected_cost;
                     $paid = (float) $record->total_paid;
                     $pending = round($totalCost - $paid, 2);
 
@@ -158,7 +47,7 @@
                         {{ $record->course_name }}
                         <div style="font-size: 8pt; color: #666;">{{ $record->module_name }}</div>
                     </td>
-                    <td>{{ $record->section_name }}</td>
+                    <td>{{ $record->section_name ?? 'N/A' }}</td>
                     
                     <td class="text-right font-mono">
                         {{ number_format($totalCost, 2) }}
@@ -198,9 +87,4 @@
             </tr>
         </tfoot>
     </table>
-
-    <div class="meta-info">
-        Generado el: {{ now()->format('d/m/Y h:i A') }} | Documento Oficial
-    </div>
-</body>
-</html>
+@endsection

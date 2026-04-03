@@ -30,6 +30,8 @@ class PaymentModal extends Component
     public $payment_id = null;
     public $payment_concept_id;
     public $amount = 0.00;
+    public $original_amount = 0.00;
+    public $discount_amount = 0.00;
     public $status = 'Completado';
     public $gateway = 'Efectivo';
     public $transaction_id = null; 
@@ -59,6 +61,8 @@ class PaymentModal extends Component
             ],
             'enrollment_id' => 'nullable|exists:enrollments,id',
             'amount' => 'required|numeric|min:0.01',
+            'original_amount' => 'nullable|numeric|min:0',
+            'discount_amount' => 'nullable|numeric|min:0',
             'gateway' => [
                 Rule::requiredIf($this->status === 'Completado'),
                 'string',
@@ -229,6 +233,8 @@ class PaymentModal extends Component
             if ($payment) {
                 $this->payment_id_to_update = $payment->id;
                 $this->amount = $payment->amount;
+                $this->original_amount = $payment->original_amount ?? $payment->amount;
+                $this->discount_amount = $payment->discount_amount ?? 0;
                 $this->payment_concept_id = $payment->payment_concept_id;
                 $this->enrollment_id = $payment->enrollment_id;
                 
@@ -240,7 +246,19 @@ class PaymentModal extends Component
             $enrollment = Enrollment::with('courseSchedule.module')->find($id);
             if ($enrollment) {
                 $this->enrollment_id = $enrollment->id;
-                $this->amount = $enrollment->courseSchedule->module->price ?? 0.00;
+                $this->original_amount = $enrollment->courseSchedule->module->price ?? 0.00;
+                $this->amount = $this->original_amount;
+                $this->discount_amount = 0.00;
+                
+                // Aplicar beca
+                if ($this->student && $this->student->scholarship_id && $this->original_amount > 0) {
+                    $scholarship = $this->student->scholarship;
+                    if ($scholarship && $scholarship->is_active) {
+                        $this->discount_amount = $this->original_amount * ($scholarship->discount_percentage / 100);
+                        $this->amount = $this->original_amount - $this->discount_amount;
+                    }
+                }
+                
                 $this->payment_concept_id = null; 
                 
                 $this->isAmountDisabled = true;
@@ -253,8 +271,10 @@ class PaymentModal extends Component
 
     private function resetPaymentFields()
     {
-        $this->reset(['amount', 'payment_concept_id', 'isAmountDisabled', 'isConceptDisabled', 'payment_id_to_update', 'enrollment_id', 'transaction_id']);
+        $this->reset(['amount', 'original_amount', 'discount_amount', 'payment_concept_id', 'isAmountDisabled', 'isConceptDisabled', 'payment_id_to_update', 'enrollment_id', 'transaction_id']);
         $this->amount = 0.00;
+        $this->original_amount = 0.00;
+        $this->discount_amount = 0.00;
         $this->gateway = 'Efectivo';
         $this->status = 'Completado';
         $this->ncfType = 'B02'; // Reset NCF
@@ -298,13 +318,32 @@ class PaymentModal extends Component
         if (!empty($value)) {
             $selectedConcept = $this->payment_concepts->firstWhere('id', (int)$value);
             if ($selectedConcept && isset($selectedConcept->amount) && $selectedConcept->amount > 0) {
+                $this->original_amount = $selectedConcept->amount;
                 $this->amount = $selectedConcept->amount;
+                $this->discount_amount = 0.00;
+                
+                // Aplicar beca
+                if ($this->student && $this->student->scholarship_id) {
+                    $scholarship = $this->student->scholarship;
+                    if ($scholarship && $scholarship->is_active) {
+                        $this->discount_amount = $this->original_amount * ($scholarship->discount_percentage / 100);
+                        $this->amount = $this->original_amount - $this->discount_amount;
+                    }
+                }
             }
         }
         $this->calculateChange();
     }
 
-    public function updatedAmount() { $this->calculateChange(); }
+    public function updatedAmount() { 
+        if ($this->amount > 0 && $this->original_amount > 0) {
+            $this->discount_amount = max(0, $this->original_amount - $this->amount);
+        } else {
+            $this->original_amount = $this->amount;
+            $this->discount_amount = 0.00;
+        }
+        $this->calculateChange(); 
+    }
     public function updatedCashReceived() { $this->calculateChange(); }
     public function updatedStatus() 
     { 
@@ -355,6 +394,8 @@ class PaymentModal extends Component
                 $data = [
                     'payment_concept_id' => $this->payment_concept_id,
                     'amount' => $this->amount,
+                    'original_amount' => $this->original_amount ?: $this->amount,
+                    'discount_amount' => $this->discount_amount,
                     'gateway' => $this->gateway,
                     'status' => $this->status,
                     'transaction_id' => $this->transaction_id,
@@ -444,13 +485,15 @@ class PaymentModal extends Component
     private function resetForm()
     {
         $this->reset([
-            'payment_id', 'payment_concept_id', 'amount', 'gateway', 'status', 
+            'payment_id', 'payment_concept_id', 'amount', 'original_amount', 'discount_amount', 'gateway', 'status', 
             'transaction_id', 'enrollment_id', 'payment_id_to_update', 
             'isAmountDisabled', 'isConceptDisabled', 'cash_received', 
             'change_amount', 'notes', 'ncfType', 'rnc', 'companyName'
         ]);
 
         $this->amount = 0.00;
+        $this->original_amount = 0.00;
+        $this->discount_amount = 0.00;
         $this->gateway = 'Efectivo';
         $this->status = 'Completado';
         $this->ncfType = 'B02';

@@ -1,7 +1,7 @@
 <div>
     {{-- Título y Botón --}}
     <header class="bg-white shadow-sm mb-6 rounded-lg border border-gray-100">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
             <div>
                 <h1 class="text-xl font-bold text-gray-900">Gestión de Personal</h1>
                 <p class="text-sm text-gray-500">Administra usuarios, roles y accesos al sistema.</p>
@@ -16,7 +16,7 @@
     </header>
 
     {{-- Contenido Principal --}}
-    <div class="w-full px-2 lg:px-6">
+    <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8">
         
         {{-- Mensajes Flash --}}
         @if (session()->has('message'))

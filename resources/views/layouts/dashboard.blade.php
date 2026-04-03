@@ -19,6 +19,33 @@
     <!-- Scripts y estilos compilados (Vite + Tailwind) -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    <!-- Tailwind CDN for JIT styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'sga-primary': 'rgb(var(--color-primary) / <alpha-value>)',
+                        'sga-secondary': '#3b82f6',
+                        'sga-accent': '#10b981',
+                        'sga-accent-purple': '#8b5cf6',
+                        'sga-accent-red': '#ef4444',
+                        'sga-text': '#1f2937',
+                        'sga-text-light': '#6b7280',
+                        'sga-gray': '#e5e7eb',
+                        'sga-success': '#22c55e',
+                        'sga-danger': '#ef4444',
+                        'sga-warning': '#f59e0b',
+                        'sga-info': '#3b82f6',
+                        'sga-bg': '#f3f4f6',
+                        'sga-card': '#ffffff',
+                    }
+                }
+            }
+        }
+    </script>
+
     <!-- Livewire Styles -->
     @livewireStyles
 

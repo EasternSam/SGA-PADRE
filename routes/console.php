@@ -13,3 +13,10 @@ Schedule::command('sga:process-monthly-payments')
     ->dailyAt('06:00')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/scheduler.log'));
+
+// --- DETECCIÓN DE DESERCIÓN SILENCIOSA ---
+// Ejecutar semanalmente los domingos a las 3:00 AM
+Schedule::command('sga:detect-inactive-students')
+    ->weeklyOn(0, '03:00')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/scheduler.log'));

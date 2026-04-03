@@ -18,6 +18,7 @@ class Student extends Model
     protected $fillable = [
         'user_id', // Vinculación con User
         'course_id', // <-- NUEVO: Carrera/Curso asignado
+        'scholarship_id', // Beca asignada
         'student_code', // Matrícula
         'first_name',
         'last_name',
@@ -69,6 +70,14 @@ class Student extends Model
     public function course()
     {
         return $this->belongsTo(Course::class);
+    }
+
+    /**
+     * Relación con la Beca asignada.
+     */
+    public function scholarship()
+    {
+        return $this->belongsTo(Scholarship::class);
     }
 
     /**

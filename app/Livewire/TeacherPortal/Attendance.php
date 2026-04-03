@@ -39,6 +39,14 @@ class Attendance extends Component
     {
         $this->isLocked = false;
         $this->errorMessage = '';
+        
+        // 0. Candado Oficial
+        if ($this->section->is_locked) {
+            $this->isLocked = true;
+            $this->errorMessage = 'ESTADO SELLADO: La sección ha sido cerrada.';
+            return;
+        }
+
         $date = Carbon::parse($this->attendanceDate);
         
         // 1. No permitir fechas futuras

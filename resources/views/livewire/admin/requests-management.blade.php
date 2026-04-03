@@ -6,7 +6,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="w-full px-2 lg:px-6">
+        <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8">
             
             {{-- BOTONES DE ACCIÓN SUPERIOR --}}
             <div class="flex justify-end gap-3 mb-6">

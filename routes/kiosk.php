@@ -15,6 +15,9 @@ Route::prefix('kiosk')->group(function () {
     Route::get('/login', \App\Livewire\Kiosk\Auth\Login::class)->name('kiosk.login');
     Route::get('/signup', \App\Livewire\Kiosk\Auth\Signup::class)->name('kiosk.signup');
 
+    // HR Web Kiosk (No requiere autenticación de estudiante)
+    Route::get('/hr-punch', \App\Livewire\Kiosk\HrPunch::class)->name('kiosk.hr-punch');
+
     // Protected Kiosk Routes
     Route::middleware(['auth.kiosk'])->group(function () {
         Route::post('/logout', function (Request $request) {

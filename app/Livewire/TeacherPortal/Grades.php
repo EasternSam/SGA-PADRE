@@ -58,8 +58,17 @@ class Grades extends Component
      */
     private function checkGradingAvailability()
     {
-        // Admin siempre puede editar
+        // 1. Candado Oficial (Aplica para todos, incluso admins, hasta que lo abran explícitamente)
+        if ($this->section->is_locked) {
+            $this->isLocked = true;
+            $this->lockReason = 'ESTADO SELLADO: Esta sección ha sido cerrada oficialmente por Registro/Administración. Las modificaciones están bloqueadas.';
+            return;
+        }
+
+        // Admin siempre puede editar si no está sellada
         if (Auth::user()->hasRole('Admin') || Auth::user()->hasRole('Registro')) {
+            $this->isLocked = false;
+            $this->lockReason = '';
             return;
         }
 
@@ -153,6 +162,25 @@ class Grades extends Component
         } catch (\Exception $e) {
             session()->flash('error', 'Error al guardar: ' . $e->getMessage());
         }
+    }
+
+    public function toggleLock()
+    {
+        // Solo Admin o Registro pueden sellar/abrir la bóveda de notas
+        if (!Auth::user()->hasRole('Admin') && !Auth::user()->hasRole('Registro')) {
+            abort(403, 'No tienes permisos para sellar actas.');
+        }
+
+        $this->section->is_locked = !$this->section->is_locked;
+        $this->section->save();
+        $this->checkGradingAvailability();
+
+        activity()
+            ->performedOn($this->section)
+            ->causedBy(auth()->user())
+            ->log($this->section->is_locked ? 'Sección y récord de notas SELLADOS oficialmente.' : 'Sección REABIERTA para modificación excepcional de notas.');
+
+        session()->flash('message', $this->section->is_locked ? 'Sección Sellada (Solo lectura)' : 'Sección Reabierta (Edición permitida)');
     }
 
     public function render(): View

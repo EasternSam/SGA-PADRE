@@ -8,7 +8,7 @@
     <!-- --- ¡ACTUALIZADO! --- -->
     {{-- Se elimina 'py-12' ya que 'layouts.dashboard' ahora maneja el padding --}}
     {{-- Se cambian los 'divs' para que usen 'bg-sga-card' y el nuevo padding --}}
-    <div class="max-w-7xl mx-auto space-y-6">
+    <div class="mx-auto w-full max-w-[95%] space-y-6">
         
         <!-- Tarjeta: Información de Perfil -->
         <div class="p-4 sm:p-6 bg-sga-card shadow rounded-lg">

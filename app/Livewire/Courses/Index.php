@@ -81,6 +81,12 @@ class Index extends Component
     public $deleteId = null;
     public $deleteMessage = '';
 
+    // === PROPIEDADES PARA FUSIÓN DE SECCIONES ===
+    public $mergeFromScheduleId;
+    public $mergeToScheduleId;
+    public $availableMergeDestinations = []; 
+    public $mergeStudentCount = 0;
+
     protected $queryString = [
         'search' => ['except' => ''],
         'selectedCourse' => ['except' => null],
@@ -490,6 +496,33 @@ class Index extends Component
             'classroom_id' => 'nullable|exists:classrooms,id', 
         ]);
 
+        // Verificar conflicto de Profesor (Independientemente de la modalidad o aula)
+        $teacherConflictQuery = \App\Models\CourseSchedule::where('teacher_id', $this->teacher_id)
+            ->where(function($q) {
+                $q->where('start_date', '<=', $this->end_date)
+                  ->where('end_date', '>=', $this->start_date);
+            })
+            ->where(function($q) {
+                $q->where('start_time', '<', $this->end_time)
+                  ->where('end_time', '>', $this->start_time);
+            })
+            ->where(function($q) {
+                $q->where(function($q2) {
+                    foreach ($this->days as $day) {
+                        $q2->orWhereJsonContains('days_of_week', $day);
+                    }
+                });
+            });
+
+        if ($this->schedule_id) {
+            $teacherConflictQuery->where('id', '!=', $this->schedule_id);
+        }
+
+        if ($teacherConflictQuery->exists()) {
+            $this->addError('teacher_id', 'Vulnerabilidad Logística Prevenida: El profesor ya tiene otra clase programada en este cruce de horarios, días o nivel.');
+            return;
+        }
+
         if ($this->classroom_id && in_array($this->modality, ['Presencial', 'Semi-Presencial'])) {
             $availability = $classroomService->checkAvailability(
                 $this->classroom_id,
@@ -732,6 +765,69 @@ class Index extends Component
         } catch (\Exception $e) {
             Log::error('Error ScheduleMapping', ['exception' => $e->getMessage()]);
             $this->sectionLinkErrorMessage = 'Error al guardar.';
+        }
+    }
+
+    // --- MÉTODOS PARA FUSIÓN DE SECCIONES ---
+    public function openMergeModal($scheduleId)
+    {
+        $this->reset(['mergeFromScheduleId', 'mergeToScheduleId', 'availableMergeDestinations', 'mergeStudentCount']);
+        $schedule = CourseSchedule::withCount(['enrollments' => function($q) {
+            $q->whereIn('status', ['Pendiente', 'Cursando', 'Enrolled', 'Activo']);
+        }])->findOrFail($scheduleId);
+
+        $this->mergeFromScheduleId = $scheduleId;
+        $this->mergeStudentCount = $schedule->enrollments_count;
+
+        if ($this->mergeStudentCount === 0) {
+            session()->flash('warning', 'Esta sección no tiene estudiantes activos para mover.');
+            return;
+        }
+
+        $this->availableMergeDestinations = CourseSchedule::with('teacher')
+            ->where('module_id', $schedule->module_id)
+            ->where('id', '!=', $scheduleId)
+            ->where('status', '!=', 'Inactivo')
+            ->get();
+
+        if ($this->availableMergeDestinations->isEmpty()) {
+            session()->flash('warning', 'No hay otras secciones activas en este módulo a donde mover los estudiantes.');
+            return;
+        }
+
+        $this->dispatch('open-modal', 'merge-modal');
+    }
+
+    public function saveMerge()
+    {
+        $this->validate([
+            'mergeToScheduleId' => 'required|exists:course_schedules,id',
+        ]);
+
+        try {
+            $from = CourseSchedule::findOrFail($this->mergeFromScheduleId);
+            $to = CourseSchedule::findOrFail($this->mergeToScheduleId);
+            
+            \Illuminate\Support\Facades\DB::transaction(function() use ($from, $to) {
+                $affected = \App\Models\Enrollment::where('course_schedule_id', $from->id)
+                    ->whereIn('status', ['Pendiente', 'Cursando', 'Enrolled', 'Activo'])
+                    ->update(['course_schedule_id' => $to->id]);
+
+                \App\Models\ActivityLog::create([
+                    'user_id' => \Illuminate\Support\Facades\Auth::id(),
+                    'action' => 'Fusión de Secciones',
+                    'description' => "Se movieron {$affected} estudiantes de la sección #{$from->id} a la sección #{$to->id}",
+                    'ip_address' => request()->ip()
+                ]);
+            });
+
+            session()->flash('message', 'Estudiantes trasladados exitosamente a la nueva sección.');
+            $this->dispatch('close-modal', 'merge-modal');
+            $this->resetPage('schedules-page');
+            
+        } catch (\Exception $e) {
+            Log::error('Error en fusión: ' . $e->getMessage());
+            $this->addError('mergeToScheduleId', 'Hubo un error al procesar el traslado.');
         }
     }
 }

@@ -32,6 +32,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     // --- GESTIÓN DE MÓDULOS (Solo Admin) ---
     Route::middleware(['role:Admin'])->group(function () {
         Route::get('/system/modules', \App\Livewire\Admin\SystemModules::class)->name('admin.modules.index');
+        Route::get('/scholarships', \App\Livewire\Admin\Scholarships\Index::class)->name('admin.scholarships.index');
     });
 
     // --- MODULO: GESTIÓN ACADÉMICA ---
@@ -98,6 +99,14 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
             Route::get('/finance/statements', \App\Livewire\Admin\FinancialStatements::class)->name('admin.finance.statements');
             Route::get('/finance/ledger', \App\Livewire\Admin\AccountingLedger::class)->name('admin.finance.ledger');
         });
+    });
+
+    // --- MODULO: RECURSOS HUMANOS ---
+    Route::middleware(['role:Admin|Contabilidad'])->group(function () {
+        Route::get('/hr/employees', \App\Livewire\Admin\HR\Employees::class)->name('admin.hr.employees');
+        Route::get('/hr/employees/{employee}/profile', \App\Livewire\Admin\HR\EmployeeProfile::class)->name('admin.hr.employees.profile');
+        Route::get('/hr/attendances', \App\Livewire\Admin\HR\Attendances::class)->name('admin.hr.attendances');
+        Route::get('/hr/payroll', \App\Livewire\Admin\HR\Payroll::class)->name('admin.hr.payroll');
     });
 
     // --- MODULO: REPORTES AVANZADOS / DIPLOMAS ---

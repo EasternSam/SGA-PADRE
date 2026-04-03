@@ -61,13 +61,24 @@ class Index extends Component
     public $selectedScheduleId;
     public $selectedScheduleInfo;
 
-    // --- Propiedades del Modal de Anulación ---
+    // --- Propiedades del Modal de Anulación y Retiro ---
     public $isUnenrollModalOpen = false;
     public $enrollmentToCancel; 
     public $enrollmentToCancelId = null;
 
+    // --- Propiedades del Modal de Cambio de Sección ---
+    public $enrollmentToChangeId = null;
+    public Collection $availableSchedulesForChange;
+    public $selectedNewScheduleId = null;
+    
+    // --- Propiedades del Modal de Retiro ---
+    public $enrollmentToWithdrawId = null;
+
     // --- Propiedades del Modal de Estudiante ---
     public $student_id;
+    public $student_course_id = null;
+    public $scholarship_id = null;
+    public $rnc = '';
     public $first_name = '';
     public $last_name = '';
     public $cedula = '';
@@ -99,6 +110,7 @@ class Index extends Component
     {
         $this->teachers = User::role('Profesor')->orderBy('name')->get();
         $this->availableSchedules = collect(); 
+        $this->availableSchedulesForChange = collect();
         $this->loadStudentData($student->id); 
     }
 
@@ -199,6 +211,7 @@ class Index extends Component
             $pendingEnrollments = $allEnrollments->whereIn('status', ['Pendiente', 'pendiente', 'Enrolled', 'enrolled']);
             $activeEnrollments = $allEnrollments->whereIn('status', ['Cursando', 'cursando', 'Activo', 'activo']);
             $completedEnrollments = $allEnrollments->whereIn('status', ['Completado', 'completado']);
+            $withdrawnEnrollments = $allEnrollments->whereIn('status', ['Retirado', 'retirado']);
 
             $filteredEnrollmentsQuery = $this->student->enrollments()
                                                      ->with('courseSchedule.module.course', 'courseSchedule.teacher')
@@ -235,9 +248,12 @@ class Index extends Component
             'pendingEnrollments' => $pendingEnrollments,
             'activeEnrollments' => $activeEnrollments,
             'completedEnrollments' => $completedEnrollments,
+            'withdrawnEnrollments' => $withdrawnEnrollments ?? collect(),
             'pendingPayments' => $pendingPayments, 
             'enrollments' => $filteredEnrollments, 
             'payments' => $payments,
+            'allCourses' => Course::orderBy('name')->get(),
+            'allScholarships' => \App\Models\Scholarship::where('is_active', true)->orderBy('name')->get(),
         ]);
     }
 
@@ -343,13 +359,26 @@ class Index extends Component
                     ['description' => 'Pago único de inscripción al curso'] // Sin amount
                 );
 
-                $amount = $schedule->module->course->registration_fee ?? 0;
+                $original_amount = $schedule->module->course->registration_fee ?? 0;
+                $discount_amount = 0;
+                $amount = $original_amount;
+
+                // Aplicar beca a la inscripción si existe
+                if ($this->student->scholarship_id) {
+                    $scholarship = $this->student->scholarship;
+                    if ($scholarship && $scholarship->is_active) {
+                        $discount_amount = $original_amount * ($scholarship->discount_percentage / 100);
+                        $amount = $original_amount - $discount_amount;
+                    }
+                }
 
                 Payment::create([
                     'student_id' => $this->student->id,
                     'enrollment_id' => $enrollment->id,
                     'payment_concept_id' => $inscriptionConcept->id,
                     'amount' => $amount, 
+                    'original_amount' => $original_amount,
+                    'discount_amount' => $discount_amount,
                     'currency' => 'DOP',
                     'status' => 'Pendiente',
                     'gateway' => 'Sistema',
@@ -409,6 +438,136 @@ class Index extends Component
         $this->dispatch('close-modal', 'confirm-unenroll-modal');
         $this->refreshData(); 
         $this->enrollmentToCancelId = null;
+    }
+
+    // --- ACCIONES DE MOVILIDAD ESTUDIANTIL ---
+    
+    public function openChangeSectionModal($enrollmentId)
+    {
+        $this->enrollmentToChangeId = $enrollmentId;
+        $enrollment = Enrollment::with('courseSchedule.module')->find($enrollmentId);
+        
+        if ($enrollment) {
+            $moduleId = $enrollment->courseSchedule->module_id;
+            // Buscar otras secciones disponibles del mismo módulo
+            $this->availableSchedulesForChange = CourseSchedule::with('teacher')
+                ->where('module_id', $moduleId)
+                ->where('id', '!=', $enrollment->courseSchedule_id)
+                ->where('status', '!=', 'Inactivo') // opcional si manejas inactivos
+                ->get()
+                ->filter(function ($schedule) {
+                    return !$schedule->isFull(); // Solo secciones con cupo
+                });
+                
+            $this->selectedNewScheduleId = null;
+            $this->dispatch('open-modal', 'change-section-modal');
+        }
+    }
+
+    public function saveSectionChange()
+    {
+        $this->validate([
+            'selectedNewScheduleId' => 'required|exists:course_schedules,id',
+        ]);
+
+        try {
+            $enrollment = Enrollment::findOrFail($this->enrollmentToChangeId);
+            $newSchedule = CourseSchedule::findOrFail($this->selectedNewScheduleId);
+
+            if ($newSchedule->isFull()) {
+                throw new \Exception('La sección destino está llena.');
+            }
+
+            $oldScheduleId = $enrollment->course_schedule_id;
+            
+            DB::transaction(function () use ($enrollment, $newSchedule) {
+                $enrollment->update([
+                    'course_schedule_id' => $newSchedule->id
+                ]);
+
+                ActivityLog::create([
+                    'user_id' => Auth::id(),
+                    'action' => 'Cambio de Sección',
+                    'description' => "Se movió al estudiante {$this->student->full_name} a la sección #{$newSchedule->id}",
+                    'ip_address' => request()->ip()
+                ]);
+            });
+
+            session()->flash('message', 'Sección cambiada exitosamente.');
+            $this->dispatch('close-modal', 'change-section-modal');
+            $this->refreshData();
+
+        } catch (\Exception $e) {
+            Log::error('Error cambiando sección: ' . $e->getMessage());
+            $this->addError('selectedNewScheduleId', $e->getMessage());
+        }
+    }
+
+    public function confirmWithdraw($enrollmentId)
+    {
+        $this->enrollmentToWithdrawId = $enrollmentId;
+        $this->dispatch('open-modal', 'confirm-withdraw-modal');
+    }
+
+    public function withdrawStudent()
+    {
+        if ($this->enrollmentToWithdrawId) {
+            try {
+                $enrollment = Enrollment::with('payment')->find($this->enrollmentToWithdrawId);
+                
+                if ($enrollment && $enrollment->student_id == $this->student->id) {
+                    
+                    DB::transaction(function () use ($enrollment) {
+                        $enrollment->update(['status' => 'Retirado']);
+                        
+                        // Cancelar pagos vinculados a este enrollment que estén pendientes, para que no generen deuda
+                        $enrollment->individualPayments()->where('status', 'Pendiente')->update(['status' => 'Cancelado']);
+                        if ($enrollment->payment && $enrollment->payment->status == 'Pendiente') {
+                            $enrollment->payment->update(['status' => 'Cancelado']);
+                        }
+
+                        ActivityLog::create([
+                            'user_id' => Auth::id(),
+                            'action' => 'Retiro Académico',
+                            'description' => "Usuario retiró al estudiante {$this->student->full_name} del Enrollment #{$enrollment->id}",
+                            'ip_address' => request()->ip()
+                        ]);
+                    });
+
+                    session()->flash('message', 'Estudiante retirado exitosamente. Se cancelaron cobros futuros asociados.');
+                }
+            } catch (\Exception $e) {
+                Log::error('Error al retirar estudiante: ' . $e->getMessage());
+                session()->flash('error', 'No se pudo retirar al estudiante.');
+            }
+        }
+        $this->dispatch('close-modal', 'confirm-withdraw-modal');
+        $this->refreshData(); 
+        $this->enrollmentToWithdrawId = null;
+    }
+
+    public function reEnrollStudent($enrollmentId)
+    {
+        try {
+            $enrollment = Enrollment::find($enrollmentId);
+            
+            if ($enrollment && $enrollment->student_id == $this->student->id && strtolower($enrollment->status) == 'retirado') {
+                $enrollment->update(['status' => 'Cursando']);
+                
+                ActivityLog::create([
+                    'user_id' => Auth::id(),
+                    'action' => 'Reingreso Académico',
+                    'description' => "Usuario reingresó al estudiante {$this->student->full_name} al Enrollment #{$enrollment->id}",
+                    'ip_address' => request()->ip()
+                ]);
+
+                session()->flash('message', 'Estudiante reingresado a la sección exitosamente.');
+                $this->refreshData();
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al reingresar: ' . $e->getMessage());
+            session()->flash('error', 'No se pudo procesar el reingreso.');
+        }
     }
 
     // --- Métodos CRUD ---
@@ -621,6 +780,9 @@ class Index extends Component
         }
         
         return [
+            'student_course_id' => 'nullable|exists:courses,id',
+            'scholarship_id' => 'nullable|exists:scholarships,id',
+            'rnc' => 'nullable|string|max:20',
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
             'email' => [
@@ -668,6 +830,9 @@ class Index extends Component
         $this->resetValidation(); 
         $this->student_id = $this->student->id;
         
+        $this->student_course_id = $this->student->course_id;
+        $this->scholarship_id = $this->student->scholarship_id;
+        $this->rnc = $this->student->rnc;
         $this->first_name = $this->student->first_name;
         $this->last_name = $this->student->last_name;
         $this->cedula = $this->student->cedula;
@@ -699,6 +864,9 @@ class Index extends Component
         try {
             DB::transaction(function() {
                 $this->student->update([
+                    'course_id' => $this->student_course_id,
+                    'scholarship_id' => $this->scholarship_id,
+                    'rnc' => $this->rnc,
                     'first_name' => $this->first_name,
                     'last_name' => $this->last_name,
                     'cedula' => $this->cedula,
@@ -770,6 +938,9 @@ class Index extends Component
     {
         if ($this->student) {
             $this->student_id = $this->student->id;
+            $this->student_course_id = $this->student->course_id;
+            $this->scholarship_id = $this->student->scholarship_id;
+            $this->rnc = $this->student->rnc;
             $this->first_name = $this->student->first_name;
             $this->last_name = $this->student->last_name;
             $this->cedula = $this->student->cedula;

@@ -48,6 +48,15 @@
                 <h1 class="text-2xl font-bold text-gray-900">{{ $student->fullName }}</h1>
                 <p class="text-sm text-gray-600">{{ $student->email }}</p>
                 <p class="text-sm text-gray-600">Cédula: {{ $student->cedula ?? 'N/A' }}</p>
+                @if($student->course)
+                    <p class="text-sm font-semibold text-indigo-700 mt-2 hover:underline cursor-help" title="Programa/Curso Principal">🎓 {{ $student->course->name }}</p>
+                @endif
+                @if($student->scholarship)
+                    <p class="text-xs font-semibold text-green-700 mt-1" title="Beca Asignada">🎟️ {{ $student->scholarship->name }} (-{{ number_format($student->scholarship->discount_percentage, 0) }}%)</p>
+                @endif
+                @if($student->rnc)
+                    <p class="text-xs text-gray-500 mt-1">Resp. Financiero RNC: {{ $student->rnc }}</p>
+                @endif
                 <span @class([
                             'mt-3 inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium',
                             'bg-green-100 text-green-800' => $student->status === 'Activo',
@@ -286,6 +295,12 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-center">{{ $enrollment->final_grade ?? 'N/A' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
+                                        <button wire:click="openChangeSectionModal({{ $enrollment->id }})" class="text-blue-600 hover:text-blue-900 transition ease-in-out duration-150" title="Cambiar Sección">
+                                            <i class="fas fa-exchange-alt"></i> Cambiar
+                                        </button>
+                                        <button wire:click="confirmWithdraw({{ $enrollment->id }})" class="text-orange-600 hover:text-orange-900 transition ease-in-out duration-150" title="Retirar Estudiante">
+                                            <i class="fas fa-user-minus"></i> Retirar
+                                        </button>
                                         <button wire:click="confirmUnenroll({{ $enrollment->id }})" class="text-red-600 hover:text-red-900 transition ease-in-out duration-150" title="Anular Inscripción">
                                             <i class="fas fa-times-circle"></i> Anular
                                         </button>
@@ -344,6 +359,48 @@
                     </table>
                 </div>
             </div>
+
+            <!-- 4. Cursos Retirados -->
+            @if($withdrawnEnrollments->count() > 0)
+            <div>
+                <h3 class="text-lg font-semibold text-red-800 mb-4">
+                    <i class="fas fa-user-slash mr-2"></i> Cursos Retirados
+                </h3>
+                <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Módulo / Sección</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profesor</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach ($withdrawnEnrollments as $enrollment)
+                                <tr class="hover:bg-gray-50" wire:key="withdrawn-enrollment-{{ $enrollment->id }}">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ $enrollment->courseSchedule->module->name ?? 'N/A' }}</div>
+                                        <div class="text-sm text-gray-600">{{ $enrollment->courseSchedule->section_name ?? $enrollment->courseSchedule->id }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $enrollment->courseSchedule->teacher->name ?? 'No asignado' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                            Retirado
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button wire:click="reEnrollStudent({{ $enrollment->id }})" class="text-green-600 hover:text-green-900 transition ease-in-out duration-150" title="Reingresar Estudiante">
+                                            <i class="fas fa-undo"></i> Reingresar
+                                        </button>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
 
         </div>
 
@@ -532,6 +589,76 @@
         </div>
     </x-modal>
 
+    <!-- Modal de Cambio de Sección -->
+    <x-modal name="change-section-modal" maxWidth="2xl">
+        <form wire:submit.prevent="saveSectionChange">
+            <div class="p-6 bg-white">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">
+                    Cambiar Estudiante de Sección
+                </h2>
+                
+                <p class="text-sm text-gray-600 mb-4">
+                    Selecciona la nueva sección a la que deseas mover al estudiante. Solo se muestran secciones del mismo módulo que tienen cupos disponibles.
+                </p>
+
+                <x-input-error :messages="$errors->get('selectedNewScheduleId')" class="mt-2 mb-4" />
+
+                @if($availableSchedulesForChange && $availableSchedulesForChange->count() > 0)
+                    <div class="space-y-3 max-h-60 overflow-y-auto">
+                        @foreach($availableSchedulesForChange as $schedule)
+                            <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" wire:model="selectedNewScheduleId" value="{{ $schedule->id }}" class="text-indigo-600 focus:ring-indigo-500">
+                                <div class="ml-3">
+                                    <span class="block text-sm font-medium text-gray-900">
+                                        Sección: {{ $schedule->section_name ?? $schedule->id }}
+                                    </span>
+                                    <span class="block text-sm text-gray-500">
+                                        Profesor: {{ $schedule->teacher->name ?? 'N/A' }} | 
+                                        Horario: {{ implode(', ', $schedule->days_of_week ?? []) }} ({{ \Carbon\Carbon::parse($schedule->start_time)->format('h:i A') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') }})
+                                    </span>
+                                </div>
+                            </label>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="p-4 bg-yellow-50 text-yellow-800 rounded-lg">
+                        <i class="fas fa-exclamation-circle mr-2"></i> No hay otras secciones disponibles o con cupo para este módulo.
+                    </div>
+                @endif
+            </div>
+
+            <div class="flex justify-end mt-6 p-6 bg-gray-100 rounded-b-lg">
+                <x-secondary-button x-on:click="$dispatch('close')">
+                    Cancelar
+                </x-secondary-button>
+
+                <x-primary-button class="ms-3" type="submit" wire:loading.attr="disabled" :disabled="!$selectedNewScheduleId">
+                    Confirmar Cambio
+                </x-primary-button>
+            </div>
+        </form>
+    </x-modal>
+
+    <!-- Modal de Confirmación de Retiro -->
+    <x-modal name="confirm-withdraw-modal" focusable>
+        <div class="p-6 bg-white">
+            <h2 class="text-lg font-medium text-gray-900">
+                ¿Retirar Estudiante?
+            </h2>
+            <p class="mt-1 text-sm text-gray-600">
+                Al retirar al estudiante, su estado cambiará a "Retirado". Se cancelarán todos los cargos futuros o pendientes atados a esta inscripción para evitar deudas injustificadas. La asistencia guardada se mantendrá intacta en su historial.
+            </p>
+            <div class="mt-6 flex justify-end">
+                <x-secondary-button x-on:click="$dispatch('close')">
+                    Cancelar
+                </x-secondary-button>
+                <x-danger-button class="ms-3 bg-orange-600 hover:bg-orange-700" wire:click="withdrawStudent">
+                    Sí, Retirar
+                </x-danger-button>
+            </div>
+        </div>
+    </x-modal>
+
     {{-- Incluir el modal de pago en la página --}}
     @livewire('finance.payment-modal', ['student' => $student], key('payment-modal-'.$student->id))
 
@@ -554,8 +681,37 @@
 
                     {{-- Columna 1: Información Personal --}}
                     <div class="flex-1 space-y-4">
-                        <h3 class="text-md font-semibold text-gray-700 border-b pb-2">Información Personal</h3>
+                        <h3 class="text-md font-semibold text-gray-700 border-b pb-2">Información Académica y Personal</h3>
                         
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="student_course_id" value="Programa / Curso Principal" />
+                                <select wire:model="student_course_id" id="student_course_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                                    <option value="">Ninguno</option>
+                                    @foreach($allCourses as $c)
+                                        <option value="{{ $c->id }}">{{ $c->name }}</option>
+                                    @endforeach
+                                </select>
+                                <x-input-error :messages="$errors->get('student_course_id')" class="mt-2" />
+                            </div>
+                            <div>
+                                <x-input-label for="scholarship_id" value="Beca Institucional" />
+                                <select wire:model="scholarship_id" id="scholarship_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                                    <option value="">Ninguna</option>
+                                    @foreach($allScholarships as $scholarship)
+                                        <option value="{{ $scholarship->id }}">{{ $scholarship->name }} (-{{ number_format($scholarship->discount_percentage, 0) }}%)</option>
+                                    @endforeach
+                                </select>
+                                <x-input-error :messages="$errors->get('scholarship_id')" class="mt-2" />
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <x-input-label for="rnc" value="RNC / Cédula Facturación (Opcional)" />
+                            <x-text-input wire:model="rnc" id="rnc" class="block mt-1 w-full" type="text" placeholder="Ej: 101000000" />
+                            <x-input-error :messages="$errors->get('rnc')" class="mt-2" />
+                        </div>
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <x-input-label for="first_name" value="Nombre" />

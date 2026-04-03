@@ -46,7 +46,7 @@ class ProcessMonthlyPayments extends Command
         $dueEnrollments = Enrollment::whereIn('status', ['Cursando', 'Activo']) // Algunos lugares usan Activo o Cursando
             ->whereNotNull('next_billing_date')
             ->whereDate('next_billing_date', '<=', $today)
-            ->with(['courseSchedule.module.course', 'student'])
+            ->with(['courseSchedule.module.course', 'student.scholarship'])
             ->get();
 
         $count = 0;
@@ -88,11 +88,26 @@ class ProcessMonthlyPayments extends Command
                         ->exists();
                         
                     if (!$recentPayment) {
+                        $original_amount = $course->monthly_fee;
+                        $discount_amount = 0.00;
+                        $final_amount = $original_amount;
+
+                        // Aplicar beca si el estudiante la tiene
+                        if ($enrollment->student && $enrollment->student->scholarship_id) {
+                            $scholarship = $enrollment->student->scholarship;
+                            if ($scholarship && $scholarship->is_active) {
+                                $discount_amount = $original_amount * ($scholarship->discount_percentage / 100);
+                                $final_amount = $original_amount - $discount_amount;
+                            }
+                        }
+
                         Payment::create([
                             'student_id' => $enrollment->student_id,
                             'enrollment_id' => $enrollment->id,
                             'payment_concept_id' => $monthlyConcept->id,
-                            'amount' => $course->monthly_fee,
+                            'amount' => $final_amount,
+                            'original_amount' => $original_amount,
+                            'discount_amount' => $discount_amount,
                             'currency' => 'DOP',
                             'status' => 'Pendiente', // Se genera como deuda
                             'gateway' => 'Sistema Automático',

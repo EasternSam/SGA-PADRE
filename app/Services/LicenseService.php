@@ -148,11 +148,13 @@ class LicenseService
             }
 
             $this->errorMessage = 'Error de conexión con el servidor de licencias (' . $response->status() . ')';
-            return false;
+            Log::warning($this->errorMessage . ' - Activando modo offline.');
+            return true;
 
         } catch (\Exception $e) {
             $this->errorMessage = 'Error de conexión: ' . $e->getMessage();
-            return false;
+            Log::warning($this->errorMessage . ' - Activando modo offline.');
+            return true;
         }
     }
 }

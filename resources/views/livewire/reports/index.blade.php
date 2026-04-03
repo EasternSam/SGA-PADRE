@@ -6,7 +6,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="w-full px-2 lg:px-6">
+        <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     
@@ -22,25 +22,37 @@
 
                     {{-- 1. SELECCIÓN DE TIPO DE REPORTE (Pestañas Superiores) --}}
                     <div class="mb-8">
-                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ __('Seleccione el Tipo de Reporte') }}</label>
-                        <div class="flex flex-wrap gap-2">
-                            @foreach([
-                                'attendance' => 'Asistencia',
-                                'grades' => 'Calificaciones',
-                                'payments' => 'Pagos y Deudas',
-                                'students' => 'Estudiantes',
-                                'calendar' => 'Calendario',
-                                'assignments' => 'Cargas Académicas'
-                            ] as $key => $label)
-                                <button 
-                                    wire:click="$set('reportType', '{{ $key }}')" 
-                                    class="px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 border 
-                                    {{ $reportType === $key 
-                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' 
-                                        : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50 hover:text-gray-900' }}">
-                                    {{ $label }}
-                                </button>
-                            @endforeach
+                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ __('Seleccione el Tipo de Reporte (Categorizados)') }}</label>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <!-- ACADÉMICO -->
+                            <div class="bg-blue-50 bg-opacity-50 p-4 rounded-xl border border-blue-100 flex flex-col h-full">
+                                <h4 class="text-xs font-bold text-blue-800 uppercase tracking-wider mb-3">Registro y Académico</h4>
+                                <div class="flex flex-col gap-2">
+                                    @foreach(['attendance' => 'Asistencia', 'grades' => 'Calificaciones', 'students' => 'Estudiantes', 'calendar' => 'Calendario', 'assignments' => 'Cargas Académicas', 'cohort_stats' => 'Retención (Estadísticas)', 'graduation_eligibility' => 'Elegibles Graduación', 'transcript' => 'Récord de Notas'] as $key => $label)
+                                        <button wire:click="$set('reportType', '{{ $key }}')" class="text-left px-4 py-2 text-sm font-medium transition-colors duration-200 border rounded-lg {{ $reportType === $key ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50' }}">{{ $label }}</button>
+                                    @endforeach
+                                </div>
+                            </div>
+                            
+                            <!-- CAJA Y TESORERÍA -->
+                            <div class="bg-emerald-50 bg-opacity-50 p-4 rounded-xl border border-emerald-100 flex flex-col h-full">
+                                <h4 class="text-xs font-bold text-emerald-800 uppercase tracking-wider mb-3">Caja y Tesorería</h4>
+                                <div class="flex flex-col gap-2">
+                                    @foreach(['cash_closing' => 'Arqueo / Cierre de Caja Diario', 'debtors' => 'Deudores (Cuentas por Cobrar)', 'income_by_concept' => 'Ingresos por Conceptos'] as $key => $label)
+                                        <button wire:click="$set('reportType', '{{ $key }}')" class="text-left px-4 py-2 text-sm font-medium transition-colors duration-200 border rounded-lg {{ $reportType === $key ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50' }}">{{ $label }}</button>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            <!-- CONTABILIDAD -->
+                            <div class="bg-purple-50 bg-opacity-50 p-4 rounded-xl border border-purple-100 flex flex-col h-full">
+                                <h4 class="text-xs font-bold text-purple-800 uppercase tracking-wider mb-3">Contabilidad y Finanzas</h4>
+                                <div class="flex flex-col gap-2">
+                                    @foreach(['payments' => 'Balance Gral. por Inscripción', 'dgii_billing' => 'Facturación DGII (607)', 'scholarships_granted' => 'Subsidios y Becas', 'cash_flow' => 'Flujo de Efectivo'] as $key => $label)
+                                        <button wire:click="$set('reportType', '{{ $key }}')" class="text-left px-4 py-2 text-sm font-medium transition-colors duration-200 border rounded-lg {{ $reportType === $key ? 'bg-purple-600 text-white border-purple-600 shadow-md' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50' }}">{{ $label }}</button>
+                                    @endforeach
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -55,9 +67,21 @@
                             {{-- Indicador del reporte activo --}}
                             <span class="text-xs font-semibold text-gray-500 bg-white px-2 py-1 rounded border border-gray-200">
                                 @switch($reportType)
-                                    @case('attendance') Módulo de Asistencia @break
-                                    @case('grades') Módulo de Notas @break
-                                    @case('payments') Módulo Financiero @break
+                                    @case('attendance') 
+                                    @case('grades')
+                                    @case('students') 
+                                    @case('calendar') 
+                                    @case('assignments') 
+                                        Módulo de Registro @break
+                                    @case('cash_closing')
+                                    @case('debtors')
+                                    @case('income_by_concept')
+                                        Módulo de Caja/Tesorería @break
+                                    @case('payments') 
+                                    @case('dgii_billing') 
+                                    @case('scholarships_granted') 
+                                    @case('cash_flow')
+                                        Módulo Contable @break
                                     @default Vista General
                                 @endswitch
                             </span>
@@ -65,7 +89,7 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
                             {{-- Filtros de Fecha --}}
-                            @if(in_array($reportType, ['payments', 'calendar']))
+                            @if(in_array($reportType, ['payments', 'calendar', 'cash_closing', 'income_by_concept', 'dgii_billing', 'cash_flow', 'scholarships_granted']))
                                 <div class="md:col-span-3">
                                     <x-input-label for="date_from" :value="__('Desde')" />
                                     <input type="date" id="date_from" wire:model="date_from" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
@@ -77,7 +101,7 @@
                             @endif
 
                             {{-- Filtros de Curso/Sección --}}
-                            @if(in_array($reportType, ['attendance', 'grades', 'students', 'assignments', 'payments']))
+                            @if(in_array($reportType, ['attendance', 'grades', 'students', 'assignments', 'payments', 'cohort_stats', 'graduation_eligibility']))
                                 <div class="md:col-span-3">
                                     <x-input-label for="course_id" :value="__('Curso')" />
                                     <select id="course_id" wire:model.live="course_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
@@ -91,7 +115,7 @@
                             @endif
 
                             {{-- NUEVO: Filtro de Módulo (Intermedio) --}}
-                            @if(in_array($reportType, ['attendance', 'grades', 'students']) && $course_id)
+                            @if(in_array($reportType, ['attendance', 'grades', 'students', 'cohort_stats']) && $course_id)
                                 <div class="md:col-span-3">
                                     <x-input-label for="module_id" :value="__('Módulo')" />
                                     <select id="module_id" wire:model.live="module_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
@@ -105,7 +129,7 @@
                             @endif
 
                             {{-- Filtro de Sección (Ahora depende de module_id) --}}
-                            @if(in_array($reportType, ['attendance', 'grades', 'students']) && $module_id)
+                            @if(in_array($reportType, ['attendance', 'grades', 'students', 'cohort_stats']) && $module_id)
                                 <div class="md:col-span-3">
                                     <x-input-label for="schedule_id" :value="__('Sección / Horario')" />
                                     <select id="schedule_id" wire:model="schedule_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
@@ -142,6 +166,20 @@
                                         <option value="pending">Solo Pendientes/Deuda</option>
                                         <option value="paid">Solo Pagados</option>
                                     </select>
+                                </div>
+                            @endif
+
+                            {{-- Filtro de Estudiante (Para Récord de Notas) --}}
+                            @if($reportType === 'transcript')
+                                <div class="md:col-span-6">
+                                    <x-input-label for="student_id" :value="__('Buscar Estudiante')" />
+                                    <select id="student_id" wire:model="student_id" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
+                                        <option value="">-- Seleccionar Estudiante --</option>
+                                        @foreach($students_list as $student)
+                                            <option value="{{ $student->id }}">{{ $student->first_name }} {{ $student->last_name }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('student_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                                 </div>
                             @endif
 
@@ -197,10 +235,10 @@
                                         {{ __('Descargar PDF') }}
                                     </a>
                                 @else
-                                    {{-- Botón JS Print para otros reportes --}}
-                                    <button onclick="printReport()" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150">
-                                        <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                                        {{ __('Imprimir / PDF') }}
+                                    {{-- Botón Generic PDF Export --}}
+                                    <button wire:click="exportToPdf" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                        {{ __('Descargar PDF') }}
                                     </button>
                                 @endif
                             </div>
@@ -218,6 +256,24 @@
                                     @if(view()->exists('reports.calendar-report')) @include('reports.calendar-report', ['data' => $reportData]) @else <div class="text-red-500">Vista no encontrada.</div> @endif
                                 @elseif($generatedReportType === 'assignments')
                                     @if(view()->exists('reports.assignment-report')) @include('reports.assignment-report', ['data' => $reportData]) @else <div class="text-red-500">Vista no encontrada.</div> @endif
+                                @elseif($generatedReportType === 'cash_closing')
+                                    @if(view()->exists('reports.cash-closing-report')) @include('reports.cash-closing-report', ['data' => $reportData]) @else <div class="text-red-500">Vista no encontrada.</div> @endif
+                                @elseif($generatedReportType === 'debtors')
+                                    @if(view()->exists('reports.debtors-report')) @include('reports.debtors-report', ['data' => $reportData]) @else <div class="text-red-500">Vista no encontrada.</div> @endif
+                                @elseif($generatedReportType === 'income_by_concept')
+                                    @if(view()->exists('reports.income-report')) @include('reports.income-report', ['data' => $reportData]) @else <div class="text-red-500">Vista no encontrada.</div> @endif
+                                @elseif($generatedReportType === 'dgii_billing')
+                                    @if(view()->exists('reports.dgii-billing-report')) @include('reports.dgii-billing-report', ['data' => $reportData]) @else <div class="text-red-500">Vista no encontrada.</div> @endif
+                                @elseif($generatedReportType === 'scholarships_granted')
+                                    @if(view()->exists('reports.scholarships-granted-report')) @include('reports.scholarships-granted-report', ['data' => $reportData]) @else <div class="text-red-500">Vista no encontrada.</div> @endif
+                                @elseif($generatedReportType === 'cash_flow')
+                                    @if(view()->exists('reports.cash-flow-report')) @include('reports.cash-flow-report', ['data' => $reportData]) @else <div class="text-red-500">Vista no encontrada.</div> @endif
+                                @elseif($generatedReportType === 'cohort_stats')
+                                    @if(view()->exists('reports.cohort-stats-report')) @include('reports.cohort-stats-report', ['data' => $reportData]) @else <div class="text-red-500">Vista no encontrada.</div> @endif
+                                @elseif($generatedReportType === 'graduation_eligibility')
+                                    @if(view()->exists('reports.graduation-report')) @include('reports.graduation-report', ['data' => $reportData]) @else <div class="text-red-500">Vista no encontrada.</div> @endif
+                                @elseif($generatedReportType === 'transcript')
+                                    @if(view()->exists('reports.transcript-report')) @include('reports.transcript-report', ['data' => $reportData]) @else <div class="text-red-500">Vista no encontrada.</div> @endif
                                 @endif
                             </div>
                         </div>

@@ -1,5 +1,5 @@
 <div class="py-12">
-    <div class="w-full px-2 lg:px-6">
+    <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8">
         
         <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
             <div>

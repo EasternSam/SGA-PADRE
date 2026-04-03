@@ -16,11 +16,18 @@
                 <span class="block sm:inline">{{ session('error') }}</span>
             </div>
         @endif
+        @if (session()->has('warning'))
+            <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 4000)" x-show="show" 
+                 class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg shadow-lg" role="alert">
+                <strong class="font-bold">Aviso:</strong>
+                <span class="block sm:inline">{{ session('warning') }}</span>
+            </div>
+        @endif
     </div>
 
     {{-- Encabezado y Búsqueda --}}
     <header class="bg-white shadow-sm mb-6 sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
             <h1 class="text-xl font-semibold text-gray-900 w-full sm:w-auto">Gestión Académica</h1>
             <div class="w-full sm:w-1/3 relative">
                 <input wire:model.live.debounce.300ms="search" 
@@ -40,7 +47,7 @@
     </header>
 
     {{-- Contenido Principal - Columnas --}}
-    <div class="w-full px-2 lg:px-6">
+    <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8">
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-140px)] items-start">
 
@@ -249,6 +256,11 @@
                                             <!-- Enlace Moodle (NUEVO: Nivel Sección) -->
                                             <button wire:click.stop="openMoodleLinkModal('schedule', {{ $schedule->id }})" class="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors" title="Enlazar con Moodle">
                                                 <i class="fas fa-graduation-cap text-xs"></i>
+                                            </button>
+
+                                            <!-- Fusión / Mover (NUEVO) -->
+                                            <button wire:click.stop="openMergeModal({{ $schedule->id }})" class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors" title="Mover Estudiantes a Otra Sección">
+                                                <i class="fas fa-users-cog text-xs"></i>
                                             </button>
 
                                             <!-- Enlace WP (Existente) -->
@@ -661,6 +673,61 @@
                     Guardar Enlace
                 </button>
                 @endif
+            </div>
+        </div>
+    </x-modal>
+
+    <!-- Modal Fusión de Secciones (NUEVO) -->
+    <x-modal name="merge-modal" maxWidth="md">
+        <div class="p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-2">Mover Estudiantes (Fusión)</h2>
+            <p class="text-sm text-gray-600 mb-4">
+                Hay <strong class="text-green-600 font-bold">{{ $mergeStudentCount }}</strong> estudiante(s) activo(s) en esta sección.
+                Selecciona la sección destino a la cual deseas trasladarlos.
+            </p>
+
+            @if(session()->has('warning'))
+                <div class="bg-yellow-50 text-yellow-800 p-3 rounded-lg text-sm mb-4">
+                    <i class="fas fa-exclamation-triangle mr-1"></i> {{ session('warning') }}
+                </div>
+            @endif
+
+            @if($availableMergeDestinations && count($availableMergeDestinations) > 0)
+                <div class="mt-4 space-y-3">
+                    <label for="mergeToScheduleId" class="block text-sm font-medium text-gray-700">Sección Destino</label>
+                    <div class="max-h-60 overflow-y-auto space-y-2">
+                        @foreach($availableMergeDestinations as $dest)
+                            <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-indigo-50 transition-colors {{ $mergeToScheduleId == $dest->id ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200' }}">
+                                <input type="radio" wire:model="mergeToScheduleId" value="{{ $dest->id }}" class="mt-1 text-indigo-600 focus:ring-indigo-500">
+                                <div class="ml-3 flex-1">
+                                    <span class="block text-sm font-medium text-gray-900">
+                                        {{ $dest->section_name ?? 'Sección ' . $dest->id }}
+                                    </span>
+                                    <span class="block text-xs text-gray-500 mt-1">
+                                        Prof: {{ $dest->teacher->name ?? 'N/A' }}
+                                    </span>
+                                    <span class="block text-xs text-gray-500 flex items-center mt-1">
+                                        <i class="far fa-clock mr-1"></i>
+                                        {{ implode(', ', $dest->days_of_week ?? []) }} | {{ $dest->start_time ? \Carbon\Carbon::parse($dest->start_time)->format('h:i A') : 'N/A' }}
+                                    </span>
+                                </div>
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('mergeToScheduleId') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+            @else
+                <div class="bg-yellow-50 text-yellow-800 p-4 rounded-lg mt-4">
+                    <i class="fas fa-exclamation-circle mr-2"></i> No hay otras secciones activas en este módulo disponibles para mover a los alumnos.
+                </div>
+            @endif
+
+            <div class="flex justify-end mt-6">
+                <button type="button" x-on:click="$dispatch('close-modal', 'merge-modal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">Cancelar</button>
+                <button type="button" wire:click="saveMerge" wire:loading.attr="disabled" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg flex items-center disabled:opacity-50">
+                    <svg wire:loading wire:target="saveMerge" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Confirmar Traslado
+                </button>
             </div>
         </div>
     </x-modal>

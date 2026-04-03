@@ -5,10 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\RecordsActivity;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class CourseSchedule extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, RecordsActivity, LogsActivity;
     
     protected $fillable = [
         'module_id',
@@ -23,12 +26,21 @@ class CourseSchedule extends Model
         'modality', 
         'capacity',
         'status', // <-- Agregado status que faltaba y es vital
+        'is_locked',
     ];
 
     protected $casts = [
         'days_of_week' => 'array', 
         'capacity' => 'integer',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['teacher_id', 'classroom_id', 'status', 'modality', 'start_date', 'end_date', 'start_time', 'end_time', 'days_of_week'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
 
     /**
      * Accessor para compatibilidad con vistas que usan 'day_of_week' (singular).

@@ -18,6 +18,8 @@ class Payment extends Model
         'payment_concept_id',
         'user_id',
         'amount',
+        'original_amount',
+        'discount_amount',
         'currency',
         'status',
         'gateway',
@@ -57,6 +59,13 @@ class Payment extends Model
 
         static::updating(function ($payment) {
             self::processPaymentFiscal($payment);
+        });
+
+        // 1.5 Antes de Eliminar (Prevenir vacíos contables en DGII)
+        static::deleting(function ($payment) {
+            if (!empty($payment->ncf)) {
+                throw new \Exception("PROTECCIÓN FISCAL: No se puede eliminar este cobro porque ya tiene un Comprobante Fiscal (NCF: {$payment->ncf}) generado. Para anularlo legalmente y no crear un salto de secuencia en la DGII, debe usar el proceso de Nota de Crédito.");
+            }
         });
 
         // 2. Después de Guardar (Para tener un ID de pago real para el Asiento Contable)

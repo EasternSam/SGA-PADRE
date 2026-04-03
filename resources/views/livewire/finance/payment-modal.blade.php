@@ -204,7 +204,14 @@
 
                                     {{-- Monto --}}
                                     <div>
-                                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Monto (DOP)</label>
+                                        <div class="flex justify-between items-center mb-2">
+                                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide">Monto (DOP)</label>
+                                            @if($discount_amount > 0)
+                                                <span class="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full border border-green-200">
+                                                    Beca aplicada: -RD$ {{ number_format($discount_amount, 2) }}
+                                                </span>
+                                            @endif
+                                        </div>
                                         <div class="relative rounded-md shadow-sm">
                                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                 <span class="text-gray-500 sm:text-lg font-bold">$</span>

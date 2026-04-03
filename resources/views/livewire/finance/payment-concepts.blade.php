@@ -1,7 +1,7 @@
 <div>
     {{-- Título y Botón --}}
     <header class="bg-white shadow-sm mb-6 rounded-lg border border-gray-100">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div>
                 <h1 class="text-xl font-bold text-gray-900">Conceptos de Pago</h1>
                 <p class="text-sm text-gray-500">Administra los precios y servicios (ej. Diplomas, Inscripciones).</p>
@@ -24,7 +24,7 @@
     </header>
 
     {{-- Contenido Principal --}}
-    <div class="w-full px-2 lg:px-6">
+    <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8">
         
         {{-- Mensajes Flash --}}
         @if (session()->has('message'))

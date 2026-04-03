@@ -78,17 +78,28 @@ class AttendancePdfController extends Controller
             $attendances[$dateStr][$record->enrollment_id] = $record;
         }
 
-        // 5. Generar PDF
-        $pdf = Pdf::loadView('livewire.reports.attendance-report', [
-            'section' => $section,
-            'enrollments' => $section->enrollments,
-            'dates' => $finalDates,
-            'attendances' => $attendances
+        // 5. Preparar datos para inyección de vista parcial
+        $reportData = [
+            'schedule' => $section,
+            'students' => $section->enrollments->pluck('student'),
+            'dates' => $finalDates->map(fn($d) => $d->format('Y-m-d'))->toArray(),
+            'matrix' => $attendances
+        ];
+
+        // Se usa la vista parcial directamente y se inyecta en el layout maestro
+        $html = view('reports.attendance-report', ['reportData' => $reportData])->render();
+
+        $pdf = Pdf::loadView('reports.layouts.pdf', [
+            'html' => $html,
+            'title' => 'Reporte Oficial de Asistencia',
+            'subtitle' => $section->section_name
         ]);
 
         $pdf->setPaper('a4', 'landscape');
 
-        return $pdf->stream('Reporte_Asistencia_' . $section->section_name . '.pdf');
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->stream();
+        }, 'Reporte_Asistencia_' . $section->section_name . '.pdf');
     }
 
     /**

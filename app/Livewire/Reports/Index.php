@@ -16,6 +16,7 @@ use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class Index extends Component
 {
@@ -27,6 +28,7 @@ class Index extends Component
     public $module_id = '';
     public $schedule_id = '';
     public $teacher_id = '';
+    public $student_id = '';
     public $date_from;
     public $date_to;
     public $payment_status = 'all';
@@ -36,6 +38,7 @@ class Index extends Component
     public $modules = [];
     public $schedules = [];
     public $teachers = [];
+    public $students_list = [];
 
     // Datos del Reporte Generado
     public $reportData = null;
@@ -49,6 +52,7 @@ class Index extends Component
         // Cargar solo campos necesarios para los selectores iniciales
         $this->courses = Course::select('id', 'name')->orderBy('name')->get();
         $this->teachers = User::role('Profesor')->select('id', 'name')->orderBy('name')->get();
+        $this->students_list = Student::select('id', 'first_name', 'last_name')->orderBy('first_name')->get();
     }
 
     public function updatedCourseId($value)
@@ -110,6 +114,33 @@ class Index extends Component
             case 'assignments':
                 $this->generateAssignmentsReport();
                 break;
+            case 'cash_closing':
+                $this->generateCashClosingReport();
+                break;
+            case 'debtors':
+                $this->generateDebtorsReport();
+                break;
+            case 'income_by_concept':
+                $this->generateIncomeByConceptReport();
+                break;
+            case 'dgii_billing':
+                $this->generateDgiiBillingReport();
+                break;
+            case 'scholarships_granted':
+                $this->generateScholarshipsGrantedReport();
+                break;
+            case 'cash_flow':
+                $this->generateCashFlowReport();
+                break;
+            case 'cohort_stats':
+                $this->generateCohortStatsReport();
+                break;
+            case 'graduation_eligibility':
+                $this->generateGraduationEligibilityReport();
+                break;
+            case 'transcript':
+                $this->generateTranscriptReport();
+                break;
         }
     }
 
@@ -119,14 +150,18 @@ class Index extends Component
             'reportType' => 'required',
         ];
 
-        if (in_array($this->reportType, ['attendance', 'grades', 'students'])) {
+        if (in_array($this->reportType, ['attendance', 'grades', 'students', 'cohort_stats'])) {
             $rules['course_id'] = 'required';
             $rules['module_id'] = 'required';
             $rules['schedule_id'] = 'required';
         }
 
+        if ($this->reportType === 'transcript') {
+            $rules['student_id'] = 'required';
+        }
+
         // MODIFICADO: Quitamos 'attendance' de aquí porque las fechas vendrán de la BD
-        if (in_array($this->reportType, ['payments', 'calendar'])) {
+        if (in_array($this->reportType, ['payments', 'calendar', 'cash_closing', 'income_by_concept'])) {
             $rules['date_from'] = 'required|date';
             $rules['date_to'] = 'required|date|after_or_equal:date_from';
         }
@@ -135,6 +170,7 @@ class Index extends Component
             'course_id.required' => 'Seleccione un curso.',
             'module_id.required' => 'Seleccione un módulo.',
             'schedule_id.required' => 'Seleccione una sección.',
+            'student_id.required' => 'Debe seleccionar un estudiante.',
             'date_from.required' => 'La fecha de inicio es requerida.',
             'date_to.after_or_equal' => 'La fecha fin debe ser igual o posterior a la fecha de inicio.',
         ]);
@@ -519,6 +555,301 @@ class Index extends Component
         $this->reportData = [
             'assignments' => $assignments,
         ];
+    }
+
+    public function generateCashClosingReport()
+    {
+        $query = Payment::with(['user', 'student'])
+            ->whereIn('status', ['Pagado', 'Completado', 'Succeeded', 'Aprobado'])
+            ->whereBetween('created_at', [$this->date_from . ' 00:00:00', $this->date_to . ' 23:59:59']);
+
+        $payments = $query->get();
+
+        $summary = [];
+        $total = 0;
+
+        foreach ($payments as $payment) {
+            $cajero = $payment->user ? $payment->user->name : 'Sistema Automático';
+            $metodo = $payment->gateway ?: 'No Especificado';
+
+            if (!isset($summary[$cajero])) {
+                $summary[$cajero] = ['total' => 0, 'methods' => []];
+            }
+            if (!isset($summary[$cajero]['methods'][$metodo])) {
+                $summary[$cajero]['methods'][$metodo] = 0;
+            }
+
+            $summary[$cajero]['methods'][$metodo] += $payment->amount;
+            $summary[$cajero]['total'] += $payment->amount;
+            $total += $payment->amount;
+        }
+
+        $this->reportData = [
+            'summary' => $summary,
+            'details' => $payments,
+            'grand_total' => $total,
+            'date_from' => $this->date_from,
+            'date_to' => $this->date_to,
+        ];
+    }
+
+    public function generateDebtorsReport()
+    {
+        $query = Payment::with(['student', 'paymentConcept', 'enrollment.courseSchedule.module.course'])
+            ->whereIn('status', ['Pendiente', 'pending'])
+            ->orderBy('due_date', 'asc');
+
+        $debts = $query->get();
+
+        $studentsData = [];
+        $totalDebt = 0;
+
+        foreach ($debts as $debt) {
+            if (!$debt->student) continue;
+
+            $sId = $debt->student->id;
+            if (!isset($studentsData[$sId])) {
+                $studentsData[$sId] = [
+                    'student' => $debt->student,
+                    'total_debt' => 0,
+                    'debts' => []
+                ];
+            }
+
+            $studentsData[$sId]['total_debt'] += $debt->amount;
+            $studentsData[$sId]['debts'][] = $debt;
+            $totalDebt += $debt->amount;
+        }
+
+        usort($studentsData, function($a, $b) {
+            return $b['total_debt'] <=> $a['total_debt'];
+        });
+
+        $this->reportData = [
+            'students' => $studentsData,
+            'grand_total' => $totalDebt
+        ];
+    }
+
+    public function generateIncomeByConceptReport()
+    {
+        $query = Payment::with('paymentConcept')
+            ->whereIn('status', ['Pagado', 'Completado', 'Succeeded', 'Aprobado'])
+            ->whereBetween('updated_at', [$this->date_from . ' 00:00:00', $this->date_to . ' 23:59:59']);
+
+        $payments = $query->get();
+
+        $summary = [];
+        $total = 0;
+
+        foreach ($payments as $payment) {
+            $concept = $payment->paymentConcept ? $payment->paymentConcept->name : 'Sin Concepto Específico';
+
+            if (!isset($summary[$concept])) {
+                $summary[$concept] = [
+                    'count' => 0,
+                    'total' => 0
+                ];
+            }
+
+            $summary[$concept]['count']++;
+            $summary[$concept]['total'] += $payment->amount;
+            $total += $payment->amount;
+        }
+
+        uasort($summary, function($a, $b) {
+            return $b['total'] <=> $a['total'];
+        });
+
+        $this->reportData = [
+            'summary' => $summary,
+            'grand_total' => $total,
+            'date_from' => $this->date_from,
+            'date_to' => $this->date_to,
+        ];
+    }
+
+    public function generateDgiiBillingReport()
+    {
+        $payments = Payment::with(['student'])
+            ->whereNotNull('ncf')
+            ->whereIn('status', ['Pagado', 'Completado', 'Succeeded', 'Aprobado'])
+            ->whereBetween('created_at', [$this->date_from . ' 00:00:00', $this->date_to . ' 23:59:59'])
+            ->orderBy('ncf', 'asc')
+            ->get();
+
+        $totalOriginal = 0;
+        $totalDiscount = 0;
+        $totalPaid = 0;
+
+        foreach ($payments as $payment) {
+            $totalPaid += $payment->amount;
+            $totalOriginal += $payment->original_amount ?? $payment->amount;
+            $totalDiscount += $payment->discount_amount ?? 0;
+        }
+
+        $this->reportData = [
+            'details' => $payments,
+            'summary' => [
+                'total_original' => $totalOriginal,
+                'total_discount' => $totalDiscount,
+                'total_paid' => $totalPaid,
+            ],
+            'date_from' => $this->date_from,
+            'date_to' => $this->date_to,
+        ];
+    }
+
+    public function generateScholarshipsGrantedReport()
+    {
+        $payments = Payment::with(['student', 'paymentConcept'])
+            ->where('discount_amount', '>', 0)
+            ->whereBetween('created_at', [$this->date_from . ' 00:00:00', $this->date_to . ' 23:59:59'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $totalDiscount = 0;
+        $totalPaid = 0;
+
+        foreach ($payments as $payment) {
+            $totalDiscount += $payment->discount_amount;
+            $totalPaid += $payment->amount;
+        }
+
+        $this->reportData = [
+            'details' => $payments,
+            'summary' => [
+                'total_discount' => $totalDiscount,
+                'total_paid' => $totalPaid,
+                'count' => $payments->count()
+            ],
+            'date_from' => $this->date_from,
+            'date_to' => $this->date_to,
+        ];
+    }
+
+    public function generateCashFlowReport()
+    {
+        $incomes = Payment::whereIn('status', ['Pagado', 'Completado', 'Succeeded', 'Aprobado'])
+            ->whereBetween('created_at', [$this->date_from . ' 00:00:00', $this->date_to . ' 23:59:59'])
+            ->sum('amount');
+
+        $expensesQuery = class_exists(\App\Models\Expense::class) 
+            ? \App\Models\Expense::where('status', 'Pagada') // Asumiendo 'Pagada'
+                                 ->whereBetween('expense_date', [$this->date_from, $this->date_to])
+                                 ->sum('total_amount')
+            : 0;
+
+        $this->reportData = [
+            'summary' => [
+                'incomes' => $incomes,
+                'expenses' => $expensesQuery,
+                'balance' => $incomes - $expensesQuery
+            ],
+            'date_from' => $this->date_from,
+            'date_to' => $this->date_to,
+        ];
+    }
+
+    public function generateCohortStatsReport()
+    {
+        $enrollments = Enrollment::where('course_schedule_id', $this->schedule_id)->get();
+        $total = $enrollments->count();
+        $stats = [];
+        
+        foreach ($enrollments as $enr) {
+            $status = $enr->status;
+            if (!isset($stats[$status])) $stats[$status] = 0;
+            $stats[$status]++;
+        }
+        
+        $this->reportData = [
+            'total' => $total,
+            'stats' => $stats,
+            'schedule' => CourseSchedule::with(['module.course', 'teacher'])->find($this->schedule_id),
+        ];
+    }
+
+    public function generateGraduationEligibilityReport()
+    {
+        $query = Student::whereHas('enrollments', function($q) {
+            $q->whereIn('status', ['Aprobado', 'Completado']);
+        });
+
+        if ($this->course_id) {
+            $query->whereHas('enrollments.courseSchedule.module.course', function($q) {
+                $q->where('id', $this->course_id);
+            });
+        }
+
+        $eligibleCandidates = $query->with(['enrollments.courseSchedule.module.course'])->get();
+
+        $eligible = collect();
+        foreach ($eligibleCandidates as $student) {
+            $pendingDebt = Payment::where('student_id', $student->id)->whereIn('status', ['Pendiente', 'pending'])->count();
+            if ($pendingDebt === 0) {
+                $eligible->push($student);
+            }
+        }
+
+        $this->reportData = [
+            'eligible' => $eligible,
+            'course' => $this->course_id ? Course::find($this->course_id) : null
+        ];
+    }
+
+    public function generateTranscriptReport()
+    {
+        $student = Student::with(['enrollments' => function($q) {
+            $q->whereNotIn('status', ['Pendiente']);
+            $q->orderBy('created_at', 'desc');
+        }, 'enrollments.courseSchedule.module.course'])->find($this->student_id);
+
+        $this->reportData = [
+            'student' => $student,
+            'enrollments' => $student ? $student->enrollments : collect()
+        ];
+    }
+
+    public function exportToPdf()
+    {
+        if (!$this->reportData || !$this->generatedReportType) {
+            return;
+        }
+
+        $viewMap = [
+            'cash_closing' => 'reports.cash-closing-report',
+            'debtors' => 'reports.debtors-report',
+            'income_by_concept' => 'reports.income-report',
+            'dgii_billing' => 'reports.dgii-billing-report',
+            'scholarships_granted' => 'reports.scholarships-granted-report',
+            'cash_flow' => 'reports.cash-flow-report',
+            'cohort_stats' => 'reports.cohort-stats-report',
+            'graduation_eligibility' => 'reports.graduation-report',
+            'transcript' => 'reports.transcript-report',
+            'calendar' => 'reports.calendar-report',
+            'assignments' => 'reports.assignment-report',
+        ];
+        
+        $viewName = $viewMap[$this->generatedReportType] ?? null;
+
+        if (!$viewName || !view()->exists($viewName)) {
+             session()->flash('message', 'Vista de PDF no configurada para este reporte.');
+             return;
+        }
+
+        $html = view($viewName, ['data' => $this->reportData])->render();
+
+        $pdf = Pdf::loadView('reports.layouts.pdf', [
+            'html' => $html,
+            'title' => 'Reporte ' . ucwords(str_replace('_', ' ', $this->generatedReportType))
+        ]);
+
+        $pdf->setPaper('a4', 'portrait');
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->stream();
+        }, 'Reporte_' . $this->generatedReportType . '.pdf');
     }
 
     public function render()

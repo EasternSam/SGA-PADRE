@@ -133,4 +133,12 @@ class User extends Authenticatable
             }
         );
     }
+
+    /**
+     * Relación: Un Usuario tiene un registro como Empleado de RRHH
+     */
+    public function employee(): HasOne
+    {
+        return $this->hasOne(Employee::class);
+    }
 }

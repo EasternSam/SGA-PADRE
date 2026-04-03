@@ -4,7 +4,7 @@
 
     {{-- 1. ENCABEZADO FIJO (Resumen de Carrera) --}}
     <div class="bg-white shadow-sm border-b border-gray-200 sticky top-16 z-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 
                 {{-- Título y Breadcrumb --}}
@@ -49,7 +49,7 @@
     </div>
 
     {{-- 2. CONTENIDO DEL PENSUM (Lista por Periodos) --}}
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
+    <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
         
         {{-- Acceso a Computed Property --}}
         @if($this->modulesByPeriod->isEmpty())

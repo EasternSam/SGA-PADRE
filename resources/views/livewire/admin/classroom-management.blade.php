@@ -5,7 +5,7 @@
         </h2>
     </x-slot>
 
-    <div class="w-full px-2 lg:px-6 space-y-4">
+    <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 space-y-4">
         
         {{-- CONTROLES SUPERIORES --}}
         <div class="flex justify-between items-center">
