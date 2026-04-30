@@ -32,7 +32,7 @@ class GlobalSearch extends Component
         // Limpiamos espacios extra al inicio/final
         $term = trim($this->search);
 
-        if (strlen($term) >= 2) {
+        if (strlen($term) >= 3) {
             // Término flexible para encontrar "Samuel Diaz" aunque haya "Samuel Antonio Diaz"
             $flexibleTerm = '%' . str_replace(' ', '%', $term) . '%';
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -60,7 +61,7 @@ class Enrollment extends Model
             // esto dejará un log: "Sistema eliminó registro en Payment: Monto..."
             
             Payment::where('enrollment_id', $enrollment->id)
-                ->whereIn('status', ['Pendiente', 'pendiente']) // Solo borrar si no se ha pagado
+                ->whereIn('status', PaymentStatus::pendingValues())
                 ->get()
                 ->each(function ($payment) {
                     $payment->delete(); 
@@ -114,23 +115,21 @@ class Enrollment extends Model
      */
     public function getIsPaidAttribute(): bool
     {
-        $paidStatuses = ['paid', 'pagado', 'completado', 'aprobado', 'succeeded', 'active', 'activo'];
-
         // 1. Revisar pago agrupado ($this->payment)
-        if ($this->payment && in_array(strtolower($this->payment->status ?? ''), $paidStatuses)) {
+        if ($this->payment && PaymentStatus::isPaid($this->payment->status ?? '')) {
             return true;
         }
 
         // 2. Revisar pagos individuales en la colección cargada o con consulta lazy loading
         if ($this->relationLoaded('individualPayments')) {
-            return $this->individualPayments->contains(function ($payment) use ($paidStatuses) {
-                return in_array(strtolower($payment->status ?? ''), $paidStatuses);
+            return $this->individualPayments->contains(function ($payment) {
+                return PaymentStatus::isPaid($payment->status ?? '');
             });
         }
 
         // Fallback por si no se cargó con eager loading
         return $this->individualPayments()
-            ->whereIn('status', ['Completado', 'Pagado', 'Aprobado', 'Paid', 'Succeeded', 'completado', 'pagado', 'aprobado', 'paid', 'succeeded', 'activo', 'active'])
+            ->whereIn('status', PaymentStatus::paidValues())
             ->exists();
     }
 }

@@ -40,9 +40,6 @@ class Index extends Component
     // Bandera para Lazy Loading
     public $readyToLoad = false;
 
-    // VARIABLE DE DEBUG
-    public $debugTrace = [];
-
     // Listeners para actualizar caché si ocurre algo en otro lado
     protected $listeners = [
         'studentAdded' => 'refreshStats', 
@@ -54,8 +51,7 @@ class Index extends Component
 
     public function mount()
     {
-        $this->recentActivities = collect(); 
-        $this->addTrace('Inicio del componente Dashboard (Mount)');
+        $this->recentActivities = collect();
 
         $this->loadCachedStats();
     }
@@ -165,18 +161,7 @@ class Index extends Component
         }
     }
 
-    private function addTrace($message, $data = null)
-    {
-        // (Lógica de traza mantenida igual)
-        $dataPreview = $data;
-        if (is_array($data) && count($data) > 20) {
-            $dataPreview = array_slice($data, 0, 20) + ['...' => 'truncated'];
-        } elseif (is_string($data) && strlen($data) > 500) {
-            $dataPreview = substr($data, 0, 500) . '...';
-        }
-        $entry = Carbon::now()->toTimeString() . ' - ' . $message;
-        $this->debugTrace[] = $entry;
-    }
+
 
     private function prepareChartData(WordpressApiService $wpService)
     {
@@ -251,7 +236,7 @@ class Index extends Component
             $this->chartDataSystem[] = $systemCount;
         }
         
-        $this->addTrace('Datos Finales Calculados');
+
     }
 
     private function normalizeLabel($label)
