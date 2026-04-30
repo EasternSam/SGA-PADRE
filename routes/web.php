@@ -257,6 +257,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/admissions/document/{admission}/{key}', [AdmissionDocumentController::class, 'show'])->name('admissions.document');
+
+    // --- VERIFICACIÓN DE CÉDULA (JCE) ---
+    Route::post('/api/cedula-lookup', function (Request $request) {
+        $service = app(\App\Services\CedulaLookupService::class);
+        return response()->json($service->lookup($request->input('cedula', '')));
+    })->name('cedula.lookup');
 });
 
 // --- RUTAS PARA CAMBIO DE CONTRASEÑA OBLIGATORIO ---

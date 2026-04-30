@@ -4,6 +4,7 @@ namespace App\Livewire\Students;
 
 use App\Models\Student;
 use App\Models\User;
+use App\Services\CedulaLookupService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -56,6 +57,10 @@ class Index extends Component
     #[Url]
     public $editing = null;
 
+    // Flag: campos auto-rellenados desde JCE (bloqueados para edición)
+    public bool $cedulaVerified = false;
+    public string $cedulaLookupMessage = '';
+
     protected $paginationTheme = 'tailwind'; // Asegura paginación con estilos Tailwind
 
     public function mount()
@@ -69,6 +74,56 @@ class Index extends Component
     public function updatedSearch()
     {
         $this->resetPage();
+    }
+
+    /**
+     * Busca datos del ciudadano en el padrón electoral por cédula.
+     * Auto-rellena nombre, apellido, sexo y fecha de nacimiento.
+     * Los campos quedan bloqueados a menos que sea menor de edad.
+     */
+    public function lookupCedula()
+    {
+        $clean = preg_replace('/[^0-9]/', '', $this->cedula);
+
+        if (strlen($clean) !== 11) {
+            $this->cedulaLookupMessage = 'La cédula debe tener 11 dígitos.';
+            $this->cedulaVerified = false;
+            return;
+        }
+
+        $service = app(CedulaLookupService::class);
+        $result = $service->lookup($clean);
+
+        if (!empty($result['found']) && !empty($result['citizen'])) {
+            $citizen = $result['citizen'];
+
+            // Si es menor de edad, la cédula es del tutor → rellenar datos del tutor
+            if ($this->is_minor) {
+                $this->tutor_name = trim($citizen['nombres'] . ' ' . $citizen['apellido1'] . ' ' . $citizen['apellido2']);
+                $this->tutor_cedula = $this->cedula;
+                $this->cedulaLookupMessage = '✓ Tutor verificado: ' . $this->tutor_name;
+                $this->cedulaVerified = false; // No bloquear campos del estudiante
+            } else {
+                // Cédula del estudiante → auto-rellenar y bloquear
+                $this->first_name = $citizen['nombres'];
+                $this->last_name = trim($citizen['apellido1'] . ' ' . $citizen['apellido2']);
+                $this->gender = ($citizen['sexo'] === 'M') ? 'Masculino' : (($citizen['sexo'] === 'F') ? 'Femenino' : '');
+
+                if (!empty($citizen['fechaNacimiento'])) {
+                    try {
+                        $this->birth_date = Carbon::parse($citizen['fechaNacimiento'])->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        // Ignorar fecha inválida
+                    }
+                }
+
+                $this->cedulaVerified = true;
+                $this->cedulaLookupMessage = '✓ Identidad verificada en el padrón electoral.';
+            }
+        } else {
+            $this->cedulaVerified = false;
+            $this->cedulaLookupMessage = $result['error'] ?? 'Cédula no encontrada.';
+        }
     }
 
     protected function rules()
@@ -362,6 +417,8 @@ class Index extends Component
         $this->editing = null;
         $this->password = '';
         $this->password_confirmation = '';
+        $this->cedulaVerified = false;
+        $this->cedulaLookupMessage = '';
     }
 
     public function resetKioskPin($id)

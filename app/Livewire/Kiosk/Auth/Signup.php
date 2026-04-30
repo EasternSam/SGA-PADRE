@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Student;
 use App\Models\Enrollment;
 use App\Services\AccountingEngine;
+use App\Services\CedulaLookupService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -34,6 +35,10 @@ class Signup extends Component
     
     // Virtual Keyboard/Numpad support
     public $focusedInput = 'first_name';
+
+    // Cédula verification
+    public bool $cedulaVerified = false;
+    public string $cedulaLookupMessage = '';
 
     public function mount()
     {
@@ -122,6 +127,34 @@ class Signup extends Component
     {
         if ($this->step > 1) {
             $this->step--;
+        }
+    }
+
+    /**
+     * Busca datos del ciudadano en el padrón electoral por cédula.
+     */
+    public function lookupCedula()
+    {
+        $clean = preg_replace('/[^0-9]/', '', $this->cedula);
+
+        if (strlen($clean) !== 11) {
+            $this->cedulaLookupMessage = 'La cédula debe tener 11 dígitos.';
+            $this->cedulaVerified = false;
+            return;
+        }
+
+        $service = app(CedulaLookupService::class);
+        $result = $service->lookup($clean);
+
+        if (!empty($result['found']) && !empty($result['citizen'])) {
+            $citizen = $result['citizen'];
+            $this->first_name = $citizen['nombres'];
+            $this->last_name = trim($citizen['apellido1'] . ' ' . $citizen['apellido2']);
+            $this->cedulaVerified = true;
+            $this->cedulaLookupMessage = '✓ Identidad verificada.';
+        } else {
+            $this->cedulaVerified = false;
+            $this->cedulaLookupMessage = $result['error'] ?? 'Cédula no encontrada.';
         }
     }
 

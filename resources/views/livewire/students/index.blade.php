@@ -235,40 +235,99 @@
                                 Información Personal
                             </h3>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div>
-                                    <x-input-label for="first_name" value="Nombres" />
-                                    <x-text-input wire:model.defer="first_name" id="first_name" class="block mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" type="text" />
-                                    <x-input-error :messages="$errors->get('first_name')" class="mt-2" />
-                                </div>
-                                <div>
-                                    <x-input-label for="last_name" value="Apellidos" />
-                                    <x-text-input wire:model.defer="last_name" id="last_name" class="block mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" type="text" />
-                                    <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
-                                </div>
-                                <div>
+                                {{-- CÉDULA: Primer campo con botón de verificación --}}
+                                <div class="md:col-span-3">
                                     <x-input-label for="cedula" value="Cédula/DNI" />
-                                    <x-text-input wire:model.defer="cedula" id="cedula" class="block mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" type="text" />
+                                    <div class="flex gap-2 mt-1">
+                                        <x-text-input wire:model.defer="cedula" id="cedula" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" type="text" placeholder="Ej: 402-3669912-6" />
+                                        <button type="button" wire:click="lookupCedula" wire:loading.attr="disabled" wire:target="lookupCedula"
+                                                class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-150 whitespace-nowrap disabled:opacity-50">
+                                            <span wire:loading.remove wire:target="lookupCedula">
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                                                </svg>
+                                            </span>
+                                            <svg wire:loading wire:target="lookupCedula" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                            </svg>
+                                            Verificar
+                                        </button>
+                                    </div>
+                                    @if($cedulaLookupMessage)
+                                        <p class="mt-1.5 text-sm {{ $cedulaVerified ? 'text-emerald-600 font-semibold' : 'text-amber-600' }}">
+                                            {{ $cedulaLookupMessage }}
+                                        </p>
+                                    @endif
                                     <x-input-error :messages="$errors->get('cedula')" class="mt-2" />
                                 </div>
+
+                                {{-- NOMBRES: Readonly si está verificado --}}
+                                <div>
+                                    <x-input-label for="first_name" value="Nombres" />
+                                    <x-text-input wire:model.defer="first_name" id="first_name" type="text"
+                                        class="block mt-1 w-full rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 {{ $cedulaVerified ? 'bg-emerald-50 border-emerald-200 text-emerald-800 cursor-not-allowed' : 'border-gray-300' }}"
+                                        :readonly="$cedulaVerified" />
+                                    @if($cedulaVerified)
+                                        <p class="mt-1 text-xs text-emerald-500"><i class="fas fa-lock text-[10px]"></i> Verificado JCE</p>
+                                    @endif
+                                    <x-input-error :messages="$errors->get('first_name')" class="mt-2" />
+                                </div>
+
+                                {{-- APELLIDOS: Readonly si está verificado --}}
+                                <div>
+                                    <x-input-label for="last_name" value="Apellidos" />
+                                    <x-text-input wire:model.defer="last_name" id="last_name" type="text"
+                                        class="block mt-1 w-full rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 {{ $cedulaVerified ? 'bg-emerald-50 border-emerald-200 text-emerald-800 cursor-not-allowed' : 'border-gray-300' }}"
+                                        :readonly="$cedulaVerified" />
+                                    @if($cedulaVerified)
+                                        <p class="mt-1 text-xs text-emerald-500"><i class="fas fa-lock text-[10px]"></i> Verificado JCE</p>
+                                    @endif
+                                    <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
+                                </div>
+
+                                {{-- NACIONALIDAD --}}
+                                <div>
+                                    <x-input-label for="nationality" value="Nacionalidad" />
+                                    <x-text-input wire:model.defer="nationality" id="nationality" class="block mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" type="text" />
+                                    <x-input-error :messages="$errors->get('nationality')" class="mt-2" />
+                                </div>
+
+                                {{-- FECHA NACIMIENTO: Readonly si está verificado --}}
                                 <div>
                                     <x-input-label for="birth_date" value="Fecha de Nacimiento" />
-                                    <x-text-input wire:model.defer="birth_date" id="birth_date" class="block mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" type="date" />
+                                    <x-text-input wire:model.defer="birth_date" id="birth_date" type="date"
+                                        class="block mt-1 w-full rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 {{ $cedulaVerified ? 'bg-emerald-50 border-emerald-200 text-emerald-800 cursor-not-allowed' : 'border-gray-300' }}"
+                                        :readonly="$cedulaVerified" />
+                                    @if($cedulaVerified)
+                                        <p class="mt-1 text-xs text-emerald-500"><i class="fas fa-lock text-[10px]"></i> Verificado JCE</p>
+                                    @endif
                                     <x-input-error :messages="$errors->get('birth_date')" class="mt-2" />
                                 </div>
+
+                                {{-- GÉNERO: Disabled si está verificado --}}
                                 <div>
                                     <x-input-label for="gender" value="Género" />
-                                    <select wire:model.defer="gender" id="gender" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg shadow-sm">
+                                    <select wire:model.defer="gender" id="gender"
+                                        class="block mt-1 w-full rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 {{ $cedulaVerified ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'border-gray-300' }}"
+                                        {{ $cedulaVerified ? 'disabled' : '' }}>
                                         <option value="">Seleccione...</option>
                                         <option value="Masculino">Masculino</option>
                                         <option value="Femenino">Femenino</option>
                                         <option value="Otro">Otro</option>
                                     </select>
+                                    @if($cedulaVerified)
+                                        {{-- Hidden input para que el valor se envíe aunque el select esté disabled --}}
+                                        <input type="hidden" wire:model="gender" />
+                                        <p class="mt-1 text-xs text-emerald-500"><i class="fas fa-lock text-[10px]"></i> Verificado JCE</p>
+                                    @endif
                                     <x-input-error :messages="$errors->get('gender')" class="mt-2" />
                                 </div>
+
+                                {{-- CÓMO NOS ENCONTRÓ --}}
                                 <div>
-                                    <x-input-label for="nationality" value="Nacionalidad" />
-                                    <x-text-input wire:model.defer="nationality" id="nationality" class="block mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" type="text" />
-                                    <x-input-error :messages="$errors->get('nationality')" class="mt-2" />
+                                    <x-input-label for="how_found" value="¿Cómo nos encontró?" />
+                                    <x-text-input wire:model.defer="how_found" id="how_found" class="block mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" type="text" />
                                 </div>
                             </div>
                         </div>
