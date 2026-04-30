@@ -171,7 +171,6 @@ class Index extends Component
 
         // Cache para WP API (1 hora) - Independiente de la versión del sistema local
         $wpStats = Cache::remember('dashboard_wp_stats', 3600, function () use ($wpService) {
-            $this->addTrace('Cache Miss: Solicitando datos a WordPress API...');
             try {
                 return $wpService->getEnrollmentStats();
             } catch (\Exception $e) {
