@@ -385,47 +385,70 @@
                 const payload = Array.isArray(data) ? data[0] : data;
                 console.log('Iniciando Cardnet Custom Iframe...', payload);
 
-                if (typeof PWCheckout === 'undefined') {
-                    console.error('PWCheckout no cargado.');
-                    alert('Error: La pasarela de pagos no está disponible. Verifique la configuración.');
-                    return;
+                // Esperar a que PWCheckout esté disponible (máx 10s)
+                let waitAttempts = 0;
+                const maxWait = 20; // 20 x 500ms = 10 segundos
+                
+                function tryInitCardnet() {
+                    waitAttempts++;
+                    
+                    if (typeof PWCheckout === 'undefined') {
+                        if (waitAttempts < maxWait) {
+                            console.log('[Cardnet] Esperando SDK... intento ' + waitAttempts);
+                            setTimeout(tryInitCardnet, 500);
+                            return;
+                        }
+                        console.error('[Cardnet] SDK no disponible después de 10s');
+                        alert('La pasarela de pagos no pudo cargar. Recarga la página e intenta de nuevo.');
+                        return;
+                    }
+
+                    // PWCheckout disponible — configurar
+                    try {
+                        PWCheckout.SetProperties({
+                            "name": "Pago de Matrícula",
+                            "email": payload.studentEmail,
+                            "image": "{{ config('services.cardnet.image_url') }}",
+                            "button_label": "Pagar #monto#",
+                            "description": payload.description,
+                            "currency": "DOP",
+                            "amount": payload.amount,
+                            "lang": "ESP",
+                            "form_id": "cardnet-form", 
+                            "checkout_card": 1,
+                            "autoSubmit": "false",
+                            "empty": "false"
+                        });
+
+                        // Callback
+                        window.OnTokenReceived = function(token) {
+                            console.log('[Cardnet] Token recibido:', token);
+                            @this.call('processCardnetPayment', token);
+                        };
+
+                        PWCheckout.Bind("tokenCreated", window.OnTokenReceived);
+
+                        // Limpiar container e insertar iframe
+                        var container = document.getElementById('cardnet-container');
+                        if (container) container.innerHTML = '';
+
+                        if (typeof PWCheckout.OpenIframeCustom === 'function') {
+                            PWCheckout.OpenIframeCustom("cardnet-container");
+                        } else if (typeof PWCheckout.iframe !== 'undefined' && typeof PWCheckout.iframe.OpenIframeCustom === 'function') {
+                            PWCheckout.iframe.OpenIframeCustom("cardnet-container");
+                        } else {
+                            // Fallback: abrir modal checkout estándar
+                            console.warn('[Cardnet] OpenIframeCustom no disponible, usando Checkout()');
+                            PWCheckout.Checkout();
+                        }
+                        console.log('[Cardnet] Iframe renderizado exitosamente');
+                    } catch (e) {
+                        console.error('[Cardnet] Error inicializando:', e);
+                        alert('Error al iniciar el pago con tarjeta. Intenta de nuevo.');
+                    }
                 }
 
-                // Configurar
-                PWCheckout.SetProperties({
-                    "name": "Pago de Matrícula",
-                    "email": payload.studentEmail,
-                    "image": "{{ config('services.cardnet.image_url') }}",
-                    "button_label": "Pagar #monto#",
-                    "description": payload.description,
-                    "currency": "DOP",
-                    "amount": payload.amount,
-                    "lang": "ESP",
-                    "form_id": "cardnet-form", 
-                    "checkout_card": 1,
-                    "autoSubmit": "false", // Importante false para manejar nosotros el token
-                    "empty": "false"
-                });
-
-                // Callback
-                window.OnTokenReceived = function(token) {
-                    console.log('Token recibido:', token);
-                    @this.call('processCardnetPayment', token);
-                };
-
-                PWCheckout.Bind("tokenCreated", window.OnTokenReceived);
-
-                // Renderizar en el DIV específico usando Custom Iframe
-                if (typeof PWCheckout.OpenIframeCustom === 'function') {
-                    document.getElementById('cardnet-container').innerHTML = ''; 
-                    PWCheckout.OpenIframeCustom("cardnet-container");
-                } else if (typeof PWCheckout.iframe !== 'undefined' && typeof PWCheckout.iframe.OpenIframeCustom === 'function') {
-                    document.getElementById('cardnet-container').innerHTML = ''; 
-                    PWCheckout.iframe.OpenIframeCustom("cardnet-container");
-                } else {
-                    console.error('Método OpenIframeCustom no encontrado en PWCheckout.');
-                    alert('Error técnico: No se pudo cargar el formulario de tarjeta.');
-                }
+                tryInitCardnet();
             });
 
             // Manejar impresión de tickets

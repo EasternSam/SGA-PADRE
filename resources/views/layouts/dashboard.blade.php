@@ -86,9 +86,21 @@
         }
     </style>
 
-    <!-- SCRIPT DE CARDNET -->
-    <script type="text/javascript" 
-            src="{{ config('services.cardnet.base_uri') }}/Scripts/PWCheckout.js?key={{ config('services.cardnet.public_key') }}">
+    <!-- SCRIPT DE CARDNET — Carga asíncrona con retry -->
+    <script>
+        window.__cardnetLoaded = false;
+        function loadCardnetScript(attempt) {
+            attempt = attempt || 1;
+            var s = document.createElement('script');
+            s.src = "{{ config('services.cardnet.base_uri') }}/Scripts/PWCheckout.js?key={{ config('services.cardnet.public_key') }}&t=" + Date.now();
+            s.onload = function() { window.__cardnetLoaded = true; console.log('[Cardnet] SDK cargado OK'); };
+            s.onerror = function() {
+                console.warn('[Cardnet] Fallo carga intento ' + attempt);
+                if (attempt < 3) { setTimeout(function(){ loadCardnetScript(attempt + 1); }, 2000); }
+            };
+            document.head.appendChild(s);
+        }
+        loadCardnetScript();
     </script>
 </head>
 

@@ -1,7 +1,7 @@
 // SGA Academic+ — Service Worker
 // Estrategia: Network-First con cache fallback para assets estáticos
 
-const CACHE_NAME = 'sga-v1';
+const CACHE_NAME = 'sga-v2';
 const OFFLINE_URL = '/offline.html';
 
 // Assets que siempre se cachean (app shell)
@@ -41,8 +41,10 @@ self.addEventListener('fetch', (event) => {
     // Solo cachear GET requests
     if (request.method !== 'GET') return;
 
-    // No interceptar requests de Livewire/API
-    if (request.url.includes('/livewire/') || request.url.includes('/api/')) return;
+    // No interceptar Livewire, API, ni Cardnet
+    if (request.url.includes('/livewire/') || request.url.includes('/api/') ||
+        request.url.includes('cardnet.com.do') || request.url.includes('PWCheckout') ||
+        request.url.includes('/cardnet/')) return;
 
     // Assets estáticos: Cache first
     if (request.url.match(/\.(css|js|woff2?|ttf|png|jpg|jpeg|svg|ico|webp)$/)) {
