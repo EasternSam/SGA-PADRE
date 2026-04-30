@@ -55,16 +55,14 @@
     }
 
     table tbody tr td {
-        display: flex !important;
-        justify-content: space-between;
-        align-items: flex-start;
+        display: block !important;
         padding: 0.375rem 0 !important;
         border: none !important;
         border-bottom: 1px solid #f3f4f6 !important;
         font-size: 0.8125rem !important;
         width: 100% !important;
         min-height: auto !important;
-        gap: 0.5rem;
+        text-align: left !important;
     }
 
     table tbody tr td:last-child {
@@ -72,45 +70,51 @@
         padding-bottom: 0 !important;
     }
 
-    /* Usar data-label para mostrar el nombre del campo */
-    table tbody tr td::before {
-        content: attr(data-label);
-        font-weight: 600;
-        color: #374151;
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.025em;
-        flex-shrink: 0;
-        min-width: 35%;
-    }
-
-    /* Primera celda = estilo "título" de la card */
+    /* Primera celda = la info principal de la card */
     table tbody tr td:first-child {
-        font-weight: 700 !important;
-        font-size: 0.875rem !important;
-        color: #111827 !important;
-        border-bottom: 2px solid #e5e7eb !important;
         padding-bottom: 0.5rem !important;
         margin-bottom: 0.25rem;
+        border-bottom: 2px solid #f0f0f0 !important;
     }
 
-    /* Botones de acción en la última celda */
+    /* Última celda = acciones alineadas a la derecha */
     table tbody tr td:last-child {
-        display: flex !important;
-        justify-content: flex-end !important;
-        gap: 0.5rem;
-        padding-top: 0.75rem !important;
-        flex-wrap: wrap;
+        text-align: right !important;
+        padding-top: 0.5rem !important;
     }
 
-    /* Scrollable wrapper si existe */
+    /* Flex containers dentro de celdas: no romper */
+    table tbody tr td .flex {
+        justify-content: flex-start !important;
+    }
+
+    /* Whitespace normal en móvil */
+    table.whitespace-nowrap, table .whitespace-nowrap {
+        white-space: normal !important;
+    }
+
+    /* Scrollable wrapper */
     .overflow-x-auto, [class*="overflow-x"] {
         overflow-x: visible !important;
     }
 
-    /* Tabla dentro de div scrollable */
     div:has(> table) {
         overflow-x: visible !important;
+    }
+
+    /* ─── KPI STAT CARDS: 2 columnas en móvil ─────── */
+    .grid.sm\:grid-cols-2.lg\:grid-cols-4 {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.625rem !important;
+    }
+
+    /* Reducir padding de stat cards en móvil */
+    .grid.sm\:grid-cols-2.lg\:grid-cols-4 > div {
+        padding: 0.875rem !important;
+    }
+
+    .grid.sm\:grid-cols-2.lg\:grid-cols-4 .text-2xl {
+        font-size: 1.25rem !important;
     }
 }
 
