@@ -55,17 +55,19 @@ class ConnectionGuard
         $cacheKey = "conn_guard:{$ip}";
 
         // ─── 1. Verificar conexiones concurrentes ───────────────
-        $currentConnections = (int) Cache::get($cacheKey, 0);
+        // Envuelto en try-catch: SQLite no soporta escrituras concurrentes.
+        // Si la caché falla, el request pasa igual (seguridad best-effort).
+        try {
+            $currentConnections = (int) Cache::get($cacheKey, 0);
 
-        if ($currentConnections >= $this->maxConcurrentPerIp) {
-            // Demasiadas conexiones simultáneas — probable ataque
-            abort(429, 'Demasiadas conexiones simultáneas. Intenta de nuevo en unos segundos.');
+            if ($currentConnections >= $this->maxConcurrentPerIp) {
+                abort(429, 'Demasiadas conexiones simultáneas. Intenta de nuevo en unos segundos.');
+            }
+
+            Cache::put($cacheKey, $currentConnections + 1, 120);
+        } catch (\Throwable $e) {
+            // SQLite locked o cualquier error de caché → continuar sin bloquear
         }
-
-        // Incrementar contador de conexiones activas
-        Cache::increment($cacheKey);
-        // Auto-expire: si PHP muere sin decrementar, se limpia solo en 2 min
-        Cache::put($cacheKey, $currentConnections + 1, 120);
 
         // ─── 2. Timeout de ejecución ────────────────────────────
         if (!$this->isLongRunning($request)) {
@@ -77,11 +79,15 @@ class ConnectionGuard
             return $response;
         } finally {
             // SIEMPRE decrementar, incluso si hubo excepción
-            $remaining = (int) Cache::get($cacheKey, 1) - 1;
-            if ($remaining <= 0) {
-                Cache::forget($cacheKey);
-            } else {
-                Cache::put($cacheKey, $remaining, 120);
+            try {
+                $remaining = (int) Cache::get($cacheKey, 1) - 1;
+                if ($remaining <= 0) {
+                    Cache::forget($cacheKey);
+                } else {
+                    Cache::put($cacheKey, $remaining, 120);
+                }
+            } catch (\Throwable $e) {
+                // Ignorar errores de caché al decrementar
             }
         }
     }
