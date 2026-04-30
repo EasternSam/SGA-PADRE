@@ -242,19 +242,20 @@
     }
 }
 
-/* ─── 7. SIDEBAR EN MÓVIL ────────────────────────────────── */
-@media (max-width: 768px) {
-    /* Sidebar más ancho para touch targets */
+/* ─── 7. SIDEBAR EN MÓVIL ──────────────────────────────── */
+/* Con bottom-nav, el sidebar ya no se necesita en móvil */
+@media (max-width: 1023px) {
+    /* Ocultar sidebar completamente en móvil — bottom nav lo reemplaza */
     aside {
-        width: 80vw !important;
-        max-width: 320px !important;
+        display: none !important;
     }
-
-    /* Nav links más altos para touch */
-    aside nav a, aside nav button {
-        min-height: 44px !important;
-        display: flex !important;
-        align-items: center !important;
+    /* Ocultar overlay del sidebar */
+    .fixed.inset-0.z-30 {
+        display: none !important;
+    }
+    /* Ocultar botón hamburguesa (ya no necesario) */
+    header button[class*="lg:hidden"] {
+        display: none !important;
     }
 }
 
@@ -289,16 +290,11 @@
     }
 }
 
-/* ─── 10. FOOTER ─────────────────────────────────────────── */
-@media (max-width: 768px) {
+/* ─── 10. FOOTER ─────────────────────────────────────── */
+@media (max-width: 1023px) {
+    /* Ocultar footer en móvil — bottom nav ocupa ese espacio */
     footer {
-        padding: 1rem !important;
-    }
-    
-    footer .flex-col.md\:flex-row {
-        flex-direction: column !important;
-        text-align: center;
-        gap: 0.5rem !important;
+        display: none !important;
     }
 }
 
@@ -357,13 +353,9 @@
         transition: all 0.1s ease;
     }
 
-    /* Safe area padding para notch de iPhone */
+    /* Safe area ya gestionada por el bottom-nav */
     body {
-        padding-bottom: env(safe-area-inset-bottom);
-    }
-
-    main {
-        padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+        padding-bottom: 0;
     }
 }
 

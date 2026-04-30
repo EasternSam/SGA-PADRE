@@ -243,7 +243,7 @@
             </header>
 
             <!-- Page Content -->
-            <main class="flex-1 flex flex-col overflow-y-auto focus:outline-none scroll-smooth bg-gray-50">
+            <main class="flex-1 flex flex-col overflow-y-auto focus:outline-none scroll-smooth bg-gray-50 pb-20 lg:pb-0">
                 <div class="w-full">
                     <div class="w-full">
                         {{ $slot }}
@@ -270,6 +270,9 @@
             </main>
         </div>
     </div>
+
+    {{-- Bottom Navigation — Solo móvil --}}
+    @include('layouts.bottom-nav')
 
     @livewireScripts
 </body>
