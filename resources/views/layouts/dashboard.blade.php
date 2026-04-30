@@ -8,9 +8,15 @@
     <meta name="theme-color" content="{{ isset($branding) && !empty($branding->primary_color) ? $branding->primary_color : '#1e3a8a' }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SGA">
     <meta name="mobile-web-app-capable" content="yes">
 
     <title>{{ config('app.name', 'SGA-PADRE') }}</title>
+
+    {{-- PWA Manifest --}}
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" sizes="180x180" href="/centuu.png">
+    <link rel="icon" type="image/png" href="/centuu.png">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
 
@@ -275,5 +281,16 @@
     @include('layouts.bottom-nav')
 
     @livewireScripts
+
+    {{-- Service Worker Registration --}}
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('[PWA] SW registrado:', reg.scope))
+                    .catch(err => console.warn('[PWA] SW error:', err));
+            });
+        }
+    </script>
 </body>
 </html>

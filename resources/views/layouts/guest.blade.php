@@ -7,8 +7,15 @@
     <meta name="theme-color" content="#1e3a8a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SGA">
+    <meta name="mobile-web-app-capable" content="yes">
 
     <title>{{ config('app.name', 'SGA Padre') }}</title>
+
+    {{-- PWA --}}
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" sizes="180x180" href="/centuu.png">
+    <link rel="icon" type="image/png" href="/centuu.png">
 
     <!-- Fonts (preload for instant render) -->
     <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>

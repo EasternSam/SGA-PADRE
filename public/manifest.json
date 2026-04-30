@@ -1,0 +1,43 @@
+{
+    "name": "SGA Academic+",
+    "short_name": "SGA",
+    "description": "Sistema de Gestión Académica - Plataforma integral de administración educativa",
+    "start_url": "/dashboard",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "background_color": "#1e3a8a",
+    "theme_color": "#1e3a8a",
+    "categories": ["education", "productivity"],
+    "lang": "es",
+    "dir": "ltr",
+    "icons": [
+        {
+            "src": "/centuu.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/centuu.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "Estudiantes",
+            "short_name": "Estudiantes",
+            "url": "/admin/students",
+            "icons": [{"src": "/centuu.png", "sizes": "512x512"}]
+        },
+        {
+            "name": "Finanzas",
+            "short_name": "Finanzas",
+            "url": "/admin/finance",
+            "icons": [{"src": "/centuu.png", "sizes": "512x512"}]
+        }
+    ]
+}
