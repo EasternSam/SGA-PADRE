@@ -20,13 +20,77 @@
     RewriteRule ^ index.php [L]
 </IfModule>
 
-# --- INICIO: AUMENTO DE LÍMITES DE SUBIDA ---
+# ═══════════════════════════════════════════════════════════
+# ANTI-SLOWLORIS + HARDENING DE SERVIDOR
+# ═══════════════════════════════════════════════════════════
+
+# --- 1. mod_reqtimeout: DEFENSA PRINCIPAL contra Slowloris ---
+# Obliga a que los headers se completen en 10s (+1s por cada 500 bytes)
+# y el body en 30s (+1s por cada 1000 bytes). Conexiones lentas = KILL.
+<IfModule mod_reqtimeout.c>
+    RequestReadTimeout header=10-20,MinRate=500 body=30,MinRate=1000
+</IfModule>
+
+# --- 2. Timeouts generales ---
+# Reducir el tiempo máximo de espera por conexión
+<IfModule mod_headers.c>
+    # Keep-Alive corto para liberar conexiones rápido
+    Header set Connection keep-alive
+    Header set Keep-Alive "timeout=5, max=100"
+</IfModule>
+
+# --- 3. Limitar tamaño de request body (anti-abuse) ---
+# Las rutas normales no necesitan más de 10MB (excepto uploads específicos)
+LimitRequestBody 10485760
+
+# --- 4. Desactivar Server Signature (no revelar versión Apache) ---
+ServerSignature Off
+
+# --- 5. Prevenir acceso a archivos sensibles ---
+<FilesMatch "^\.env|\.git|composer\.(json|lock)|package\.json|webpack\.mix\.js|artisan$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# --- 6. Prevenir directory browsing ---
+Options -Indexes
+
+# --- 7. Bloquear User-Agents maliciosos conocidos ---
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_USER_AGENT} ^$ [OR]
+    RewriteCond %{HTTP_USER_AGENT} (havij|sqlmap|nikto|wpscan|acunetix|nessus|openvas) [NC]
+    RewriteRule .* - [F,L]
+</IfModule>
+
+# --- 8. PHP Settings ---
 <IfModule mod_php.c>
-    # Aumentar límite a 100MB
+    # Uploads grandes solo donde se necesitan
     php_value upload_max_filesize 100M
     php_value post_max_size 100M
     php_value memory_limit 512M
-    php_value max_execution_time 300
-    php_value max_input_time 300
+    # Reducir timeouts para requests normales (anti-Slowloris a nivel PHP)
+    php_value max_execution_time 60
+    php_value max_input_time 30
+    # Ocultar PHP
+    php_flag expose_php Off
+    # Desactivar funciones peligrosas
+    php_value disable_functions "exec,passthru,shell_exec,system,proc_open,popen"
 </IfModule>
-# --- FIN: AUMENTO DE LÍMITES DE SUBIDA ---
+
+# --- 9. Protección contra hotlinking de recursos ---
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_REFERER} !^$ [NC]
+    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?sga\.90s\.agency [NC]
+    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?localhost [NC]
+    RewriteRule \.(jpg|jpeg|png|gif|svg|css|js)$ - [F,NC]
+</IfModule>
+
+# --- 10. Compresión para performance (reduce tiempo de conexión abierta) ---
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json
+</IfModule>

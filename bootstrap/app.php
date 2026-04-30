@@ -11,6 +11,7 @@ use Spatie\Permission\Middleware\PermissionMiddleware;
 use App\Http\Middleware\ForcePasswordChange;
 use App\Http\Middleware\AuditLogMiddleware;
 use App\Http\Middleware\CheckSaaSProfile;
+use App\Http\Middleware\ConnectionGuard;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\VerifyLicense;
 use App\Http\Middleware\EnsureFeatureEnabled;
@@ -54,6 +55,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', CheckSaaSProfile::class); 
         
         $middleware->web(append: [
+            ConnectionGuard::class,
             AuditLogMiddleware::class,
             VerifyLicense::class,
             SecurityHeaders::class,

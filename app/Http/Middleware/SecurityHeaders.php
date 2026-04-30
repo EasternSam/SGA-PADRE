@@ -7,14 +7,16 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Agrega cabeceras de seguridad HTTP a todas las respuestas.
+ * Cabeceras de seguridad HTTP + Anti-Slowloris a nivel de respuesta.
  * 
  * Protege contra:
  * - Clickjacking (X-Frame-Options)
- * - XSS reflexivo (X-XSS-Protection + Content-Security-Policy)
+ * - XSS reflexivo (X-XSS-Protection)
  * - MIME sniffing (X-Content-Type-Options)
  * - Referrer leaking (Referrer-Policy)
  * - Information leaking (X-Powered-By removal)
+ * - Slowloris (Keep-Alive agresivo + Connection control)
+ * - Cache poisoning (Cache-Control en rutas sensibles)
  */
 class SecurityHeaders
 {
@@ -22,26 +24,54 @@ class SecurityHeaders
     {
         $response = $next($request);
 
-        // Prevenir clickjacking — no se puede embeber en iframe de otro dominio
+        // ═══════════════════════════════════════════════════════
+        // HEADERS DE SEGURIDAD ESTÁNDAR
+        // ═══════════════════════════════════════════════════════
+
+        // Prevenir clickjacking
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
 
-        // Prevenir MIME-sniffing de browsers
+        // Prevenir MIME-sniffing
         $response->headers->set('X-Content-Type-Options', 'nosniff');
 
-        // Activar protección XSS del browser (legacy pero útil)
+        // Protección XSS del browser
         $response->headers->set('X-XSS-Protection', '1; mode=block');
 
-        // Controlar qué información se envía en el Referrer header
+        // Controlar Referrer
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-        // Controlar permisos del browser (cámara, micrófono, geolocalización, etc.)
+        // Controlar permisos del browser
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
-        // Ocultar la tecnología del servidor
+        // Ocultar tecnología
         $response->headers->remove('X-Powered-By');
-        $response->headers->set('X-Powered-By', 'CENTU-SGA');
+        $response->headers->remove('Server');
 
-        // Forzar HTTPS en producción (HSTS)
+        // ═══════════════════════════════════════════════════════
+        // ANTI-SLOWLORIS: Control de conexión
+        // ═══════════════════════════════════════════════════════
+
+        // Keep-Alive con timeout corto para liberar conexiones rápido
+        // Esto reduce la ventana de ataque Slowloris significativamente
+        $response->headers->set('Keep-Alive', 'timeout=5, max=100');
+
+        // Para rutas de autenticación: cerrar conexión inmediatamente
+        // Los atacantes apuntan al /login para Slowloris
+        if ($request->is('login', 'register', 'forgot-password', 'reset-password', 'kiosk/login', 'kiosk/signup')) {
+            $response->headers->set('Connection', 'close');
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // CACHE CONTROL: Rutas sensibles
+        // ═══════════════════════════════════════════════════════
+
+        // No cachear NUNCA las páginas de auth
+        if ($request->is('login', 'register', 'dashboard', 'admin/*', 'kiosk/*')) {
+            $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+            $response->headers->set('Pragma', 'no-cache');
+        }
+
+        // HSTS en producción
         if (app()->environment('production')) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
