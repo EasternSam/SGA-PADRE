@@ -5,6 +5,12 @@
     <form method="POST" action="{{ route('login') }}" class="space-y-6">
         @csrf
 
+        {{-- Honeypot anti-bot: campo invisible que debe llegar vacío --}}
+        <div style="position:absolute;left:-9999px;top:-9999px;opacity:0;height:0;width:0;overflow:hidden;" aria-hidden="true" tabindex="-1">
+            <label for="website">Website</label>
+            <input type="text" name="website" id="website" value="" autocomplete="off" tabindex="-1" />
+        </div>
+
         <!-- Login Field (Email o Matrícula) -->
         <div class="space-y-1">
             <label for="login">{{ __('Email o Matrícula') }}</label>

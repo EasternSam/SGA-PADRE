@@ -42,9 +42,14 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'access_expires_at', // <-- AÑADIDO: Para permitir asignación masiva
-        'profile_photo_path', // <-- NUEVO: Permitir guardar la ruta de la foto
-        'kiosk_pin', // <-- NUEVO: Para el Kiosco de Autoservicio
+        'access_expires_at',
+        'profile_photo_path',
+        'kiosk_pin',
+        // Seguridad / Tracking
+        'last_login_at',
+        'last_login_ip',
+        'failed_login_count',
+        'locked_until',
     ];
 
     /**
@@ -56,6 +61,8 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'kiosk_pin',
+        'failed_login_count',
+        'locked_until',
     ];
 
     /**
@@ -76,8 +83,10 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'access_expires_at' => 'datetime', // <-- AÑADIDO: Para castear a Carbon
+            'password'          => 'hashed',
+            'access_expires_at' => 'datetime',
+            'last_login_at'     => 'datetime',
+            'locked_until'      => 'datetime',
         ];
     }
 
@@ -140,5 +149,21 @@ class User extends Authenticatable
     public function employee(): HasOne
     {
         return $this->hasOne(Employee::class);
+    }
+
+    /**
+     * Relación: Intentos de login auditados.
+     */
+    public function loginAttempts(): HasMany
+    {
+        return $this->hasMany(LoginAttempt::class);
+    }
+
+    /**
+     * ¿Está la cuenta bloqueada?
+     */
+    public function isLocked(): bool
+    {
+        return $this->locked_until && $this->locked_until->isFuture();
     }
 }

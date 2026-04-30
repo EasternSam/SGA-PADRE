@@ -7,8 +7,9 @@ use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -22,26 +23,33 @@ class AuthenticatedSessionController extends Controller
 
     /**
      * Handle an incoming authentication request.
+     * 
+     * Seguridad:
+     * - El LoginRequest maneja rate limiting, honeypot, auditoría, etc.
+     * - Este controlador se encarga de la sesión y redirección segura.
+     * - Se incrementa el throttle de IP global en cada intento.
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        Log::info('--- INTENTO DE LOGIN (Standard) ---');
-        Log::info('Identificador: ' . $request->input('login')); // FIX: Usamos login en lugar de email
+        $ip = $request->ip();
+
+        // Registrar intento en el throttle GLOBAL de IP (previo a autenticación)
+        $ipKey = 'login_ip_global:' . $ip;
+        RateLimiter::hit($ipKey, 3600); // 1 hora de ventana
 
         try {
             $request->authenticate();
-            
-            Log::info('Autenticación exitosa.');
+
+            // Éxito — limpiar throttle de IP
+            RateLimiter::clear($ipKey);
 
             $request->session()->regenerate();
 
             $user = $request->user();
-            
-            $roles = method_exists($user, 'getRoleNames') ? $user->getRoleNames()->toArray() : [];
-            Log::info('Usuario ID: ' . $user->id . ' | Roles: ' . implode(',', $roles));
 
-            // --- LÓGICA DE REDIRECCIÓN ---
+            Log::info("[LOGIN OK] User #{$user->id} ({$user->email}) desde IP: {$ip}");
 
+            // --- REDIRECCIÓN POR ROL ---
             if ($user->hasRole('Admin') || $user->hasAnyRole(['Registro', 'Contabilidad', 'Caja'])) {
                 return redirect()->route('admin.dashboard');
             }
@@ -54,17 +62,18 @@ class AuthenticatedSessionController extends Controller
                 return redirect()->route('student.dashboard');
             }
 
-            // --- NUEVO: Redirección para el rol Solicitante ---
             if ($user->hasRole('Solicitante')) {
-                Log::info('Rol Solicitante detectado -> Redirigiendo a applicant.portal');
                 return redirect()->route('applicant.portal');
             }
 
-            Log::info('Redirigiendo a dashboard general (Usuario sin rol específico).');
             return redirect()->intended(route('dashboard'));
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Error de validación (auth fallida o rate limited)
+            // El throttle de IP ya se contabilizó arriba
+            throw $e;
         } catch (\Exception $e) {
-            Log::error('ERROR EN LOGIN: ' . $e->getMessage());
+            Log::error("[LOGIN ERROR] " . $e->getMessage() . " | IP: {$ip}");
             throw $e;
         }
     }
@@ -74,10 +83,11 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $userId = Auth::id();
+        Log::info("[LOGOUT] User #{$userId} cerró sesión");
+
         Auth::guard('web')->logout();
-
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
 
         return redirect('/');
