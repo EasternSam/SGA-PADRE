@@ -20,10 +20,12 @@
     body {
         overflow-x: hidden !important;
         -webkit-overflow-scrolling: touch;
+        /* Respetar status bar del iPhone (hora, batería, señal) */
+        padding-top: env(safe-area-inset-top, 0px);
     }
 
-    /* Prevenir horizontal scroll en todos los contenedores */
-    .flex-1, main, [class*="overflow"] {
+    /* Prevenir horizontal scroll */
+    .flex-1, main {
         max-width: 100vw !important;
         overflow-x: hidden !important;
     }
@@ -153,11 +155,11 @@
 
 /* ─── 4. GRID → STACK ────────────────────────────────────── */
 @media (max-width: 768px) {
-    /* Forzar columna única en grids */
-    .grid-cols-2, .grid-cols-3, .grid-cols-4, .grid-cols-5, .grid-cols-6,
-    .md\:grid-cols-2, .md\:grid-cols-3, .md\:grid-cols-4, .md\:grid-cols-5,
-    .lg\:grid-cols-2, .lg\:grid-cols-3, .lg\:grid-cols-4, .lg\:grid-cols-5,
-    .xl\:grid-cols-3, .xl\:grid-cols-4 {
+    /* Forzar columna única en grids de CONTENIDO (no bottom-nav) */
+    main .grid-cols-2, main .grid-cols-4, main .grid-cols-5, main .grid-cols-6,
+    main .md\:grid-cols-2, main .md\:grid-cols-3, main .md\:grid-cols-4,
+    main .lg\:grid-cols-2, main .lg\:grid-cols-3, main .lg\:grid-cols-4,
+    main .xl\:grid-cols-3, main .xl\:grid-cols-4 {
         grid-template-columns: 1fr !important;
     }
 
@@ -221,14 +223,24 @@
 
 /* ─── 6. TOP HEADER BAR ──────────────────────────────────── */
 @media (max-width: 768px) {
-    /* Header más compacto */
+    /* Header compacto que respeta la status bar */
+    header {
+        padding-top: 0 !important;
+    }
+
     header .h-16 {
-        height: 3.5rem !important;
+        height: 3rem !important;
+    }
+
+    /* Padding lateral reducido en el header */
+    header .px-4 {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
     }
 
     header h1 {
-        font-size: 0.9375rem !important;
-        max-width: 60vw;
+        font-size: 0.875rem !important;
+        max-width: 55vw;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -241,8 +253,13 @@
 
     /* User avatar más pequeño */
     header img.rounded-full {
-        height: 2rem !important;
-        width: 2rem !important;
+        height: 1.75rem !important;
+        width: 1.75rem !important;
+    }
+
+    /* Reducir gap entre elementos del header */
+    header .gap-x-4 {
+        gap: 0.5rem !important;
     }
 }
 
@@ -265,21 +282,39 @@
 
 /* ─── 8. CARDS Y CONTENEDORES ────────────────────────────── */
 @media (max-width: 768px) {
-    /* Padding reducido en containers */
-    .px-4.sm\:px-6.lg\:px-8,
-    .p-6, .p-8 {
+    /* Padding reducido SOLO en el contenido principal */
+    main .px-4.sm\:px-6.lg\:px-8 {
+        padding: 0.5rem !important;
+    }
+
+    main .p-6, main .p-8 {
         padding: 0.75rem !important;
     }
 
     /* Cards con border-radius más suave */
-    .rounded-xl, .rounded-2xl {
+    main .rounded-xl, main .rounded-2xl {
         border-radius: 0.75rem !important;
     }
 
-    /* Page wrapper padding */
+    /* Contenedor principal sin padding excesivo */
     main > div > div {
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
+        padding-left: 0.25rem;
+        padding-right: 0.25rem;
+    }
+
+    /* Reducir margins del container principal del dashboard */
+    .mx-auto.max-w-\[95\%\] {
+        max-width: 100% !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+
+    /* Espaciado entre secciones reducido */
+    .space-y-6 {
+        gap: 0.75rem !important;
+    }
+    .space-y-8 {
+        gap: 1rem !important;
     }
 }
 

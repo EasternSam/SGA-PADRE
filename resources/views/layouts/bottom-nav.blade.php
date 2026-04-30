@@ -5,11 +5,10 @@
     <div x-show="moreOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="translate-y-full opacity-0" x-transition:enter-end="translate-y-0 opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="translate-y-0 opacity-100" x-transition:leave-end="translate-y-full opacity-0"
          class="absolute bottom-full left-0 right-0 bg-white rounded-t-2xl shadow-2xl border-t border-gray-100 max-h-[70vh] overflow-y-auto" style="display:none;" @click.outside="moreOpen = false">
         
-        <div class="p-4">
-            <div class="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
-            <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">Menú Completo</h3>
+        <div class="px-4 pt-3 pb-4">
+            <div class="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-3"></div>
             
-            <div class="grid grid-cols-3 gap-2">
+            <div class="grid grid-cols-4 gap-1">
                 @hasanyrole('Admin|Registro')
                 <a href="{{ route('admin.students.index') }}" wire:navigate class="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-indigo-50 transition {{ request()->routeIs('admin.students.*') ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600' }}">
                     <i class="fas fa-user-graduate text-lg"></i>
