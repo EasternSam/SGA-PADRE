@@ -286,10 +286,15 @@
                                     <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
                                 </div>
 
-                                {{-- NACIONALIDAD --}}
+                                {{-- NACIONALIDAD: Readonly si está verificado --}}
                                 <div>
                                     <x-input-label for="nationality" value="Nacionalidad" />
-                                    <x-text-input wire:model.defer="nationality" id="nationality" class="block mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" type="text" />
+                                    <x-text-input wire:model.defer="nationality" id="nationality" type="text"
+                                        class="block mt-1 w-full rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 {{ $cedulaVerified ? 'bg-emerald-50 border-emerald-200 text-emerald-800 cursor-not-allowed' : 'border-gray-300' }}"
+                                        :readonly="$cedulaVerified" />
+                                    @if($cedulaVerified)
+                                        <p class="mt-1 text-xs text-emerald-500"><i class="fas fa-lock text-[10px]"></i> Verificado JCE</p>
+                                    @endif
                                     <x-input-error :messages="$errors->get('nationality')" class="mt-2" />
                                 </div>
 
@@ -305,20 +310,18 @@
                                     <x-input-error :messages="$errors->get('birth_date')" class="mt-2" />
                                 </div>
 
-                                {{-- GÉNERO: Disabled si está verificado --}}
+                                {{-- GÉNERO: Bloqueado visualmente si verificado (NO usar disabled, rompe Livewire) --}}
                                 <div>
                                     <x-input-label for="gender" value="Género" />
-                                    <select wire:model.defer="gender" id="gender"
-                                        class="block mt-1 w-full rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 {{ $cedulaVerified ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'border-gray-300' }}"
-                                        {{ $cedulaVerified ? 'disabled' : '' }}>
+                                    <select wire:model="gender" id="gender"
+                                        class="block mt-1 w-full rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 {{ $cedulaVerified ? 'bg-emerald-50 border-emerald-200 text-emerald-800 pointer-events-none' : 'border-gray-300' }}"
+                                        @if($cedulaVerified) tabindex="-1" @endif>
                                         <option value="">Seleccione...</option>
                                         <option value="Masculino">Masculino</option>
                                         <option value="Femenino">Femenino</option>
                                         <option value="Otro">Otro</option>
                                     </select>
                                     @if($cedulaVerified)
-                                        {{-- Hidden input para que el valor se envíe aunque el select esté disabled --}}
-                                        <input type="hidden" wire:model="gender" />
                                         <p class="mt-1 text-xs text-emerald-500"><i class="fas fa-lock text-[10px]"></i> Verificado JCE</p>
                                     @endif
                                     <x-input-error :messages="$errors->get('gender')" class="mt-2" />

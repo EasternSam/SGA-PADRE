@@ -107,7 +107,15 @@ class Index extends Component
                 // Cédula del estudiante → auto-rellenar y bloquear
                 $this->first_name = $citizen['nombres'];
                 $this->last_name = trim($citizen['apellido1'] . ' ' . $citizen['apellido2']);
-                $this->gender = ($citizen['sexo'] === 'M') ? 'Masculino' : (($citizen['sexo'] === 'F') ? 'Femenino' : '');
+                $this->nationality = 'Dominicana';
+
+                // Mapear sexo del padrón a género del formulario
+                $sexo = strtoupper(trim($citizen['sexo'] ?? ''));
+                if ($sexo === 'M' || $sexo === 'MASCULINO') {
+                    $this->gender = 'Masculino';
+                } elseif ($sexo === 'F' || $sexo === 'FEMENINO') {
+                    $this->gender = 'Femenino';
+                }
 
                 if (!empty($citizen['fechaNacimiento'])) {
                     try {
