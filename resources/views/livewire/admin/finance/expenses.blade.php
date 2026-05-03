@@ -68,9 +68,7 @@
     </div>
 
     <!-- Lista de Gastos / Tabla -->
-    <div class="bg-white shadow-xl ring-1 ring-gray-200 sm:rounded-3xl overflow-hidden relative">
-        <div class="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600"></div>
-        
+    <div class="bg-white shadow-xl ring-1 ring-gray-200 sm:rounded-3xl overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-[#f8fafc] border-b border-gray-100">
                 <tr>

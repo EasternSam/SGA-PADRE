@@ -51,10 +51,7 @@
     </div>
 
     <!-- The Report Container -->
-    <div id="printable-area" class="bg-white rounded-2xl shadow-xl ring-1 ring-gray-200 overflow-hidden relative">
-        <!-- Decoration bar -->
-        <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600"></div>
-        
+    <div id="printable-area" class="bg-white rounded-2xl shadow-xl ring-1 ring-gray-200 overflow-hidden">
         <!-- Header Documento -->
         <div class="px-8 py-12 md:px-16 text-center border-b border-gray-100 bg-[#f8fafc]">
             <h2 class="text-3xl font-extrabold tracking-tight text-gray-900 uppercase">SGA CENTU</h2>

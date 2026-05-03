@@ -44,10 +44,7 @@
         </div>
     @endif
 
-    <div class="bg-white shadow-xl ring-1 ring-gray-200 sm:rounded-3xl overflow-hidden relative">
-        <!-- Top accent line -->
-        <div class="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600"></div>
-
+    <div class="bg-white shadow-xl ring-1 ring-gray-200 sm:rounded-3xl overflow-hidden">
         <!-- Header del Formulario -->
         <div class="px-6 py-8 md:px-10 md:py-10 border-b border-gray-100 bg-[#f8fafc]">
             <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
