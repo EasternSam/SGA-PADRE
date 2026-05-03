@@ -1,24 +1,26 @@
-<div class="p-4 sm:p-8 lg:p-10">
-    <!-- Page Header -->
-    <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-            <h1 class="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-3">
-                <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 ring-1 ring-inset ring-indigo-200">
-                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+<div class="min-h-screen bg-gray-50 pb-12">
+    
+    <header class="bg-white shadow-sm mb-6 border-b border-gray-200">
+        <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h2 class="font-bold text-xl text-gray-900 leading-tight flex items-center gap-2">
+                    <svg class="w-6 h-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                     </svg>
-                </span>
-                Libro Mayor (General Ledger)
-            </h1>
-            <p class="mt-2 text-base text-gray-600">Registro histórico de asientos bajo el principio de Partida Doble. Cada transacción evidencia débitos y créditos perfectamente balanceados.</p>
+                    {{ __('Libro Mayor (General Ledger)') }}
+                </h2>
+                <p class="mt-1 text-sm text-gray-600">Registro histórico de asientos bajo el principio de Partida Doble. Cada transacción evidencia débitos y créditos perfectamente balanceados.</p>
+            </div>
+            <div class="flex-none">
+                <a href="{{ route('admin.finance.manual-entry') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm">
+                    <svg class="w-4 h-4 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    {{ __('Asiento Manual') }}
+                </a>
+            </div>
         </div>
-        <div class="sm:flex-none">
-            <a href="{{ route('admin.finance.manual-entry') }}" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-md hover:bg-indigo-500 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all duration-200">
-                <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                Asiento Manual
-            </a>
-        </div>
-    </div>
+    </header>
+
+    <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 mt-4 space-y-8">
 
     <!-- Filtros -->
     <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-900/5 p-6 mb-8 transition-all hover:shadow-md border border-gray-100">

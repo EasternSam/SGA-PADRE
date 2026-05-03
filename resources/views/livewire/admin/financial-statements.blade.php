@@ -1,26 +1,28 @@
-<div class="p-4 sm:p-8 lg:p-10">
-    <!-- Page Header -->
-    <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-            <h1 class="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-3">
-                <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 ring-1 ring-inset ring-indigo-200">
-                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+<div class="min-h-screen bg-gray-50 pb-12">
+    
+    <header class="bg-white shadow-sm mb-6 border-b border-gray-200">
+        <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h2 class="font-bold text-xl text-gray-900 leading-tight flex items-center gap-2">
+                    <svg class="w-6 h-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
                     </svg>
-                </span>
-                Estados Financieros
-            </h1>
-            <p class="mt-2 text-base text-gray-600">Visualiza la salud financiera y la rentabilidad de la institución con reportes en tiempo real.</p>
+                    {{ __('Estados Financieros') }}
+                </h2>
+                <p class="mt-1 text-sm text-gray-600">Visualiza la salud financiera y la rentabilidad de la institución con reportes en tiempo real.</p>
+            </div>
+            <div class="flex-none">
+                <button onclick="window.print()" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                    <svg class="w-4 h-4 mr-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5 2.75C5 1.784 5.784 1 6.75 1h6.5c.966 0 1.75.784 1.75 1.75v3.552c.377.046.752.097 1.126.153A2.212 2.212 0 0118 8.653v5.183A2.25 2.25 0 0115.75 16h-.75v2.25A1.75 1.75 0 0113.25 20h-6.5A1.75 1.75 0 015 18.25V16h-.75A2.25 2.25 0 012 13.836V8.653c0-1.082.775-2.034 1.874-2.198.374-.056.75-.107 1.127-.153L5 6.25v-3.5zm8.5 3.397a41.533 41.533 0 00-7 0V2.75a.25.25 0 01.25-.25h6.5a.25.25 0 01.25.25v3.397zM6.5 18a.25.25 0 00.25.25h6.5a.25.25 0 00.25-.25v-4H6.5v4z" clip-rule="evenodd" />
+                    </svg>
+                    {{ __('Imprimir / PDF') }}
+                </button>
+            </div>
         </div>
-        <div class="sm:flex-none">
-            <button onclick="window.print()" class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 hover:text-indigo-600 transition-all duration-200">
-                <svg class="h-5 w-5 text-gray-400 group-hover:text-indigo-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M5 2.75C5 1.784 5.784 1 6.75 1h6.5c.966 0 1.75.784 1.75 1.75v3.552c.377.046.752.097 1.126.153A2.212 2.212 0 0118 8.653v5.183A2.25 2.25 0 0115.75 16h-.75v2.25A1.75 1.75 0 0113.25 20h-6.5A1.75 1.75 0 015 18.25V16h-.75A2.25 2.25 0 012 13.836V8.653c0-1.082.775-2.034 1.874-2.198.374-.056.75-.107 1.127-.153L5 6.25v-3.5zm8.5 3.397a41.533 41.533 0 00-7 0V2.75a.25.25 0 01.25-.25h6.5a.25.25 0 01.25.25v3.397zM6.5 18a.25.25 0 00.25.25h6.5a.25.25 0 00.25-.25v-4H6.5v4z3.036 9.172a1.082 1.082 0 00-1.036.096A1.082 1.082 0 002 9.68v4.156A.75.75 0 002.75 14.5h.75v-2c0-.966.784-1.75 1.75-1.75h9.5c.966 0 1.75.784 1.75 1.75v2h.75a.75.75 0 00.75-.75V9.68a1.082 1.082 0 00-.036-.412 1.082 1.082 0 00-1.036-.096l-3.355.776a40.063 40.063 0 01-7.046 0l-3.355-.776zM11 12H9v-1h2v1z" clip-rule="evenodd" />
-                </svg>
-                Imprimir / PDF
-            </button>
-        </div>
-    </div>
+    </header>
+
+    <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 mt-4 space-y-8">
 
     <!-- Filters Section -->
     <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-900/5 p-6 mb-8 transition-all hover:shadow-md">
