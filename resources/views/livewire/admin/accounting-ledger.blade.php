@@ -17,7 +17,7 @@
         </div>
 
     <!-- Filtros -->
-    <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-900/5 p-6 mb-8 transition-all hover:shadow-md border border-gray-100">
+    <div class="bg-white rounded-2xl ring-1 ring-gray-900/5 p-6 mb-8 border border-gray-100">
         <div class="grid grid-cols-1 gap-y-6 gap-x-6 sm:grid-cols-2 lg:grid-cols-4 md:items-end">
             <!-- Diario Filter -->
             <div>
@@ -68,7 +68,7 @@
     <!-- Asientos Contables -->
     <div class="space-y-6">
         @forelse($entries as $entry)
-            <div class="bg-white shadow-xl ring-1 ring-gray-200 sm:rounded-3xl overflow-hidden relative group transition-all hover:shadow-2xl">
+            <div class="bg-white ring-1 ring-gray-200 sm:rounded-3xl overflow-hidden relative group">
                 <!-- Color decoration per status -->
                 @if($entry->status === 'posted')
                     <div class="absolute inset-y-0 left-0 w-1.5 bg-green-500 rounded-l-3xl"></div>
@@ -177,14 +177,14 @@
                 </div>
             </div>
         @empty
-            <div class="text-center bg-white p-16 shadow-xl ring-1 ring-gray-200 sm:rounded-3xl border border-gray-100">
+            <div class="text-center bg-white p-16 ring-1 ring-gray-200 sm:rounded-3xl border border-gray-100">
                 <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                 </svg>
                 <h3 class="mt-4 text-lg font-bold text-gray-900 tracking-tight">Registro Contable Vacío</h3>
                 <p class="mt-2 text-sm text-gray-500 max-w-sm mx-auto">Aún no se han generado transacciones financieras a través de matriculaciones, pagos o asientos manuales con los filtros seleccionados.</p>
                 <div class="mt-8">
-                    <a href="{{ route('admin.finance.manual-entry') }}" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-xl shadow-indigo-200 hover:bg-indigo-500 hover:-translate-y-0.5 transition-all">
+                    <a href="{{ route('admin.finance.manual-entry') }}" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white hover:bg-indigo-500 transition-all">
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                         Crear Primer Asiento Manual
                     </a>

@@ -18,9 +18,9 @@
 
     <!-- Alertas -->
     @if (session()->has('success'))
-        <div class="mb-8 rounded-2xl bg-green-50 p-6 border border-green-200 shadow-sm animate-fade-in-up">
+        <div class="mb-8 rounded-2xl bg-green-50 p-6 border border-green-200 animate-fade-in-up">
             <div class="flex items-center gap-4">
-                <div class="flex-shrink-0 bg-green-500 rounded-full p-1.5 shadow-sm">
+                <div class="flex-shrink-0 bg-green-500 rounded-full p-1.5">
                     <svg class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" /></svg>
                 </div>
                 <div>
@@ -31,9 +31,9 @@
         </div>
     @endif
     @if (session()->has('error'))
-        <div class="mb-8 rounded-2xl bg-red-50 p-6 border border-red-200 shadow-sm animate-fade-in-up">
+        <div class="mb-8 rounded-2xl bg-red-50 p-6 border border-red-200 animate-fade-in-up">
             <div class="flex items-center gap-4">
-                <div class="flex-shrink-0 bg-red-500 rounded-full p-1.5 shadow-sm">
+                <div class="flex-shrink-0 bg-red-500 rounded-full p-1.5">
                     <svg class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
                 </div>
                 <div>
@@ -45,7 +45,7 @@
     @endif
 
     <!-- Filtros -->
-    <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-900/5 p-6 mb-8 transition-all hover:shadow-md border border-gray-100">
+    <div class="bg-white rounded-2xl ring-1 ring-gray-900/5 p-6 mb-8 border border-gray-100">
         <div class="grid grid-cols-1 gap-y-6 gap-x-8 sm:grid-cols-12 md:items-end">
             <div class="sm:col-span-12 md:col-span-8 relative">
                 <label class="block text-sm font-semibold leading-6 text-gray-900 mb-2">Buscador de Gastos</label>
@@ -68,7 +68,7 @@
     </div>
 
     <!-- Lista de Gastos / Tabla -->
-    <div class="bg-white shadow-xl ring-1 ring-gray-200 sm:rounded-3xl overflow-hidden">
+    <div class="bg-white ring-1 ring-gray-200 sm:rounded-3xl overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-[#f8fafc] border-b border-gray-100">
                 <tr>
@@ -138,7 +138,7 @@
                                     <span class="inline-flex items-center rounded-md bg-yellow-50 px-2.5 py-1 text-xs font-bold text-yellow-800 border border-yellow-200 cursor-help" title="Falta por Saldar (CxP)">
                                         Pendiente
                                     </span>
-                                    <button wire:click="openPayModal({{ $expense->id }})" class="text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-500 rounded-md px-3 py-1.5 shadow-sm transition-colors w-full sm:w-auto text-center inline-flex items-center justify-center gap-1">
+                                    <button wire:click="openPayModal({{ $expense->id }})" class="text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-500 rounded-md px-3 py-1.5 transition-colors w-full sm:w-auto text-center inline-flex items-center justify-center gap-1">
                                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                                         Saldar
                                     </button>
@@ -174,7 +174,7 @@
 
         <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
             <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-                <div class="relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-2xl border border-gray-100">
+                <div class="relative transform overflow-hidden rounded-3xl bg-white text-left transition-all sm:my-8 sm:w-full sm:max-w-2xl border border-gray-100">
                     
                     <!-- Modal Header -->
                     <div class="bg-indigo-600 px-6 py-6 flex items-start gap-4">
@@ -199,7 +199,7 @@
                                     RNC o Cédula (Suplidor)
                                 </label>
                                 <div class="relative flex">
-                                    <input type="text" wire:model.live.debounce.1000ms="supplier_rnc" wire:keydown.enter="lookupRnc" placeholder="Digita el RNC y presiona Enter..." class="block w-full rounded-l-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset {{ $errors->has('supplier_rnc') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 focus:bg-white transition-colors">
+                                    <input type="text" wire:model.live.debounce.1000ms="supplier_rnc" wire:keydown.enter="lookupRnc" placeholder="Digita el RNC y presiona Enter..." class="block w-full rounded-l-xl border-0 py-3 px-4 text-gray-900 ring-1 ring-inset {{ $errors->has('supplier_rnc') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 focus:bg-white transition-colors">
                                     <button wire:click="lookupRnc" type="button" class="bg-indigo-600 text-white px-4 rounded-r-xl font-bold hover:bg-indigo-500 transition-colors flex items-center justify-center shrink-0 border border-transparent">
                                         <svg wire:loading.remove wire:target="lookupRnc" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
                                         <svg wire:loading wire:target="lookupRnc" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -211,21 +211,21 @@
                             <!-- Supplier Name -->
                             <div class="sm:col-span-1">
                                 <label class="block text-sm font-bold leading-6 text-gray-900 mb-1">Nombre / Razón Social</label>
-                                <input type="text" wire:model="supplier_name" placeholder="Ej. ACME Corp SRL" class="block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset {{ $errors->has('supplier_name') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 focus:bg-white transition-colors">
+                                <input type="text" wire:model="supplier_name" placeholder="Ej. ACME Corp SRL" class="block w-full rounded-xl border-0 py-3 px-4 text-gray-900 ring-1 ring-inset {{ $errors->has('supplier_name') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 focus:bg-white transition-colors">
                                 @error('supplier_name') <span class="text-red-500 font-medium text-xs block mt-1">{{ $message }}</span> @enderror
                             </div>
 
                             <!-- NCF -->
                             <div>
                                 <label class="block text-sm font-bold leading-6 text-gray-900 mb-1">NCF (Comprobante Fiscal)</label>
-                                <input type="text" wire:model="ncf" placeholder="Ej. B0100000001" class="block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset {{ $errors->has('ncf') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors font-mono">
+                                <input type="text" wire:model="ncf" placeholder="Ej. B0100000001" class="block w-full rounded-xl border-0 py-3 px-4 text-gray-900 ring-1 ring-inset {{ $errors->has('ncf') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors font-mono">
                                 @error('ncf') <span class="text-red-500 font-medium text-xs block mt-1">{{ $message }}</span> @enderror
                             </div>
 
                             <!-- Tipo de Gasto 606 -->
                             <div>
                                 <label class="block text-sm font-bold leading-6 text-gray-900 mb-1">Tipo de Gasto (Para 606)</label>
-                                <select wire:model="expense_type_606" class="block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset {{ $errors->has('expense_type_606') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors">
+                                <select wire:model="expense_type_606" class="block w-full rounded-xl border-0 py-3 px-4 text-gray-900 ring-1 ring-inset {{ $errors->has('expense_type_606') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors">
                                     @foreach($expenseTypes606 as $code => $label)
                                         <option value="{{ $code }}">{{ $code }} - {{ $label }}</option>
                                     @endforeach
@@ -236,7 +236,7 @@
                             <!-- Referencia NCF -->
                             <div class="sm:col-span-2">
                                 <label class="block text-sm font-bold leading-6 text-gray-900 mb-1">Referencia / Factura # Interna (Opcional)</label>
-                                <input type="text" wire:model="reference_number" placeholder="Ej. F-1025" class="block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset {{ $errors->has('reference_number') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors font-mono">
+                                <input type="text" wire:model="reference_number" placeholder="Ej. F-1025" class="block w-full rounded-xl border-0 py-3 px-4 text-gray-900 ring-1 ring-inset {{ $errors->has('reference_number') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors font-mono">
                                 @error('reference_number') <span class="text-red-500 font-medium text-xs block mt-1">{{ $message }}</span> @enderror
                             </div>
                             
@@ -257,7 +257,7 @@
                                 <label class="block text-sm font-bold leading-6 text-gray-900 mb-1">Subtotal (Monto del Gasto)</label>
                                 <div class="relative">
                                     <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4"><span class="text-gray-500 font-bold">$</span></div>
-                                    <input type="number" step="0.01" wire:model.live="subtotal" class="block w-full rounded-xl border-0 py-3 pl-8 pr-4 text-gray-900 shadow-sm ring-1 ring-inset {{ $errors->has('subtotal') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors text-right font-black">
+                                    <input type="number" step="0.01" wire:model.live="subtotal" class="block w-full rounded-xl border-0 py-3 pl-8 pr-4 text-gray-900 ring-1 ring-inset {{ $errors->has('subtotal') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors text-right font-black">
                                 </div>
                                 @error('subtotal') <span class="text-red-500 font-medium text-xs block mt-1">{{ $message }}</span> @enderror
                             </div>
@@ -267,7 +267,7 @@
                                 <label class="block text-sm font-bold leading-6 text-gray-900 mb-1">ITBIS Facturado</label>
                                 <div class="relative">
                                     <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4"><span class="text-gray-500 font-bold">$</span></div>
-                                    <input type="number" step="0.01" wire:model.live="itbis_amount" class="block w-full rounded-xl border-0 py-3 pl-8 pr-4 text-gray-900 shadow-sm ring-1 ring-inset {{ $errors->has('itbis_amount') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors text-right font-black">
+                                    <input type="number" step="0.01" wire:model.live="itbis_amount" class="block w-full rounded-xl border-0 py-3 pl-8 pr-4 text-gray-900 ring-1 ring-inset {{ $errors->has('itbis_amount') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors text-right font-black">
                                 </div>
                                 @error('itbis_amount') <span class="text-red-500 font-medium text-xs block mt-1">{{ $message }}</span> @enderror
                             </div>
@@ -277,7 +277,7 @@
                                 <label class="block text-sm font-bold leading-6 text-orange-800 mb-1">ITBIS a Retener (Pasivo)</label>
                                 <div class="relative">
                                     <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4"><span class="text-orange-500 font-bold">-$</span></div>
-                                    <input type="number" step="0.01" wire:model.live="itbis_retained" class="block w-full rounded-xl border-0 py-3 pl-9 pr-4 text-orange-900 shadow-sm ring-1 ring-inset {{ $errors->has('itbis_retained') ? 'ring-red-300 focus:ring-red-600' : 'ring-orange-300 focus:ring-orange-600' }} sm:text-sm bg-orange-50 hover:bg-orange-100 transition-colors text-right font-black">
+                                    <input type="number" step="0.01" wire:model.live="itbis_retained" class="block w-full rounded-xl border-0 py-3 pl-9 pr-4 text-orange-900 ring-1 ring-inset {{ $errors->has('itbis_retained') ? 'ring-red-300 focus:ring-red-600' : 'ring-orange-300 focus:ring-orange-600' }} sm:text-sm bg-orange-50 hover:bg-orange-100 transition-colors text-right font-black">
                                 </div>
                                 @error('itbis_retained') <span class="text-red-500 font-medium text-xs block mt-1">{{ $message }}</span> @enderror
                             </div>
@@ -287,7 +287,7 @@
                                 <label class="block text-sm font-bold leading-6 text-orange-800 mb-1">ISR a Retener (Pasivo)</label>
                                 <div class="relative">
                                     <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4"><span class="text-orange-500 font-bold">-$</span></div>
-                                    <input type="number" step="0.01" wire:model.live="isr_retained" class="block w-full rounded-xl border-0 py-3 pl-9 pr-4 text-orange-900 shadow-sm ring-1 ring-inset {{ $errors->has('isr_retained') ? 'ring-red-300 focus:ring-red-600' : 'ring-orange-300 focus:ring-orange-600' }} sm:text-sm bg-orange-50 hover:bg-orange-100 transition-colors text-right font-black">
+                                    <input type="number" step="0.01" wire:model.live="isr_retained" class="block w-full rounded-xl border-0 py-3 pl-9 pr-4 text-orange-900 ring-1 ring-inset {{ $errors->has('isr_retained') ? 'ring-red-300 focus:ring-red-600' : 'ring-orange-300 focus:ring-orange-600' }} sm:text-sm bg-orange-50 hover:bg-orange-100 transition-colors text-right font-black">
                                 </div>
                                 @error('isr_retained') <span class="text-red-500 font-medium text-xs block mt-1">{{ $message }}</span> @enderror
                             </div>
@@ -307,13 +307,13 @@
                             <!-- Fechas -->
                             <div>
                                 <label class="block text-sm font-bold leading-6 text-gray-900 mb-1">Fecha del Gasto</label>
-                                <input type="date" wire:model="expense_date" class="block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset {{ $errors->has('expense_date') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors">
+                                <input type="date" wire:model="expense_date" class="block w-full rounded-xl border-0 py-3 px-4 text-gray-900 ring-1 ring-inset {{ $errors->has('expense_date') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors">
                                 @error('expense_date') <span class="text-red-500 font-medium text-xs block mt-1">{{ $message }}</span> @enderror
                             </div>
 
                             <div>
                                 <label class="block text-sm font-bold leading-6 text-gray-900 mb-1">Fecha de Vencimiento</label>
-                                <input type="date" wire:model="due_date" class="block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset {{ $errors->has('due_date') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors">
+                                <input type="date" wire:model="due_date" class="block w-full rounded-xl border-0 py-3 px-4 text-gray-900 ring-1 ring-inset {{ $errors->has('due_date') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors">
                                 @error('due_date') <span class="text-red-500 font-medium text-xs block mt-1">{{ $message }}</span> @enderror
                             </div>
 
@@ -332,7 +332,7 @@
                             <!-- Diario -->
                             <div class="sm:col-span-2">
                                 <label class="block text-sm font-bold leading-6 text-gray-900 mb-1">Diario Destino</label>
-                                <select wire:model="selected_journal_id" class="block w-full rounded-xl border-0 py-3 pl-4 pr-10 text-gray-900 shadow-sm ring-1 ring-inset {{ $errors->has('selected_journal_id') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors">
+                                <select wire:model="selected_journal_id" class="block w-full rounded-xl border-0 py-3 pl-4 pr-10 text-gray-900 ring-1 ring-inset {{ $errors->has('selected_journal_id') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors">
                                     <option value="">Seleccione el Diario...</option>
                                     @foreach($journals as $j)
                                         <option value="{{ $j->id }}">{{ $j->name }}</option>
@@ -347,7 +347,7 @@
                                     <span>¿Qué Gasto es este? (Débito - Aumento de Gasto)</span>
                                     <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">+ Debe</span>
                                 </label>
-                                <select wire:model="expense_account_id" class="mt-2 block w-full rounded-xl border-0 py-3 pl-4 pr-10 text-blue-900 shadow-sm ring-1 ring-inset {{ $errors->has('expense_account_id') ? 'ring-red-300 focus:ring-red-600' : 'ring-blue-300 focus:ring-blue-600' }} sm:text-sm bg-white font-medium">
+                                <select wire:model="expense_account_id" class="mt-2 block w-full rounded-xl border-0 py-3 pl-4 pr-10 text-blue-900 ring-1 ring-inset {{ $errors->has('expense_account_id') ? 'ring-red-300 focus:ring-red-600' : 'ring-blue-300 focus:ring-blue-600' }} sm:text-sm bg-white font-medium">
                                     <option value="">Selecciona la cuenta de Gasto (Categoría)...</option>
                                     @foreach($expenseAccounts as $acc)
                                         <option value="{{ $acc->id }}">{{ $acc->code }} - {{ $acc->name }}</option>
@@ -362,7 +362,7 @@
                                     <label class="block text-sm font-bold leading-6 text-orange-900">¿Cómo se pagó / Deudó? (Crédito)</label>
                                     <span class="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">+ Haber</span>
                                 </div>
-                                <select wire:model.live="payment_account_id" class="mt-2 block w-full rounded-xl border-0 py-3 pl-4 pr-10 text-orange-900 shadow-sm ring-1 ring-inset {{ $errors->has('payment_account_id') ? 'ring-red-300 focus:ring-red-600' : 'ring-orange-300 focus:ring-orange-600' }} sm:text-sm bg-white font-medium">
+                                <select wire:model.live="payment_account_id" class="mt-2 block w-full rounded-xl border-0 py-3 pl-4 pr-10 text-orange-900 ring-1 ring-inset {{ $errors->has('payment_account_id') ? 'ring-red-300 focus:ring-red-600' : 'ring-orange-300 focus:ring-orange-600' }} sm:text-sm bg-white font-medium">
                                     <option value="">Selecciona Banco (Contado) o Cuentas por Pagar (Crédito)...</option>
                                     @foreach($paymentAccounts as $acc)
                                         <option value="{{ $acc->id }}">{{ $acc->code }} - {{ $acc->name }} ({{ $acc->type === 'asset' ? 'Caja/Banco' : 'Pasivo' }})</option>
@@ -374,7 +374,7 @@
                             <!-- Estado Interno Automático -->
                             <div class="sm:col-span-2">
                                 <label class="block text-sm font-bold leading-6 text-gray-900 mb-1">Estado de Pago a Proveedor</label>
-                                <select wire:model="status" class="block w-full rounded-xl border-0 py-3 pl-4 pr-10 text-gray-900 shadow-sm ring-1 ring-inset {{ $errors->has('status') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors">
+                                <select wire:model="status" class="block w-full rounded-xl border-0 py-3 pl-4 pr-10 text-gray-900 ring-1 ring-inset {{ $errors->has('status') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors">
                                     <option value="paid">Pagado al Contado (Usando Caja/Bancos)</option>
                                     <option value="pending">Pendiente (Usando Cuentas por Pagar al Proveedor)</option>
                                 </select>
@@ -386,7 +386,7 @@
                             <!-- Concepto -->
                             <div class="sm:col-span-2">
                                 <label class="block text-sm font-bold leading-6 text-gray-900 mb-1">Concepto o Descripción Interna</label>
-                                <textarea wire:model="description" rows="2" class="block w-full rounded-xl border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset {{ $errors->has('description') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors" placeholder="Razones del gasto, personal que lo autorizó, etc."></textarea>
+                                <textarea wire:model="description" rows="2" class="block w-full rounded-xl border-0 py-3 px-4 text-gray-900 ring-1 ring-inset {{ $errors->has('description') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors" placeholder="Razones del gasto, personal que lo autorizó, etc."></textarea>
                                 @error('description') <span class="text-red-500 font-medium text-xs block mt-1">{{ $message }}</span> @enderror
                             </div>
 
@@ -395,12 +395,12 @@
                     
                     <!-- Modal Footer -->
                     <div class="bg-[#f8fafc] px-6 py-5 flex flex-col sm:flex-row-reverse sm:px-8 border-t border-gray-200 gap-3 items-center">
-                        <button wire:click="save" type="button" class="inline-flex w-full justify-center items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-base font-bold text-white shadow-md hover:bg-indigo-500 sm:w-auto transition-colors disabled:opacity-50" wire:loading.attr="disabled">
+                        <button wire:click="save" type="button" class="inline-flex w-full justify-center items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-base font-bold text-white hover:bg-indigo-500 sm:w-auto transition-colors disabled:opacity-50" wire:loading.attr="disabled">
                             <svg class="h-5 w-5 -ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
                             <span wire:loading.remove wire:target="save">Registrar Gasto y Cuadrar Pliza</span>
                             <span wire:loading wire:target="save">Contabilizando...</span>
                         </button>
-                        <button wire:click="closeModal" type="button" class="inline-flex w-full justify-center rounded-xl bg-white px-6 py-3 text-sm font-bold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:w-auto transition-colors">
+                        <button wire:click="closeModal" type="button" class="inline-flex w-full justify-center rounded-xl bg-white px-6 py-3 text-sm font-bold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:w-auto transition-colors">
                             Cancelar Operación
                         </button>
                     </div>
@@ -416,7 +416,7 @@
         <div class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity"></div>
         <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
             <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-                <div class="relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-xl border border-gray-100">
+                <div class="relative transform overflow-hidden rounded-3xl bg-white text-left transition-all sm:my-8 sm:w-full sm:max-w-xl border border-gray-100">
                     
                     <div class="bg-indigo-600 px-6 py-6 flex items-start gap-4">
                         <div class="rounded-xl bg-indigo-500/50 p-3 shadow-inner">
@@ -455,7 +455,7 @@
                                     <span>¿De dónde sale el dinero? (Crédito - Disminuye Activo)</span>
                                     <span class="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">+ Haber</span>
                                 </label>
-                                <select wire:model="pay_account_origin_id" class="mt-2 block w-full rounded-xl border-0 py-3 pl-4 pr-10 text-orange-900 shadow-sm ring-1 ring-inset {{ $errors->has('pay_account_origin_id') ? 'ring-red-300 focus:ring-red-600' : 'ring-orange-300 focus:ring-orange-600' }} sm:text-sm bg-white font-medium">
+                                <select wire:model="pay_account_origin_id" class="mt-2 block w-full rounded-xl border-0 py-3 pl-4 pr-10 text-orange-900 ring-1 ring-inset {{ $errors->has('pay_account_origin_id') ? 'ring-red-300 focus:ring-red-600' : 'ring-orange-300 focus:ring-orange-600' }} sm:text-sm bg-white font-medium">
                                     <option value="">Selecciona Caja o Banco...</option>
                                     @foreach($assetAccounts as $acc)
                                         <option value="{{ $acc->id }}">{{ $acc->code }} - {{ $acc->name }}</option>
@@ -467,7 +467,7 @@
                             <!-- Diario -->
                             <div>
                                 <label class="block text-sm font-bold leading-6 text-gray-900 mb-1">Diario Destino (Para el registro)</label>
-                                <select wire:model="selected_journal_id" class="block w-full rounded-xl border-0 py-3 pl-4 pr-10 text-gray-900 shadow-sm ring-1 ring-inset {{ $errors->has('selected_journal_id') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors">
+                                <select wire:model="selected_journal_id" class="block w-full rounded-xl border-0 py-3 pl-4 pr-10 text-gray-900 ring-1 ring-inset {{ $errors->has('selected_journal_id') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors">
                                     <option value="">Seleccione el Diario...</option>
                                     @foreach($journals as $j)
                                         <option value="{{ $j->id }}">{{ $j->name }}</option>
@@ -480,11 +480,11 @@
                     </div>
                     
                     <div class="bg-[#f8fafc] px-6 py-5 flex flex-col sm:flex-row-reverse sm:px-8 border-t border-gray-200 gap-3 items-center">
-                        <button wire:click="processPayment" type="button" class="inline-flex w-full justify-center items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-base font-bold text-white shadow-md hover:bg-indigo-500 sm:w-auto transition-colors disabled:opacity-50" wire:loading.attr="disabled">
+                        <button wire:click="processPayment" type="button" class="inline-flex w-full justify-center items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-base font-bold text-white hover:bg-indigo-500 sm:w-auto transition-colors disabled:opacity-50" wire:loading.attr="disabled">
                             <span wire:loading.remove wire:target="processPayment">Procesar Pago y Contabilizar</span>
                             <span wire:loading wire:target="processPayment">Procesando...</span>
                         </button>
-                        <button wire:click="closePayModal" type="button" class="inline-flex w-full justify-center rounded-xl bg-white px-6 py-3 text-sm font-bold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:w-auto transition-colors">
+                        <button wire:click="closePayModal" type="button" class="inline-flex w-full justify-center rounded-xl bg-white px-6 py-3 text-sm font-bold text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:w-auto transition-colors">
                             Cancelar
                         </button>
                     </div>

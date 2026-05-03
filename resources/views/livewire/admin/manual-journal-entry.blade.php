@@ -18,9 +18,9 @@
 
     <!-- Alertas -->
     @if (session()->has('success'))
-        <div class="mb-8 rounded-2xl bg-green-50 p-6 border border-green-200 shadow-sm animate-fade-in-up">
+        <div class="mb-8 rounded-2xl bg-green-50 p-6 border border-green-200 animate-fade-in-up">
             <div class="flex items-center gap-4">
-                <div class="flex-shrink-0 bg-green-500 rounded-full p-1.5 shadow-sm">
+                <div class="flex-shrink-0 bg-green-500 rounded-full p-1.5">
                     <svg class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" /></svg>
                 </div>
                 <div>
@@ -31,9 +31,9 @@
         </div>
     @endif
     @if (session()->has('error'))
-        <div class="mb-8 rounded-2xl bg-red-50 p-6 border border-red-200 shadow-sm animate-fade-in-up">
+        <div class="mb-8 rounded-2xl bg-red-50 p-6 border border-red-200 animate-fade-in-up">
             <div class="flex items-center gap-4">
-                <div class="flex-shrink-0 bg-red-500 rounded-full p-1.5 shadow-sm">
+                <div class="flex-shrink-0 bg-red-500 rounded-full p-1.5">
                     <svg class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
                 </div>
                 <div>
@@ -44,7 +44,7 @@
         </div>
     @endif
 
-    <div class="bg-white shadow-xl ring-1 ring-gray-200 sm:rounded-3xl overflow-hidden">
+    <div class="bg-white ring-1 ring-gray-200 sm:rounded-3xl overflow-hidden">
         <!-- Header del Formulario -->
         <div class="px-6 py-8 md:px-10 md:py-10 border-b border-gray-100 bg-[#f8fafc]">
             <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
@@ -112,7 +112,7 @@
                         @foreach($lines as $index => $line)
                             <tr class="hover:bg-slate-50 transition-colors group">
                                 <td class="py-4 pl-6 md:pl-10 pr-3 align-top">
-                                    <select wire:model.live="lines.{{ $index }}.account_id" class="block w-full rounded-xl border-0 py-2.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset {{ $errors->has('lines.'.$index.'.account_id') ? 'ring-red-300 focus:ring-red-500' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-white shadow-sm">
+                                    <select wire:model.live="lines.{{ $index }}.account_id" class="block w-full rounded-xl border-0 py-2.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset {{ $errors->has('lines.'.$index.'.account_id') ? 'ring-red-300 focus:ring-red-500' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-white">
                                         <option value="">Seleccione una cuenta...</option>
                                         @foreach($accounts as $acc)
                                             <option value="{{ $acc->id }}">{{ $acc->code }} - {{ $acc->name }}</option>
@@ -121,7 +121,7 @@
                                     @error('lines.'.$index.'.account_id') <span class="text-red-500 font-medium text-xs block mt-1">{{ $message }}</span> @enderror
                                 </td>
                                 <td class="px-3 py-4 align-top">
-                                    <input type="text" wire:model.live="lines.{{ $index }}.description" placeholder="Explicación detallada de la línea" class="block w-full rounded-xl border-0 py-2.5 px-4 text-gray-900 shadow-sm ring-1 ring-inset {{ $errors->has('lines.'.$index.'.description') ? 'ring-red-300 focus:ring-red-500' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-white placeholder-gray-400">
+                                    <input type="text" wire:model.live="lines.{{ $index }}.description" placeholder="Explicación detallada de la línea" class="block w-full rounded-xl border-0 py-2.5 px-4 text-gray-900 ring-1 ring-inset {{ $errors->has('lines.'.$index.'.description') ? 'ring-red-300 focus:ring-red-500' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-white placeholder-gray-400">
                                     @error('lines.'.$index.'.description') <span class="text-red-500 font-medium text-xs block mt-1">{{ $message }}</span> @enderror
                                 </td>
                                 <td class="px-3 py-4 align-top">
@@ -129,7 +129,7 @@
                                         <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                                             <span class="text-gray-500 sm:text-sm">$</span>
                                         </div>
-                                        <input type="number" step="0.01" min="0" wire:model.live="lines.{{ $index }}.debit" class="block w-full rounded-xl border-0 py-2.5 pl-8 pr-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 text-right sm:text-sm font-semibold bg-white placeholder-gray-300">
+                                        <input type="number" step="0.01" min="0" wire:model.live="lines.{{ $index }}.debit" class="block w-full rounded-xl border-0 py-2.5 pl-8 pr-4 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 text-right sm:text-sm font-semibold bg-white placeholder-gray-300">
                                     </div>
                                 </td>
                                 <td class="px-3 py-4 align-top">
@@ -137,7 +137,7 @@
                                         <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                                             <span class="text-gray-500 sm:text-sm">$</span>
                                         </div>
-                                        <input type="number" step="0.01" min="0" wire:model.live="lines.{{ $index }}.credit" class="block w-full rounded-xl border-0 py-2.5 pl-8 pr-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 text-right sm:text-sm font-semibold bg-white placeholder-gray-300">
+                                        <input type="number" step="0.01" min="0" wire:model.live="lines.{{ $index }}.credit" class="block w-full rounded-xl border-0 py-2.5 pl-8 pr-4 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 text-right sm:text-sm font-semibold bg-white placeholder-gray-300">
                                     </div>
                                 </td>
                                 <td class="relative py-4 pl-3 pr-6 md:pr-10 text-right align-middle">
@@ -155,7 +155,7 @@
                     <tfoot>
                         <tr>
                             <td colspan="5" class="py-6 pl-6 md:pl-10 text-left bg-white border-t border-gray-100">
-                                <button wire:click="addLine" type="button" class="inline-flex items-center gap-2 rounded-xl bg-white border border-dashed border-gray-300 px-5 py-2.5 text-sm font-semibold text-indigo-600 shadow-sm hover:border-indigo-400 hover:bg-indigo-50 transition-all">
+                                <button wire:click="addLine" type="button" class="inline-flex items-center gap-2 rounded-xl bg-white border border-dashed border-gray-300 px-5 py-2.5 text-sm font-semibold text-indigo-600 hover:border-indigo-400 hover:bg-indigo-50 transition-all">
                                     <svg class="h-5 w-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                       <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
                                     </svg>
@@ -194,7 +194,7 @@
                         El asiento actual está en cero.
                     </div>
                 @elseif($total_debit !== $total_credit)
-                    <div class="inline-flex items-center gap-3 px-5 py-3 rounded-xl bg-red-50 border-2 border-red-300 shadow-sm animate-pulse w-full md:w-auto">
+                    <div class="inline-flex items-center gap-3 px-5 py-3 rounded-xl bg-red-50 border-2 border-red-300 animate-pulse w-full md:w-auto">
                         <svg class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                         <div class="flex flex-col">
                             <span class="font-bold text-red-800 uppercase text-xs tracking-wider">Descuadre Detectado</span>
@@ -204,7 +204,7 @@
                 @endif
             </div>
 
-            <div class="{{ $total_debit === $total_credit && $total_debit > 0 ? 'flex' : 'hidden' }} items-center gap-3 px-6 py-3 rounded-2xl bg-green-50 border border-green-200 shadow-sm animate-fade-in-up w-full md:w-auto">
+            <div class="{{ $total_debit === $total_credit && $total_debit > 0 ? 'flex' : 'hidden' }} items-center gap-3 px-6 py-3 rounded-2xl bg-green-50 border border-green-200 animate-fade-in-up w-full md:w-auto">
                 <div class="rounded-full bg-green-500 p-1">
                     <svg class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" /></svg>
                 </div>
@@ -214,7 +214,7 @@
             <button 
                 wire:click="saveEntry" 
                 type="button" 
-                class="inline-flex justify-center items-center gap-2 rounded-xl bg-indigo-600 px-8 py-3.5 text-base font-bold text-white shadow-md hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-indigo-300 w-full md:w-auto transition-all"
+                class="inline-flex justify-center items-center gap-2 rounded-xl bg-indigo-600 px-8 py-3.5 text-base font-bold text-white hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-indigo-300 w-full md:w-auto transition-all"
                 @if($total_debit !== $total_credit || $total_debit == 0) disabled @endif
             >
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>

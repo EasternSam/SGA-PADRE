@@ -18,9 +18,9 @@
 
     <!-- Alertas -->
     @if (session()->has('message'))
-        <div class="mb-8 rounded-2xl bg-green-50 p-6 border border-green-200 shadow-sm animate-fade-in-up">
+        <div class="mb-8 rounded-2xl bg-green-50 p-6 border border-green-200 animate-fade-in-up">
             <div class="flex items-center gap-4">
-                <div class="flex-shrink-0 bg-green-500 rounded-full p-1.5 shadow-sm">
+                <div class="flex-shrink-0 bg-green-500 rounded-full p-1.5">
                     <svg class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" /></svg>
                 </div>
                 <div>
@@ -31,9 +31,9 @@
         </div>
     @endif
     @if (session()->has('error'))
-        <div class="mb-8 rounded-2xl bg-red-50 p-6 border border-red-200 shadow-sm animate-fade-in-up">
+        <div class="mb-8 rounded-2xl bg-red-50 p-6 border border-red-200 animate-fade-in-up">
             <div class="flex items-center gap-4">
-                <div class="flex-shrink-0 bg-red-500 rounded-full p-1.5 shadow-sm">
+                <div class="flex-shrink-0 bg-red-500 rounded-full p-1.5">
                     <svg class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
                 </div>
                 <div>
@@ -45,7 +45,7 @@
     @endif
 
     <!-- Filtros -->
-    <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-900/5 p-6 mb-8 transition-all hover:shadow-md border border-gray-100">
+    <div class="bg-white rounded-2xl ring-1 ring-gray-900/5 p-6 mb-8 border border-gray-100">
         <div class="grid grid-cols-1 gap-y-6 gap-x-8 sm:grid-cols-12 md:items-end">
             <div class="sm:col-span-12 md:col-span-8 relative">
                 <label class="block text-sm font-semibold leading-6 text-gray-900 mb-2">Buscador Inteligente</label>
@@ -71,7 +71,7 @@
     </div>
 
     <!-- Lista Jerárquica / Tabla -->
-    <div class="bg-white shadow-xl ring-1 ring-gray-200 sm:rounded-3xl overflow-hidden">
+    <div class="bg-white ring-1 ring-gray-200 sm:rounded-3xl overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-[#f8fafc] border-b border-gray-100">
                 <tr>

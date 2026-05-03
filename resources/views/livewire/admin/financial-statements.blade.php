@@ -17,7 +17,7 @@
         </div>
 
     <!-- Filters Section -->
-    <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-900/5 p-6 mb-8 transition-all hover:shadow-md">
+    <div class="bg-white rounded-2xl ring-1 ring-gray-900/5 p-6 mb-8">
         <div class="grid grid-cols-1 gap-y-6 gap-x-8 sm:grid-cols-12 md:items-end">
             <div class="sm:col-span-12 md:col-span-4">
                 <label class="block text-sm font-semibold leading-6 text-gray-900">Tipo de Documento Financiero</label>
@@ -51,7 +51,7 @@
     </div>
 
     <!-- The Report Container -->
-    <div id="printable-area" class="bg-white rounded-2xl shadow-xl ring-1 ring-gray-200 overflow-hidden">
+    <div id="printable-area" class="bg-white rounded-2xl ring-1 ring-gray-200 overflow-hidden">
         <!-- Header Documento -->
         <div class="px-8 py-12 md:px-16 text-center border-b border-gray-100 bg-[#f8fafc]">
             <h2 class="text-3xl font-extrabold tracking-tight text-gray-900 uppercase">SGA CENTU</h2>
@@ -65,7 +65,7 @@
                     Al {{ date('d/m/Y', strtotime($date_to)) }}
                 @endif
             </p>
-            <span class="inline-flex mt-4 items-center rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-gray-600 border border-gray-200 shadow-sm">
+            <span class="inline-flex mt-4 items-center rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-gray-600 border border-gray-200">
                 Expresado en Pesos Dominicanos (DOP)
             </span>
         </div>
@@ -82,7 +82,7 @@
                             </div>
                             <h4 class="text-xl font-bold text-gray-900 uppercase tracking-wide">Ingresos Operativos</h4>
                         </div>
-                        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <tbody class="bg-white divide-y divide-gray-100">
                                     @forelse($report['revenues'] as $acc)
@@ -112,7 +112,7 @@
                             </div>
                             <h4 class="text-xl font-bold text-gray-900 uppercase tracking-wide">Gastos Operativos</h4>
                         </div>
-                        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <tbody class="bg-white divide-y divide-gray-100">
                                     @forelse($report['expenses'] as $acc)
@@ -135,7 +135,7 @@
                     </div>
 
                     <!-- Utilidad Neta -->
-                    <div class="rounded-2xl {{ $report['net_income'] >= 0 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200' }} p-8 flex flex-col sm:flex-row items-center justify-between shadow-sm">
+                    <div class="rounded-2xl {{ $report['net_income'] >= 0 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200' }} p-8 flex flex-col sm:flex-row items-center justify-between">
                         <div class="flex items-center gap-4 mb-4 sm:mb-0">
                             <div class="rounded-full p-3 {{ $report['net_income'] >= 0 ? 'bg-green-100' : 'bg-red-100' }} border {{ $report['net_income'] >= 0 ? 'border-green-200' : 'border-red-200' }}">
                                 <svg class="w-8 h-8 {{ $report['net_income'] >= 0 ? 'text-green-600' : 'text-red-500' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -171,7 +171,7 @@
                                 <span class="text-xs font-semibold text-gray-500 uppercase tracking-normal hidden sm:inline">(Recursos de la Empresa)</span>
                             </h4>
                             
-                            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-8">
+                            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-8">
                                 <table class="min-w-full divide-y divide-gray-200">
                                     <tbody class="bg-white divide-y divide-gray-100">
                                         @forelse($report['assets'] as $acc)
@@ -188,7 +188,7 @@
                         </div>
 
                         <!-- Total Activos (Bottom Aligned via flex-grow on top container) -->
-                        <div class="rounded-2xl bg-[#ebf4ff] border border-blue-100 p-6 flex flex-col sm:flex-row justify-between sm:items-center mt-auto shadow-sm">
+                        <div class="rounded-2xl bg-[#ebf4ff] border border-blue-100 p-6 flex flex-col sm:flex-row justify-between sm:items-center mt-auto">
                             <span class="font-bold text-lg text-blue-900 uppercase tracking-widest mb-2 sm:mb-0">Total Activos</span>
                             <span class="font-black text-2xl text-blue-900 border-b-4 border-blue-600 sm:border-b-[4px] double">{{ number_format($report['total_assets'], 2) }}</span>
                         </div>
@@ -203,7 +203,7 @@
                                     Pasivos
                                     <span class="text-xs font-semibold text-gray-500 uppercase tracking-normal hidden sm:inline">(Obligaciones)</span>
                                 </h4>
-                                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-4">
+                                <div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
                                     <table class="min-w-full divide-y divide-gray-200">
                                         <tbody class="bg-white divide-y divide-gray-100">
                                             @forelse($report['liabilities'] as $acc)
@@ -229,7 +229,7 @@
                                     Capital
                                     <span class="text-xs font-semibold text-gray-500 uppercase tracking-normal hidden sm:inline">(Patrimonio Neto)</span>
                                 </h4>
-                                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-4">
+                                <div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
                                     <table class="min-w-full divide-y divide-gray-200">
                                         <tbody class="bg-white divide-y divide-gray-100">
                                             @foreach($report['equity'] as $acc)
@@ -259,7 +259,7 @@
                         </div>
 
                         <!-- Total Pasivo + Capital -->
-                        <div class="rounded-2xl bg-gray-900 border border-gray-800 px-6 py-6 flex flex-col sm:flex-row justify-between sm:items-center mt-auto shadow-xl relative overflow-hidden">
+                        <div class="rounded-2xl bg-gray-900 border border-gray-800 px-6 py-6 flex flex-col sm:flex-row justify-between sm:items-center mt-auto relative overflow-hidden">
                             <!-- Subtle Grid Background Decoration -->
                             <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 16px 16px;"></div>
                             
@@ -278,15 +278,15 @@
                         <!-- Verificación de Cuadre -->
                         <div class="mt-6 flex justify-end">
                             @if(round($report['total_assets'], 2) === round($report['total_liabilities_and_equity'], 2))
-                                <div class="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-green-50 border border-green-200 shadow-sm">
-                                    <div class="rounded-full bg-green-500 p-1.5 shadow-sm">
+                                <div class="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-green-50 border border-green-200">
+                                    <div class="rounded-full bg-green-500 p-1.5">
                                         <svg class="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" /></svg>
                                     </div>
                                     <span class="text-sm font-bold text-green-800 tracking-widest uppercase">Balance Cuadrado</span>
                                 </div>
                             @else
-                                <div class="inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-red-50 border border-red-300 shadow-sm animate-pulse">
-                                    <div class="rounded-full bg-red-600 p-1.5 shadow-sm">
+                                <div class="inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-red-50 border border-red-300 animate-pulse">
+                                    <div class="rounded-full bg-red-600 p-1.5">
                                         <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
                                     </div>
                                     <div class="flex flex-col">
