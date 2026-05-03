@@ -48,6 +48,6 @@ class InventoryItem extends Model
     // Helper para ubicación legible
     public function getLocationNameAttribute()
     {
-        return $this->classroom ? $this->classroom->name : '📦 Almacén Central';
+        return $this->classroom ? $this->classroom->name : 'Almacén Central';
     }
 }

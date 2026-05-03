@@ -58,13 +58,13 @@
             <div class="sm:col-span-12 md:col-span-4">
                 <label class="block text-sm font-semibold leading-6 text-gray-900 mb-2">Filtrar por Naturaleza</label>
                 <select wire:model.live="type_filter" class="block w-full rounded-xl border-0 py-3 pl-4 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm bg-gray-50 hover:bg-white transition-colors">
-                    <option value="">🏠 Todas las Naturalezas</option>
-                    <option value="asset">🔹 Activos (Assets)</option>
-                    <option value="liability">🔸 Pasivos (Liabilities)</option>
-                    <option value="equity">🟣 Capital (Equity)</option>
-                    <option value="revenue">🟢 Ingresos (Revenue)</option>
-                    <option value="cost">🟤 Costos (Cost)</option>
-                    <option value="expense">🔴 Gastos (Expense)</option>
+                    <option value="">Todas las Naturalezas</option>
+                    <option value="asset">Activos (Assets)</option>
+                    <option value="liability">Pasivos (Liabilities)</option>
+                    <option value="equity">Capital (Equity)</option>
+                    <option value="revenue">Ingresos (Revenue)</option>
+                    <option value="cost">Costos (Cost)</option>
+                    <option value="expense">Gastos (Expense)</option>
                 </select>
             </div>
         </div>

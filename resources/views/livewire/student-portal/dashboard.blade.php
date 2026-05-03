@@ -490,7 +490,7 @@
     <x-modal name="complete-profile-modal" :show="$showProfileModal" focusable>
         <div class="p-6">
             <h2 class="text-xl font-bold text-gray-900 mb-2">
-                📝 Completa tu Perfil
+                Completa tu Perfil
             </h2>
             <p class="text-sm text-gray-600 mb-6">
                 Para brindarte un mejor servicio y generar tus certificados correctamente, por favor actualiza tu información.

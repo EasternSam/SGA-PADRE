@@ -132,16 +132,16 @@ class StressTest extends Command
         $this->info("--- DIAGNÓSTICO DE IA (50,000 Estudiantes) ---");
         
         if ($failures > 0) {
-            $this->error("❌ EL SISTEMA FALLÓ BAJO PRESIÓN.");
+            $this->error("EL SISTEMA FALLÓ BAJO PRESIÓN.");
             $this->line("Si con esta prueba pequeña hubo fallos, con 50,000 estudiantes el sistema colapsará inmediatamente (Error 500/504 Gateway Time-out).");
             return;
         }
 
         if ($avgTime > 500) {
-            $this->comment("⚠️ EL SISTEMA RESPONDE, PERO LENTO.");
+            $this->comment("EL SISTEMA RESPONDE, PERO LENTO.");
             $this->line("Para 50,000 estudiantes, necesitas optimizar la base de datos y usar caché obligatoriamente. Los tiempos de respuesta se multiplicarán exponencialmente con tráfico real.");
         } else {
-            $this->info("✅ EL SISTEMA RESPONDE BIEN (En esta escala).");
+            $this->info("EL SISTEMA RESPONDE BIEN (En esta escala).");
             $this->line("Tu configuración actual maneja bien la concurrencia básica. Sin embargo, 50,000 estudiantes es otro nivel.");
         }
     }

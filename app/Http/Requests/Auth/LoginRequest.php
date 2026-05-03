@@ -156,7 +156,7 @@ class LoginRequest extends FormRequest
         }
 
         // ═══════════════════════════════════════════════════════
-        // ✅ LOGIN EXITOSO
+        // LOGIN EXITOSO
         // ═══════════════════════════════════════════════════════
 
         Auth::login($user, $this->boolean('remember'));

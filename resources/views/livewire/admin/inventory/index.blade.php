@@ -39,9 +39,9 @@
             </div>
             <select wire:model.live="locationFilter" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                 <option value="">Todas las Ubicaciones</option>
-                <option value="warehouse">📦 Solo Almacén</option>
+                <option value="warehouse">Solo Almacén</option>
                 @foreach($classrooms as $room)
-                    <option value="{{ $room->id }}">🏫 {{ $room->name }}</option>
+                    <option value="{{ $room->id }}">{{ $room->name }}</option>
                 @endforeach
             </select>
             <select wire:model.live="categoryFilter" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
@@ -54,10 +54,10 @@
             </select>
             <select wire:model.live="statusFilter" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                 <option value="">Todos los Estados</option>
-                <option value="Operativo">✅ Operativo</option>
-                <option value="Defectuoso">❌ Defectuoso</option>
-                <option value="En Reparación">🔧 En Reparación</option>
-                <option value="Obsoleto">🗑 Obsoleto</option>
+                <option value="Operativo">Operativo</option>
+                <option value="Defectuoso">Defectuoso</option>
+                <option value="En Reparación">En Reparación</option>
+                <option value="Obsoleto">Obsoleto</option>
             </select>
         </div>
 
@@ -154,10 +154,10 @@
                     <div>
                         <x-input-label value="Estado" />
                         <select wire:model="status" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            <option value="Operativo">✅ Operativo</option>
-                            <option value="Defectuoso">❌ Defectuoso</option>
-                            <option value="En Reparación">🔧 En Reparación</option>
-                            <option value="Obsoleto">🗑 Obsoleto</option>
+                            <option value="Operativo">Operativo</option>
+                            <option value="Defectuoso">Defectuoso</option>
+                            <option value="En Reparación">En Reparación</option>
+                            <option value="Obsoleto">Obsoleto</option>
                         </select>
                     </div>
 
@@ -174,7 +174,7 @@
                     <div class="md:col-span-2">
                         <x-input-label value="Ubicación Actual" />
                         <select wire:model="classroom_id" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            <option value="">📦 Almacén Central / Bodega</option>
+                            <option value="">Almacén Central / Bodega</option>
                             @foreach($classrooms as $room)
                                 <option value="{{ $room->id }}">{{ $room->name }} ({{ $room->building->name ?? '' }})</option>
                             @endforeach

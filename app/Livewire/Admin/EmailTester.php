@@ -215,14 +215,14 @@ class EmailTester extends Component
             // Lanzar el Trabajo en Segundo Plano
             dispatch(new SendBulkEmailJob($recipients, $this->subject, $this->messageBody));
 
-            $this->addDebug("✅ Correos encolados exitosamente.");
+            $this->addDebug("Correos encolados exitosamente.");
             session()->flash('success', "Proceso iniciado. {$count} correos se están enviando en segundo plano.");
             
             // Opcional: Limpiar todo
             // $this->reset(['subject', 'messageBody', 'audienceType', 'targetId', 'individualSearch']);
 
         } catch (\Exception $e) {
-            $this->addDebug("❌ ERROR: " . $e->getMessage());
+            $this->addDebug("ERROR: " . $e->getMessage());
             Log::error("Error Panel Comunicacion: " . $e->getMessage());
             session()->flash('error', $e->getMessage());
         }

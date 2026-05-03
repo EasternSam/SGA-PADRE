@@ -56,9 +56,9 @@
                     </div>
                     <select wire:model.live="status" class="block w-full rounded-xl border-0 py-3 pl-10 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm bg-gray-50 hover:bg-white transition-colors">
                         <option value="all">Ver Todos</option>
-                        <option value="posted">✅ Contabilizados (Firmes)</option>
-                        <option value="draft">📝 En Borrador</option>
-                        <option value="void">❌ Anulados</option>
+                        <option value="posted">Contabilizados (Firmes)</option>
+                        <option value="draft">En Borrador</option>
+                        <option value="void">Anulados</option>
                     </select>
                 </div>
             </div>

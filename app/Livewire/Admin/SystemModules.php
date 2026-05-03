@@ -15,9 +15,9 @@ class SystemModules extends Component
 
     // Catálogo visual local (Solo para mostrar info bonita antes de instalar)
     public $catalog = [
-        'hr' => ['title' => 'Recursos Humanos', 'icon' => '👔', 'desc' => 'Nómina, asistencia docente y gestión de personal.'],
-        'library' => ['title' => 'Biblioteca Digital', 'icon' => '📚', 'desc' => 'Préstamos de libros, catálogo y devoluciones.'],
-        'inventory' => ['title' => 'Control de Inventario', 'icon' => '📦', 'desc' => 'Activos fijos, stock y suministros.'],
+        'hr' => ['title' => 'Recursos Humanos', 'icon' => 'briefcase', 'desc' => 'Nómina, asistencia docente y gestión de personal.'],
+        'library' => ['title' => 'Biblioteca Digital', 'icon' => 'book', 'desc' => 'Préstamos de libros, catálogo y devoluciones.'],
+        'inventory' => ['title' => 'Control de Inventario', 'icon' => 'box', 'desc' => 'Activos fijos, stock y suministros.'],
     ];
 
     public function mount()

@@ -496,8 +496,8 @@
                                             <span style="font-size:0.75rem; background:#eff6ff; padding:2px 6px; border-radius:4px; color:#1d4ed8; font-weight:600;">{{ \Carbon\Carbon::parse($section->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($section->end_time)->format('H:i') }}</span>
                                         </div>
                                         <div class="card-desc" style="display:flex; gap:1rem;">
-                                            <span>👨‍🏫 {{ $section->teacher->name ?? 'Sin Profesor' }}</span>
-                                            <span>🏫 {{ $section->classroom->name ?? 'Virtual' }}</span>
+                                            <span>Profesor: {{ $section->teacher->name ?? 'Sin Profesor' }}</span>
+                                            <span>Aula: {{ $section->classroom->name ?? 'Virtual' }}</span>
                                         </div>
                                     </div>
                                 @endforeach

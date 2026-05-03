@@ -38,9 +38,9 @@ class ImportFinancialsFast extends Command
         $this->info('--- FASE 0: CARGA DE DATOS WP ---');
         try {
             $this->wpCoursesCache = $this->wpService->getCourses() ?? [];
-            $this->info('✅ Se cargaron ' . count($this->wpCoursesCache) . ' cursos de WP para vinculación.');
+            $this->info('Se cargaron ' . count($this->wpCoursesCache) . ' cursos de WP para vinculación.');
         } catch (\Exception $e) {
-            $this->warn('⚠️ Sin conexión a WP API. Se omitirá la vinculación automática.');
+            $this->warn('Sin conexión a WP API. Se omitirá la vinculación automática.');
             $this->wpCoursesCache = [];
         }
         

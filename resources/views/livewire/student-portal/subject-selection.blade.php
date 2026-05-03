@@ -507,7 +507,7 @@
                                                                     <span>⏰ {{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }}</span>
                                                                 </div>
                                                                 <div class="sec-row" style="margin-top:2px;">
-                                                                    <span>👨‍🏫 {{ Str::limit($schedule->teacher->name ?? 'Por asignar', 25) }}</span>
+                                                                    <span>Profesor: {{ Str::limit($schedule->teacher->name ?? 'Por asignar', 25) }}</span>
                                                                 </div>
                                                             </div>
                                                         </button>

@@ -130,13 +130,13 @@
                              <h3 class="font-semibold text-gray-700 mb-3"><i class="fas fa-magic mr-2 text-indigo-500"></i> 2. Plantillas Predefinidas</h3>
                              <div class="flex flex-wrap gap-2">
                                  <button type="button" wire:click="loadTemplate('cambio_aula')" class="px-3 py-1.5 bg-white border border-gray-300 shadow-sm rounded-md text-sm font-medium text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition">
-                                     🏫 Cambio de Aula/Horario
+                                     Cambio de Aula/Horario
                                  </button>
                                  <button type="button" wire:click="loadTemplate('recordatorio_pago')" class="px-3 py-1.5 bg-white border border-red-300 shadow-sm rounded-md text-sm font-medium text-red-700 hover:bg-red-50 transition">
-                                     💰 Recordatorio de Pago
+                                     Recordatorio de Pago
                                  </button>
                                  <button type="button" wire:click="loadTemplate('aviso_general')" class="px-3 py-1.5 bg-white border border-gray-300 shadow-sm rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition">
-                                     📢 Aviso Global (Blanco)
+                                     Aviso Global (Blanco)
                                  </button>
                              </div>
                         </div>

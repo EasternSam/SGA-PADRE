@@ -377,8 +377,8 @@
                             <div class="sm:col-span-2">
                                 <label class="block text-sm font-bold leading-6 text-gray-900 mb-1">Estado de Pago a Proveedor</label>
                                 <select wire:model="status" class="block w-full rounded-xl border-0 py-3 pl-4 pr-10 text-gray-900 shadow-sm ring-1 ring-inset {{ $errors->has('status') ? 'ring-red-300 focus:ring-red-600' : 'ring-gray-300 focus:ring-indigo-600' }} sm:text-sm bg-gray-50 hover:bg-white transition-colors">
-                                    <option value="paid">✅ Pagado al Contado (Usando Caja/Bancos)</option>
-                                    <option value="pending">📝 Pendiente (Usando Cuentas por Pagar al Proveedor)</option>
+                                    <option value="paid">Pagado al Contado (Usando Caja/Bancos)</option>
+                                    <option value="pending">Pendiente (Usando Cuentas por Pagar al Proveedor)</option>
                                 </select>
                                 <p class="text-xs text-gray-500 mt-2 font-medium bg-gray-100 p-2 rounded-md">
                                     <strong class="text-gray-900">Presten atención:</strong> Si eligió una cuenta de Activo arriba (Efectivo/Banco), el estado debería ser Pagado. Si eligió Pasivo (Cuentas por Pagar), debería ser Pendiente.
