@@ -1,28 +1,20 @@
-<div class="min-h-screen bg-gray-50 pb-12">
-    
-    <header class="bg-white shadow-sm mb-6 border-b border-gray-200">
-        <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="mb-12 flex items-center justify-between">
             <div>
-                <h2 class="font-bold text-xl text-gray-900 leading-tight flex items-center gap-2">
-                    <svg class="w-6 h-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-                    </svg>
-                    {{ __('Estados Financieros') }}
-                </h2>
-                <p class="mt-1 text-sm text-gray-600">Visualiza la salud financiera y la rentabilidad de la institución con reportes en tiempo real.</p>
+                <h1 class="text-3xl font-semibold text-gray-900">Estados Financieros</h1>
+                <p class="mt-3 text-gray-600 max-w-2xl">
+                    Balance general y estado de resultados en tiempo real.
+                </p>
             </div>
-            <div class="flex-none">
-                <button onclick="window.print()" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                    <svg class="w-4 h-4 mr-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M5 2.75C5 1.784 5.784 1 6.75 1h6.5c.966 0 1.75.784 1.75 1.75v3.552c.377.046.752.097 1.126.153A2.212 2.212 0 0118 8.653v5.183A2.25 2.25 0 0115.75 16h-.75v2.25A1.75 1.75 0 0113.25 20h-6.5A1.75 1.75 0 015 18.25V16h-.75A2.25 2.25 0 012 13.836V8.653c0-1.082.775-2.034 1.874-2.198.374-.056.75-.107 1.127-.153L5 6.25v-3.5zm8.5 3.397a41.533 41.533 0 00-7 0V2.75a.25.25 0 01.25-.25h6.5a.25.25 0 01.25.25v3.397zM6.5 18a.25.25 0 00.25.25h6.5a.25.25 0 00.25-.25v-4H6.5v4z" clip-rule="evenodd" />
-                    </svg>
-                    {{ __('Imprimir / PDF') }}
-                </button>
-            </div>
+            <button 
+                onclick="window.print()" 
+                class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
+            >
+                Imprimir
+            </button>
         </div>
-    </header>
-
-    <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 mt-4 space-y-8">
 
     <!-- Filters Section -->
     <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-900/5 p-6 mb-8 transition-all hover:shadow-md">

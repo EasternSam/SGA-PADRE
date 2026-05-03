@@ -1,26 +1,20 @@
-<div class="min-h-screen bg-gray-50 pb-12">
-    
-    <header class="bg-white shadow-sm mb-6 border-b border-gray-200">
-        <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="mb-12 flex items-center justify-between">
             <div>
-                <h2 class="font-bold text-xl text-gray-900 leading-tight flex items-center gap-2">
-                    <svg class="w-6 h-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                    </svg>
-                    {{ __('Libro Mayor (General Ledger)') }}
-                </h2>
-                <p class="mt-1 text-sm text-gray-600">Registro histórico de asientos bajo el principio de Partida Doble. Cada transacción evidencia débitos y créditos perfectamente balanceados.</p>
+                <h1 class="text-3xl font-semibold text-gray-900">Libro Mayor</h1>
+                <p class="mt-3 text-gray-600 max-w-2xl">
+                    Registro cronológico de asientos contables bajo el principio de partida doble.
+                </p>
             </div>
-            <div class="flex-none">
-                <a href="{{ route('admin.finance.manual-entry') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm">
-                    <svg class="w-4 h-4 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                    {{ __('Asiento Manual') }}
-                </a>
-            </div>
+            <a 
+                href="{{ route('admin.finance.manual-entry') }}" 
+                class="px-4 py-2 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
+            >
+                Nuevo asiento
+            </a>
         </div>
-    </header>
-
-    <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 mt-4 space-y-8">
 
     <!-- Filtros -->
     <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-900/5 p-6 mb-8 transition-all hover:shadow-md border border-gray-100">

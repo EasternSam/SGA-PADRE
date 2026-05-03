@@ -1,28 +1,20 @@
-<div class="min-h-screen bg-gray-50 pb-12">
-    
-    <header class="bg-white shadow-sm mb-6 border-b border-gray-200">
-        <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="mb-12 flex items-center justify-between">
             <div>
-                <h2 class="font-bold text-xl text-gray-900 leading-tight flex items-center gap-2">
-                    <svg class="w-6 h-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                    </svg>
-                    {{ __('Asiento Contable Manual') }}
-                </h2>
-                <p class="mt-1 text-sm text-gray-600">Registra un ajuste, depreciación o nota de diario. El sistema validará la Partida Doble perfecta antes de guardar.</p>
+                <h1 class="text-3xl font-semibold text-gray-900">Asiento Contable Manual</h1>
+                <p class="mt-3 text-gray-600 max-w-2xl">
+                    Registra ajustes, depreciaciones o notas de diario con validación de partida doble.
+                </p>
             </div>
-            <div class="flex-none">
-                <a href="{{ route('admin.finance.ledger') }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                    <svg class="w-4 h-4 mr-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-                    </svg>
-                    {{ __('Ver Libro Mayor') }}
-                </a>
-            </div>
+            <a 
+                href="{{ route('admin.finance.ledger') }}" 
+                class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
+            >
+                Ver libro mayor
+            </a>
         </div>
-    </header>
-
-    <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 mt-4 space-y-8">
 
     <!-- Alertas -->
     @if (session()->has('success'))

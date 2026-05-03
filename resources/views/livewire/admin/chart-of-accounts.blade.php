@@ -1,27 +1,20 @@
-<div class="min-h-screen bg-gray-50 pb-12">
-    
-    <header class="bg-white shadow-sm mb-6 border-b border-gray-200">
-        <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="mb-12 flex items-center justify-between">
             <div>
-                <h2 class="font-bold text-xl text-gray-900 leading-tight flex items-center gap-2">
-                    <svg class="w-6 h-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                    </svg>
-                    {{ __('Catálogo de Cuentas (Chart of Accounts)') }}</h2>
-                <p class="mt-1 text-sm text-gray-600">Administra la jerarquía de cuentas, subcuentas y grupos contables de forma visual y estructurada.</p>
+                <h1 class="text-3xl font-semibold text-gray-900">Catálogo de Cuentas</h1>
+                <p class="mt-3 text-gray-600 max-w-2xl">
+                    Estructura jerárquica de cuentas contables.
+                </p>
             </div>
-            <div class="flex-none">
-                <button wire:click="create" type="button" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm">
-                    <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-                    </svg>
-                    {{ __('Nueva Cuenta') }}
-                </button>
-            </div>
+            <button 
+                wire:click="create" 
+                class="px-4 py-2 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
+            >
+                Nueva cuenta
+            </button>
         </div>
-    </header>
-
-    <div class="mx-auto w-full max-w-[95%] px-4 sm:px-6 lg:px-8 mt-4 space-y-8">
 
     <!-- Alertas -->
     @if (session()->has('message'))
