@@ -123,8 +123,8 @@
         --}}
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 relative overflow-hidden">
             <!-- Decoración -->
-            <div class="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-gradient-to-br from-indigo-50 to-blue-50 blur-3xl opacity-60 pointer-events-none"></div>
-            <div class="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 rounded-full bg-gradient-to-tr from-emerald-50 to-teal-50 blur-3xl opacity-60 pointer-events-none"></div>
+            <div class="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-purple-600 dark:to-violet-800 blur-3xl opacity-60 dark:opacity-20 pointer-events-none"></div>
+            <div class="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 rounded-full bg-gradient-to-tr from-emerald-50 to-teal-50 dark:from-emerald-500 dark:to-green-700 blur-3xl opacity-60 dark:opacity-20 pointer-events-none"></div>
             
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 relative z-10">
                 <div>
