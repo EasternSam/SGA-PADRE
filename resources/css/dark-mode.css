@@ -7,15 +7,15 @@
 
 /* ─── PALETTE ────────────────────────────────────────────── */
 html.dark {
-    --dm-base:     #0c0f1a;
-    --dm-surface:  #141826;
-    --dm-card:     #1a1f33;
-    --dm-elevated: #242a40;
-    --dm-border:   rgba(255,255,255,0.07);
-    --dm-border-h: rgba(255,255,255,0.12);
-    --dm-text:     #e2e8f0;
-    --dm-muted:    #8892b0;
-    --dm-accent:   #818cf8;
+    --dm-base:     #050507;
+    --dm-surface:  #0a0c10;
+    --dm-card:     #111318;
+    --dm-elevated: #1a1d24;
+    --dm-border:   rgba(255,255,255,0.06);
+    --dm-border-h: rgba(255,255,255,0.10);
+    --dm-text:     #edf0f7;
+    --dm-muted:    #7a8599;
+    --dm-accent:   #a5b4fc;
     color-scheme: dark;
 }
 
@@ -41,22 +41,40 @@ html.dark .bg-white {
 html.dark .bg-white\/90,
 html.dark .bg-white\/95,
 html.dark .bg-white\/80 {
-    background-color: rgba(26,31,51,0.92) !important;
+    background-color: rgba(17,19,24,0.94) !important;
 }
 
 html.dark .bg-gray-50\/80 {
-    background-color: rgba(20,24,38,0.8) !important;
+    background-color: rgba(10,12,16,0.85) !important;
 }
 
 /* ─── 3. TEXT ────────────────────────────────────────────── */
 html.dark .text-gray-900,
-html.dark .text-gray-800 { color: #f1f5f9 !important; }
-html.dark .text-gray-700 { color: #cbd5e1 !important; }
-html.dark .text-gray-600 { color: #94a3b8 !important; }
-html.dark .text-gray-500 { color: var(--dm-muted) !important; }
+html.dark .text-gray-800 { color: #f8fafc !important; }
+html.dark .text-gray-700 { color: #e2e8f0 !important; }
+html.dark .text-gray-600 { color: #cbd5e1 !important; }
+html.dark .text-gray-500 { color: #94a3b8 !important; }
 html.dark .text-gray-400 { color: #64748b !important; }
-html.dark .text-slate-600 { color: #cbd5e1 !important; }
-html.dark h1, html.dark h2, html.dark h3 { color: #f1f5f9 !important; }
+html.dark .text-slate-600 { color: #e2e8f0 !important; }
+html.dark h1, html.dark h2, html.dark h3 { color: #f8fafc !important; }
+
+/* ─── ICON CONTRAST BOOST ────────────────────────────────── */
+html.dark .text-indigo-600, html.dark .text-indigo-500 { color: #a5b4fc !important; }
+html.dark .text-emerald-600, html.dark .text-emerald-500 { color: #6ee7b7 !important; }
+html.dark .text-blue-600, html.dark .text-blue-500 { color: #93c5fd !important; }
+html.dark .text-purple-600, html.dark .text-purple-500 { color: #c4b5fd !important; }
+html.dark .text-red-600, html.dark .text-red-500 { color: #fca5a5 !important; }
+html.dark .text-amber-600, html.dark .text-amber-500 { color: #fcd34d !important; }
+html.dark .text-green-600, html.dark .text-green-500 { color: #86efac !important; }
+html.dark .text-yellow-600, html.dark .text-yellow-500 { color: #fde68a !important; }
+html.dark .text-cyan-600, html.dark .text-cyan-500 { color: #67e8f9 !important; }
+html.dark .text-green-400 { color: #4ade80 !important; }
+html.dark .text-red-400 { color: #f87171 !important; }
+html.dark .text-sga-primary { color: #a5b4fc !important; }
+
+/* SVG icons inside cards — boost visibility */
+html.dark svg[class*="text-gray"] { color: #94a3b8 !important; }
+html.dark .bg-white svg, html.dark div[class*="bg-white"] svg { opacity: 1 !important; }
 
 /* ─── 4. BORDERS ─────────────────────────────────────────── */
 html.dark .border-gray-200,
@@ -91,11 +109,11 @@ html.dark div[class*="rounded"][class*="bg-white"] {
 
 /* ─── 6. HEADER ──────────────────────────────────────────── */
 html.dark header {
-    background-color: rgba(12,15,26,0.85) !important;
-    backdrop-filter: blur(20px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    background-color: rgba(5,5,7,0.92) !important;
+    backdrop-filter: blur(24px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
     border-bottom-color: var(--dm-border) !important;
-    box-shadow: 0 1px 0 var(--dm-border), 0 4px 20px rgba(0,0,0,0.3) !important;
+    box-shadow: 0 1px 0 var(--dm-border), 0 4px 24px rgba(0,0,0,0.5) !important;
 }
 
 /* ─── 7. FORMS ───────────────────────────────────────────── */
@@ -165,29 +183,29 @@ html.dark td, html.dark th { border-color: var(--dm-border) !important; }
     }
 }
 
-/* ─── 10. BADGES — Translucent with glow ─────────────────── */
-html.dark .bg-green-50  { background-color: rgba(34,197,94,0.12) !important; }
-html.dark .bg-green-100 { background-color: rgba(34,197,94,0.18) !important; }
-html.dark .bg-yellow-50 { background-color: rgba(234,179,8,0.12) !important; }
-html.dark .bg-red-50    { background-color: rgba(239,68,68,0.12) !important; }
-html.dark .bg-red-100   { background-color: rgba(239,68,68,0.18) !important; }
-html.dark .bg-blue-50   { background-color: rgba(59,130,246,0.12) !important; }
-html.dark .bg-blue-100  { background-color: rgba(59,130,246,0.18) !important; }
-html.dark .bg-indigo-50 { background-color: rgba(99,102,241,0.12) !important; }
-html.dark .bg-indigo-100{ background-color: rgba(99,102,241,0.18) !important; }
-html.dark .bg-purple-50 { background-color: rgba(139,92,246,0.12) !important; }
-html.dark .bg-purple-100{ background-color: rgba(139,92,246,0.18) !important; }
-html.dark .bg-emerald-50 { background-color: rgba(16,185,129,0.12) !important; }
-html.dark .bg-emerald-100{ background-color: rgba(16,185,129,0.18) !important; }
-html.dark .bg-amber-50  { background-color: rgba(245,158,11,0.12) !important; }
-html.dark .bg-amber-100 { background-color: rgba(245,158,11,0.18) !important; }
-html.dark .bg-gray-100  { background-color: rgba(148,163,184,0.12) !important; }
+/* ─── 10. BADGES — Vivid translucent on true black ───────── */
+html.dark .bg-green-50  { background-color: rgba(34,197,94,0.15) !important; }
+html.dark .bg-green-100 { background-color: rgba(34,197,94,0.22) !important; }
+html.dark .bg-yellow-50 { background-color: rgba(234,179,8,0.15) !important; }
+html.dark .bg-red-50    { background-color: rgba(239,68,68,0.15) !important; }
+html.dark .bg-red-100   { background-color: rgba(239,68,68,0.22) !important; }
+html.dark .bg-blue-50   { background-color: rgba(59,130,246,0.15) !important; }
+html.dark .bg-blue-100  { background-color: rgba(59,130,246,0.22) !important; }
+html.dark .bg-indigo-50 { background-color: rgba(99,102,241,0.15) !important; }
+html.dark .bg-indigo-100{ background-color: rgba(99,102,241,0.22) !important; }
+html.dark .bg-purple-50 { background-color: rgba(139,92,246,0.15) !important; }
+html.dark .bg-purple-100{ background-color: rgba(139,92,246,0.22) !important; }
+html.dark .bg-emerald-50 { background-color: rgba(16,185,129,0.15) !important; }
+html.dark .bg-emerald-100{ background-color: rgba(16,185,129,0.22) !important; }
+html.dark .bg-amber-50  { background-color: rgba(245,158,11,0.15) !important; }
+html.dark .bg-amber-100 { background-color: rgba(245,158,11,0.22) !important; }
+html.dark .bg-gray-100  { background-color: rgba(148,163,184,0.10) !important; }
 
-/* Colored borders */
-html.dark .border-emerald-100 { border-color: rgba(16,185,129,0.15) !important; }
-html.dark .border-amber-100   { border-color: rgba(245,158,11,0.15) !important; }
-html.dark .border-blue-100    { border-color: rgba(59,130,246,0.15) !important; }
-html.dark .border-indigo-100  { border-color: rgba(99,102,241,0.15) !important; }
+/* Colored borders — brighter */
+html.dark .border-emerald-100 { border-color: rgba(16,185,129,0.20) !important; }
+html.dark .border-amber-100   { border-color: rgba(245,158,11,0.20) !important; }
+html.dark .border-blue-100    { border-color: rgba(59,130,246,0.20) !important; }
+html.dark .border-indigo-100  { border-color: rgba(99,102,241,0.20) !important; }
 
 /* ─── 11. MODALS ─────────────────────────────────────────── */
 html.dark .bg-gray-900\/50 { background-color: rgba(0,0,0,0.75) !important; }
@@ -201,19 +219,21 @@ html.dark .modal-content {
 
 /* ─── 12. BOTTOM NAV ────────────────────────────────────── */
 html.dark nav.fixed.bottom-0 {
-    background: rgba(12,15,26,0.88) !important;
-    backdrop-filter: blur(24px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+    background: rgba(5,5,7,0.92) !important;
+    backdrop-filter: blur(24px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
     border-top-color: var(--dm-border) !important;
-    box-shadow: 0 -2px 20px rgba(0,0,0,0.4) !important;
+    box-shadow: 0 -2px 24px rgba(0,0,0,0.6) !important;
 }
-html.dark nav.fixed.bottom-0 .text-gray-400 { color: #4a5568 !important; }
+/* Inactive tabs: brighter so they're visible on black */
+html.dark nav.fixed.bottom-0 .text-gray-400 { color: #6b7280 !important; }
+/* Active tab colors stay vibrant — indigo/emerald already set via utility */
 
 /* "More" panel */
 html.dark nav.fixed.bottom-0 .absolute.bottom-full {
-    background: rgba(20,24,38,0.97) !important;
+    background: rgba(10,12,16,0.98) !important;
     border-top-color: var(--dm-border) !important;
-    box-shadow: 0 -8px 40px rgba(0,0,0,0.5) !important;
+    box-shadow: 0 -8px 50px rgba(0,0,0,0.7) !important;
 }
 html.dark nav.fixed.bottom-0 .bg-gray-100 { background-color: var(--dm-elevated) !important; }
 
