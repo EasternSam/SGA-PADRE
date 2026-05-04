@@ -295,6 +295,54 @@
         </div>
     </div>
 
+    {{-- ═══════════════════════════════════════════════════════════ --}}
+    {{-- MOBILE PAGE TRANSITION LOADING OVERLAY                    --}}
+    {{-- Solo visible en <lg. Se activa con wire:navigate.         --}}
+    {{-- ═══════════════════════════════════════════════════════════ --}}
+    <div id="mobile-page-loader" class="fixed inset-0 z-[3000] bg-gray-50/95 backdrop-blur-sm flex-col items-center justify-start lg:hidden" style="display: none;">
+        {{-- Top progress bar --}}
+        <div class="absolute top-0 left-0 w-full h-1 bg-indigo-100 overflow-hidden">
+            <div id="loader-progress-bar" class="h-full bg-gradient-to-r from-indigo-500 via-blue-500 to-indigo-400 rounded-r-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+        </div>
+
+        {{-- Centered spinner + message --}}
+        <div class="flex flex-col items-center justify-center flex-1 px-6 pt-24 pb-8 w-full" style="min-height: 60vh;">
+            {{-- Animated logo/spinner --}}
+            <div class="relative mb-6">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-lg shadow-indigo-200 animate-pulse">
+                    <svg class="w-7 h-7 text-white animate-spin" style="animation-duration: 1.2s;" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+                {{-- Ripple ring --}}
+                <div class="absolute inset-0 rounded-2xl border-2 border-indigo-300 animate-ping" style="animation-duration: 1.5s;"></div>
+            </div>
+
+            <p class="text-sm font-semibold text-gray-600 tracking-wide mb-1">Cargando página</p>
+            <p class="text-xs text-gray-400 mb-8">Un momento por favor...</p>
+
+            {{-- Skeleton content placeholders --}}
+            <div class="w-full max-w-sm space-y-4">
+                {{-- Skeleton header --}}
+                <div class="h-5 bg-gray-200 rounded-lg w-3/5 animate-pulse"></div>
+                
+                {{-- Skeleton cards --}}
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="h-20 bg-gray-200/80 rounded-xl animate-pulse" style="animation-delay: 0.1s;"></div>
+                    <div class="h-20 bg-gray-200/80 rounded-xl animate-pulse" style="animation-delay: 0.2s;"></div>
+                </div>
+
+                {{-- Skeleton rows --}}
+                <div class="space-y-2.5 mt-2">
+                    <div class="h-12 bg-gray-200/60 rounded-xl animate-pulse" style="animation-delay: 0.15s;"></div>
+                    <div class="h-12 bg-gray-200/60 rounded-xl animate-pulse" style="animation-delay: 0.25s;"></div>
+                    <div class="h-12 bg-gray-200/60 rounded-xl animate-pulse" style="animation-delay: 0.35s;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Bottom Navigation — Solo móvil --}}
     @include('layouts.bottom-nav')
 
@@ -309,6 +357,108 @@
                     .catch(err => console.warn('[PWA] SW error:', err));
             });
         }
+    </script>
+
+    {{-- ═══════════════════════════════════════════════════════════ --}}
+    {{-- MOBILE PAGE LOADER SCRIPT                                 --}}
+    {{-- Hooks into Livewire 3 navigate lifecycle                  --}}
+    {{-- ═══════════════════════════════════════════════════════════ --}}
+    <script>
+    (function() {
+        const loader = document.getElementById('mobile-page-loader');
+        const progressBar = document.getElementById('loader-progress-bar');
+        if (!loader || !progressBar) return;
+
+        let progressInterval = null;
+        let currentProgress = 0;
+        const isMobile = () => window.innerWidth < 1024;
+
+        function showLoader() {
+            if (!isMobile()) return;
+            currentProgress = 0;
+            progressBar.style.transition = 'none';
+            progressBar.style.width = '0%';
+
+            // Force reflow before animating
+            void progressBar.offsetWidth;
+
+            loader.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+
+            // Animate progress bar (fast start, slow crawl to 90%)
+            progressBar.style.transition = 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+            progressBar.style.width = '30%';
+            currentProgress = 30;
+
+            clearInterval(progressInterval);
+            progressInterval = setInterval(() => {
+                if (currentProgress < 90) {
+                    currentProgress += (90 - currentProgress) * 0.08;
+                    progressBar.style.width = currentProgress + '%';
+                }
+            }, 200);
+        }
+
+        function hideLoader() {
+            clearInterval(progressInterval);
+
+            // Complete the progress bar first
+            progressBar.style.transition = 'width 0.2s ease-out';
+            progressBar.style.width = '100%';
+
+            // Then fade out
+            setTimeout(() => {
+                loader.style.display = 'none';
+                document.body.style.overflow = '';
+                currentProgress = 0;
+            }, 250);
+        }
+
+        // === Livewire 3 navigate events ===
+        document.addEventListener('livewire:navigating', showLoader);
+        document.addEventListener('livewire:navigated', hideLoader);
+
+        // === Fallback: Also handle regular <a> clicks with wire:navigate ===
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a[wire\\:navigate]');
+            if (link && isMobile()) {
+                // Only show if navigating to a different page
+                const href = link.getAttribute('href');
+                if (href && href !== window.location.href && href !== '#') {
+                    showLoader();
+                }
+            }
+        }, true);
+
+        // === Safety timeout: hide after 8 seconds max ===
+        document.addEventListener('livewire:navigating', function() {
+            setTimeout(() => {
+                if (loader.style.display === 'flex') {
+                    hideLoader();
+                }
+            }, 8000);
+        });
+
+        // === Also show on Livewire component loading for full-page components ===
+        // Handle the case where a Livewire action triggers a full re-render
+        if (window.Livewire) {
+            Livewire.hook('request', ({ respond, fail }) => {
+                // Only for long requests — show after 600ms delay
+                let timer = null;
+                if (isMobile()) {
+                    timer = setTimeout(() => showLoader(), 600);
+                }
+                respond(() => {
+                    clearTimeout(timer);
+                    hideLoader();
+                });
+                fail(() => {
+                    clearTimeout(timer);
+                    hideLoader();
+                });
+            });
+        }
+    })();
     </script>
 </body>
 </html>

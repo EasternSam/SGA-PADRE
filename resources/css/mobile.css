@@ -337,8 +337,46 @@
     }
 }
 
-/* ─── 11. LOADING INDICATORS ─────────────────────────────── */
-@media (max-width: 768px) {
+/* ─── 11. LOADING INDICATORS & PAGE TRANSITIONS ──────────── */
+
+/* Shimmer animation for skeleton loaders */
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+@media (max-width: 1023px) {
+    /* === Mobile Page Loader === */
+    #mobile-page-loader {
+        transition: opacity 0.2s ease-out;
+    }
+
+    /* Shimmer effect on skeleton elements */
+    #mobile-page-loader .animate-pulse {
+        animation: none !important;
+        background: linear-gradient(
+            90deg,
+            #e5e7eb 25%,
+            #f3f4f6 37%,
+            #e5e7eb 63%
+        ) !important;
+        background-size: 200% 100% !important;
+        animation: shimmer 1.5s ease-in-out infinite !important;
+    }
+
+    /* Spinner inside loader keeps normal animation */
+    #mobile-page-loader svg.animate-spin {
+        animation: spin 1.2s linear infinite !important;
+        background: none !important;
+    }
+
+    /* Pulse for the logo container */
+    #mobile-page-loader .animate-pulse:has(svg) {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+        background: none !important;
+        background-image: none !important;
+    }
+
     /* Indicador flotante más pequeño en móvil */
     div[wire\:loading] .rounded-full {
         padding: 0.5rem 0.75rem !important;
@@ -346,6 +384,12 @@
 
     div[wire\:loading] .text-xs {
         font-size: 0.625rem !important;
+    }
+
+    /* Reposition the floating "PROCESANDO" indicator above bottom nav */
+    div[wire\:loading].fixed.bottom-6 {
+        bottom: 5rem !important;
+        right: 1rem !important;
     }
 }
 
