@@ -1,0 +1,424 @@
+/* ═══════════════════════════════════════════════════════════
+ * SGA DARK MODE THEME
+ * ═══════════════════════════════════════════════════════════
+ * Strategy: CSS-level overrides using .dark class on <html>.
+ * This avoids modifying dozens of Blade templates — all
+ * theming happens here via cascading selectors.
+ * ═══════════════════════════════════════════════════════════ */
+
+/* ─── DARK PALETTE (CSS Variables) ───────────────────────── */
+html.dark {
+    --color-bg:         17 24 39;      /* gray-900 */
+    --color-bg-card:    31 41 55;      /* gray-800 */
+    --color-bg-elevated: 55 65 81;     /* gray-700 */
+    --color-border:     75 85 99;      /* gray-600 */
+    --color-text:       243 244 246;   /* gray-100 */
+    --color-text-muted: 156 163 175;   /* gray-400 */
+    color-scheme: dark;
+}
+
+/* ─── 1. BODY & BACKGROUNDS ─────────────────────────────── */
+html.dark body {
+    background-color: #111827 !important;
+    color: #f3f4f6 !important;
+}
+
+html.dark .bg-gray-50,
+html.dark .bg-gray-100,
+html.dark .bg-gray-50\/50,
+html.dark .bg-gray-100\/50 {
+    background-color: #111827 !important;
+}
+
+html.dark .bg-white,
+html.dark .bg-white\/90,
+html.dark .bg-white\/95,
+html.dark .bg-white\/80,
+html.dark .bg-white\/96 {
+    background-color: #1f2937 !important;
+}
+
+html.dark .bg-gray-50\/80 {
+    background-color: rgba(31, 41, 55, 0.8) !important;
+}
+
+/* ─── 2. TEXT COLORS ─────────────────────────────────────── */
+html.dark .text-gray-900,
+html.dark .text-gray-800 {
+    color: #f3f4f6 !important;
+}
+
+html.dark .text-gray-700,
+html.dark .text-gray-600 {
+    color: #d1d5db !important;
+}
+
+html.dark .text-gray-500 {
+    color: #9ca3af !important;
+}
+
+html.dark .text-gray-400 {
+    color: #6b7280 !important;
+}
+
+html.dark .text-slate-600 {
+    color: #d1d5db !important;
+}
+
+/* ─── 3. BORDERS ─────────────────────────────────────────── */
+html.dark .border-gray-200,
+html.dark .border-gray-100,
+html.dark .border-gray-200\/60,
+html.dark .border-gray-300 {
+    border-color: #374151 !important;
+}
+
+html.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]) {
+    border-color: #374151 !important;
+}
+
+html.dark .ring-gray-900\/5 {
+    --tw-ring-color: rgba(243, 244, 246, 0.08) !important;
+}
+
+html.dark .ring-1.ring-gray-100,
+html.dark .ring-1.ring-gray-500\/10 {
+    --tw-ring-color: rgba(75, 85, 99, 0.3) !important;
+}
+
+/* ─── 4. CARDS & CONTAINERS ──────────────────────────────── */
+html.dark .shadow-sm,
+html.dark .shadow-lg {
+    --tw-shadow-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .rounded-xl.bg-white,
+html.dark .rounded-2xl.bg-white,
+html.dark div[class*="bg-white"][class*="rounded"] {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+/* ─── 5. HEADER (Top Bar) ────────────────────────────────── */
+html.dark header {
+    background-color: rgba(17, 24, 39, 0.92) !important;
+    border-bottom-color: #374151 !important;
+}
+
+html.dark header .backdrop-blur-md {
+    background-color: rgba(17, 24, 39, 0.92) !important;
+}
+
+/* ─── 6. FORMS & INPUTS ─────────────────────────────────── */
+html.dark input[type="text"],
+html.dark input[type="email"],
+html.dark input[type="password"],
+html.dark input[type="number"],
+html.dark input[type="tel"],
+html.dark input[type="date"],
+html.dark input[type="search"],
+html.dark input[type="time"],
+html.dark select,
+html.dark textarea {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #f3f4f6 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+    color: #6b7280 !important;
+}
+
+html.dark input:focus,
+html.dark select:focus,
+html.dark textarea:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
+}
+
+html.dark .border-gray-300 {
+    border-color: #4b5563 !important;
+}
+
+/* ─── 7. BUTTONS ─────────────────────────────────────────── */
+html.dark button.bg-white,
+html.dark .bg-white[class*="border"] {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #f3f4f6 !important;
+}
+
+/* Keep primary buttons as-is (indigo, emerald, etc.) */
+
+/* Secondary / ghost buttons */
+html.dark .hover\:bg-gray-50:hover {
+    background-color: #374151 !important;
+}
+
+html.dark .hover\:bg-gray-100:hover {
+    background-color: #4b5563 !important;
+}
+
+/* ─── 8. TABLES ──────────────────────────────────────────── */
+html.dark table {
+    color: #d1d5db !important;
+}
+
+html.dark thead,
+html.dark .bg-gray-50\/50 {
+    background-color: #1a2332 !important;
+}
+
+html.dark tbody tr {
+    background-color: #1f2937 !important;
+}
+
+html.dark tbody tr:hover,
+html.dark .hover\:bg-gray-50\/80:hover {
+    background-color: #283548 !important;
+}
+
+html.dark td, html.dark th {
+    border-color: #374151 !important;
+}
+
+/* ─── 9. BADGES & STATUS PILLS ───────────────────────────── */
+html.dark .bg-green-50 { background-color: rgba(34, 197, 94, 0.15) !important; }
+html.dark .bg-yellow-50 { background-color: rgba(234, 179, 8, 0.15) !important; }
+html.dark .bg-red-50 { background-color: rgba(239, 68, 68, 0.15) !important; }
+html.dark .bg-blue-50 { background-color: rgba(59, 130, 246, 0.15) !important; }
+html.dark .bg-indigo-50 { background-color: rgba(99, 102, 241, 0.15) !important; }
+html.dark .bg-purple-50 { background-color: rgba(139, 92, 246, 0.15) !important; }
+html.dark .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.15) !important; }
+html.dark .bg-amber-50 { background-color: rgba(245, 158, 11, 0.15) !important; }
+html.dark .bg-gray-50 { background-color: rgba(107, 114, 128, 0.15) !important; }
+
+/* Lighter tints for icon backgrounds */
+html.dark .bg-blue-100 { background-color: rgba(59, 130, 246, 0.2) !important; }
+html.dark .bg-indigo-100 { background-color: rgba(99, 102, 241, 0.2) !important; }
+html.dark .bg-purple-100 { background-color: rgba(139, 92, 246, 0.2) !important; }
+html.dark .bg-emerald-100 { background-color: rgba(16, 185, 129, 0.2) !important; }
+html.dark .bg-green-100 { background-color: rgba(34, 197, 94, 0.2) !important; }
+html.dark .bg-amber-100 { background-color: rgba(245, 158, 11, 0.2) !important; }
+html.dark .bg-red-100 { background-color: rgba(239, 68, 68, 0.2) !important; }
+html.dark .bg-gray-100 { background-color: rgba(107, 114, 128, 0.2) !important; }
+
+/* ─── 10. KPI STAT CARDS (Decorative blurs) ──────────────── */
+html.dark .bg-blue-50.opacity-50,
+html.dark .bg-indigo-50.opacity-50,
+html.dark .bg-purple-50.opacity-50,
+html.dark .bg-emerald-50.opacity-50 {
+    opacity: 0.15 !important;
+}
+
+html.dark .border-emerald-100 { border-color: rgba(16, 185, 129, 0.2) !important; }
+html.dark .border-amber-100 { border-color: rgba(245, 158, 11, 0.2) !important; }
+html.dark .border-blue-100 { border-color: rgba(59, 130, 246, 0.2) !important; }
+html.dark .border-indigo-100 { border-color: rgba(99, 102, 241, 0.2) !important; }
+
+/* ─── 11. MODALS ─────────────────────────────────────────── */
+html.dark .bg-gray-900\/50 {
+    background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+html.dark [x-show] .bg-white.rounded-2xl,
+html.dark .modal-content {
+    background-color: #1f2937 !important;
+}
+
+html.dark .border-b.border-gray-100.bg-gray-50 {
+    background-color: #1a2332 !important;
+}
+
+/* ─── 12. NAVIGATION SIDEBAR (already dark, no changes) ─── */
+
+/* ─── 13. BOTTOM NAV ────────────────────────────────────── */
+html.dark nav.fixed.bottom-0 {
+    background: rgba(17, 24, 39, 0.92) !important;
+    border-top-color: #374151 !important;
+}
+
+html.dark nav.fixed.bottom-0 .text-gray-400 {
+    color: #6b7280 !important;
+}
+
+/* "More" panel */
+html.dark nav.fixed.bottom-0 .absolute.bottom-full {
+    background: rgba(31, 41, 55, 0.97) !important;
+    border-top-color: #374151 !important;
+}
+
+html.dark nav.fixed.bottom-0 .bg-gray-100 {
+    background-color: #374151 !important;
+}
+
+/* ─── 14. CHARTS AREA ────────────────────────────────────── */
+html.dark .bg-gradient-to-br.from-indigo-50,
+html.dark .bg-gradient-to-tr.from-emerald-50 {
+    opacity: 0.08 !important;
+}
+
+/* ─── 15. LOADING INDICATORS ─────────────────────────────── */
+html.dark .bg-indigo-100\/50 {
+    background-color: rgba(99, 102, 241, 0.1) !important;
+}
+
+html.dark #mobile-page-loader {
+    background-color: rgba(17, 24, 39, 0.97) !important;
+}
+
+/* ─── 16. DROPDOWNS ──────────────────────────────────────── */
+html.dark [x-show][class*="origin-top"],
+html.dark .dropdown-content {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+html.dark .dropdown-content a:hover,
+html.dark [x-show] a:hover {
+    background-color: #374151 !important;
+}
+
+/* ─── 17. PAGINATION ─────────────────────────────────────── */
+html.dark nav[role="navigation"] a,
+html.dark nav[role="navigation"] span {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+    color: #d1d5db !important;
+}
+
+html.dark nav[role="navigation"] span[aria-current] {
+    background-color: #4f46e5 !important;
+    color: white !important;
+}
+
+/* ─── 18. FLASH MESSAGES / TOASTS ────────────────────────── */
+html.dark .bg-emerald-50,
+html.dark .bg-rose-50 {
+    background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+html.dark div[role="alert"] {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+/* ─── 19. SCROLLBAR ──────────────────────────────────────── */
+html.dark ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+html.dark ::-webkit-scrollbar-track {
+    background: #1f2937;
+}
+html.dark ::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 3px;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
+
+/* ─── 20. CALENDAR PAGE ──────────────────────────────────── */
+html.dark .calendar-wrapper {
+    background-color: #111827 !important;
+    color: #f3f4f6 !important;
+}
+html.dark .calendar-header {
+    background-color: #1f2937 !important;
+    border-bottom-color: #374151 !important;
+}
+html.dark .calendar-container {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+html.dark .week-header {
+    background-color: #1a2332 !important;
+    border-bottom-color: #374151 !important;
+}
+html.dark .day-name {
+    color: #9ca3af !important;
+    border-right-color: #374151 !important;
+}
+html.dark .days-grid {
+    background-color: #374151 !important;
+}
+html.dark .day-cell {
+    background-color: #1f2937 !important;
+}
+html.dark .day-cell:hover {
+    background-color: #283548 !important;
+}
+html.dark .day-cell.empty {
+    background-color: #1a2332 !important;
+}
+html.dark .day-cell.selected {
+    background-color: rgba(37, 99, 235, 0.15) !important;
+    box-shadow: inset 0 0 0 2px #3b82f6 !important;
+}
+html.dark .day-number {
+    color: #d1d5db !important;
+}
+html.dark .details-panel {
+    background-color: #1f2937 !important;
+    border-left-color: #374151 !important;
+}
+html.dark .panel-header {
+    background-color: #1f2937 !important;
+    border-bottom-color: #374151 !important;
+}
+html.dark .panel-content {
+    background-color: #111827 !important;
+}
+html.dark .card {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+html.dark .month-title { color: #f3f4f6 !important; }
+html.dark .month-title:hover { background-color: #374151 !important; }
+html.dark .date-picker-dropdown {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+html.dark .month-btn { color: #d1d5db !important; }
+html.dark .month-btn:hover { background-color: #374151 !important; }
+html.dark .month-btn.active { background-color: rgba(37, 99, 235, 0.15) !important; color: #60a5fa !important; }
+html.dark .nav-buttons {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+}
+html.dark .btn-nav { color: #9ca3af !important; }
+html.dark .btn-nav:hover { background-color: #4b5563 !important; color: #60a5fa !important; }
+html.dark .nav-divider { background-color: #4b5563 !important; }
+html.dark .filter-chip {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #d1d5db !important;
+}
+html.dark .modal-card { background-color: #1f2937 !important; }
+html.dark .modal-header { background-color: #1a2332 !important; border-bottom-color: #374151 !important; }
+html.dark .modal-footer { background-color: #1a2332 !important; border-top-color: #374151 !important; }
+html.dark .form-input, html.dark .form-select, html.dark .form-textarea {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #f3f4f6 !important;
+}
+
+/* ─── 21. FINANCE DASHBOARD ──────────────────────────────── */
+html.dark .border-emerald-100.bg-white,
+html.dark .border-amber-100.bg-white,
+html.dark .border-blue-100.bg-white {
+    background-color: #1f2937 !important;
+}
+
+/* ─── 22. SMOOTH TRANSITION ──────────────────────────────── */
+html.dark body,
+html.dark header,
+html.dark main,
+html.dark nav.fixed.bottom-0,
+html.dark .bg-white,
+html.dark .bg-gray-50 {
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
