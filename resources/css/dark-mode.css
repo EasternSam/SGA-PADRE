@@ -282,6 +282,44 @@ html.dark div[wire\:loading] .bg-white\/95 {
     border-color: var(--dm-border) !important;
 }
 
+/* ─── 14b. APEXCHARTS DARK MODE ──────────────────────────── */
+html.dark .apexcharts-canvas {
+    background: transparent !important;
+}
+html.dark .apexcharts-canvas svg {
+    background: transparent !important;
+}
+html.dark .apexcharts-canvas rect.apexcharts-plot-area {
+    fill: transparent !important;
+}
+/* The white background rect ApexCharts injects */
+html.dark .apexcharts-canvas > svg > rect {
+    fill: transparent !important;
+}
+html.dark .apexcharts-gridline {
+    stroke: rgba(255,255,255,0.06) !important;
+}
+html.dark .apexcharts-xaxis-label,
+html.dark .apexcharts-yaxis-label {
+    fill: #64748b !important;
+}
+html.dark .apexcharts-tooltip {
+    background: var(--dm-card) !important;
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text) !important;
+}
+html.dark .apexcharts-tooltip .apexcharts-tooltip-title {
+    background: var(--dm-surface) !important;
+    border-bottom-color: var(--dm-border) !important;
+    color: var(--dm-text) !important;
+}
+html.dark .apexcharts-tooltip-text {
+    color: var(--dm-text) !important;
+}
+html.dark .apexcharts-legend-text {
+    color: #94a3b8 !important;
+}
+
 /* ─── 15. DROPDOWNS ──────────────────────────────────────── */
 html.dark [x-show][class*="origin-top"],
 html.dark .dropdown-content {
