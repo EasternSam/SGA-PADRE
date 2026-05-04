@@ -14,8 +14,14 @@
 
     {{-- PWA --}}
     <link rel="manifest" href="/manifest.json">
-    <link rel="apple-touch-icon" sizes="180x180" href="/centuu.png">
-    <link rel="icon" type="image/png" href="/centuu.png">
+    @php
+        $favicon = \App\Models\Setting::get('favicon');
+        $appIcon = \App\Models\Setting::get('app_icon');
+        $faviconUrl = $favicon ? $favicon : '/centuu.png';
+        $appIconUrl = $appIcon ? $appIcon : '/centuu.png';
+    @endphp
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ $appIconUrl }}">
+    <link rel="icon" type="image/png" href="{{ $faviconUrl }}">
 
     <!-- Fonts (preload for instant render) -->
     <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>

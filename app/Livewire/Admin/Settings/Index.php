@@ -20,6 +20,8 @@ class Index extends Component
     public $activeTab = 'general'; 
 
     public $logo;
+    public $favicon;
+    public $app_icon;
 
     public $state = [];
 
@@ -40,6 +42,8 @@ class Index extends Component
         $this->state = [
             'institution_name'    => $settings['institution_name'] ?? config('app.name'),
             'institution_logo'    => $settings['institution_logo'] ?? null,
+            'favicon'             => $settings['favicon'] ?? null,
+            'app_icon'            => $settings['app_icon'] ?? null,
             'brand_primary_color' => $settings['brand_primary_color'] ?? '#1e3a8a',
             'support_email'       => $settings['support_email'] ?? 'soporte@institucion.edu',
             'contact_phone'       => $settings['contact_phone'] ?? '',
@@ -110,6 +114,8 @@ class Index extends Component
         $this->state['institution_name'] = 'SGA Academic+';
         $this->state['brand_primary_color'] = '#1e3a8a'; // Azul Original
         $this->state['institution_logo'] = null;
+        $this->state['favicon'] = null;
+        $this->state['app_icon'] = null;
         $this->state['support_email'] = 'soporte@institucion.edu';
         $this->state['contact_phone'] = '';
         $this->state['contact_address'] = '';
@@ -124,6 +130,8 @@ class Index extends Component
         $this->state['smtp_encryption'] = 'tls';
         $this->state['smtp_from_address'] = '';
         $this->logo = null;
+        $this->favicon = null;
+        $this->app_icon = null;
 
         // Restaurar valores de degradado
         $this->navbar_type = 'solid';
@@ -148,6 +156,34 @@ class Index extends Component
         }
     }
 
+    public function removeFavicon()
+    {
+        $this->state['favicon'] = null;
+        $this->favicon = null;
+        
+        try {
+            Setting::set('favicon', null, 'general', 'image');
+            Cache::flush();
+            session()->flash('message', 'Favicon eliminado correctamente.');
+        } catch (\Exception $e) {
+            session()->flash('error', 'Error al eliminar el favicon: ' . $e->getMessage());
+        }
+    }
+
+    public function removeAppIcon()
+    {
+        $this->state['app_icon'] = null;
+        $this->app_icon = null;
+        
+        try {
+            Setting::set('app_icon', null, 'general', 'image');
+            Cache::flush();
+            session()->flash('message', 'Icono de app eliminado correctamente.');
+        } catch (\Exception $e) {
+            session()->flash('error', 'Error al eliminar el icono: ' . $e->getMessage());
+        }
+    }
+
     public function save()
     {
         // Validar color solo si es sólido (hexadecimal). Si es degradado, omitimos la validación regex.
@@ -169,7 +205,9 @@ class Index extends Component
             'state.smtp_password'       => 'nullable|string|max:255',
             'state.smtp_encryption'     => 'nullable|string|max:50',
             'state.smtp_from_address'   => 'nullable|email|max:255',
-            'logo'                      => 'nullable|image|max:2048', 
+            'logo'                      => 'nullable|image|max:2048',
+            'favicon'                   => 'nullable|image|mimes:png,ico,webp|max:1024',
+            'app_icon'                  => 'nullable|image|mimes:png,webp|max:1024',
             'state.wp_api_url'          => 'nullable|url',
             'state.moodle_url'          => 'nullable|url',
         ]);
@@ -182,6 +220,30 @@ class Index extends Component
                 $this->state['institution_logo'] = $url;
             } catch (\Exception $e) {
                 session()->flash('error', 'Error al guardar la imagen: ' . $e->getMessage());
+                return;
+            }
+        }
+
+        if ($this->favicon) {
+            try {
+                $filename = 'favicon_' . time() . '.' . $this->favicon->getClientOriginalExtension();
+                $this->favicon->storeAs('branding', $filename, 'hosting_public');
+                $url = "/branding/" . $filename;
+                $this->state['favicon'] = $url;
+            } catch (\Exception $e) {
+                session()->flash('error', 'Error al guardar el favicon: ' . $e->getMessage());
+                return;
+            }
+        }
+
+        if ($this->app_icon) {
+            try {
+                $filename = 'app_icon_' . time() . '.' . $this->app_icon->getClientOriginalExtension();
+                $this->app_icon->storeAs('branding', $filename, 'hosting_public');
+                $url = "/branding/" . $filename;
+                $this->state['app_icon'] = $url;
+            } catch (\Exception $e) {
+                session()->flash('error', 'Error al guardar el icono de app: ' . $e->getMessage());
                 return;
             }
         }

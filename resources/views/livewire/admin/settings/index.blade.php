@@ -296,6 +296,66 @@
                                         </div>
                                         @error('logo') <p class="sys-error-text">{{ $message }}</p> @enderror
                                     </div>
+
+                                    <div class="sys-form-group sys-col-full">
+                                        <label class="sys-label">Favicon (Icono del navegador)</label>
+                                        <div class="flex items-center gap-4 p-4 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
+                                            <div class="shrink-0">
+                                                @if ($favicon)
+                                                    <img src="{{ $favicon->temporaryUrl() }}" class="h-12 w-12 object-contain rounded p-1 shadow-sm bg-white border">
+                                                @elseif (!empty($state['favicon']))
+                                                    <img src="{{ $state['favicon'] }}" class="h-12 w-12 object-contain rounded p-1 shadow-sm bg-white border">
+                                                @else
+                                                    <div class="h-12 w-12 bg-gray-200 rounded flex items-center justify-center text-gray-400 font-bold text-xs border">🌐</div>
+                                                @endif
+                                            </div>
+                                            <div class="flex-1">
+                                                <input type="file" wire:model="favicon" accept="image/png,image/x-icon,image/webp" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 cursor-pointer">
+                                                <div wire:loading wire:target="favicon" class="text-xs text-purple-500 mt-1 font-semibold">Subiendo favicon...</div>
+                                                <p class="sys-help-text mt-1">Formatos: PNG, ICO, WEBP. Recomendado: 32x32px o 64x64px. Máx 1MB.</p>
+                                                
+                                                @if($favicon || !empty($state['favicon']))
+                                                    <button type="button" wire:click="removeFavicon" class="mt-2 inline-flex items-center text-xs font-semibold text-red-600 hover:text-red-800 focus:outline-none">
+                                                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                        Eliminar Favicon
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        @error('favicon') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                    </div>
+
+                                    <div class="sys-form-group sys-col-full">
+                                        <label class="sys-label">Icono de App (iPhone/Android)</label>
+                                        <div class="flex items-center gap-4 p-4 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
+                                            <div class="shrink-0">
+                                                @if ($app_icon)
+                                                    <img src="{{ $app_icon->temporaryUrl() }}" class="h-16 w-16 object-cover rounded-lg shadow-sm border">
+                                                @elseif (!empty($state['app_icon']))
+                                                    <img src="{{ $state['app_icon'] }}" class="h-16 w-16 object-cover rounded-lg shadow-sm border">
+                                                @else
+                                                    <div class="h-16 w-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-2xl shadow-sm">📱</div>
+                                                @endif
+                                            </div>
+                                            <div class="flex-1">
+                                                <input type="file" wire:model="app_icon" accept="image/png,image/webp" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                                                <div wire:loading wire:target="app_icon" class="text-xs text-blue-500 mt-1 font-semibold">Subiendo icono...</div>
+                                                <p class="sys-help-text mt-1">Formatos: PNG, WEBP. Recomendado: 512x512px o 1024x1024px. Máx 1MB.</p>
+                                                
+                                                @if($app_icon || !empty($state['app_icon']))
+                                                    <button type="button" wire:click="removeAppIcon" class="mt-2 inline-flex items-center text-xs font-semibold text-red-600 hover:text-red-800 focus:outline-none">
+                                                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                        Eliminar Icono de App
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        @error('app_icon') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                    </div>
                                 </div>
                             </div>
                         </div>

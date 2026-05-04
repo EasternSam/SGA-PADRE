@@ -15,8 +15,14 @@
 
     {{-- PWA Manifest --}}
     <link rel="manifest" href="/manifest.json">
-    <link rel="apple-touch-icon" sizes="180x180" href="/centuu.png">
-    <link rel="icon" type="image/png" href="/centuu.png">
+    @php
+        $favicon = \App\Models\Setting::get('favicon');
+        $appIcon = \App\Models\Setting::get('app_icon');
+        $faviconUrl = $favicon ? $favicon : '/centuu.png';
+        $appIconUrl = $appIcon ? $appIcon : '/centuu.png';
+    @endphp
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ $appIconUrl }}">
+    <link rel="icon" type="image/png" href="{{ $faviconUrl }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
 

@@ -31,6 +31,62 @@ use Illuminate\Support\Facades\Str;
 */
 
 // ==============================================================================
+// PWA MANIFEST DINÁMICO
+// ==============================================================================
+Route::get('/manifest.json', function () {
+    $appName = \App\Models\Setting::get('institution_name', config('app.name', 'SGA Academic+'));
+    $primaryColor = \App\Models\Setting::get('brand_primary_color', '#1e3a8a');
+    $appIcon = \App\Models\Setting::get('app_icon');
+    $iconUrl = $appIcon ? asset($appIcon) : asset('/centuu.png');
+
+    $manifest = [
+        'name' => $appName,
+        'short_name' => Str::limit($appName, 12, ''),
+        'description' => 'Sistema de Gestión Académica - Plataforma integral de administración educativa',
+        'start_url' => '/dashboard',
+        'scope' => '/',
+        'display' => 'standalone',
+        'orientation' => 'portrait-primary',
+        'background_color' => $primaryColor,
+        'theme_color' => $primaryColor,
+        'categories' => ['education', 'productivity'],
+        'lang' => 'es',
+        'dir' => 'ltr',
+        'icons' => [
+            [
+                'src' => $iconUrl,
+                'sizes' => '512x512',
+                'type' => 'image/png',
+                'purpose' => 'any'
+            ],
+            [
+                'src' => $iconUrl,
+                'sizes' => '512x512',
+                'type' => 'image/png',
+                'purpose' => 'maskable'
+            ]
+        ],
+        'screenshots' => [],
+        'shortcuts' => [
+            [
+                'name' => 'Estudiantes',
+                'short_name' => 'Estudiantes',
+                'url' => '/admin/students',
+                'icons' => [['src' => $iconUrl, 'sizes' => '512x512']]
+            ],
+            [
+                'name' => 'Finanzas',
+                'short_name' => 'Finanzas',
+                'url' => '/admin/finance',
+                'icons' => [['src' => $iconUrl, 'sizes' => '512x512']]
+            ]
+        ]
+    ];
+
+    return response()->json($manifest, 200, ['Content-Type' => 'application/manifest+json']);
+});
+
+// ==============================================================================
 // RUTA DE DIAGNÓSTICO TOTAL (VITAL PARA DEBUG)
 // ==============================================================================
 Route::get('/system/debug-license', function () {
