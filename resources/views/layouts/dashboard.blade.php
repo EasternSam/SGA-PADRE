@@ -113,7 +113,7 @@
 <body class="h-full font-sans antialiased text-slate-600 overflow-hidden bg-gray-50">
 
     <!-- Barra de Carga Global -->
-    <div wire:loading class="fixed top-0 left-0 w-full h-1.5 z-[2000] bg-indigo-100/50" style="pointer-events: none;">
+    <div wire:loading class="fixed left-0 w-full h-1.5 z-[2000] bg-indigo-100/50" style="pointer-events: none; top: env(safe-area-inset-top, 0px);">
         <div class="h-full bg-sga-primary animate-progress-indeterminate shadow-[0_0_10px_rgba(79,70,229,0.5)]"></div>
     </div>
 
@@ -190,7 +190,7 @@
         <div class="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out h-full">
 
             <!-- Top bar -->
-            <header class="sticky top-0 z-20 flex bg-white/90 backdrop-blur-md border-b border-gray-200/60 shadow-sm">
+            <header class="sticky top-0 z-20 flex bg-white/90 backdrop-blur-md border-b border-gray-200/60 shadow-sm" style="padding-top: env(safe-area-inset-top, 0px);">
                 <div class="flex flex-1 items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
                     
                     <!-- Left: Hamburger & Page Title -->
@@ -267,7 +267,7 @@
             </header>
 
             <!-- Page Content -->
-            <main class="flex-1 flex flex-col overflow-y-auto focus:outline-none scroll-smooth bg-gray-50 pb-20 lg:pb-0">
+            <main class="flex-1 flex flex-col overflow-y-auto focus:outline-none scroll-smooth bg-gray-50 pb-16 lg:pb-0">
                 <div class="w-full">
                     <div class="w-full">
                         {{ $slot }}
