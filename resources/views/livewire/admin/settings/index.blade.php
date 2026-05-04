@@ -302,7 +302,13 @@
                                         <div class="flex items-center gap-4 p-4 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
                                             <div class="shrink-0">
                                                 @if ($favicon)
-                                                    <img src="{{ $favicon->temporaryUrl() }}" class="h-12 w-12 object-contain rounded p-1 shadow-sm bg-white border">
+                                                    <img src="{{ $favicon->temporaryUrl() }}" class="h-12 w-12 object-contain rounded p-1 shadow-sm bg-white border" wire:loading.remove wire:target="favicon">
+                                                    <div wire:loading wire:target="favicon" class="h-12 w-12 bg-purple-100 rounded flex items-center justify-center border border-purple-300">
+                                                        <svg class="animate-spin h-6 w-6 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                        </svg>
+                                                    </div>
                                                 @elseif (!empty($state['favicon']))
                                                     <img src="{{ $state['favicon'] }}" class="h-12 w-12 object-contain rounded p-1 shadow-sm bg-white border">
                                                 @else
@@ -311,8 +317,14 @@
                                             </div>
                                             <div class="flex-1">
                                                 <input type="file" wire:model="favicon" accept="image/png,image/x-icon,image/webp" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 cursor-pointer">
-                                                <div wire:loading wire:target="favicon" class="text-xs text-purple-500 mt-1 font-semibold">Subiendo favicon...</div>
-                                                <p class="sys-help-text mt-1">Formatos: PNG, ICO, WEBP. Recomendado: 32x32px o 64x64px. Máx 1MB.</p>
+                                                <div wire:loading wire:target="favicon" class="text-xs text-purple-600 mt-1 font-bold flex items-center gap-1">
+                                                    <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                    Cargando favicon... Este proceso puede tomar unos segundos.
+                                                </div>
+                                                <p class="sys-help-text mt-1" wire:loading.remove wire:target="favicon">Formatos: PNG, ICO, WEBP. Recomendado: 32x32px o 64x64px. Máx 1MB.</p>
                                                 
                                                 @if($favicon || !empty($state['favicon']))
                                                     <button type="button" wire:click="removeFavicon" class="mt-2 inline-flex items-center text-xs font-semibold text-red-600 hover:text-red-800 focus:outline-none">
@@ -324,7 +336,7 @@
                                                 @endif
                                             </div>
                                         </div>
-                                        @error('favicon') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                        @error('favicon') <p class="sys-error-text mt-2 font-bold">{{ $message }}</p> @enderror
                                     </div>
 
                                     <div class="sys-form-group sys-col-full">

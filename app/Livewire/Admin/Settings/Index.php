@@ -186,6 +186,12 @@ class Index extends Component
 
     public function save()
     {
+        // NOTA: Si los archivos no se suben, verifica estos límites en php.ini:
+        // - upload_max_filesize (mínimo 2MB)
+        // - post_max_size (mínimo 8MB)
+        // - max_file_uploads (mínimo 20)
+        // También revisa los permisos del directorio public/branding (755)
+
         // Validar color solo si es sólido (hexadecimal). Si es degradado, omitimos la validación regex.
         $colorRule = $this->navbar_type === 'solid' ? 'required|regex:/^#[a-fA-F0-9]{6}$/' : 'required';
 
@@ -214,6 +220,12 @@ class Index extends Component
 
         if ($this->logo) {
             try {
+                // Asegurar que el directorio existe
+                $brandingPath = public_path('branding');
+                if (!file_exists($brandingPath)) {
+                    mkdir($brandingPath, 0755, true);
+                }
+                
                 $filename = 'logo_' . time() . '.' . $this->logo->getClientOriginalExtension();
                 $this->logo->storeAs('branding', $filename, 'hosting_public');
                 $url = "/branding/" . $filename;
@@ -226,11 +238,26 @@ class Index extends Component
 
         if ($this->favicon) {
             try {
+                // Asegurar que el directorio existe
+                $brandingPath = public_path('branding');
+                if (!file_exists($brandingPath)) {
+                    mkdir($brandingPath, 0755, true);
+                }
+                
+                Log::info('Guardando favicon', [
+                    'original_name' => $this->favicon->getClientOriginalName(),
+                    'extension' => $this->favicon->getClientOriginalExtension(),
+                    'size' => $this->favicon->getSize()
+                ]);
+                
                 $filename = 'favicon_' . time() . '.' . $this->favicon->getClientOriginalExtension();
                 $this->favicon->storeAs('branding', $filename, 'hosting_public');
                 $url = "/branding/" . $filename;
                 $this->state['favicon'] = $url;
+                
+                Log::info('Favicon guardado exitosamente', ['url' => $url]);
             } catch (\Exception $e) {
+                Log::error('Error guardando favicon', ['error' => $e->getMessage()]);
                 session()->flash('error', 'Error al guardar el favicon: ' . $e->getMessage());
                 return;
             }
@@ -238,6 +265,12 @@ class Index extends Component
 
         if ($this->app_icon) {
             try {
+                // Asegurar que el directorio existe
+                $brandingPath = public_path('branding');
+                if (!file_exists($brandingPath)) {
+                    mkdir($brandingPath, 0755, true);
+                }
+                
                 $filename = 'app_icon_' . time() . '.' . $this->app_icon->getClientOriginalExtension();
                 $this->app_icon->storeAs('branding', $filename, 'hosting_public');
                 $url = "/branding/" . $filename;
@@ -254,7 +287,7 @@ class Index extends Component
         // Guardar configuraciones estándar
         foreach ($this->state as $key => $value) {
             $type = str_contains($key, 'secret') || str_contains($key, 'token') ? 'password' : 'string';
-            if ($key === 'institution_logo') $type = 'image';
+            if (in_array($key, ['institution_logo', 'favicon', 'app_icon'])) $type = 'image';
 
             $group = 'general';
             if (str_starts_with($key, 'wp_') || str_starts_with($key, 'moodle_')) $group = 'apis';
@@ -290,7 +323,22 @@ class Index extends Component
 
         Cache::flush();
 
-        session()->flash('message', 'Personalización guardada correctamente.');
+        // Limpiar propiedades temporales de archivos
+        $this->logo = null;
+        $this->favicon = null;
+        $this->app_icon = null;
+
+        $uploadedItems = [];
+        if (!empty($this->state['institution_logo'])) $uploadedItems[] = 'logo';
+        if (!empty($this->state['favicon'])) $uploadedItems[] = 'favicon';
+        if (!empty($this->state['app_icon'])) $uploadedItems[] = 'icono de app';
+        
+        $message = 'Personalización guardada correctamente.';
+        if (!empty($uploadedItems)) {
+            $message .= ' Archivos subidos: ' . implode(', ', $uploadedItems) . '.';
+        }
+
+        session()->flash('message', $message);
         return redirect()->route('admin.settings.index');
     }
 
