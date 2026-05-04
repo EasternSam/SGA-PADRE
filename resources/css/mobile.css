@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════════════════════
- * SGA MOBILE-FIRST RESPONSIVE SYSTEM v2.0
+ * SGA MOBILE-FIRST RESPONSIVE SYSTEM v2.1
  * ═══════════════════════════════════════════════════════════
- * Premium native-app experience for mobile devices.
- * Strategy: Global rules that detect small screens and
- * transform tables→cards, modals→fullscreen, grids→stack.
+ * Conservative approach: only override what is strictly
+ * needed. Avoid blanket selectors that break third-party
+ * components (calendar, charts, modals).
  * ═══════════════════════════════════════════════════════════ */
 
 /* ─── GLOBAL ANIMATIONS ──────────────────────────────────── */
@@ -13,197 +13,162 @@
 }
 
 @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(12px); }
+    from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes slideInBottom {
-    from { transform: translateY(100%); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
 /* ─── 1. VIEWPORT & BODY ─────────────────────────────────── */
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
     html {
         -webkit-text-size-adjust: 100%;
         -webkit-tap-highlight-color: transparent;
-        scroll-behavior: smooth;
     }
-    
+
     body {
         overflow-x: hidden !important;
-        -webkit-overflow-scrolling: touch;
-        padding-top: env(safe-area-inset-top, 0px);
     }
 
-    .flex-1, main {
-        max-width: 100vw !important;
-        overflow-x: hidden !important;
+    /* Hide desktop sidebar on mobile */
+    aside {
+        display: none !important;
     }
-}
-
-/* ─── 2. TABLAS → CARDS (Premium) ────────────────────────── */
-@media (max-width: 768px) {
-    table thead {
+    .fixed.inset-0.z-30.lg\:hidden {
         display: none !important;
     }
 
-    table, table tbody {
+    /* Hide desktop footer */
+    footer {
+        display: none !important;
+    }
+}
+
+/* ─── 2. TABLES → CARDS ──────────────────────────────────── */
+@media (max-width: 768px) {
+
+    /* Only target data tables inside main content, NOT calendar or other custom grids */
+    main table.min-w-full thead,
+    main table.divide-y thead,
+    main table.w-full thead {
+        display: none !important;
+    }
+
+    main table.min-w-full,
+    main table.min-w-full tbody,
+    main table.divide-y,
+    main table.divide-y tbody,
+    main table.w-full:not(.calendar-table),
+    main table.w-full:not(.calendar-table) tbody {
         display: block !important;
         width: 100% !important;
     }
 
-    table tbody tr {
+    main table.min-w-full tbody tr,
+    main table.divide-y tbody tr,
+    main table.w-full:not(.calendar-table) tbody tr {
         display: block !important;
-        margin-bottom: 0.625rem;
+        margin-bottom: 0.5rem;
         background: white;
-        border-radius: 1rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+        border-radius: 0.875rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
         border: 1px solid rgba(0,0,0,0.06);
-        padding: 1rem;
-        position: relative;
-        animation: fadeInUp 0.3s ease-out both;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        padding: 0.75rem;
+        animation: fadeInUp 0.25s ease-out both;
     }
 
-    table tbody tr:active {
+    main table.min-w-full tbody tr:active,
+    main table.divide-y tbody tr:active,
+    main table.w-full:not(.calendar-table) tbody tr:active {
         transform: scale(0.985);
-        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     }
 
-    table tbody tr td {
+    main table.min-w-full tbody tr td,
+    main table.divide-y tbody tr td,
+    main table.w-full:not(.calendar-table) tbody tr td {
         display: flex !important;
         align-items: center;
         justify-content: space-between;
-        padding: 0.5rem 0 !important;
+        padding: 0.375rem 0 !important;
         border: none !important;
         border-bottom: 1px solid #f3f4f6 !important;
         font-size: 0.8125rem !important;
         width: 100% !important;
-        min-height: auto !important;
         text-align: left !important;
         gap: 0.5rem;
-    }
-
-    /* Data labels from thead */
-    table tbody tr td::before {
-        content: attr(data-label);
-        font-weight: 600;
-        font-size: 0.6875rem;
-        color: #9ca3af;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        min-width: 5rem;
-        flex-shrink: 0;
-    }
-
-    table tbody tr td:last-child {
-        border-bottom: none !important;
-        padding-bottom: 0 !important;
-    }
-
-    table tbody tr td:first-child {
-        padding-top: 0.25rem !important;
-        padding-bottom: 0.75rem !important;
-        margin-bottom: 0.25rem;
-        border-bottom: 1px solid #e5e7eb !important;
-    }
-
-    table tbody tr td:last-child {
-        text-align: right !important;
-        padding-top: 0.625rem !important;
-        justify-content: flex-end;
-    }
-
-    table tbody tr td .flex {
-        justify-content: flex-start !important;
-    }
-
-    table.whitespace-nowrap, table .whitespace-nowrap {
         white-space: normal !important;
     }
 
-    .overflow-x-auto, [class*="overflow-x"] {
-        overflow-x: visible !important;
+    main table tbody tr td:last-child {
+        border-bottom: none !important;
     }
 
-    div:has(> table) {
-        overflow-x: visible !important;
+    main table tbody tr td:first-child {
+        padding-top: 0.125rem !important;
+        padding-bottom: 0.5rem !important;
+        border-bottom: 1px solid #e5e7eb !important;
     }
 
-    /* KPI Stats: 2 columns */
+    /* Fix overflow-x-auto containers that WRAP tables — make them visible */
+    main .bg-white > .overflow-x-auto {
+        overflow-x: visible !important;
+    }
+}
+
+/* ─── 3. KPI STAT CARDS ──────────────────────────────────── */
+@media (max-width: 768px) {
+    /* Dashboard KPI grid: 2 columns */
     .grid.sm\:grid-cols-2.lg\:grid-cols-4 {
         grid-template-columns: repeat(2, 1fr) !important;
-        gap: 0.625rem !important;
+        gap: 0.5rem !important;
     }
 
     .grid.sm\:grid-cols-2.lg\:grid-cols-4 > div {
-        padding: 0.875rem !important;
-        border-radius: 1rem !important;
+        padding: 0.75rem !important;
+        border-radius: 0.875rem !important;
     }
 
     .grid.sm\:grid-cols-2.lg\:grid-cols-4 .text-2xl {
-        font-size: 1.25rem !important;
+        font-size: 1.125rem !important;
     }
 
-    /* Finance KPIs: keep side-by-side on larger phones */
-    .grid.md\:grid-cols-3 {
+    /* Finance KPI grid: keep ALL cards visible, 1 col on tiny, 3 on wider phones */
+    .grid.grid-cols-1.md\:grid-cols-3 {
         grid-template-columns: 1fr !important;
-        gap: 0.625rem !important;
-    }
-}
-
-/* ─── 3. MODALES → FULLSCREEN (iOS Sheet) ────────────────── */
-@media (max-width: 768px) {
-    [x-show] > div > div[class*="sm:max-w"],
-    [x-show] > div > div[class*="md:max-w"],
-    .modal-content,
-    div[class*="max-w-2xl"],
-    div[class*="max-w-3xl"],
-    div[class*="max-w-4xl"],
-    div[class*="max-w-5xl"],
-    div[class*="max-w-6xl"],
-    div[class*="max-w-7xl"] {
-        max-width: 100% !important;
-        width: 100% !important;
-        margin: 0 !important;
-        border-radius: 1.25rem 1.25rem 0 0 !important;
-        min-height: 85dvh;
-        max-height: 100dvh;
-        overflow-y: auto;
-    }
-
-    .fixed.inset-0 > div[class*="max-w"] {
-        max-width: 100vw !important;
-        max-height: 100dvh !important;
-        border-radius: 1.25rem 1.25rem 0 0 !important;
-        margin: 0 !important;
-        align-self: flex-end;
-    }
-
-    .fixed.inset-0 .overflow-y-auto {
-        -webkit-overflow-scrolling: touch;
-    }
-}
-
-/* ─── 4. GRID → STACK ────────────────────────────────────── */
-@media (max-width: 768px) {
-    main .grid-cols-2, main .grid-cols-4, main .grid-cols-5, main .grid-cols-6,
-    main .md\:grid-cols-2, main .md\:grid-cols-3, main .md\:grid-cols-4,
-    main .lg\:grid-cols-2, main .lg\:grid-cols-3, main .lg\:grid-cols-4,
-    main .xl\:grid-cols-3, main .xl\:grid-cols-4 {
-        grid-template-columns: 1fr !important;
-    }
-
-    .grid.gap-4 > div[class*="bg-white"],
-    .grid.gap-6 > div[class*="bg-white"] {
-        break-inside: avoid;
-    }
-}
-
-@media (max-width: 480px) {
-    .grid {
         gap: 0.5rem !important;
+    }
+
+    .grid.grid-cols-1.md\:grid-cols-3 > div {
+        padding: 0.875rem !important;
+    }
+
+    .grid.grid-cols-1.md\:grid-cols-3 .text-3xl {
+        font-size: 1.375rem !important;
+    }
+}
+
+@media (min-width: 400px) and (max-width: 768px) {
+    /* On wider phones, finance KPIs can fit side by side */
+    .grid.grid-cols-1.md\:grid-cols-3 {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+
+    .grid.grid-cols-1.md\:grid-cols-3 .text-3xl {
+        font-size: 1rem !important;
+    }
+
+    .grid.grid-cols-1.md\:grid-cols-3 > div {
+        padding: 0.625rem !important;
+    }
+}
+
+/* ─── 4. LAYOUT STACKING (safe selectors only) ───────────── */
+@media (max-width: 768px) {
+    /* 2-column main grid → stack */
+    .grid.lg\:grid-cols-3 {
+        grid-template-columns: 1fr !important;
+    }
+
+    .lg\:col-span-2 {
+        grid-column: span 1 !important;
     }
 }
 
@@ -218,409 +183,188 @@
     input[type="search"],
     select,
     textarea {
-        font-size: 16px !important;
-        padding: 0.75rem !important;
-        border-radius: 0.75rem !important;
-        min-height: 48px;
-        border-color: #e5e7eb !important;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        font-size: 16px !important; /* Prevent iOS zoom */
+        min-height: 44px;
     }
 
-    input:focus, select:focus, textarea:focus {
-        border-color: #6366f1 !important;
-        box-shadow: 0 0 0 3px rgba(99,102,241,0.1) !important;
+    button, [type="submit"] {
+        min-height: 44px;
     }
 
-    button, a[class*="btn"], [type="submit"] {
-        min-height: 48px;
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
-        border-radius: 0.75rem !important;
-    }
-
-    label {
-        font-size: 0.8125rem !important;
-        font-weight: 600 !important;
-        color: #374151 !important;
-        margin-bottom: 0.375rem;
-    }
-
-    .grid.grid-cols-1.md\:grid-cols-3,
-    .grid.grid-cols-1.md\:grid-cols-2 {
-        grid-template-columns: 1fr !important;
-        gap: 0.75rem !important;
-    }
-
-    .md\:col-span-2, .md\:col-span-3 {
+    /* Form grids stack */
+    .grid.grid-cols-1.md\:grid-cols-3 > div:not(.grid),
+    .grid.grid-cols-1.md\:grid-cols-2 > div:not(.grid) {
         grid-column: span 1 !important;
     }
 }
 
-/* ─── 6. TOP HEADER BAR (Compact) ────────────────────────── */
+/* ─── 6. TOP HEADER BAR ──────────────────────────────────── */
 @media (max-width: 768px) {
-    header {
-        padding-top: 0 !important;
-        backdrop-filter: blur(12px) saturate(180%);
-        -webkit-backdrop-filter: blur(12px) saturate(180%);
-        background: rgba(255,255,255,0.88) !important;
-    }
-
     header .h-16 {
-        height: 3.25rem !important;
+        height: 3rem !important;
     }
 
-    header .px-4 {
-        padding-left: 0.875rem !important;
-        padding-right: 0.875rem !important;
-    }
-
-    header h1 {
+    header h1, header h2 {
         font-size: 0.9375rem !important;
         font-weight: 700 !important;
-        max-width: 55vw;
+        max-width: 60vw;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        letter-spacing: -0.01em;
-    }
-
-    header .lg\:block.lg\:h-6 {
-        display: none !important;
     }
 
     header img.rounded-full {
         height: 1.875rem !important;
         width: 1.875rem !important;
-        border: 2px solid white !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-
-    header .gap-x-4 {
-        gap: 0.5rem !important;
     }
 }
 
-/* ─── 7. SIDEBAR EN MÓVIL ──────────────────────────────── */
-@media (max-width: 1023px) {
-    aside {
-        display: none !important;
-    }
-    .fixed.inset-0.z-30 {
-        display: none !important;
-    }
-    header button[class*="lg:hidden"] {
-        display: none !important;
-    }
-}
-
-/* ─── 8. CARDS & CONTAINERS ──────────────────────────────── */
+/* ─── 7. CONTAINERS & PADDING ────────────────────────────── */
 @media (max-width: 768px) {
-    main .px-4.sm\:px-6.lg\:px-8 {
-        padding: 0.625rem !important;
+    .mx-auto.w-full.max-w-\[95\%\] {
+        max-width: 100% !important;
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
     }
 
-    main .p-6, main .p-8 {
+    main .p-6 {
         padding: 0.875rem !important;
     }
 
-    main .rounded-xl, main .rounded-2xl {
-        border-radius: 1rem !important;
+    main .p-8 {
+        padding: 1rem !important;
     }
 
-    main > div > div {
-        padding-left: 0.25rem;
-        padding-right: 0.25rem;
+    main .px-4.sm\:px-6.lg\:px-8 {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
     }
 
-    .mx-auto.max-w-\[95\%\] {
-        max-width: 100% !important;
-        padding-left: 0.625rem !important;
-        padding-right: 0.625rem !important;
+    /* Chart container height — more compact on mobile */
+    .h-\[380px\], .h-\[350px\] {
+        height: 240px !important;
     }
 
-    .space-y-6 {
-        gap: 0.75rem !important;
-    }
-    .space-y-8 {
-        gap: 1rem !important;
-    }
-
-    /* White cards get subtle shadow upgrade */
-    main .bg-white {
-        box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03) !important;
-    }
-
-    /* Section headers more compact */
+    /* Sections */
     main h2 {
         font-size: 1.125rem !important;
-        letter-spacing: -0.015em;
     }
-
     main h3 {
         font-size: 0.9375rem !important;
     }
-
-    /* Chart container height */
-    .h-\[380px\], .h-\[350px\] {
-        height: 220px !important;
-    }
 }
 
-/* ─── 9. BADGES & STATUS PILLS ───────────────────────────── */
+/* ─── 8. SEARCH BAR ──────────────────────────────────────── */
 @media (max-width: 768px) {
-    span[class*="bg-green"], span[class*="bg-red"],
-    span[class*="bg-yellow"], span[class*="bg-blue"],
-    span[class*="bg-indigo"], span[class*="bg-emerald"],
-    span[class*="bg-amber"] {
-        font-size: 0.6875rem !important;
-        padding: 0.1875rem 0.5rem !important;
-        border-radius: 9999px !important;
-        font-weight: 600 !important;
+    .max-w-2xl {
+        max-width: 100% !important;
     }
 }
 
-/* ─── 10. FOOTER ─────────────────────────────────────── */
-@media (max-width: 1023px) {
-    footer {
-        display: none !important;
+/* ─── 9. TOUCH ENHANCEMENTS ──────────────────────────────── */
+@media (max-width: 768px) {
+    button, a {
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    button:active, a:active {
+        opacity: 0.8;
+        transition: opacity 0.08s ease;
+    }
+
+    button, a, input, select {
+        touch-action: manipulation;
     }
 }
 
-/* ─── 11. LOADING INDICATORS & PAGE TRANSITIONS ──────────── */
+/* ─── 10. BOTTOM NAV POLISH ──────────────────────────────── */
 @media (max-width: 1023px) {
-    #mobile-page-loader {
-        transition: opacity 0.2s ease-out;
+    /* Glassmorphism bottom nav */
+    nav.fixed.bottom-0 {
+        background: rgba(255,255,255,0.88) !important;
+        backdrop-filter: blur(20px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+        border-top: 1px solid rgba(0,0,0,0.06) !important;
+        box-shadow: 0 -2px 20px rgba(0,0,0,0.05) !important;
     }
 
+    /* Tab press feedback */
+    nav.fixed.bottom-0 a:active, nav.fixed.bottom-0 button:active {
+        transform: scale(0.9) !important;
+        opacity: 1 !important;
+    }
+
+    /* "More" panel — iOS sheet style */
+    nav.fixed.bottom-0 .absolute.bottom-full {
+        border-radius: 1.25rem 1.25rem 0 0 !important;
+        background: rgba(255,255,255,0.97) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        box-shadow: 0 -8px 40px rgba(0,0,0,0.12) !important;
+    }
+}
+
+/* ─── 11. LOADING INDICATORS ─────────────────────────────── */
+@media (max-width: 1023px) {
+    /* Reposition the floating "PROCESANDO" indicator above bottom nav */
+    div[wire\:loading].fixed.bottom-6 {
+        bottom: 5.5rem !important;
+        right: 1rem !important;
+    }
+
+    /* Skeleton shimmer */
     #mobile-page-loader .animate-pulse {
-        animation: none !important;
         background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 37%, #e5e7eb 63%) !important;
         background-size: 200% 100% !important;
         animation: shimmer 1.5s ease-in-out infinite !important;
+    }
+
+    /* Don't apply shimmer to elements that have SVGs inside */
+    #mobile-page-loader .animate-pulse:has(svg) {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+        background: none !important;
     }
 
     #mobile-page-loader svg.animate-spin {
         animation: spin 1.2s linear infinite !important;
         background: none !important;
     }
-
-    #mobile-page-loader .animate-pulse:has(svg) {
-        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
-        background: none !important;
-        background-image: none !important;
-    }
-
-    div[wire\:loading] .rounded-full {
-        padding: 0.5rem 0.75rem !important;
-    }
-
-    div[wire\:loading] .text-xs {
-        font-size: 0.625rem !important;
-    }
-
-    div[wire\:loading].fixed.bottom-6 {
-        bottom: 5.5rem !important;
-        right: 1rem !important;
-    }
 }
 
-/* ─── 12. TOAST NOTIFICATIONS ────────────────────────────── */
+/* ─── 12. PAGINATION ─────────────────────────────────────── */
 @media (max-width: 768px) {
-    [aria-live="assertive"] .max-w-sm {
-        max-width: calc(100vw - 2rem) !important;
-    }
-
-    /* Position toasts above bottom nav */
-    [aria-live="assertive"] {
-        bottom: 5rem !important;
-    }
-}
-
-/* ─── 13. DROPDOWNS ──────────────────────────────────────── */
-@media (max-width: 768px) {
-    [x-show][class*="origin-top"] {
-        min-width: 220px !important;
-        border-radius: 0.75rem !important;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.12) !important;
-    }
-}
-
-/* ─── 14. CHARTS & GRÁFICOS ──────────────────────────────── */
-@media (max-width: 768px) {
-    canvas {
-        max-height: 200px !important;
-    }
-}
-
-/* ─── 15. TOUCH ENHANCEMENTS ─────────────────────────────── */
-@media (max-width: 768px) {
-    * {
-        -webkit-overflow-scrolling: touch;
-    }
-
-    button, a {
-        -webkit-user-select: none;
-        user-select: none;
-    }
-
-    /* Refined active states — iOS-like haptic feel */
-    button:active, a:active {
-        opacity: 0.75;
-        transform: scale(0.97);
-        transition: all 0.08s ease;
-    }
-
-    /* Prevent accidental double-tap zoom on buttons */
-    button, a, input, select {
-        touch-action: manipulation;
-    }
-
-    body {
-        padding-bottom: 0;
-    }
-}
-
-/* ─── 16. BOTTOM NAV ENHANCEMENT ─────────────────────────── */
-@media (max-width: 1023px) {
-    /* Glassmorphism bottom nav */
-    nav.fixed.bottom-0 {
-        background: rgba(255,255,255,0.82) !important;
-        backdrop-filter: blur(20px) saturate(180%) !important;
-        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-        border-top: 1px solid rgba(0,0,0,0.06) !important;
-        box-shadow: 0 -4px 30px rgba(0,0,0,0.06) !important;
-    }
-
-    /* Active tab indicator dot */
-    nav.fixed.bottom-0 a.text-indigo-600::after {
-        content: '';
-        display: block;
-        width: 4px;
-        height: 4px;
-        border-radius: 50%;
-        background: #6366f1;
-        margin-top: 2px;
-        box-shadow: 0 0 6px rgba(99,102,241,0.4);
-    }
-
-    /* Tab transitions */
-    nav.fixed.bottom-0 a, nav.fixed.bottom-0 button {
-        transition: color 0.2s ease, transform 0.15s ease;
-        position: relative;
-    }
-
-    nav.fixed.bottom-0 a:active, nav.fixed.bottom-0 button:active {
-        transform: scale(0.9) !important;
-        opacity: 1 !important;
-    }
-
-    /* "More" panel — native iOS sheet style */
-    nav.fixed.bottom-0 .absolute.bottom-full {
-        border-radius: 1.25rem 1.25rem 0 0 !important;
-        background: rgba(255,255,255,0.96) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        box-shadow: 0 -8px 40px rgba(0,0,0,0.12) !important;
-        border-top: 1px solid rgba(0,0,0,0.06) !important;
-    }
-
-    /* Grid items in "More" panel */
-    nav.fixed.bottom-0 .grid.grid-cols-4 a,
-    nav.fixed.bottom-0 .grid.grid-cols-4 button {
-        border-radius: 0.875rem !important;
-        padding: 0.75rem !important;
-        transition: background 0.15s ease, transform 0.1s ease;
-    }
-
-    nav.fixed.bottom-0 .grid.grid-cols-4 a:active,
-    nav.fixed.bottom-0 .grid.grid-cols-4 button:active {
-        background: rgba(99,102,241,0.08) !important;
-        transform: scale(0.93) !important;
-    }
-}
-
-/* ─── 17. PAGINATION MOBILE ──────────────────────────────── */
-@media (max-width: 768px) {
-    /* Compact pagination */
-    nav[role="navigation"] {
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-
-    nav[role="navigation"] .hidden {
-        display: none !important;
-    }
-
     nav[role="navigation"] a,
     nav[role="navigation"] span {
         min-width: 2.25rem !important;
         min-height: 2.25rem !important;
         font-size: 0.75rem !important;
         padding: 0.25rem 0.5rem !important;
-        border-radius: 0.5rem !important;
     }
 }
 
-/* ─── 18. SEARCH BAR MOBILE ──────────────────────────────── */
+/* ─── 13. BADGES ─────────────────────────────────────────── */
 @media (max-width: 768px) {
-    /* Full-width search bars */
-    .max-w-2xl, .max-w-xl, .max-w-lg {
-        max-width: 100% !important;
-    }
-
-    /* Sticky search on scroll */
-    .bg-white.shadow-sm.border-b {
-        position: sticky;
-        top: 0;
-        z-index: 10;
+    span[class*="rounded-full"][class*="text-xs"] {
+        font-size: 0.6875rem !important;
+        padding: 0.125rem 0.5rem !important;
     }
 }
 
-/* ─── 19. EMPTY STATES ───────────────────────────────────── */
-@media (max-width: 768px) {
-    /* Centered empty states */
-    td[colspan] .flex.flex-col.items-center {
-        padding: 2rem 1rem !important;
-    }
-
-    td[colspan] .flex.flex-col.items-center .h-14 {
-        height: 3rem !important;
-        width: 3rem !important;
-    }
-
-    td[colspan] .flex.flex-col.items-center h3 {
-        font-size: 0.875rem !important;
+/* ─── 14. CALENDAR PAGE — Do NOT break its layout ────────── */
+@media (max-width: 1023px) {
+    /* The calendar uses its own inline <style> for responsive behavior.
+       We only need to ensure the wrapper doesn't overflow the viewport. */
+    .calendar-wrapper {
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
     }
 }
 
-/* ─── 20. QUICK ACTION CARDS ─────────────────────────────── */
-@media (max-width: 768px) {
-    /* Quick access links — horizontal scroll on mobile */
-    .space-y-3 > a.group {
-        padding: 0.875rem !important;
-        border-radius: 0.875rem !important;
-    }
-
-    .space-y-3 > a.group .h-10.w-10 {
-        height: 2.5rem !important;
-        width: 2.5rem !important;
-        border-radius: 0.625rem !important;
-    }
-
-    /* Hide chevron arrows on mobile to save space */
-    .space-y-3 > a.group .h-8.w-8:has(.h-4.w-4) {
-        display: none !important;
-    }
-}
-
-/* ─── 21. PRINT ──────────────────────────────────────────── */
+/* ─── 15. PRINT ──────────────────────────────────────────── */
 @media print {
     aside, header, footer, nav.fixed, [wire\:loading], #mobile-page-loader {
         display: none !important;
     }
-    
-    main {
-        margin: 0 !important;
-        padding: 0 !important;
-    }
+    main { margin: 0 !important; padding: 0 !important; }
 }
