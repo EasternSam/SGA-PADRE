@@ -339,14 +339,14 @@
         <div class="flex flex-col items-center justify-center flex-1 px-6 pt-24 pb-8 w-full" style="min-height: 60vh;">
             {{-- Animated logo/spinner --}}
             <div class="relative mb-6">
-                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 dark:from-purple-500 dark:to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-purple-900/40 animate-pulse">
+                <div class="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg" style="background: linear-gradient(135deg, #6366f1, #3b82f6);">
                     <svg class="w-7 h-7 text-white animate-spin" style="animation-duration: 1.2s;" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                 </div>
                 {{-- Ripple ring --}}
-                <div class="absolute inset-0 rounded-2xl border-2 border-indigo-300 dark:border-purple-500/50 animate-ping" style="animation-duration: 1.5s;"></div>
+                <div class="absolute inset-0 rounded-2xl border-2 border-indigo-400/50 animate-ping" style="animation-duration: 1.5s;"></div>
             </div>
 
             <p class="text-sm font-semibold text-gray-600 dark:text-gray-300 tracking-wide mb-1">Cargando página</p>
