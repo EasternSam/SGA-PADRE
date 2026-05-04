@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Expense;
 use App\Models\Payment;
+use App\Models\Setting;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 
@@ -39,6 +40,15 @@ class DgiiExportService
      */
     public function generate606(string $yearMonth)
     {
+        // Verificar si la facturación electrónica está habilitada
+        if (!$this->isElectronicBillingEnabled()) {
+            return [
+                'filename' => "DGII_606_DISABLED.txt",
+                'content'  => "# Facturación Electrónica Deshabilitada\n# Active esta funcionalidad en Configuración del Sistema para generar reportes DGII.",
+                'count'    => 0
+            ];
+        }
+
         $startDate = Carbon::createFromFormat('Y-m', $yearMonth)->startOfMonth();
         $endDate = Carbon::createFromFormat('Y-m', $yearMonth)->endOfMonth();
 
@@ -128,6 +138,15 @@ class DgiiExportService
      */
     public function generate607(string $yearMonth)
     {
+        // Verificar si la facturación electrónica está habilitada
+        if (!$this->isElectronicBillingEnabled()) {
+            return [
+                'filename' => "DGII_607_DISABLED.txt",
+                'content'  => "# Facturación Electrónica Deshabilitada\n# Active esta funcionalidad en Configuración del Sistema para generar reportes DGII.",
+                'count'    => 0
+            ];
+        }
+
         $startDate = Carbon::createFromFormat('Y-m', $yearMonth)->startOfMonth();
         $endDate = Carbon::createFromFormat('Y-m', $yearMonth)->endOfMonth();
 
@@ -211,5 +230,13 @@ class DgiiExportService
             'content'  => $content,
             'count'    => $cantidadRegistros
         ];
+    }
+
+    /**
+     * Verifica si la facturación electrónica está habilitada en la configuración.
+     */
+    private function isElectronicBillingEnabled(): bool
+    {
+        return Setting::get('enable_electronic_billing', 'true') === 'true';
     }
 }

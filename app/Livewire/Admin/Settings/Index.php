@@ -65,6 +65,7 @@ class Index extends Component
             'cardnet_merchant_id' => $settings['cardnet_merchant_id'] ?? '',
             'cardnet_terminal_id' => $settings['cardnet_terminal_id'] ?? '',
             'ecf_rnc_emisor'      => $settings['ecf_rnc_emisor'] ?? '101000000',
+            'enable_electronic_billing' => $settings['enable_electronic_billing'] ?? 'true',
         ];
 
         // Cargar configuraciones de degradado guardadas

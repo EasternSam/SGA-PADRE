@@ -243,6 +243,7 @@
                                         </div>
                                     </div>
 
+                                    @if($this->electronicBillingEnabled)
                                     {{-- NUEVA SECCIÓN: Tipo de Comprobante Fiscal --}}
                                     <div class="md:col-span-2 mt-4 pt-4 border-t border-gray-100">
                                         <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Tipo de Comprobante Fiscal</label>
@@ -281,6 +282,7 @@
                                             </div>
                                         @endif
                                     </div>
+                                    @endif
                                 </div>
                             </div>
 

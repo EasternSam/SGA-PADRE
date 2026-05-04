@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Payment;
 use App\Models\NcfSequence;
+use App\Models\Setting;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 
@@ -14,6 +15,11 @@ class EcfService
      */
     public function emitirComprobante(Payment $payment)
     {
+        // Verificar si la facturación electrónica está habilitada
+        if (!$this->isElectronicBillingEnabled()) {
+            Log::info("ECF: Facturación electrónica deshabilitada. Pago {$payment->id} sin NCF.");
+            return;
+        }
         // 1. Determinar el tipo de comprobante
         // CORRECCIÓN: Priorizar la selección del modal (rnc_client en el pago)
         // Si el pago tiene un RNC de cliente específico, es Crédito Fiscal (31)
@@ -71,5 +77,13 @@ class EcfService
         }
 
         return '32'; // e-CF Consumo
+    }
+
+    /**
+     * Verifica si la facturación electrónica está habilitada en la configuración.
+     */
+    private function isElectronicBillingEnabled(): bool
+    {
+        return Setting::get('enable_electronic_billing', 'true') === 'true';
     }
 }

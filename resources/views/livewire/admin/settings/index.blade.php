@@ -468,11 +468,28 @@
                                 </div>
                             </div>
                             <div class="sys-section">
-                                <h3 class="sys-section-title">DGII</h3>
-                                <div class="sys-grid sys-grid-2">
-                                    <div class="sys-form-group">
+                                <h3 class="sys-section-title">Facturación Electrónica (DGII)</h3>
+                                <div class="sys-grid">
+                                    <div class="sys-form-group sys-col-full">
+                                        <label class="sys-label">¿Habilitar Facturación Electrónica?</label>
+                                        <div class="flex items-center gap-3 bg-white p-4 border border-gray-200 rounded-lg">
+                                            <input 
+                                                type="checkbox" 
+                                                wire:model="state.enable_electronic_billing" 
+                                                value="true"
+                                                class="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                            >
+                                            <div>
+                                                <span class="text-sm font-semibold text-gray-900">Activar módulo de facturación electrónica</span>
+                                                <p class="text-xs text-gray-500 mt-1">Genera NCF automáticamente y habilita reportes DGII (formatos 606 y 607). Desactiva esta opción si no necesitas comprobantes fiscales.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="sys-form-group" x-show="$wire.state.enable_electronic_billing === 'true'">
                                         <label class="sys-label">RNC Emisor</label>
-                                        <input type="text" wire:model="state.ecf_rnc_emisor" class="sys-input">
+                                        <input type="text" wire:model="state.ecf_rnc_emisor" class="sys-input" placeholder="101000000">
+                                        <p class="sys-help-text">RNC de tu institución para generar comprobantes fiscales.</p>
                                     </div>
                                 </div>
                             </div>

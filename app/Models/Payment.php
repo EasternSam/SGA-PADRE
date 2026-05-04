@@ -80,6 +80,11 @@ class Payment extends Model
 
     protected static function processPaymentFiscal($payment)
     {
+        // Verificar si la facturación electrónica está habilitada
+        if (!\App\Models\Setting::get('enable_electronic_billing', 'true') === 'true') {
+            return; // No procesar NCF si está deshabilitado
+        }
+
         // Require 'paid' status
         if ($payment->status === 'paid' || $payment->status === 'Completado') {
             

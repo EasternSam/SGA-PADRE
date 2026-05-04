@@ -50,6 +50,12 @@ class PaymentModal extends Component
     public $rnc = '';
     public $companyName = '';
 
+    // Computed property para verificar si la facturación electrónica está habilitada
+    public function getElectronicBillingEnabledProperty()
+    {
+        return \App\Models\Setting::get('enable_electronic_billing', 'true') === 'true';
+    }
+
     protected function rules()
     {
         return [
