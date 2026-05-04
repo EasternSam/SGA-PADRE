@@ -6,7 +6,7 @@
     <div class="max-w-screen-xl w-full bg-white/[0.03] backdrop-blur-2xl backdrop-saturate-200 rounded-[2.5rem] shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden border border-white/10 relative animate-[slideUp_0.6s_ease-out_forwards]" style="display: flex; flex-direction: row; width: 100%;">
         
         <!-- Elemento decorativo del Glass UI interior -->
-        <div class="absolute -top-32 -left-32 w-[30rem] h-[30rem] bg-indigo-500/20 rounded-full blur-[80px] pointer-events-none animate-blob"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[30rem] h-[30rem] bg-indigo-500/20 rounded-full blur-[80px] pointer-events-none animate-blob"></div>
 
         <!-- Columna 1: Instrucciones / Branding (25%) -->
         <div class="bg-slate-900/30 p-8 flex flex-col justify-center border-r border-white/10 relative z-10 hidden lg:flex" style="width: 30%;">
