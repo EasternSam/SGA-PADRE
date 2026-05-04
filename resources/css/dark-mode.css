@@ -552,6 +552,25 @@ html.dark .bg-gray-700 { background-color: var(--dm-elevated) !important; }
 html.dark .bg-gray-800 { background-color: var(--dm-card) !important; }
 html.dark .bg-gray-900 { background-color: var(--dm-surface) !important; }
 
+/* Gray-200 with opacity variants (Tailwind generates separate classes) */
+html.dark .bg-gray-200\/80 { background-color: rgba(255,255,255,0.05) !important; }
+html.dark .bg-gray-200\/60 { background-color: rgba(255,255,255,0.04) !important; }
+html.dark .bg-gray-200\/50 { background-color: rgba(255,255,255,0.03) !important; }
+html.dark .bg-gray-200\/40 { background-color: rgba(255,255,255,0.03) !important; }
+
+/* ─── MOBILE PAGE LOADER (force dark) ────────────────────── */
+html.dark #mobile-page-loader {
+    background-color: rgba(5,5,7,0.97) !important;
+}
+html.dark #mobile-page-loader .bg-gray-200,
+html.dark #mobile-page-loader .bg-gray-200\/80,
+html.dark #mobile-page-loader .bg-gray-200\/60 {
+    background-color: rgba(255,255,255,0.05) !important;
+}
+html.dark #mobile-page-loader .bg-gray-50\/50 {
+    background-color: rgba(255,255,255,0.03) !important;
+}
+
 /* ─── 34. TAILWIND ARBITRARY VALUES ──────────────────────── */
 /* These use bg-[#hex] which Tailwind generates as unique classes */
 html.dark .bg-\[\#f8fafc\] { background-color: var(--dm-surface) !important; }
