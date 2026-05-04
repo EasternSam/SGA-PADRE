@@ -350,26 +350,7 @@
             </div>
 
             <p class="text-sm font-semibold text-gray-600 dark:text-gray-300 tracking-wide mb-1">Cargando página</p>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mb-8">Un momento por favor...</p>
-
-            {{-- Skeleton content placeholders --}}
-            <div class="w-full max-w-sm space-y-4">
-                {{-- Skeleton header --}}
-                <div class="h-5 bg-gray-200 dark:bg-white/[0.06] rounded-lg w-3/5 animate-pulse"></div>
-                
-                {{-- Skeleton cards --}}
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="h-20 bg-gray-200/80 dark:bg-white/[0.05] rounded-xl animate-pulse" style="animation-delay: 0.1s;"></div>
-                    <div class="h-20 bg-gray-200/80 dark:bg-white/[0.05] rounded-xl animate-pulse" style="animation-delay: 0.2s;"></div>
-                </div>
-
-                {{-- Skeleton rows --}}
-                <div class="space-y-2.5 mt-2">
-                    <div class="h-12 bg-gray-200/60 dark:bg-white/[0.04] rounded-xl animate-pulse" style="animation-delay: 0.15s;"></div>
-                    <div class="h-12 bg-gray-200/60 dark:bg-white/[0.04] rounded-xl animate-pulse" style="animation-delay: 0.25s;"></div>
-                    <div class="h-12 bg-gray-200/60 dark:bg-white/[0.04] rounded-xl animate-pulse" style="animation-delay: 0.35s;"></div>
-                </div>
-            </div>
+            <p class="text-xs text-gray-400 dark:text-gray-500">Un momento por favor...</p>
         </div>
     </div>
 
