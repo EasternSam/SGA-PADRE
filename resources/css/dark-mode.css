@@ -334,3 +334,183 @@ html .bg-white, html .bg-gray-50, html .bg-gray-100 {
 /* ─── 21. DARK MODE TOGGLE BUTTON ────────────────────────── */
 html.dark .dark-toggle { color: #fbbf24 !important; }
 html.dark .dark-toggle:hover { background-color: rgba(251,191,36,0.1) !important; }
+
+/* ═══════════════════════════════════════════════════════════
+ * CATCH-ALL: Deep dark for all remaining white areas
+ * These handle pages with inline styles, non-standard
+ * class combos, and report/print views.
+ * ═══════════════════════════════════════════════════════════ */
+
+/* ─── 22. UNIVERSAL WHITE KILLER ─────────────────────────── */
+/* Any element with explicit white background inside main */
+html.dark main [style*="background: white"],
+html.dark main [style*="background-color: white"],
+html.dark main [style*="background:#fff"],
+html.dark main [style*="background-color:#fff"],
+html.dark main [style*="background: #fff"],
+html.dark main [style*="background-color: #fff"],
+html.dark main [style*="background-color: rgb(255"],
+html.dark main [style*="background: rgb(255"] {
+    background-color: var(--dm-card) !important;
+    color: var(--dm-text) !important;
+}
+
+/* Catch ALL nested bg-white inside any container */
+html.dark .bg-white .bg-white,
+html.dark .bg-white .bg-gray-50,
+html.dark div[class*="bg-white"] div[class*="bg-white"],
+html.dark div[class*="bg-white"] div[class*="bg-gray"] {
+    background-color: var(--dm-surface) !important;
+}
+
+/* ─── 23. REPORT & PRINT VIEWS ───────────────────────────── */
+/* Financial statements, balance sheet, etc. */
+html.dark .print-area,
+html.dark [class*="print"],
+html.dark .report-content,
+html.dark .balance-sheet {
+    background-color: var(--dm-card) !important;
+    color: var(--dm-text) !important;
+}
+
+/* The balance general white area */
+html.dark main .bg-white > div,
+html.dark main .bg-white > section {
+    color: var(--dm-text) !important;
+}
+
+/* Table headers with colored text (CUENTA CONTABLE, etc.) */
+html.dark th[class*="text-indigo"],
+html.dark th[class*="text-blue"] {
+    color: var(--dm-accent) !important;
+}
+
+/* ─── 24. SPECIFIC INPUT TYPES ───────────────────────────── */
+html.dark input[type="month"],
+html.dark input[type="week"],
+html.dark input[type="datetime-local"],
+html.dark input[type="color"] {
+    background-color: var(--dm-surface) !important;
+    border-color: var(--dm-border-h) !important;
+    color: var(--dm-text) !important;
+}
+
+/* Calendar icon inside date/month inputs */
+html.dark input::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(0.8);
+}
+
+/* ─── 25. BORDERS & SEPARATORS ───────────────────────────── */
+html.dark hr,
+html.dark .border-t,
+html.dark .border-b,
+html.dark .border-l,
+html.dark .border-r {
+    border-color: var(--dm-border) !important;
+}
+
+html.dark [class*="border-indigo-200"],
+html.dark [class*="border-blue-200"],
+html.dark [class*="border-emerald-200"],
+html.dark [class*="border-purple-200"] {
+    border-color: rgba(99,102,241,0.15) !important;
+}
+
+/* ─── 26. ACCOUNTING / LEDGER STYLES ─────────────────────── */
+/* Asiento contable table rows */
+html.dark .bg-indigo-50\/30,
+html.dark .bg-blue-50\/30,
+html.dark .bg-slate-50 {
+    background-color: var(--dm-surface) !important;
+}
+
+/* Sum rows / footer rows */
+html.dark .bg-indigo-50,
+html.dark .bg-slate-100 {
+    background-color: rgba(99,102,241,0.08) !important;
+}
+
+html.dark .text-indigo-800,
+html.dark .text-indigo-700 { color: #c7d2fe !important; }
+html.dark .text-indigo-900 { color: #e0e7ff !important; }
+html.dark .text-blue-800,
+html.dark .text-blue-700 { color: #bfdbfe !important; }
+html.dark .text-emerald-800,
+html.dark .text-emerald-700 { color: #a7f3d0 !important; }
+html.dark .text-red-800,
+html.dark .text-red-700 { color: #fecaca !important; }
+html.dark .text-amber-800,
+html.dark .text-amber-700 { color: #fde68a !important; }
+
+/* ─── 27. EMPTY STATES ───────────────────────────────────── */
+html.dark .text-center.text-gray-500 {
+    color: var(--dm-muted) !important;
+}
+html.dark .italic.text-gray-400,
+html.dark .italic.text-gray-500 {
+    color: #64748b !important;
+}
+
+/* ─── 28. LINKS ──────────────────────────────────────────── */
+html.dark a.text-indigo-600,
+html.dark a.text-blue-600 {
+    color: var(--dm-accent) !important;
+}
+html.dark a.text-indigo-600:hover,
+html.dark a.text-blue-600:hover {
+    color: #c7d2fe !important;
+}
+
+/* ─── 29. SHADOW OVERRIDES ───────────────────────────────── */
+html.dark .shadow,
+html.dark .shadow-md {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 0 1px var(--dm-border) !important;
+}
+html.dark .shadow-xl,
+html.dark .shadow-2xl {
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px var(--dm-border) !important;
+}
+html.dark .shadow-indigo-200,
+html.dark .shadow-indigo-100 {
+    --tw-shadow-color: rgba(99,102,241,0.1) !important;
+}
+
+/* ─── 30. RING COLORS ────────────────────────────────────── */
+html.dark .ring-gray-200,
+html.dark .ring-gray-100 {
+    --tw-ring-color: var(--dm-border) !important;
+}
+html.dark .ring-indigo-500\/20 {
+    --tw-ring-color: rgba(99,102,241,0.15) !important;
+}
+
+/* ─── 31. FOCUS STATES ───────────────────────────────────── */
+html.dark .focus\:ring-indigo-500:focus {
+    --tw-ring-color: rgba(99,102,241,0.3) !important;
+}
+html.dark .focus\:border-indigo-500:focus {
+    border-color: var(--dm-accent) !important;
+}
+
+/* ─── 32. DOWNLOAD / ACTION BUTTONS (DGII etc) ──────────── */
+html.dark .bg-indigo-900,
+html.dark .bg-blue-900,
+html.dark .bg-gray-900 {
+    background-color: #0f1219 !important;
+    border: 1px solid var(--dm-border-h) !important;
+}
+
+html.dark .bg-indigo-800,
+html.dark .bg-blue-800 {
+    background-color: rgba(99,102,241,0.15) !important;
+}
+
+/* ─── 33. BACKGROUND-COLOR GRAY SPECTRUM ─────────────────── */
+html.dark .bg-gray-200 { background-color: rgba(148,163,184,0.08) !important; }
+html.dark .bg-gray-300 { background-color: rgba(148,163,184,0.12) !important; }
+html.dark .bg-gray-400 { background-color: rgba(148,163,184,0.15) !important; }
+html.dark .bg-gray-500 { background-color: rgba(148,163,184,0.20) !important; }
+html.dark .bg-gray-700 { background-color: var(--dm-elevated) !important; }
+html.dark .bg-gray-800 { background-color: var(--dm-card) !important; }
+html.dark .bg-gray-900 { background-color: var(--dm-surface) !important; }
+
