@@ -193,6 +193,8 @@
                                     this.chart.destroy();
                                 }
 
+                                const isDark = document.documentElement.classList.contains('dark');
+
                                 const options = {
                                     series: [{
                                         name: 'Web (API)',
@@ -207,6 +209,8 @@
                                         fontFamily: 'Inter, sans-serif',
                                         toolbar: { show: false },
                                         zoom: { enabled: false },
+                                        background: 'transparent',
+                                        foreColor: isDark ? '#94a3b8' : '#64748b',
                                         animations: {
                                             enabled: true,
                                             easing: 'easeinout',
@@ -216,23 +220,27 @@
                                         },
                                         dropShadow: {
                                             enabled: true,
-                                            color: '#000',
+                                            color: isDark ? '#a855f7' : '#000',
                                             top: 18,
                                             left: 7,
                                             blur: 10,
-                                            opacity: 0.05
+                                            opacity: isDark ? 0.15 : 0.05
                                         }
                                     },
-                                    colors: ['#6366f1', '#10b981'],
+                                    colors: isDark ? ['#a855f7', '#34d399'] : ['#6366f1', '#10b981'],
                                     dataLabels: { enabled: false },
                                     stroke: { curve: 'smooth', width: 3 },
                                     fill: {
                                         type: 'gradient',
                                         gradient: {
                                             shadeIntensity: 1,
-                                            opacityFrom: 0.6,
-                                            opacityTo: 0.1,
-                                            stops: [0, 90, 100]
+                                            opacityFrom: isDark ? 0.4 : 0.6,
+                                            opacityTo: 0.05,
+                                            stops: [0, 90, 100],
+                                            colorStops: isDark ? [
+                                                [{ offset: 0, color: '#a855f7', opacity: 0.35 }, { offset: 100, color: '#a855f7', opacity: 0.02 }],
+                                                [{ offset: 0, color: '#34d399', opacity: 0.35 }, { offset: 100, color: '#34d399', opacity: 0.02 }]
+                                            ] : undefined
                                         }
                                     },
                                     xaxis: {
@@ -240,28 +248,28 @@
                                         axisBorder: { show: false },
                                         axisTicks: { show: false },
                                         labels: {
-                                            style: { colors: '#64748b', fontSize: '12px', fontFamily: 'Inter, sans-serif' },
+                                            style: { colors: isDark ? '#64748b' : '#64748b', fontSize: '12px', fontFamily: 'Inter, sans-serif' },
                                             offsetY: 5
                                         },
                                         tooltip: { enabled: false }
                                     },
                                     yaxis: {
                                         labels: {
-                                            style: { colors: '#64748b', fontSize: '12px', fontFamily: 'Inter, sans-serif' },
+                                            style: { colors: isDark ? '#64748b' : '#64748b', fontSize: '12px', fontFamily: 'Inter, sans-serif' },
                                             formatter: (val) => { return val ? val.toFixed(0) : 0 },
                                             offsetX: -10
                                         },
                                         min: 0
                                     },
                                     grid: {
-                                        borderColor: '#f1f5f9',
+                                        borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#f1f5f9',
                                         strokeDashArray: 5,
                                         yaxis: { lines: { show: true } },
                                         xaxis: { lines: { show: false } },
                                         padding: { top: 0, right: 20, bottom: 10, left: 20 }
                                     },
                                     tooltip: {
-                                        theme: 'light',
+                                        theme: isDark ? 'dark' : 'light',
                                         style: { fontSize: '12px', fontFamily: 'Inter, sans-serif' },
                                         x: { show: true },
                                         y: { formatter: function (val) { return val + ' alumnos'; } },
