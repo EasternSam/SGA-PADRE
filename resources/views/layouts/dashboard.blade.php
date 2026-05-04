@@ -329,9 +329,9 @@
     {{-- MOBILE PAGE TRANSITION LOADING OVERLAY                    --}}
     {{-- Solo visible en <lg. Se activa con wire:navigate.         --}}
     {{-- ═══════════════════════════════════════════════════════════ --}}
-    <div id="mobile-page-loader" class="fixed inset-0 z-[3000] bg-gray-50/95 backdrop-blur-sm flex-col items-center justify-start lg:hidden" style="display: none;">
+    <div id="mobile-page-loader" class="fixed inset-0 z-[3000] bg-gray-50/95 dark:bg-[#050507]/95 backdrop-blur-sm flex-col items-center justify-start lg:hidden" style="display: none;">
         {{-- Top progress bar --}}
-        <div class="absolute top-0 left-0 w-full h-1 bg-indigo-100 overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1 bg-indigo-100 dark:bg-indigo-950 overflow-hidden">
             <div id="loader-progress-bar" class="h-full bg-gradient-to-r from-indigo-500 via-blue-500 to-indigo-400 rounded-r-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
         </div>
 
@@ -339,35 +339,35 @@
         <div class="flex flex-col items-center justify-center flex-1 px-6 pt-24 pb-8 w-full" style="min-height: 60vh;">
             {{-- Animated logo/spinner --}}
             <div class="relative mb-6">
-                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-lg shadow-indigo-200 animate-pulse">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 dark:from-purple-500 dark:to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-purple-900/40 animate-pulse">
                     <svg class="w-7 h-7 text-white animate-spin" style="animation-duration: 1.2s;" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                 </div>
                 {{-- Ripple ring --}}
-                <div class="absolute inset-0 rounded-2xl border-2 border-indigo-300 animate-ping" style="animation-duration: 1.5s;"></div>
+                <div class="absolute inset-0 rounded-2xl border-2 border-indigo-300 dark:border-purple-500/50 animate-ping" style="animation-duration: 1.5s;"></div>
             </div>
 
-            <p class="text-sm font-semibold text-gray-600 tracking-wide mb-1">Cargando página</p>
-            <p class="text-xs text-gray-400 mb-8">Un momento por favor...</p>
+            <p class="text-sm font-semibold text-gray-600 dark:text-gray-300 tracking-wide mb-1">Cargando página</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mb-8">Un momento por favor...</p>
 
             {{-- Skeleton content placeholders --}}
             <div class="w-full max-w-sm space-y-4">
                 {{-- Skeleton header --}}
-                <div class="h-5 bg-gray-200 rounded-lg w-3/5 animate-pulse"></div>
+                <div class="h-5 bg-gray-200 dark:bg-white/[0.06] rounded-lg w-3/5 animate-pulse"></div>
                 
                 {{-- Skeleton cards --}}
                 <div class="grid grid-cols-2 gap-3">
-                    <div class="h-20 bg-gray-200/80 rounded-xl animate-pulse" style="animation-delay: 0.1s;"></div>
-                    <div class="h-20 bg-gray-200/80 rounded-xl animate-pulse" style="animation-delay: 0.2s;"></div>
+                    <div class="h-20 bg-gray-200/80 dark:bg-white/[0.05] rounded-xl animate-pulse" style="animation-delay: 0.1s;"></div>
+                    <div class="h-20 bg-gray-200/80 dark:bg-white/[0.05] rounded-xl animate-pulse" style="animation-delay: 0.2s;"></div>
                 </div>
 
                 {{-- Skeleton rows --}}
                 <div class="space-y-2.5 mt-2">
-                    <div class="h-12 bg-gray-200/60 rounded-xl animate-pulse" style="animation-delay: 0.15s;"></div>
-                    <div class="h-12 bg-gray-200/60 rounded-xl animate-pulse" style="animation-delay: 0.25s;"></div>
-                    <div class="h-12 bg-gray-200/60 rounded-xl animate-pulse" style="animation-delay: 0.35s;"></div>
+                    <div class="h-12 bg-gray-200/60 dark:bg-white/[0.04] rounded-xl animate-pulse" style="animation-delay: 0.15s;"></div>
+                    <div class="h-12 bg-gray-200/60 dark:bg-white/[0.04] rounded-xl animate-pulse" style="animation-delay: 0.25s;"></div>
+                    <div class="h-12 bg-gray-200/60 dark:bg-white/[0.04] rounded-xl animate-pulse" style="animation-delay: 0.35s;"></div>
                 </div>
             </div>
         </div>
