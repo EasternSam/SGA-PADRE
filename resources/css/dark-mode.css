@@ -652,4 +652,149 @@ html.dark .border-green-200 { border-color: rgba(34,197,94,0.2) !important; }
 html.dark .border-red-200 { border-color: rgba(239,68,68,0.2) !important; }
 html.dark .border-red-300 { border-color: rgba(239,68,68,0.25) !important; }
 
+/* ─── 39. BOTTOM NAVIGATION (MOBILE) ────────────────────── */
+html.dark nav.fixed.bottom-0 {
+    background: rgba(10,10,15,0.92) !important;
+    border-top-color: rgba(255,255,255,0.06) !important;
+    box-shadow: 0 -4px 30px rgba(0,0,0,0.4) !important;
+}
+
+html.dark nav.fixed.bottom-0 .text-gray-400 {
+    color: rgba(148,163,184,0.5) !important;
+}
+
+html.dark nav.fixed.bottom-0 .text-indigo-600 {
+    color: #818cf8 !important;
+}
+
+html.dark nav.fixed.bottom-0 .text-emerald-600 {
+    color: #34d399 !important;
+}
+
+/* "Más" panel dark mode */
+html.dark nav.fixed.bottom-0 .absolute.bottom-full {
+    background: rgba(10,10,15,0.97) !important;
+    border-top-color: rgba(255,255,255,0.06) !important;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.5) !important;
+}
+
+html.dark nav.fixed.bottom-0 .bg-gray-100 {
+    background-color: rgba(255,255,255,0.06) !important;
+}
+
+html.dark nav.fixed.bottom-0 .bg-indigo-100 {
+    background-color: rgba(99,102,241,0.15) !important;
+}
+
+html.dark nav.fixed.bottom-0 .bg-indigo-50 {
+    background-color: rgba(99,102,241,0.1) !important;
+}
+
+html.dark nav.fixed.bottom-0 .bg-emerald-100 {
+    background-color: rgba(16,185,129,0.15) !important;
+}
+
+html.dark nav.fixed.bottom-0 .bg-emerald-50 {
+    background-color: rgba(16,185,129,0.1) !important;
+}
+
+html.dark nav.fixed.bottom-0 .bg-purple-100 {
+    background-color: rgba(139,92,246,0.15) !important;
+}
+
+html.dark nav.fixed.bottom-0 .bg-blue-100 {
+    background-color: rgba(59,130,246,0.15) !important;
+}
+
+html.dark nav.fixed.bottom-0 .bg-red-50 {
+    background-color: rgba(239,68,68,0.1) !important;
+}
+
+html.dark nav.fixed.bottom-0 .text-gray-600 {
+    color: #94a3b8 !important;
+}
+
+html.dark nav.fixed.bottom-0 .text-gray-400:not(.text-indigo-600):not(.text-emerald-600) {
+    color: rgba(148,163,184,0.45) !important;
+}
+
+html.dark nav.fixed.bottom-0 .border-gray-100 {
+    border-color: rgba(255,255,255,0.06) !important;
+}
+
+html.dark nav.fixed.bottom-0 .bg-gray-300\/80 {
+    background-color: rgba(255,255,255,0.15) !important;
+}
+
+/* ─── 40. PROFILE PAGE ──────────────────────────────────── */
+/* Main content area */
+html.dark main.bg-gray-50,
+html.dark main[class*="bg-gray-50"] {
+    background-color: var(--dm-bg) !important;
+}
+
+/* Section cards */
+html.dark .space-y-6 > div > .bg-white,
+html.dark .space-y-6 > .bg-white,
+html.dark main .rounded-lg.bg-white,
+html.dark main .rounded-xl.bg-white {
+    background-color: var(--dm-card) !important;
+    border-color: var(--dm-border) !important;
+}
+
+/* Section headers (the dark band with title) */
+html.dark .border-b.border-gray-200 {
+    border-color: var(--dm-border) !important;
+}
+
+/* Labels — fix the reddish tint */
+html.dark label,
+html.dark .text-gray-700 label,
+html.dark form label {
+    color: #94a3b8 !important;
+}
+
+/* Description text under headings */
+html.dark .text-gray-600,
+html.dark p.text-gray-600 {
+    color: #64748b !important;
+}
+
+/* Form input backgrounds and borders */
+html.dark input[type="text"],
+html.dark input[type="email"],
+html.dark input[type="password"],
+html.dark input[type="number"],
+html.dark input[type="tel"],
+html.dark input[type="date"],
+html.dark input[type="search"],
+html.dark select,
+html.dark textarea {
+    background-color: rgba(255,255,255,0.04) !important;
+    border-color: var(--dm-border) !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark input:focus,
+html.dark select:focus,
+html.dark textarea:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 2px rgba(99,102,241,0.2) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+    color: rgba(148,163,184,0.4) !important;
+}
+
+/* Section headings inside cards */
+html.dark h2.text-lg,
+html.dark h3.text-lg {
+    color: #f1f5f9 !important;
+}
+
+/* File input button area */
+html.dark input[type="file"] {
+    color: #94a3b8 !important;
+}
 

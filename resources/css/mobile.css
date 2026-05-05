@@ -280,8 +280,8 @@
 
 /* ─── 10. BOTTOM NAV POLISH ──────────────────────────────── */
 @media (max-width: 1023px) {
-    /* Glassmorphism bottom nav */
-    nav.fixed.bottom-0 {
+    /* Glassmorphism bottom nav — light mode only */
+    html:not(.dark) nav.fixed.bottom-0 {
         background: rgba(255,255,255,0.88) !important;
         backdrop-filter: blur(20px) saturate(180%) !important;
         -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
@@ -295,8 +295,8 @@
         opacity: 1 !important;
     }
 
-    /* "More" panel — iOS sheet style */
-    nav.fixed.bottom-0 .absolute.bottom-full {
+    /* "More" panel — iOS sheet style (light mode only) */
+    html:not(.dark) nav.fixed.bottom-0 .absolute.bottom-full {
         border-radius: 1.25rem 1.25rem 0 0 !important;
         background: rgba(255,255,255,0.97) !important;
         backdrop-filter: blur(20px) !important;
