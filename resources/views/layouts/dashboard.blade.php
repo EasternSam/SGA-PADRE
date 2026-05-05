@@ -178,14 +178,6 @@
                     
                     <!-- Left: Hamburger & Page Title -->
                     <div class="flex items-center gap-3 min-w-0">
-                        <button @click.stop="open = !open" type="button"
-                            class="p-2 text-gray-400 dark:text-gray-500 lg:hidden hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-xl hover:bg-gray-100 dark:hover:bg-white/[0.06] active:scale-95">
-                            <span class="sr-only">Abrir menú</span>
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                            </svg>
-                        </button>
-
                         <div class="min-w-0">
                             @if (isset($header))
                                 <h1 class="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-100 truncate tracking-tight leading-tight">
