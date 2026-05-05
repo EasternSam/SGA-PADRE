@@ -376,9 +376,6 @@
 
         <!-- Tarjeta del Formulario (Mejorada para móvil) -->
         <div class="w-full sm:max-w-md relative z-10 slide-up">
-            <!-- Static glow border -->
-            <div class="glow-border"></div>
-            
             <div class="glass-panel px-5 py-8 sm:px-10 sm:py-12 shadow-2xl overflow-hidden rounded-2xl sm:rounded-3xl relative">
                 <!-- Slot para el contenido (Login/Register/Etc) -->
                 {{ $slot }}
