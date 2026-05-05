@@ -173,35 +173,35 @@
         <div class="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out h-full">
 
             <!-- Top bar -->
-            <header class="sticky top-0 z-20 flex bg-white/90 backdrop-blur-md border-b border-gray-200/60 shadow-sm" style="padding-top: env(safe-area-inset-top, 0px);">
-                <div class="flex flex-1 items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+            <header class="sticky top-0 z-20 bg-white/80 dark:bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-white/[0.06]" style="padding-top: env(safe-area-inset-top, 0px);">
+                <div class="flex items-center justify-between h-14 lg:h-16 px-3 sm:px-5 lg:px-8">
                     
                     <!-- Left: Hamburger & Page Title -->
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-3 min-w-0">
                         <button @click.stop="open = !open" type="button"
-                            class="-m-2.5 p-2.5 text-gray-500 lg:hidden hover:text-sga-primary transition-colors rounded-md hover:bg-gray-100">
-                            <span class="sr-only">Abrir menÃº</span>
-                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            class="p-2 text-gray-400 dark:text-gray-500 lg:hidden hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-xl hover:bg-gray-100 dark:hover:bg-white/[0.06] active:scale-95">
+                            <span class="sr-only">Abrir menú</span>
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                             </svg>
                         </button>
 
-                        <div class="flex flex-col">
+                        <div class="min-w-0">
                             @if (isset($header))
-                                <h1 class="text-lg font-bold leading-6 text-gray-900 sm:text-xl truncate tracking-tight">
+                                <h1 class="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-100 truncate tracking-tight leading-tight">
                                     {{ $header }}
                                 </h1>
                             @endif
                         </div>
                     </div>
 
-                    <!-- Center: Global Search -->
-                    <div class="hidden md:flex flex-1 max-w-md px-8 justify-center">
+                    <!-- Center: Global Search (desktop only) -->
+                    <div class="hidden md:flex flex-1 max-w-md mx-6 justify-center">
                         <livewire:global-search lazy />
                     </div>
 
                     <!-- Right: Actions -->
-                    <div class="flex items-center gap-x-4 lg:gap-x-6">
+                    <div class="flex items-center gap-1.5 sm:gap-2 lg:gap-3">
                         <!-- Dark Mode Toggle -->
                         <button 
                             x-data="{ 
@@ -214,53 +214,54 @@
                             }"
                             x-init="document.documentElement.classList.toggle('dark', dark)"
                             @click="toggle()"
-                            class="relative p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-yellow-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+                            class="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-amber-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-all duration-200 active:scale-90"
                             title="Modo oscuro"
                         >
                             <!-- Sun icon (shown in dark mode) -->
-                            <svg x-show="dark" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 rotate-[-90deg] scale-0" x-transition:enter-end="opacity-100 rotate-0 scale-100" class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>
+                            <svg x-show="dark" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 rotate-[-90deg] scale-0" x-transition:enter-end="opacity-100 rotate-0 scale-100" class="h-[18px] w-[18px]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>
                             <!-- Moon icon (shown in light mode) -->
-                            <svg x-show="!dark" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 rotate-90 scale-0" x-transition:enter-end="opacity-100 rotate-0 scale-100" class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+                            <svg x-show="!dark" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 rotate-90 scale-0" x-transition:enter-end="opacity-100 rotate-0 scale-100" class="h-[18px] w-[18px]" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
                         </button>
 
+                        <!-- Notifications -->
                         <livewire:notifications-dropdown lazy />
-                        <div class="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200 dark:lg:bg-gray-600" aria-hidden="true"></div>
+                        
+                        <!-- Separator (desktop) -->
+                        <div class="hidden lg:block h-5 w-px bg-gray-200 dark:bg-white/10 mx-1" aria-hidden="true"></div>
                         
                         <!-- User Menu -->
                         <div class="relative">
                             <x-dropdown align="right" width="48">
                                 <x-slot name="trigger">
-                                    <button class="flex items-center gap-3 p-1.5 rounded-full hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                                    <button class="flex items-center gap-2.5 p-1 lg:py-1.5 lg:pl-3 lg:pr-2 rounded-full lg:rounded-xl hover:bg-gray-50 dark:hover:bg-white/[0.06] transition-all duration-150 focus:outline-none active:scale-[0.97]">
                                         <div class="hidden lg:block text-right">
-                                            <p class="text-sm font-semibold text-gray-700 leading-none">{{ Auth::user()->name }}</p>
-                                            <p class="text-xs text-gray-400 mt-0.5 truncate max-w-[150px]">{{ Auth::user()->email }}</p>
+                                            <p class="text-sm font-semibold text-gray-700 dark:text-gray-200 leading-none">{{ Auth::user()->name }}</p>
+                                            <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 truncate max-w-[140px]">{{ Auth::user()->email }}</p>
                                         </div>
                                         <div class="relative">
-                                            <!-- USO DEL ACCESSOR: Ahora usamos profile_photo_url -->
-                                            <img class="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-gray-100" 
+                                            <img class="h-8 w-8 lg:h-9 lg:w-9 rounded-full object-cover ring-2 ring-white dark:ring-gray-800 shadow-sm" 
                                                  src="{{ Auth::user()->profile_photo_url }}" 
                                                  alt="{{ Auth::user()->name }}"
                                                  loading="lazy">
-                                            <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-400 ring-2 ring-white"></span>
+                                            <span class="absolute -bottom-0.5 -right-0.5 block h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-[#0a0a0f]"></span>
                                         </div>
-                                        <i class="fas fa-chevron-down text-gray-400 text-xs hidden lg:block ml-1"></i>
                                     </button>
                                 </x-slot>
 
                                 <x-slot name="content">
-                                    <div class="px-4 py-3 border-b border-gray-100">
-                                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Mi Cuenta</p>
+                                    <div class="px-4 py-3 border-b border-gray-100 dark:border-white/[0.06]">
+                                        <p class="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-bold tracking-widest">Mi Cuenta</p>
                                     </div>
-                                    <x-dropdown-link :href="route('profile.edit')" wire:navigate class="flex items-center gap-2"> 
-                                        <i class="fas fa-user-circle text-gray-400"></i> {{ __('Mi Perfil') }}
+                                    <x-dropdown-link :href="route('profile.edit')" wire:navigate class="flex items-center gap-2.5 text-sm"> 
+                                        <i class="fas fa-user-circle text-gray-400 dark:text-gray-500 text-xs"></i> {{ __('Mi Perfil') }}
                                     </x-dropdown-link>
-                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <div class="border-t border-gray-100 dark:border-white/[0.06] my-1"></div>
                                     <form method="POST" action="{{ route('logout') }}">
                                         @csrf
                                         <x-dropdown-link :href="route('logout')"
                                             onclick="event.preventDefault(); this.closest('form').submit();"
-                                            class="text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center gap-2">
-                                            <i class="fas fa-sign-out-alt"></i> {{ __('Cerrar SesiÃ³n') }}
+                                            class="text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 flex items-center gap-2.5 text-sm">
+                                            <i class="fas fa-sign-out-alt text-xs"></i> {{ __('Cerrar Sesión') }}
                                         </x-dropdown-link>
                                     </form>
                                 </x-slot>
