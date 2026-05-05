@@ -371,13 +371,6 @@
                         <x-application-logo class="w-20 h-20 sm:w-28 sm:h-28 fill-current text-gray-100 drop-shadow-2xl" />
                     </div>
                 @endif
-                
-                <h1 class="text-2xl sm:text-3xl font-bold text-white drop-shadow-md uppercase tracking-tight">
-                    {{ config('app.name') }}
-                </h1>
-                <p class="text-indigo-200/70 text-xs sm:text-sm font-semibold tracking-wider mt-2 uppercase">
-                    Portal de Acceso
-                </p>
             </a>
         </div>
 
