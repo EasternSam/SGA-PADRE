@@ -4,7 +4,7 @@ deployment:
     # 1. Ruta de destino (Corregida según tus logs anteriores)
     # Tus logs mostraron: /home/grupaqgl/sga.90s.agency
     # NO uses public_html si tu subdominio está en la raíz de tu usuario.
-    - export DEPLOYPATH=/home/grupaqgl/sga.90s.agency/
+    - export DEPLOYPATH=/home/grupaqgl/sgatest.90s.agency/
 
     # 2. Copiar archivos nuevos/modificados
     # -R = Recursivo, -u = Update (solo copia si es más nuevo)
