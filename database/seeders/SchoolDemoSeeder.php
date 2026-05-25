@@ -35,8 +35,9 @@ class SchoolDemoSeeder extends Seeder
         $admin = User::where('email', 'admin@admin.com')->first();
 
         // ─── AÑO ACADÉMICO ───────────────────────────────
-        $year = AcademicYear::create([
+        $year = AcademicYear::firstOrCreate([
             'name'       => '2025-2026',
+        ], [
             'start_date' => '2025-09-01',
             'end_date'   => '2026-06-30',
             'status'     => 'active', // enum: planning, active, closed
@@ -53,10 +54,11 @@ class SchoolDemoSeeder extends Seeder
             ['4to Período',  4, '2026-05-01', '2026-06-30', 'upcoming'],
         ];
         foreach ($periodData as [$name, $num, $start, $end, $status]) {
-            $periods[] = EvaluationPeriod::create([
+            $periods[] = EvaluationPeriod::firstOrCreate([
                 'academic_year_id' => $year->id,
-                'name'             => $name,
                 'number'           => $num,
+            ], [
+                'name'             => $name,
                 'start_date'       => $start,
                 'end_date'         => $end,
                 'status'           => $status,
@@ -80,10 +82,17 @@ class SchoolDemoSeeder extends Seeder
             ['4to Secundaria','4to Sec', 'secundario', 2, 10, 70],
         ];
         foreach ($gradeData as $i => [$name, $short, $level, $cycle, $gradeNum, $minScore]) {
-            $gradeLevels[] = GradeLevel::create([
-                'name' => $name, 'short_name' => $short, 'level' => $level,
-                'cycle' => $cycle, 'grade_number' => $gradeNum,
-                'min_passing_score' => $minScore, 'order' => $i + 1, 'is_active' => true,
+            $gradeLevels[] = GradeLevel::firstOrCreate([
+                'level' => $level,
+                'cycle' => $cycle,
+                'grade_number' => $gradeNum,
+                'modality' => null,
+            ], [
+                'name' => $name,
+                'short_name' => $short,
+                'min_passing_score' => $minScore,
+                'order' => $i + 1,
+                'is_active' => true,
             ]);
         }
         $this->command->info('  10 Grados escolares');
@@ -103,9 +112,14 @@ class SchoolDemoSeeder extends Seeder
         ];
         $subjects = [];
         foreach ($subjectData as [$name, $code, $area, $core, $hours]) {
-            $subjects[] = Subject::create([
-                'name' => $name, 'code' => $code, 'area' => $area,
-                'is_core' => $core, 'weekly_hours' => $hours, 'is_active' => true,
+            $subjects[] = Subject::firstOrCreate([
+                'code' => $code,
+            ], [
+                'name' => $name,
+                'area' => $area,
+                'is_core' => $core,
+                'weekly_hours' => $hours,
+                'is_active' => true,
             ]);
         }
         $this->command->info('  10 Asignaturas');
@@ -118,11 +132,15 @@ class SchoolDemoSeeder extends Seeder
         $teachers = [];
         foreach ($teacherNames as $i => $name) {
             $email = 'profesor' . ($i + 1) . '@colegio.edu.do';
-            $u = User::create([
-                'name' => $name, 'email' => $email,
+            $u = User::firstOrCreate([
+                'email' => $email,
+            ], [
+                'name' => $name,
                 'password' => bcrypt('Password'),
             ]);
-            $u->assignRole('Profesor');
+            if (!$u->hasRole('Profesor')) {
+                $u->assignRole('Profesor');
+            }
             $teachers[] = $u;
         }
         $this->command->info('  8 Docentes');
@@ -134,10 +152,11 @@ class SchoolDemoSeeder extends Seeder
             $numSections = $gi < 6 ? 2 : 1; // primaria: 2, secundaria: 1
             for ($s = 0; $s < $numSections; $s++) {
                 $teacherIdx = ($gi + $s) % count($teachers);
-                $sections[] = Section::create([
-                    'academic_year_id'    => $year->id,
-                    'grade_level_id'      => $grade->id,
-                    'name'                => $sectionNames[$s],
+                $sections[] = Section::firstOrCreate([
+                    'academic_year_id' => $year->id,
+                    'grade_level_id'   => $grade->id,
+                    'name'             => $sectionNames[$s],
+                ], [
                     'full_name'           => $grade->short_name . ' ' . $sectionNames[$s],
                     'homeroom_teacher_id' => $teachers[$teacherIdx]->id,
                     'capacity'            => 35,
@@ -152,9 +171,10 @@ class SchoolDemoSeeder extends Seeder
             $numSubjects = rand(7, 10);
             for ($si = 0; $si < $numSubjects && $si < count($subjects); $si++) {
                 $teacherIdx = $si % count($teachers);
-                SectionSubject::create([
+                SectionSubject::firstOrCreate([
                     'section_id' => $section->id,
                     'subject_id' => $subjects[$si]->id,
+                ], [
                     'teacher_id' => $teachers[$teacherIdx]->id,
                 ]);
             }
@@ -166,11 +186,13 @@ class SchoolDemoSeeder extends Seeder
             $subs = SectionSubject::where('section_id', $section->id)->get();
             foreach ($subs as $ss) {
                 TeacherAssignment::firstOrCreate([
-                    'academic_year_id' => $year->id,
-                    'teacher_id'       => $ss->teacher_id,
                     'section_id'       => $section->id,
                     'subject_id'       => $ss->subject_id,
-                ], ['is_homeroom' => $ss->teacher_id === $section->homeroom_teacher_id]);
+                ], [
+                    'academic_year_id' => $year->id,
+                    'teacher_id'       => $ss->teacher_id,
+                    'is_homeroom'      => $ss->teacher_id === $section->homeroom_teacher_id
+                ]);
             }
         }
         $this->command->info('  Asignaciones docentes');
@@ -212,8 +234,9 @@ class SchoolDemoSeeder extends Seeder
                 $bdate     = now()->subYears($age)->subDays(rand(0, 365));
                 $gender    = $si % 2 === 0 ? 'Femenino' : 'Masculino';
 
-                $student = Student::create([
+                $student = Student::firstOrCreate([
                     'student_code'           => $code,
+                ], [
                     'first_name'             => $firstName,
                     'last_name'              => $lastName,
                     'cedula'                 => $ced,
@@ -247,12 +270,13 @@ class SchoolDemoSeeder extends Seeder
         $occupations = ['Abogado', 'Médico', 'Ingeniero', 'Profesor', 'Comerciante', 'Contador', 'Ama de casa', 'Enfermera'];
         foreach ($students as $student) {
             if (rand(1, 100) <= 75) { // 75% tienen tutor registrado
-                Guardian::create([
+                Guardian::firstOrCreate([
+                    'email'                => 'tutor' . $student->id . '@mail.com',
+                ], [
                     'first_name'           => $firstNames[rand(0, count($firstNames) - 1)],
                     'last_name'            => $lastNames[rand(0, count($lastNames) - 1)],
                     'cedula'               => sprintf('%03d-%07d-%d', rand(1, 402), rand(1, 9999999), rand(0, 9)),
                     'phone'                => '809-' . rand(200, 999) . '-' . str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT),
-                    'email'                => 'tutor' . $student->id . '@mail.com',
                     'relationship'         => $relationships[array_rand($relationships)],
                     'occupation'           => $occupations[array_rand($occupations)],
                     'is_emergency_contact' => true,
@@ -266,9 +290,10 @@ class SchoolDemoSeeder extends Seeder
         // enum status: pending, approved, enrolled, transferred_out, withdrawn, graduated
         // enum enrollment_type: new, renewal, transfer
         foreach ($students as $student) {
-            SchoolEnrollment::create([
+            SchoolEnrollment::firstOrCreate([
                 'student_id'             => $student->id,
                 'academic_year_id'       => $year->id,
+            ], [
                 'grade_level_id'         => $student->grade_level_id,
                 'section_id'             => $student->section_id,
                 'enrollment_code'        => 'INS-' . $year->id . '-' . str_pad($student->id, 4, '0', STR_PAD_LEFT),
@@ -305,10 +330,11 @@ class SchoolDemoSeeder extends Seeder
                         $score >= 65 => 'en_proceso',
                         default      => 'insuficiente',
                     };
-                    StudentGrade::create([
+                    StudentGrade::firstOrCreate([
                         'student_id'          => $student->id,
                         'section_subject_id'  => $ss->id,
                         'evaluation_period_id'=> $period->id,
+                    ], [
                         'score'               => $score,
                         'performance_level'   => $level,
                         'is_recovery'         => $score < 65 && (bool) rand(0, 1),
@@ -342,11 +368,12 @@ class SchoolDemoSeeder extends Seeder
                     $roll <= 96 => 'late',
                     default     => 'excused',
                 };
-                StudentAttendance::create([
+                StudentAttendance::firstOrCreate([
                     'student_id'      => $student->id,
                     'section_id'      => $student->section_id,
                     'academic_year_id'=> $year->id,
-                    'date'            => $day,
+                    'date'            => $day->toDateString(),
+                ], [
                     'status'          => $status,
                     'recorded_by'     => $teachers[0]->id,
                 ]);
@@ -362,10 +389,11 @@ class SchoolDemoSeeder extends Seeder
         $discCount  = 0;
         foreach ($students as $student) {
             if (rand(1, 100) <= 12) { // 12% tienen registro
-                DisciplineRecord::create([
+                DisciplineRecord::firstOrCreate([
                     'student_id'      => $student->id,
                     'academic_year_id'=> $year->id,
-                    'date'            => now()->subDays(rand(1, 90)),
+                    'date'            => now()->subDays(rand(1, 90))->toDateString(),
+                ], [
                     'severity'        => $severities[array_rand($severities)],
                     'category'        => $categories[array_rand($categories)],
                     'description'     => 'Incidente registrado durante la jornada escolar.',
@@ -389,9 +417,12 @@ class SchoolDemoSeeder extends Seeder
         foreach ($students as $student) {
             // Inscripción
             $inscAmount = [3500, 4000, 4500, 5000][rand(0, 3)];
-            StudentPayment::create([
-                'student_id' => $student->id, 'academic_year_id' => $year->id,
-                'type' => 'inscription', 'concept' => 'Inscripción 2025-2026',
+            StudentPayment::firstOrCreate([
+                'student_id'       => $student->id,
+                'academic_year_id' => $year->id,
+                'type'             => 'inscription',
+                'concept'          => 'Inscripción 2025-2026',
+            ], [
                 'amount' => $inscAmount, 'paid' => $inscAmount,
                 'status' => 'paid', 'due_date' => '2025-08-15',
                 'paid_date' => '2025-08-' . rand(10, 28),
@@ -404,19 +435,25 @@ class SchoolDemoSeeder extends Seeder
             $monthly = [2500, 3000, 3500][rand(0, 2)];
             foreach ($months as $mi => $month) {
                 $dueDate = Carbon::parse('2025-09-05')->addMonths($mi);
+                $paid = rand(1, 100) > 10; // 90% pagaron
                 if ($dueDate->gt(now())) {
-                    StudentPayment::create([
-                        'student_id' => $student->id, 'academic_year_id' => $year->id,
-                        'type' => 'monthly', 'concept' => "Mensualidad $month",
+                    StudentPayment::firstOrCreate([
+                        'student_id'       => $student->id,
+                        'academic_year_id' => $year->id,
+                        'type'             => 'monthly',
+                        'concept'          => "Mensualidad $month",
+                    ], [
                         'amount' => $monthly, 'paid' => 0,
                         'status' => 'pending', 'due_date' => $dueDate,
                         'recorded_by' => $admin?->id,
                     ]);
                 } else {
-                    $paid = rand(1, 100) > 10; // 90% pagaron
-                    StudentPayment::create([
-                        'student_id' => $student->id, 'academic_year_id' => $year->id,
-                        'type' => 'monthly', 'concept' => "Mensualidad $month",
+                    StudentPayment::firstOrCreate([
+                        'student_id'       => $student->id,
+                        'academic_year_id' => $year->id,
+                        'type'             => 'monthly',
+                        'concept'          => "Mensualidad $month",
+                    ], [
                         'amount' => $monthly,
                         'paid' => $paid ? $monthly : 0,
                         'status' => $paid ? 'paid' : 'pending',
@@ -443,11 +480,13 @@ class SchoolDemoSeeder extends Seeder
 
         foreach ($students as $student) {
             if (rand(1, 100) <= 8) { // 8%
-                OrientationRecord::create([
+                $title = $orientTitles[array_rand($orientTitles)];
+                OrientationRecord::firstOrCreate([
                     'student_id'      => $student->id,
                     'academic_year_id'=> $year->id,
+                    'title'           => $title,
+                ], [
                     'type'            => $orientTypes[array_rand($orientTypes)],
-                    'title'           => $orientTitles[array_rand($orientTitles)],
                     'description'     => 'Caso registrado para seguimiento por orientación.',
                     'findings'        => rand(0, 1) ? 'Se identificaron factores que requieren atención.' : null,
                     'recommendations' => rand(0, 1) ? 'Seguimiento semanal con consejero.' : null,
@@ -476,13 +515,16 @@ class SchoolDemoSeeder extends Seeder
             ['Día del Estudiante',     'Celebraremos el Día del Estudiante con actividades especiales.',      'push',     'all'],
         ];
         foreach ($commData as [$subject, $body, $channel, $type]) {
-            CommunicationLog::create([
+            $sentAt = now()->subDays(rand(1, 90));
+            CommunicationLog::firstOrCreate([
+                'subject' => $subject,
+                'sent_at' => $sentAt->toDateString(),
+            ], [
                 'channel' => $channel, 'type' => $type,
-                'subject' => $subject, 'body' => $body,
+                'body' => $body,
                 'sent_by' => $admin?->id,
                 'recipients_count' => rand(20, 350),
                 'status' => 'sent',
-                'sent_at' => now()->subDays(rand(1, 90)),
             ]);
         }
         $this->command->info('  7 Comunicaciones');
@@ -500,10 +542,12 @@ class SchoolDemoSeeder extends Seeder
             ['Festival de la Lectura',      'Gran festival de lectura. Participación abierta a todos los grados.',             'event',        'normal',     'all'],
         ];
         foreach ($annData as [$title, $body, $type, $priority, $audience]) {
-            SchoolAnnouncement::create([
+            SchoolAnnouncement::firstOrCreate([
                 'academic_year_id' => $year->id,
+                'title' => $title,
+            ], [
                 'author_id' => $admin?->id,
-                'title' => $title, 'body' => $body,
+                'body' => $body,
                 'type' => $type, 'priority' => $priority, 'audience' => $audience,
                 'publish_date' => now()->subDays(rand(1, 120)),
                 'is_published' => true,
@@ -535,9 +579,11 @@ class SchoolDemoSeeder extends Seeder
             ['2026-06-30', 'school_day',  'Último Día Lectivo'],
         ];
         foreach ($calData as [$date, $type, $name]) {
-            SchoolCalendar::create([
+            SchoolCalendar::firstOrCreate([
                 'academic_year_id' => $year->id,
-                'date' => $date, 'type' => $type, 'name' => $name,
+                'date' => $date,
+            ], [
+                'type' => $type, 'name' => $name,
                 'affects_attendance' => in_array($type, ['holiday', 'vacation']),
             ]);
         }
@@ -559,10 +605,11 @@ class SchoolDemoSeeder extends Seeder
         $alertStudents = array_slice($students, 0, min(10, count($students)));
         foreach ($alertStudents as $student) {
             $type = $alertTypes[array_rand($alertTypes)];
-            SchoolAlert::create([
+            SchoolAlert::firstOrCreate([
                 'student_id'      => $student->id,
                 'academic_year_id'=> $year->id,
                 'type'            => $type,
+            ], [
                 'severity'        => $alertSeverities[array_rand($alertSeverities)],
                 'title'           => $alertTitles[$type],
                 'description'     => 'Alerta generada por el sistema de seguimiento.',
@@ -575,24 +622,30 @@ class SchoolDemoSeeder extends Seeder
         $auditActions = ['created', 'updated', 'login', 'exported', 'approved'];
         $auditModels = ['App\\Models\\Student', 'App\\Models\\StudentGrade', 'App\\Models\\StudentPayment', 'App\\Models\\Section'];
         $auditDescs = ['Estudiante creado', 'Nota registrada', 'Pago procesado', 'Sección actualizada', 'Reporte exportado', 'Sesión iniciada'];
-        for ($i = 0; $i < 25; $i++) {
-            AuditLog::create([
-                'user_id'     => ($i % 3 === 0) ? ($admin?->id) : $teachers[array_rand($teachers)]->id,
-                'action'      => $auditActions[array_rand($auditActions)],
-                'model_type'  => $auditModels[array_rand($auditModels)],
-                'model_id'    => rand(1, 50),
-                'description' => $auditDescs[array_rand($auditDescs)],
-                'ip_address'  => '192.168.1.' . rand(1, 254),
-            ]);
+        if (AuditLog::count() < 25) {
+            for ($i = 0; $i < 25; $i++) {
+                AuditLog::create([
+                    'user_id'     => ($i % 3 === 0) ? ($admin?->id) : $teachers[array_rand($teachers)]->id,
+                    'action'      => $auditActions[array_rand($auditActions)],
+                    'model_type'  => $auditModels[array_rand($auditModels)],
+                    'model_id'    => rand(1, 50),
+                    'description' => $auditDescs[array_rand($auditDescs)],
+                    'ip_address'  => '192.168.1.' . rand(1, 254),
+                ]);
+            }
         }
         $this->command->info('  25 Auditoría');
 
         // ─── USUARIO EXTRA: REGISTRO ─────────────────────
-        $regUser = User::create([
-            'name' => 'Encargada de Registro', 'email' => 'registro@colegio.edu.do',
+        $regUser = User::firstOrCreate([
+            'email' => 'registro@colegio.edu.do',
+        ], [
+            'name' => 'Encargada de Registro',
             'password' => bcrypt('Password'),
         ]);
-        $regUser->assignRole('Registro');
+        if (!$regUser->hasRole('Registro')) {
+            $regUser->assignRole('Registro');
+        }
         $this->command->info('  Usuario Registro');
 
         // ─── RESUMEN FINAL ───────────────────────────────

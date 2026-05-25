@@ -27,7 +27,9 @@ class MinerdSubjectsSeeder extends Seeder
         ];
 
         foreach ($baseSubjects as $subjectData) {
-            Subject::create(array_merge([
+            Subject::firstOrCreate([
+                'code' => $subjectData['code'],
+            ], array_merge([
                 'is_core'   => true,
                 'is_active' => true,
             ], $subjectData));
@@ -47,7 +49,9 @@ class MinerdSubjectsSeeder extends Seeder
         ];
 
         foreach ($secundariaSubjects as $subjectData) {
-            Subject::create(array_merge([
+            Subject::firstOrCreate([
+                'code' => $subjectData['code'],
+            ], array_merge([
                 'is_core'   => true,
                 'is_active' => true,
             ], $subjectData));
@@ -64,7 +68,7 @@ class MinerdSubjectsSeeder extends Seeder
         $primarioGrades = GradeLevel::where('level', 'primario')->get();
         foreach ($primarioGrades as $grade) {
             foreach ($baseSubjectIds as $code => $subjectId) {
-                $grade->subjects()->attach($subjectId);
+                $grade->subjects()->syncWithoutDetaching([$subjectId]);
             }
         }
 
@@ -72,7 +76,7 @@ class MinerdSubjectsSeeder extends Seeder
         $secCiclo1 = GradeLevel::where('level', 'secundario')->where('cycle', 1)->get();
         foreach ($secCiclo1 as $grade) {
             foreach ($baseSubjectIds as $code => $subjectId) {
-                $grade->subjects()->attach($subjectId);
+                $grade->subjects()->syncWithoutDetaching([$subjectId]);
             }
         }
 
@@ -81,7 +85,7 @@ class MinerdSubjectsSeeder extends Seeder
         $secSpecific = Subject::whereIn('code', ['LE', 'MAT', 'BIO', 'QUI', 'FIS', 'HIS', 'GEO', 'EA', 'EF', 'FIHR', 'ING'])->pluck('id');
 
         foreach ($secCiclo2 as $grade) {
-            $grade->subjects()->attach($secSpecific);
+            $grade->subjects()->syncWithoutDetaching($secSpecific);
         }
 
         $this->command->info('Asignaturas MINERD creadas y asignadas a grados');

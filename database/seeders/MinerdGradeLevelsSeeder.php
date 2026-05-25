@@ -15,10 +15,15 @@ class MinerdGradeLevelsSeeder extends Seeder
         // ═══════════════════════════════════════════════════
         // NIVEL INICIAL (Pre-Primario)
         // ═══════════════════════════════════════════════════
-        GradeLevel::create([
-            'name' => 'Pre-Primario', 'short_name' => 'Pre-P',
-            'level' => 'inicial', 'cycle' => 2, 'grade_number' => 1,
-            'min_passing_score' => 65, 'order' => $order++,
+        GradeLevel::firstOrCreate([
+            'level' => 'inicial',
+            'cycle' => 2,
+            'grade_number' => 1,
+        ], [
+            'name' => 'Pre-Primario',
+            'short_name' => 'Pre-P',
+            'min_passing_score' => 65,
+            'order' => $order++,
         ]);
 
         // ═══════════════════════════════════════════════════
@@ -34,8 +39,11 @@ class MinerdGradeLevelsSeeder extends Seeder
         ];
 
         foreach ($primarioGrades as $grade) {
-            GradeLevel::create(array_merge($grade, [
+            GradeLevel::firstOrCreate([
                 'level' => 'primario',
+                'cycle' => $grade['cycle'],
+                'grade_number' => $grade['grade_number'],
+            ], array_merge($grade, [
                 'min_passing_score' => 65,
                 'order' => $order++,
             ]));
@@ -53,8 +61,11 @@ class MinerdGradeLevelsSeeder extends Seeder
         ];
 
         foreach ($secundarioCiclo1 as $grade) {
-            GradeLevel::create(array_merge($grade, [
+            GradeLevel::firstOrCreate([
                 'level' => 'secundario',
+                'cycle' => $grade['cycle'],
+                'grade_number' => $grade['grade_number'],
+            ], array_merge($grade, [
                 'min_passing_score' => 70,
                 'order' => $order++,
             ]));
@@ -68,9 +79,12 @@ class MinerdGradeLevelsSeeder extends Seeder
         ];
 
         foreach ($secundarioCiclo2 as $grade) {
-            GradeLevel::create(array_merge($grade, [
+            GradeLevel::firstOrCreate([
                 'level' => 'secundario',
+                'cycle' => $grade['cycle'],
+                'grade_number' => $grade['grade_number'],
                 'modality' => 'académica',
+            ], array_merge($grade, [
                 'min_passing_score' => 70,
                 'order' => $order++,
             ]));
