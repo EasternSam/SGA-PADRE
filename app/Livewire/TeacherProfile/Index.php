@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Models\CourseSchedule;
 use App\Models\Module;
 use App\Models\Course;
+use App\Models\TeacherAssignment;
+use App\Helpers\SaaS;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Attributes\Layout;
@@ -274,13 +276,28 @@ class Index extends Component
 
     public function render()
     {
-        $sections = $this->teacher->schedules()
-            ->with('module.course')
-            ->orderBy('start_date', 'desc')
-            ->paginate(10, ['*'], 'sectionsPage');
+        $showCourses = SaaS::showCourses();
+        $sections = null;
+        $schoolAssignments = null;
+
+        if ($showCourses) {
+            $sections = $this->teacher->schedules()
+                ->with('module.course')
+                ->orderBy('start_date', 'desc')
+                ->paginate(10, ['*'], 'sectionsPage');
+        } else {
+            $activeYear = \App\Models\AcademicYear::where('status', 'active')->first();
+            $schoolAssignments = TeacherAssignment::where('teacher_id', $this->teacher->id)
+                ->when($activeYear, fn($q) => $q->where('academic_year_id', $activeYear->id))
+                ->with(['section.gradeLevel', 'subject', 'academicYear'])
+                ->orderByDesc('created_at')
+                ->paginate(10, ['*'], 'assignmentsPage');
+        }
 
         return view('livewire.teacher-profile.index', [
+            'showCourses' => $showCourses,
             'sections' => $sections,
+            'schoolAssignments' => $schoolAssignments,
         ]);
     }
 }

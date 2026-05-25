@@ -68,12 +68,21 @@
                 <hr class="my-6 border-gray-200">
 
                 <div class="flex flex-wrap gap-2">
+                    @if($showCourses)
                     <button
                         wire:click="openAssignModal"
                         type="button"
                         class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
                         <i class="fas fa-plus-circle mr-2"></i>Asignar Nueva Sección
                     </button>
+                    @else
+                    <a
+                        href="{{ route('admin.school.teacher-assignments') }}"
+                        wire:navigate
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150 flex items-center">
+                        <i class="fas fa-tasks mr-2"></i>Gestionar Asignaciones
+                    </a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -90,7 +99,7 @@
                         'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'sections'
                     }"
                     class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                    Secciones Asignadas
+                    {{ $showCourses ? 'Secciones Asignadas' : 'Carga Académica Escolar' }}
                 </button>
                 <button @click="activeTab = 'attendance'"
                     :class="{
@@ -105,8 +114,11 @@
 
         <!-- Contenido de Pestaña: Secciones Asignadas -->
         <div class="p-0 sm:p-6" x-show="activeTab === 'sections'" x-cloak>
-            <h3 class="text-lg font-semibold text-gray-800 mb-4 px-6 sm:px-0">Secciones Asignadas</h3>
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 px-6 sm:px-0">
+                {{ $showCourses ? 'Secciones Asignadas' : 'Asignaciones Escolares' }}
+            </h3>
 
+            @if($showCourses)
             <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-100">
@@ -163,6 +175,57 @@
             <div class="mt-4">
                 {{ $sections->links() }}
             </div>
+            @else
+            <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grado / Nivel</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sección</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asignatura</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Año Escolar</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tutor (Homeroom)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @forelse ($schoolAssignments as $assignment)
+                            <tr class="hover:bg-gray-50" wire:key="assignment-{{ $assignment->id }}">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {{ $assignment->section->gradeLevel->name ?? 'N/A' }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    {{ $assignment->section->name ?? 'N/A' }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">
+                                    {{ $assignment->subject->name ?? 'N/A' }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ $assignment->academicYear->name ?? 'N/A' }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    @if($assignment->is_homeroom)
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                            Sí, Tutor
+                                        </span>
+                                    @else
+                                        <span class="text-xs text-gray-400">No</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                                    Este profesor no tiene asignaturas ni secciones escolares asignadas para el año escolar activo.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4">
+                {{ $schoolAssignments->links() }}
+            </div>
+            @endif
         </div>
 
         {{-- Próximamente --}}
