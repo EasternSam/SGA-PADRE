@@ -329,4 +329,14 @@ Route::middleware(['auth'])->group(function () {
         ->name('password.force_update');
 });
 
+// ==============================================================================
+// PORTAL DE PADRES (PÚBLICO — TOKEN AUTH)
+// ==============================================================================
+Route::prefix('padres')->group(function () {
+    Route::get('/login', [\App\Http\Controllers\ParentPortalController::class, 'login'])->name('parent.login');
+    Route::post('/login', [\App\Http\Controllers\ParentPortalController::class, 'authenticate'])->name('parent.authenticate');
+    Route::get('/dashboard', [\App\Http\Controllers\ParentPortalController::class, 'dashboard'])->name('parent.dashboard');
+    Route::get('/logout', [\App\Http\Controllers\ParentPortalController::class, 'logout'])->name('parent.logout');
+});
+
 require __DIR__.'/auth.php';

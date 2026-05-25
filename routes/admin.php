@@ -99,6 +99,9 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
         Route::get('/school/payments', \App\Livewire\Admin\School\PaymentManager::class)->name('admin.school.payments');
         Route::get('/school/audit-log', \App\Livewire\Admin\School\AuditLogViewer::class)->name('admin.school.audit-log');
         Route::get('/school/teacher-dashboard', \App\Livewire\Admin\School\TeacherDashboard::class)->name('admin.school.teacher-dashboard');
+        Route::get('/school/orientation', \App\Livewire\Admin\School\OrientationManager::class)->name('admin.school.orientation');
+        Route::get('/school/communications', \App\Livewire\Admin\School\CommunicationManager::class)->name('admin.school.communications');
+        Route::get('/school/parent-tokens', \App\Livewire\Admin\School\ParentTokenManager::class)->name('admin.school.parent-tokens');
         Route::get('/school/settings', \App\Livewire\Admin\School\SchoolSettings::class)->name('admin.school.settings');
     });
 
