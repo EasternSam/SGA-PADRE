@@ -88,6 +88,8 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
         Route::get('/school/teacher-schedule', \App\Livewire\Admin\School\TeacherScheduleView::class)->name('admin.school.teacher-schedule');
         Route::get('/school/teacher-assignments', \App\Livewire\Admin\School\TeacherAssignments::class)->name('admin.school.teacher-assignments');
         Route::get('/school/honor-roll', \App\Livewire\Admin\School\HonorRoll::class)->name('admin.school.honor-roll');
+        Route::get('/school/guardians', \App\Livewire\Admin\School\GuardianManager::class)->name('admin.school.guardians');
+        Route::get('/school/promotions', \App\Livewire\Admin\School\PromotionManager::class)->name('admin.school.promotions');
         Route::get('/school/settings', \App\Livewire\Admin\School\SchoolSettings::class)->name('admin.school.settings');
     });
 
@@ -98,6 +100,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     Route::get('/reports/attendance/student/{student}', [\App\Http\Controllers\AttendanceReportPdfController::class, 'studentReport'])->name('reports.attendance.student');
     Route::get('/reports/schedule/section/{section}', [\App\Http\Controllers\SchedulePdfController::class, 'sectionSchedule'])->name('reports.schedule.section');
     Route::get('/reports/schedule/teacher/{teacher}', [\App\Http\Controllers\SchedulePdfController::class, 'teacherSchedule'])->name('reports.schedule.teacher');
+    Route::get('/reports/grades/section/{section}/{period}', [\App\Http\Controllers\GradeReportPdfController::class, 'sectionGrades'])->name('reports.grades.section');
 
     // --- MODULO: INVENTARIO ---
     Route::middleware(['feature:inventory', 'role:Admin|Contabilidad'])->group(function () {

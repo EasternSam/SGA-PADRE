@@ -160,6 +160,14 @@
                                     class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.honor-roll') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
                                     {{ __('🏆 Cuadro de Honor') }}
                                 </a>
+                                <a href="{{ route('admin.school.guardians') }}" wire:navigate 
+                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.guardians') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
+                                    {{ __('Padres/Tutores') }}
+                                </a>
+                                <a href="{{ route('admin.school.promotions') }}" wire:navigate 
+                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.promotions') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
+                                    {{ __('Promoción/Repitencia') }}
+                                </a>
                                 <a href="{{ route('admin.school.settings') }}" wire:navigate 
                                     class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.settings') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
                                     {{ __('Config. Centro') }}
