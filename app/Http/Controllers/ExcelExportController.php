@@ -31,11 +31,11 @@ class ExcelExportController extends Controller
                 $i + 1,
                 $s->last_name,
                 $s->first_name,
-                $s->student_id ?? '',
+                $s->student_code ?? '',
                 $s->gender ?? '',
                 $s->birth_date ? \Carbon\Carbon::parse($s->birth_date)->format('d/m/Y') : '',
                 $s->birth_date ? \Carbon\Carbon::parse($s->birth_date)->age : '',
-                $s->phone ?? '',
+                $s->mobile_phone ?? '',
                 $s->email ?? '',
             ])->toArray()
         );

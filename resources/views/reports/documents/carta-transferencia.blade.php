@@ -24,8 +24,8 @@
             <p style="font-size: 14pt; font-weight: bold; color: #1e3a8a; margin: 0;">
                 {{ $student->first_name }} {{ $student->last_name }}
             </p>
-            @if($student->student_id)
-                <p style="font-size: 10pt; color: #6b7280; margin: 5px 0 0;">Matrícula: {{ $student->student_id }}</p>
+            @if($student->student_code)
+                <p style="font-size: 10pt; color: #6b7280; margin: 5px 0 0;">Matrícula: {{ $student->student_code }}</p>
             @endif
             @if($student->identity_number)
                 <p style="font-size: 10pt; color: #6b7280; margin: 3px 0 0;">Documento: {{ $student->identity_number }}</p>

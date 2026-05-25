@@ -14,7 +14,7 @@
     <table style="width: 100%; margin-bottom: 15px;">
         <tr>
             <td style="width: 50%;"><strong>Estudiante:</strong> {{ $student->full_name }}</td>
-            <td style="width: 50%;"><strong>Matrícula:</strong> {{ $student->student_id ?? $student->id }}</td>
+            <td style="width: 50%;"><strong>Matrícula:</strong> {{ $student->student_code ?? $student->id }}</td>
         </tr>
         <tr>
             <td><strong>Grado Actual:</strong> {{ $student->gradeLevel?->name ?? '—' }} {{ $section?->name ?? '' }}</td>

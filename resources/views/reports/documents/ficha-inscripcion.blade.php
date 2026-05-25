@@ -24,7 +24,7 @@
             </td>
             <td style="width: 33%;">
                 <div class="field-label">Matrícula</div>
-                <div class="field-value">{{ $student->student_id ?? '' }}</div>
+                <div class="field-value">{{ $student->student_code ?? '' }}</div>
             </td>
         </tr>
         <tr>
@@ -44,7 +44,7 @@
         <tr>
             <td>
                 <div class="field-label">No. Documento (NUI/Cédula)</div>
-                <div class="field-value">{{ $student->identity_number ?? '' }}</div>
+                <div class="field-value">{{ $student->cedula ?? '' }}</div>
             </td>
             <td colspan="2">
                 <div class="field-label">Dirección</div>
@@ -54,7 +54,7 @@
         <tr>
             <td>
                 <div class="field-label">Teléfono</div>
-                <div class="field-value">{{ $student->phone ?? '' }}</div>
+                <div class="field-value">{{ $student->mobile_phone ?? $student->home_phone ?? '' }}</div>
             </td>
             <td>
                 <div class="field-label">Email</div>

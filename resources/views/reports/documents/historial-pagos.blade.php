@@ -6,7 +6,7 @@
     <table style="width: 100%; margin-bottom: 15px;">
         <tr>
             <td><strong>Estudiante:</strong> {{ $student->full_name }}</td>
-            <td><strong>Matrícula:</strong> {{ $student->student_id ?? $student->id }}</td>
+            <td><strong>Matrícula:</strong> {{ $student->student_code ?? $student->id }}</td>
         </tr>
     </table>
 

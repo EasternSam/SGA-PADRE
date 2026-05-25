@@ -37,14 +37,14 @@
                 <tr>
                     <td class="text-center">{{ $i + 1 }}</td>
                     <td class="font-bold">{{ $s->last_name }}, {{ $s->first_name }}</td>
-                    <td class="text-center" style="font-size: 8pt;">{{ $s->student_id ?? '' }}</td>
+                    <td class="text-center" style="font-size: 8pt;">{{ $s->student_code ?? '' }}</td>
                     <td class="text-center">{{ strtoupper(substr($s->gender ?? '', 0, 1)) }}</td>
                     <td class="text-center" style="font-size: 8pt;">{{ $s->birth_date ? \Carbon\Carbon::parse($s->birth_date)->format('d/m/Y') : '—' }}</td>
                     <td class="text-center">{{ $age ? $age . ' años' : '—' }}</td>
                     <td class="text-center {{ ($att['pct'] ?? 0) < 80 ? 'text-red' : 'text-green' }}" style="font-weight: bold;">
                         {{ $att['pct'] !== null ? $att['pct'] . '%' : '—' }}
                     </td>
-                    <td style="font-size: 8pt;">{{ $s->phone ?? '' }}</td>
+                    <td style="font-size: 8pt;">{{ $s->mobile_phone ?? '' }}</td>
                 </tr>
             @endforeach
         </tbody>

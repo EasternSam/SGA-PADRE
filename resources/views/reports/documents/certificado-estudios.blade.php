@@ -42,7 +42,7 @@
                     {{ $student->first_name }} {{ $student->last_name }}
                 </p>
                 <p style="font-size: 10pt; color: #4b5563; margin: 5px 0 0;">
-                    @if($student->student_id) Matrícula: {{ $student->student_id }} | @endif
+                    @if($student->student_code) Matrícula: {{ $student->student_code }} | @endif
                     @if($student->birth_date) Fecha Nac.: {{ \Carbon\Carbon::parse($student->birth_date)->format('d/m/Y') }} | @endif
                     @if($student->identity_number) Documento: {{ $student->identity_number }} @endif
                 </p>
