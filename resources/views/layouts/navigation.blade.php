@@ -128,6 +128,14 @@
                                     class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.report-cards') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
                                     {{ __('Boletines') }}
                                 </a>
+                                <a href="{{ route('admin.school.schedule') }}" wire:navigate 
+                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.schedule') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
+                                    {{ __('Horarios') }}
+                                </a>
+                                <a href="{{ route('admin.school.calendar') }}" wire:navigate 
+                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.calendar') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
+                                    {{ __('Calendario') }}
+                                </a>
                                 <a href="{{ route('admin.school.settings') }}" wire:navigate 
                                     class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.settings') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
                                     {{ __('Config. Centro') }}
