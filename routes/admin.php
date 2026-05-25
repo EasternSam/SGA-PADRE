@@ -96,6 +96,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
         Route::get('/school/justifications', \App\Livewire\Admin\School\JustificationManager::class)->name('admin.school.justifications');
         Route::get('/school/reinscription', \App\Livewire\Admin\School\ReinscriptionManager::class)->name('admin.school.reinscription');
         Route::get('/school/subject-stats', \App\Livewire\Admin\School\SubjectStatistics::class)->name('admin.school.subject-stats');
+        Route::get('/school/payments', \App\Livewire\Admin\School\PaymentManager::class)->name('admin.school.payments');
         Route::get('/school/settings', \App\Livewire\Admin\School\SchoolSettings::class)->name('admin.school.settings');
     });
 
@@ -115,6 +116,8 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     Route::get('/documents/certificado/{student}', [\App\Http\Controllers\SchoolDocumentsPdfController::class, 'certificadoEstudios'])->name('documents.certificado');
     Route::get('/documents/ficha/{student}', [\App\Http\Controllers\SchoolDocumentsPdfController::class, 'fichaInscripcion'])->name('documents.ficha');
     Route::get('/documents/lista/{section}', [\App\Http\Controllers\SchoolDocumentsPdfController::class, 'listaClase'])->name('documents.lista');
+    Route::get('/documents/transferencia/{student}', [\App\Http\Controllers\SchoolDocumentsPdfController::class, 'cartaTransferencia'])->name('documents.transferencia');
+    Route::get('/documents/pagos/{student}', [\App\Http\Controllers\SchoolDocumentsPdfController::class, 'historialPagos'])->name('documents.pagos');
 
     // --- REPORTES MINERD ---
     Route::get('/reports/minerd/re1', [\App\Http\Controllers\MinerdReportsPdfController::class, 're1'])->name('reports.minerd.re1');

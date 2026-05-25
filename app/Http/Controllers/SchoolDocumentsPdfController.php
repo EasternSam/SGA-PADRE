@@ -206,4 +206,52 @@ class SchoolDocumentsPdfController extends Controller
 
         return $pdf->stream('Lista_' . $section->gradeLevel?->short_name . '_' . $section->name . '.pdf');
     }
+
+    /**
+     * Carta de Transferencia
+     */
+    public function cartaTransferencia(Student $student)
+    {
+        $student->load('gradeLevel');
+        $schoolConfig = SchoolConfig::current();
+        $activeYear = AcademicYear::where('status', 'active')->first();
+        $section = Section::with('gradeLevel')->find($student->section_id);
+
+        $allGrades = StudentGrade::where('student_id', $student->id)
+            ->whereHas('evaluationPeriod', fn($q) => $q->where('academic_year_id', $activeYear?->id))
+            ->whereNotNull('score')
+            ->get();
+        $finalAvg = $allGrades->count() > 0 ? round($allGrades->avg('score'), 2) : null;
+
+        $data = compact('student', 'schoolConfig', 'activeYear', 'section', 'finalAvg');
+
+        $pdf = Pdf::loadView('reports.documents.carta-transferencia', $data);
+        $pdf->setPaper('letter', 'portrait');
+
+        return $pdf->stream('Transferencia_' . $student->last_name . '_' . $student->first_name . '.pdf');
+    }
+
+    /**
+     * Historial de Pagos PDF
+     */
+    public function historialPagos(Student $student)
+    {
+        $student->load('gradeLevel');
+        $schoolConfig = SchoolConfig::current();
+
+        $payments = \App\Models\StudentPayment::where('student_id', $student->id)
+            ->with('academicYear')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $totalDue = $payments->sum('amount');
+        $totalPaid = $payments->sum('paid');
+
+        $data = compact('student', 'schoolConfig', 'payments', 'totalDue', 'totalPaid');
+
+        $pdf = Pdf::loadView('reports.documents.historial-pagos', $data);
+        $pdf->setPaper('letter', 'portrait');
+
+        return $pdf->stream('Pagos_' . $student->last_name . '_' . $student->first_name . '.pdf');
+    }
 }
