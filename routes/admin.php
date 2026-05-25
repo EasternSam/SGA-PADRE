@@ -97,6 +97,8 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
         Route::get('/school/reinscription', \App\Livewire\Admin\School\ReinscriptionManager::class)->name('admin.school.reinscription');
         Route::get('/school/subject-stats', \App\Livewire\Admin\School\SubjectStatistics::class)->name('admin.school.subject-stats');
         Route::get('/school/payments', \App\Livewire\Admin\School\PaymentManager::class)->name('admin.school.payments');
+        Route::get('/school/audit-log', \App\Livewire\Admin\School\AuditLogViewer::class)->name('admin.school.audit-log');
+        Route::get('/school/teacher-dashboard', \App\Livewire\Admin\School\TeacherDashboard::class)->name('admin.school.teacher-dashboard');
         Route::get('/school/settings', \App\Livewire\Admin\School\SchoolSettings::class)->name('admin.school.settings');
     });
 
