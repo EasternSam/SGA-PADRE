@@ -13,20 +13,9 @@ class MyPayroll extends Component
     {
         $employee = auth()->user()->employee;
         
-        if (!$employee) {
-            return view('livewire.teacher-portal.my-payroll', [
-                'items' => collect([])
-            ]);
-        }
-
-        // Only show items that belong to a generated/paid payroll so they don't see drafts.
-        $items = PayrollItem::where('employee_id', $employee->id)
-            ->whereHas('payroll', function($q) {
-                // $q->where('status', 'Pagado'); // Descomentar para solo ver los que ya se depositaron
-            })
-            ->with('payroll')
-            ->orderByDesc('id')
-            ->get();
+        $items = $employee 
+            ? PayrollItem::where('employee_id', $employee->id)->with('payroll')->orderByDesc('id')->get()
+            : collect([]);
 
         return view('livewire.teacher-portal.my-payroll', [
             'items' => $items,
