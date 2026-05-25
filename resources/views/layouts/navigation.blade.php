@@ -51,200 +51,348 @@
         <!-- SECCIÓN ADMINISTRACIÓN -->
         @hasanyrole('Admin|Registro|Contabilidad|Caja')
             <div class="pt-4 space-y-1">
-                
-                @if(true) {{-- Distribución Escolar: siempre visible --}}
-                    <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white/80">
-                        {{ __('Gestión Escolar') }}
+
+                {{-- ─── REGISTRO ─────────────────────────── --}}
+                <p class="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-widest text-white/50">
+                    {{ __('Registro') }}
+                </p>
+
+                @hasanyrole('Admin|Registro')
+                    <x-responsive-nav-link :href="route('admin.students.index')"
+                        :active="request()->routeIs(['admin.students.index', 'admin.students.profile', 'admin.school.student-profile'])"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Estudiantes') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.teachers.index')"
+                        :active="request()->routeIs(['admin.teachers.index', 'admin.teachers.profile'])"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M11.7 2.805a.75.75 0 0 1 .6 0A60.65 60.65 0 0 1 22.83 8.72a.75.75 0 0 1-.231 1.337 49.949 49.949 0 0 0-9.902 3.912l-.003.002c-.114.06-.227.119-.343.18a.75.75 0 0 1-.707 0c-.116-.061-.23-.12-.343-.18a49.949 49.949 0 0 0-9.902-3.912.75.75 0 0 1-.231-1.337A60.653 60.653 0 0 1 11.7 2.805Z" />
+                            <path d="M13.06 15.473a48.45 48.45 0 0 1 7.666-3.282c.134 1.414.22 2.843.255 4.285a.75.75 0 0 1-.46.71 47.878 47.878 0 0 0-8.105 4.342.75.75 0 0 1-.832 0 47.877 47.877 0 0 0-8.104-4.342.75.75 0 0 1-.461-.71c.035-1.442.121-2.87.255-4.286A48.4 48.4 0 0 1 6 13.18v2.296c0 2.267.18 4.505.54 6.713a.75.75 0 0 1-1.485.276c-.5-3.07-.75-6.195-.75-9.315a.75.75 0 0 1 .631-.74A47.98 47.98 0 0 0 11.963 2.37a.75.75 0 0 1 1.074 0c.055.056.11.11.166.166.056.056.11.11.166.166a.75.75 0 1 1-1.074 1.074 46.471 46.471 0 0 1-5.118-4.048c.07-.157.14-.312.212-.465A48.369 48.369 0 0 1 13.06 15.473Z" />
+                            <path fill-rule="evenodd" d="M1.5 12.75a.75.75 0 0 1 .75-.75c.086 0 .17.005.254.015.65.08 1.33.155 2.052.222v2.246c-.722.067-1.402.142-2.052.223a.75.75 0 0 1-.75-.751v-1.205ZM18.75 14.482v-2.246c.722-.067 1.402-.142 2.052-.222.084-.01.168-.015.254-.015a.75.75 0 0 1 .75.75v1.206a.75.75 0 0 1-.75.751c-.65.08-1.33.156-2.052.223Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Docentes') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.guardians')"
+                        :active="request()->routeIs('admin.school.guardians')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM15.75 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM2.25 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM6.31 15.117A6.745 6.745 0 0 1 12 12a6.745 6.745 0 0 1 6.709 7.498.75.75 0 0 1-.372.568A12.696 12.696 0 0 1 12 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 0 1-.372-.568 6.787 6.787 0 0 1 1.019-4.38Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Padres/Tutores') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.enrollment')"
+                        :active="request()->routeIs('admin.school.enrollment')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0 0 16.5 9h-1.875a1.875 1.875 0 0 1-1.875-1.875V5.25A3.75 3.75 0 0 0 9 1.5H5.625Z" />
+                        </svg>
+                        <span>{{ __('Inscripciones') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.reinscription')"
+                        :active="request()->routeIs('admin.school.reinscription')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4.755 10.059a7.5 7.5 0 0 1 12.548-3.364l1.903 1.903h-3.183a.75.75 0 1 0 0 1.5h4.992a.75.75 0 0 0 .75-.75V4.356a.75.75 0 0 0-1.5 0v3.18l-1.9-1.9A9 9 0 0 0 3.306 9.67a.75.75 0 1 0 1.45.388Zm15.408 3.882a.75.75 0 0 0-.926.94 7.5 7.5 0 0 1-12.548 3.364l-1.902-1.903h3.183a.75.75 0 0 0 0-1.5H2.984a.75.75 0 0 0-.75.75v4.992a.75.75 0 0 0 1.5 0v-3.18l1.9 1.9a9 9 0 0 0 15.059-4.035.75.75 0 0 0-.53-.328Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Reinscripción') }}</span>
+                    </x-responsive-nav-link>
+                @endhasanyrole
+
+                {{-- ─── ACADÉMICO ────────────────────────── --}}
+                @hasanyrole('Admin|Registro')
+                    <p class="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-widest text-white/50">
+                        {{ __('Académico') }}
                     </p>
-                    
-                    @hasanyrole('Admin|Registro')
-                        <x-responsive-nav-link :href="route('admin.students.index')"
-                            :active="request()->routeIs(['admin.students.index', 'admin.students.profile'])"
-                            wire:navigate>
+
+                    <x-responsive-nav-link :href="route('admin.school.academic-years')"
+                        :active="request()->routeIs('admin.school.academic-years')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M6.75 2.25A.75.75 0 0 1 7.5 3v1.5h9V3A.75.75 0 0 1 18 3v1.5h.75a3 3 0 0 1 3 3v11.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V7.5a3 3 0 0 1 3-3H6V3a.75.75 0 0 1 .75-.75Zm13.5 9a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Años Escolares') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.sections')"
+                        :active="request()->routeIs('admin.school.sections')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M11.584 2.376a.75.75 0 01.832 0l9 6a.75.75 0 01-.832 1.248L12 3.901 3.416 9.624a.75.75 0 01-.832-1.248l9-6z" />
+                            <path fill-rule="evenodd" d="M20.25 10.332v9.918H21a.75.75 0 010 1.5H3a.75.75 0 010-1.5h.75v-9.918a.75.75 0 01.634-.74A49.109 49.109 0 0112 9c2.59 0 5.134.202 7.616.592a.75.75 0 01.634.74zm-7.5 2.418a.75.75 0 00-1.5 0v6.75a.75.75 0 001.5 0v-6.75zm3-.75a.75.75 0 01.75.75v6.75a.75.75 0 01-1.5 0v-6.75a.75.75 0 01.75-.75zM9 12.75a.75.75 0 00-1.5 0v6.75a.75.75 0 001.5 0v-6.75z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Secciones') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.subjects')"
+                        :active="request()->routeIs('admin.school.subjects')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M11.25 4.533A9.707 9.707 0 0 0 6 3a9.735 9.735 0 0 0-3.25.555.75.75 0 0 0-.5.707v14.25a.75.75 0 0 0 1 .707A8.237 8.237 0 0 1 6 18.75c1.995 0 3.823.707 5.25 1.886V4.533ZM12.75 20.636A8.214 8.214 0 0 1 18 18.75c.966 0 1.89.166 2.75.47a.75.75 0 0 0 1-.708V4.262a.75.75 0 0 0-.5-.707A9.735 9.735 0 0 0 18 3a9.707 9.707 0 0 0-5.25 1.533v16.103Z" />
+                        </svg>
+                        <span>{{ __('Asignaturas') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.teacher-assignments')"
+                        :active="request()->routeIs('admin.school.teacher-assignments')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18.685 19.097A9.723 9.723 0 0 0 21.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 0 0 3.065 7.097A9.716 9.716 0 0 0 12 21.75a9.716 9.716 0 0 0 6.685-2.653Zm-12.54-1.285A7.486 7.486 0 0 1 12 15a7.486 7.486 0 0 1 5.855 2.812A8.224 8.224 0 0 1 12 20.25a8.224 8.224 0 0 1-5.855-2.438ZM15.75 9a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Asign. Docentes') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.grades')"
+                        :active="request()->routeIs('admin.school.grades')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M11.7 2.805a.75.75 0 0 1 .6 0A60.65 60.65 0 0 1 22.83 8.72a.75.75 0 0 1-.231 1.337 49.949 49.949 0 0 0-9.902 3.912l-.003.002c-.114.06-.227.119-.343.18a.75.75 0 0 1-.707 0A49.949 49.949 0 0 0 1.43 10.057a.75.75 0 0 1-.231-1.337A60.653 60.653 0 0 1 11.7 2.805Z" />
+                        </svg>
+                        <span>{{ __('Calificaciones') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.grade-locks')"
+                        :active="request()->routeIs('admin.school.grade-locks')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Bloqueo Notas') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.attendance')"
+                        :active="request()->routeIs('admin.school.attendance')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Asistencia') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.justifications')"
+                        :active="request()->routeIs('admin.school.justifications')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0 0 16.5 9h-1.875a1.875 1.875 0 0 1-1.875-1.875V5.25A3.75 3.75 0 0 0 9 1.5H5.625ZM7.5 15a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5h-7.5A.75.75 0 0 1 7.5 15Zm.75 2.25a.75.75 0 0 0 0 1.5h7.5a.75.75 0 0 0 0-1.5h-7.5Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Justificaciones') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.schedule')"
+                        :active="request()->routeIs('admin.school.schedule')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 0 0 0-1.5h-3.75V6Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Horarios') }}</span>
+                    </x-responsive-nav-link>
+                @endhasanyrole
+
+                {{-- ─── SEGUIMIENTO ──────────────────────── --}}
+                @hasanyrole('Admin|Registro')
+                    <p class="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-widest text-white/50">
+                        {{ __('Seguimiento') }}
+                    </p>
+
+                    <x-responsive-nav-link :href="route('admin.school.discipline')"
+                        :active="request()->routeIs('admin.school.discipline')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Disciplina') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.orientation')"
+                        :active="request()->routeIs('admin.school.orientation')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-.53 14.03a.75.75 0 0 0 1.06 0l3-3a.75.75 0 1 0-1.06-1.06l-1.72 1.72V8.25a.75.75 0 0 0-1.5 0v5.69l-1.72-1.72a.75.75 0 0 0-1.06 1.06l3 3Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Orientación') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.alerts')"
+                        :active="request()->routeIs('admin.school.alerts')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M5.85 3.5a.75.75 0 0 0-1.117-1 9.719 9.719 0 0 0-2.348 4.876.75.75 0 0 0 1.479.248A8.219 8.219 0 0 1 5.85 3.5ZM19.267 2.5a.75.75 0 1 0-1.118 1 8.22 8.22 0 0 1 1.987 4.124.75.75 0 0 0 1.48-.248A9.72 9.72 0 0 0 19.266 2.5Z" />
+                            <path fill-rule="evenodd" d="M12 2.25A6.75 6.75 0 0 0 5.25 9v.75a8.217 8.217 0 0 1-2.119 5.52.75.75 0 0 0 .298 1.206c1.544.57 3.16.99 4.831 1.243a3.75 3.75 0 1 0 7.48 0 24.583 24.583 0 0 0 4.83-1.244.75.75 0 0 0 .298-1.205 8.217 8.217 0 0 1-2.118-5.52V9A6.75 6.75 0 0 0 12 2.25ZM9.75 18c0-.034 0-.067.002-.1a25.05 25.05 0 0 0 4.496 0l.002.1a2.25 2.25 0 0 1-4.5 0Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Alertas') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.promotions')"
+                        :active="request()->routeIs('admin.school.promotions')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M15.22 6.268a.75.75 0 0 1 .968-.431l5.942 2.28a.75.75 0 0 1 .431.97l-2.28 5.94a.75.75 0 1 1-1.4-.537l1.63-4.251-1.086.484a11.2 11.2 0 0 0-5.45 5.174.75.75 0 0 1-1.199.19L9 12.312l-6.22 6.22a.75.75 0 0 1-1.06-1.06l6.75-6.75a.75.75 0 0 1 1.06 0l3.606 3.606a12.695 12.695 0 0 1 5.68-4.974l1.086-.483-4.251-1.632a.75.75 0 0 1-.432-.97Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Promoción') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.honor-roll')"
+                        :active="request()->routeIs('admin.school.honor-roll')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5.166 2.621v.858c-1.035.148-2.059.33-3.071.543a.75.75 0 0 0-.584.859 6.753 6.753 0 0 0 6.138 5.6 6.73 6.73 0 0 0 2.743 1.346A6.707 6.707 0 0 1 9.279 15H8.54c-1.036 0-1.875.84-1.875 1.875V19.5h-.375a2.625 2.625 0 1 0 0 5.25h11.25a2.625 2.625 0 0 0 0-5.25h-.375v-2.625c0-1.036-.84-1.875-1.875-1.875h-.74a6.707 6.707 0 0 1-1.112-3.173 6.73 6.73 0 0 0 2.743-1.347 6.753 6.753 0 0 0 6.139-5.6.75.75 0 0 0-.585-.858 47.077 47.077 0 0 0-3.07-.543V2.62a.75.75 0 0 0-.658-.744 49.22 49.22 0 0 0-6.093-.377c-2.063 0-4.096.128-6.093.377a.75.75 0 0 0-.657.744Zm0 2.629c0 1.196.312 2.32.857 3.294A5.266 5.266 0 0 1 3.16 5.337a45.6 45.6 0 0 1 2.006-.343v.256Zm13.5 0v-.256c.674.1 1.343.214 2.006.343a5.265 5.265 0 0 1-2.863 3.207 6.72 6.72 0 0 0 .857-3.294Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Cuadro de Honor') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.report-cards')"
+                        :active="request()->routeIs('admin.school.report-cards')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5.625 1.5H9a3.75 3.75 0 0 1 3.75 3.75v1.875c0 1.036.84 1.875 1.875 1.875H16.5a3.75 3.75 0 0 1 3.75 3.75v7.875c0 1.035-.84 1.875-1.875 1.875H5.625a1.875 1.875 0 0 1-1.875-1.875V3.375c0-1.036.84-1.875 1.875-1.875ZM9.75 17.25a.75.75 0 0 0-1.5 0V18a.75.75 0 0 0 1.5 0v-.75Zm2.25-3a.75.75 0 0 1 .75.75v3a.75.75 0 0 1-1.5 0v-3a.75.75 0 0 1 .75-.75Zm3.75-1.5a.75.75 0 0 0-1.5 0V18a.75.75 0 0 0 1.5 0v-5.25Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Boletines') }}</span>
+                    </x-responsive-nav-link>
+                @endhasanyrole
+
+                {{-- ─── COMUNICACIÓN & PAGOS ─────────────── --}}
+                @hasanyrole('Admin|Registro')
+                    <p class="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-widest text-white/50">
+                        {{ __('Servicios') }}
+                    </p>
+
+                    <x-responsive-nav-link :href="route('admin.school.payments')"
+                        :active="request()->routeIs('admin.school.payments')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 7.5a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Z" />
+                            <path fill-rule="evenodd" d="M1.5 4.875C1.5 3.839 2.34 3 3.375 3h17.25c1.035 0 1.875.84 1.875 1.875v9.75c0 1.036-.84 1.875-1.875 1.875H3.375A1.875 1.875 0 0 1 1.5 14.625v-9.75ZM8.25 9.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Pagos y Cuotas') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.communications')"
+                        :active="request()->routeIs('admin.school.communications')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M1.5 8.67v8.58a3 3 0 0 0 3 3h15a3 3 0 0 0 3-3V8.67l-8.928 5.493a3 3 0 0 1-3.144 0L1.5 8.67Z" />
+                            <path d="M22.5 6.908V6.75a3 3 0 0 0-3-3h-15a3 3 0 0 0-3 3v.158l9.714 5.978a1.5 1.5 0 0 0 1.572 0L22.5 6.908Z" />
+                        </svg>
+                        <span>{{ __('Comunicaciones') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.announcements')"
+                        :active="request()->routeIs('admin.school.announcements')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16.881 4.346A23.112 23.112 0 0 1 8.25 6H7.5a5.25 5.25 0 0 0-.388 10.493A23.112 23.112 0 0 1 16.881 19.654a.75.75 0 0 0 1.119-.649V5a.75.75 0 0 0-1.119-.654Z" />
+                        </svg>
+                        <span>{{ __('Circulares') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.parent-tokens')"
+                        :active="request()->routeIs('admin.school.parent-tokens')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M15.75 1.5a6.75 6.75 0 0 0-6.651 7.906c.067.39-.032.717-.221.906l-6.5 6.499a3 3 0 0 0-.878 2.121v2.818c0 .414.336.75.75.75H6a.75.75 0 0 0 .75-.75v-1.5h1.5A.75.75 0 0 0 9 19.5V18h1.5a.75.75 0 0 0 .53-.22l2.658-2.658c.19-.189.517-.288.906-.22A6.75 6.75 0 1 0 15.75 1.5Zm0 3a.75.75 0 0 0 0 1.5A2.25 2.25 0 0 1 18 8.25a.75.75 0 0 0 1.5 0 3.75 3.75 0 0 0-3.75-3.75Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Portal Padres') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.calendar')"
+                        :active="request()->routeIs('admin.school.calendar')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12.75 12.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM7.5 15.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM8.25 17.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                            <path fill-rule="evenodd" d="M6.75 2.25A.75.75 0 0 1 7.5 3v1.5h9V3A.75.75 0 0 1 18 3v1.5h.75a3 3 0 0 1 3 3v11.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V7.5a3 3 0 0 1 3-3H6V3a.75.75 0 0 1 .75-.75Zm13.5 9a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Calendario') }}</span>
+                    </x-responsive-nav-link>
+                @endhasanyrole
+
+                {{-- ─── REPORTES ─────────────────────────── --}}
+                @hasanyrole('Admin|Registro')
+                    <p class="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-widest text-white/50">
+                        {{ __('Reportes') }}
+                    </p>
+
+                    <x-responsive-nav-link :href="route('admin.school.report-center')"
+                        :active="request()->routeIs('admin.school.report-center')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M2.25 2.25a.75.75 0 0 0 0 1.5H3v10.5a3 3 0 0 0 3 3h1.21l-1.172 3.513a.75.75 0 0 0 1.424.474l.329-.987h8.418l.33.987a.75.75 0 0 0 1.422-.474l-1.17-3.513H18a3 3 0 0 0 3-3V3.75h.75a.75.75 0 0 0 0-1.5H2.25Zm13.5 4.5a.75.75 0 0 0-1.5 0v6a.75.75 0 0 0 1.5 0v-6Zm-3 2.25a.75.75 0 0 0-1.5 0v3.75a.75.75 0 0 0 1.5 0V9Zm-3 2.25a.75.75 0 0 0-1.5 0v1.5a.75.75 0 0 0 1.5 0v-1.5Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Centro Reportes') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.subject-stats')"
+                        :active="request()->routeIs('admin.school.subject-stats')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6Zm4.5 7.5a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0v-2.25a.75.75 0 0 1 .75-.75Zm3.75-1.5a.75.75 0 0 0-1.5 0v4.5a.75.75 0 0 0 1.5 0V12Zm2.25-3a.75.75 0 0 1 .75.75v6.75a.75.75 0 0 1-1.5 0V9.75A.75.75 0 0 1 13.5 9Zm3.75-1.5a.75.75 0 0 0-1.5 0v9a.75.75 0 0 0 1.5 0v-9Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Estadísticas') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('admin.school.audit-log')"
+                        :active="request()->routeIs('admin.school.audit-log')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10.5 3.75a6.75 6.75 0 1 0 0 13.5 6.75 6.75 0 0 0 0-13.5ZM2.25 10.5a8.25 8.25 0 1 1 14.59 5.28l4.69 4.69a.75.75 0 1 1-1.06 1.06l-4.69-4.69A8.25 8.25 0 0 1 2.25 10.5Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Auditoría') }}</span>
+                    </x-responsive-nav-link>
+                @endhasanyrole
+
+                @hasanyrole('Admin|Registro')
+                    @if(App\Helpers\SaaS::has('inventory'))
+                        <x-responsive-nav-link :href="route('admin.inventory.index')" :active="request()->routeIs('admin.inventory.index')" wire:navigate>
                             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" />
+                                <path fill-rule="evenodd" d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0 0 16.5 9h-1.875a1.875 1.875 0 0 1-1.875-1.875V5.25A3.75 3.75 0 0 0 9 1.5H5.625ZM7.5 15a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5h-7.5A.75.75 0 0 1 7.5 15Zm.75 2.25a.75.75 0 0 0 0 1.5h7.5a.75.75 0 0 0 0-1.5h-7.5Z" clip-rule="evenodd" />
                             </svg>
-                            <span>{{ __('Estudiantes') }}</span>
+                            <span>{{ __('Inventario') }}</span>
                         </x-responsive-nav-link>
+                    @endif
+                @endhasanyrole
 
-                        <x-responsive-nav-link :href="route('admin.teachers.index')"
-                            :active="request()->routeIs(['admin.teachers.index', 'admin.teachers.profile'])"
-                            wire:navigate>
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M11.7 2.805a.75.75 0 0 1 .6 0A60.65 60.65 0 0 1 22.83 8.72a.75.75 0 0 1-.231 1.337 49.949 49.949 0 0 0-9.902 3.912l-.003.002c-.114.06-.227.119-.343.18a.75.75 0 0 1-.707 0c-.116-.061-.23-.12-.343-.18a49.949 49.949 0 0 0-9.902-3.912.75.75 0 0 1-.231-1.337A60.653 60.653 0 0 1 11.7 2.805Z" />
-                                <path d="M13.06 15.473a48.45 48.45 0 0 1 7.666-3.282c.134 1.414.22 2.843.255 4.285a.75.75 0 0 1-.46.71 47.878 47.878 0 0 0-8.105 4.342.75.75 0 0 1-.832 0 47.877 47.877 0 0 0-8.104-4.342.75.75 0 0 1-.461-.71c.035-1.442.121-2.87.255-4.286A48.4 48.4 0 0 1 6 13.18v2.296c0 2.267.18 4.505.54 6.713a.75.75 0 0 1-1.485.276c-.5-3.07-.75-6.195-.75-9.315a.75.75 0 0 1 .631-.74A47.98 47.98 0 0 0 11.963 2.37a.75.75 0 0 1 1.074 0c.055.056.11.11.166.166.056.056.11.11.166.166a.75.75 0 1 1-1.074 1.074 46.471 46.471 0 0 1-5.118-4.048c.07-.157.14-.312.212-.465A48.369 48.369 0 0 1 13.06 15.473Z" />
-                                <path fill-rule="evenodd" d="M1.5 12.75a.75.75 0 0 1 .75-.75c.086 0 .17.005.254.015.65.08 1.33.155 2.052.222v2.246c-.722.067-1.402.142-2.052.223a.75.75 0 0 1-.75-.751v-1.205ZM18.75 14.482v-2.246c.722-.067 1.402-.142 2.052-.222.084-.01.168-.015.254-.015a.75.75 0 0 1 .75.75v1.206a.75.75 0 0 1-.75.751c-.65.08-1.33.156-2.052.223Z" clip-rule="evenodd" />
-                            </svg>
-                            <span>{{ __('Docentes') }}</span>
-                        </x-responsive-nav-link>
+                {{-- Panel Docente (also visible for teacher role) --}}
+                @hasanyrole('Admin|Registro')
+                    <x-responsive-nav-link :href="route('admin.school.teacher-dashboard')"
+                        :active="request()->routeIs('admin.school.teacher-dashboard')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M2.25 2.25a.75.75 0 0 0 0 1.5H3v10.5a3 3 0 0 0 3 3h1.21l-1.172 3.513a.75.75 0 0 0 1.424.474l.329-.987h8.418l.33.987a.75.75 0 0 0 1.422-.474l-1.17-3.513H18a3 3 0 0 0 3-3V3.75h.75a.75.75 0 0 0 0-1.5H2.25Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Panel Docente') }}</span>
+                    </x-responsive-nav-link>
 
+                    <x-responsive-nav-link :href="route('admin.school.teacher-schedule')"
+                        :active="request()->routeIs('admin.school.teacher-schedule')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M7.5 5.25a3 3 0 0 1 3-3h3a3 3 0 0 1 3 3v.205c.933.085 1.857.197 2.774.334 1.454.218 2.476 1.483 2.476 2.917v3.033c0 1.211-.734 2.352-1.936 2.752A24.726 24.726 0 0 1 12 15.75c-2.73 0-5.36-.442-7.814-1.259-1.202-.4-1.936-1.541-1.936-2.752V8.706c0-1.434 1.022-2.7 2.476-2.917A48.814 48.814 0 0 1 7.5 5.455V5.25Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Horario Docente') }}</span>
+                    </x-responsive-nav-link>
+                @endhasanyrole
 
-                        {{-- GESTIÓN ESCOLAR MINERD --}}
-                        <div x-data="{ openSchool: {{ request()->routeIs('admin.school.*') ? 'true' : 'false' }} }">
-                            <button @click="openSchool = !openSchool" 
-                                class="flex w-full items-center justify-between px-4 py-2 text-sm font-medium transition duration-150 ease-in-out rounded-md focus:outline-none {{ request()->routeIs('admin.school.*') ? 'bg-white text-gray-900' : 'text-white hover:bg-white/10 focus:bg-white/10' }}">
-                                <div class="flex items-center gap-3">
-                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M11.584 2.376a.75.75 0 01.832 0l9 6a.75.75 0 01-.832 1.248L12 3.901 3.416 9.624a.75.75 0 01-.832-1.248l9-6z" />
-                                        <path fill-rule="evenodd" d="M20.25 10.332v9.918H21a.75.75 0 010 1.5H3a.75.75 0 010-1.5h.75v-9.918a.75.75 0 01.634-.74A49.109 49.109 0 0112 9c2.59 0 5.134.202 7.616.592a.75.75 0 01.634.74zm-7.5 2.418a.75.75 0 00-1.5 0v6.75a.75.75 0 001.5 0v-6.75zm3-.75a.75.75 0 01.75.75v6.75a.75.75 0 01-1.5 0v-6.75a.75.75 0 01.75-.75zM9 12.75a.75.75 0 00-1.5 0v6.75a.75.75 0 001.5 0v-6.75z" clip-rule="evenodd" />
-                                    </svg>
-                                    <span>{{ __('Escolar MINERD') }}</span>
-                                </div>
-                                <svg class="h-4 w-4 transform transition-transform duration-200" :class="openSchool ? 'rotate-180' : ''" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M12.53 16.28a.75.75 0 0 1-1.06 0l-7.5-7.5a.75.75 0 0 1 1.06-1.06L12 14.69l6.97-6.97a.75.75 0 1 1 1.06 1.06l-7.5 7.5Z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                            
-                            <div x-show="openSchool" x-collapse class="pl-10 space-y-1 mt-1">
-                                <a href="{{ route('admin.school.dashboard') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.dashboard') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('📊 Panel Escolar') }}
-                                </a>
-                                <a href="{{ route('admin.school.academic-years') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.academic-years') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('Años Escolares') }}
-                                </a>
-                                <a href="{{ route('admin.school.sections') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.sections') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('Secciones') }}
-                                </a>
-                                <a href="{{ route('admin.school.subjects') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.subjects') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('Asignaturas') }}
-                                </a>
-                                <a href="{{ route('admin.school.grades') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.grades') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('Calificaciones') }}
-                                </a>
-                                <a href="{{ route('admin.school.attendance') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.attendance') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('Asistencia') }}
-                                </a>
-                                <a href="{{ route('admin.school.enrollment') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.enrollment') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('Inscripciones') }}
-                                </a>
-                                <a href="{{ route('admin.school.discipline') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.discipline') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('Disciplina') }}
-                                </a>
-                                <a href="{{ route('admin.school.report-cards') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.report-cards') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('Boletines') }}
-                                </a>
-                                <a href="{{ route('admin.school.schedule') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.schedule') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('Horarios') }}
-                                </a>
-                                <a href="{{ route('admin.school.calendar') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.calendar') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('Calendario') }}
-                                </a>
-                                <a href="{{ route('admin.school.announcements') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.announcements') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('Comunicaciones') }}
-                                </a>
-                                <a href="{{ route('admin.school.student-profile') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.student-profile') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('Ficha Estudiante') }}
-                                </a>
-                                <a href="{{ route('admin.school.teacher-schedule') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.teacher-schedule') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('Horario Docente') }}
-                                </a>
-                                <a href="{{ route('admin.school.teacher-assignments') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.teacher-assignments') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('Asign. Docentes') }}
-                                </a>
-                                <a href="{{ route('admin.school.honor-roll') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.honor-roll') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('🏆 Cuadro de Honor') }}
-                                </a>
-                                <a href="{{ route('admin.school.guardians') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.guardians') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('Padres/Tutores') }}
-                                </a>
-                                <a href="{{ route('admin.school.promotions') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.promotions') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('Promoción/Repitencia') }}
-                                </a>
-                                <a href="{{ route('admin.school.alerts') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.alerts') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('🚨 Alertas') }}
-                                </a>
-                                <a href="{{ route('admin.school.grade-locks') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.grade-locks') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('🔒 Bloqueo Notas') }}
-                                </a>
-                                <a href="{{ route('admin.school.report-center') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.report-center') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('📊 Centro Reportes') }}
-                                </a>
-                                <a href="{{ route('admin.school.justifications') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.justifications') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('📋 Justificaciones') }}
-                                </a>
-                                <a href="{{ route('admin.school.reinscription') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.reinscription') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('🔄 Reinscripción') }}
-                                </a>
-                                <a href="{{ route('admin.school.subject-stats') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.subject-stats') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('📊 Estadísticas') }}
-                                </a>
-                                <a href="{{ route('admin.school.payments') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.payments') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('💰 Pagos/Cuotas') }}
-                                </a>
-                                <a href="{{ route('admin.school.audit-log') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.audit-log') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('🔍 Auditoría') }}
-                                </a>
-                                <a href="{{ route('admin.school.teacher-dashboard') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.teacher-dashboard') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('👩‍🏫 Panel Docente') }}
-                                </a>
-                                <a href="{{ route('admin.school.orientation') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.orientation') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('🧠 Orientación') }}
-                                </a>
-                                <a href="{{ route('admin.school.communications') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.communications') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('📢 Comunicaciones') }}
-                                </a>
-                                <a href="{{ route('admin.school.parent-tokens') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.parent-tokens') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('🔑 Portal Padres') }}
-                                </a>
-                                <a href="{{ route('admin.school.settings') }}" wire:navigate 
-                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.settings') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                    {{ __('Config. Centro') }}
-                                </a>
-                            </div>
-                        </div>
+                {{-- ─── CONFIGURACIÓN CENTRO ─────────────── --}}
+                @role('Admin')
+                    <p class="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-widest text-white/50">
+                        {{ __('Centro Educativo') }}
+                    </p>
 
-                        {{-- CALENDARIO --}}
-                        <x-responsive-nav-link :href="route('admin.calendar.index')" :active="request()->routeIs('admin.calendar.index')" wire:navigate>
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12.75 12.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM7.5 15.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM8.25 17.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM9.75 15.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM10.5 17.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12 15.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM12.75 17.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM14.25 15.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM15 17.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM16.5 15.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM15 12.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM16.5 13.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" />
-                                <path fill-rule="evenodd" d="M6.75 2.25A.75.75 0 0 1 7.5 3v1.5h9V3A.75.75 0 0 1 18 3v1.5h.75a3 3 0 0 1 3 3v11.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V7.5a3 3 0 0 1 3-3H6V3a.75.75 0 0 1 .75-.75Zm13.5 9a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5Z" clip-rule="evenodd" />
-                            </svg>
-                            <span>{{ __('Calendario') }}</span>
-                        </x-responsive-nav-link>
-
-                        {{-- Trámites y Admisiones removidos en distribución escolar --}}
-
-                        @if(\App\Helpers\SaaS::has('inventory'))
-                            <x-responsive-nav-link :href="route('admin.inventory.index')" :active="request()->routeIs('admin.inventory.index')" wire:navigate>
-                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0 0 16.5 9h-1.875a1.875 1.875 0 0 1-1.875-1.875V5.25A3.75 3.75 0 0 0 9 1.5H5.625ZM7.5 15a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5h-7.5A.75.75 0 0 1 7.5 15Zm.75 2.25a.75.75 0 0 0 0 1.5h7.5a.75.75 0 0 0 0-1.5h-7.5Z" clip-rule="evenodd" />
-                                    <path d="M12.971 1.816A5.23 5.23 0 0 1 14.25 5.25v1.875c0 .207.168.375.375.375H16.5a5.23 5.23 0 0 1 3.434 1.279 9.768 9.768 0 0 0-6.963-6.963Z" />
-                                </svg>
-                                <span>{{ __('Inventario') }}</span>
-                            </x-responsive-nav-link>
-                        @endif
-                    @endhasanyrole
-                @endif
+                    <x-responsive-nav-link :href="route('admin.school.settings')"
+                        :active="request()->routeIs('admin.school.settings')"
+                        wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 4.889c-.02.12-.115.26-.297.348a7.493 7.493 0 0 0-.986.57c-.166.115-.334.126-.45.083L6.3 5.508a1.875 1.875 0 0 0-2.282.819l-.922 1.597a1.875 1.875 0 0 0 .432 2.385l.84.692c.095.078.17.229.154.43a7.598 7.598 0 0 0 0 1.139c.015.2-.059.352-.153.43l-.841.692a1.875 1.875 0 0 0-.432 2.385l.922 1.597a1.875 1.875 0 0 0 2.282.818l1.019-.382c.115-.043.283-.031.45.082.312.214.641.405.985.57.182.088.277.228.297.35l.178 1.071c.151.904.933 1.567 1.85 1.567h1.844c.916 0 1.699-.663 1.85-1.567l.178-1.072c.02-.12.114-.26.297-.349.344-.165.673-.356.985-.57.167-.114.335-.125.45-.082l1.02.382a1.875 1.875 0 0 0 2.28-.819l.923-1.597a1.875 1.875 0 0 0-.432-2.385l-.84-.692c-.094-.078-.17-.229-.154-.43a7.614 7.614 0 0 0 0-1.139c-.016-.2.06-.352.154-.43l.84-.692a1.875 1.875 0 0 0 .432-2.385l-.922-1.597a1.875 1.875 0 0 0-2.282-.818l-1.02.382c-.114.043-.282.031-.449-.083a7.49 7.49 0 0 0-.985-.57c-.183-.087-.277-.227-.297-.348l-.179-1.072a1.875 1.875 0 0 0-1.85-1.567h-1.843ZM12 15.75a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Config. Centro') }}</span>
+                    </x-responsive-nav-link>
+                @endrole
 
                 {{-- MÓDULO FINANCIERO --}}
                 @hasanyrole('Admin|Contabilidad|Caja')
