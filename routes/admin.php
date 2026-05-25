@@ -76,6 +76,8 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
         Route::get('/school/sections', \App\Livewire\Admin\School\SectionManager::class)->name('admin.school.sections');
         Route::get('/school/subjects', \App\Livewire\Admin\School\SubjectManager::class)->name('admin.school.subjects');
         Route::get('/school/grades', \App\Livewire\Admin\School\GradeEntry::class)->name('admin.school.grades');
+        Route::get('/school/attendance', \App\Livewire\Admin\School\AttendanceRegister::class)->name('admin.school.attendance');
+        Route::get('/school/settings', \App\Livewire\Admin\School\SchoolSettings::class)->name('admin.school.settings');
     });
 
     // --- MODULO: INVENTARIO ---
