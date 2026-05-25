@@ -70,6 +70,12 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
         Route::middleware(['role:Admin'])->group(function () {
             Route::get('/classrooms', ClassroomManagement::class)->name('admin.classrooms.index');
         });
+
+        // --- MÓDULO ESCOLAR MINERD ---
+        Route::get('/school/academic-years', \App\Livewire\Admin\School\AcademicYearManager::class)->name('admin.school.academic-years');
+        Route::get('/school/sections', \App\Livewire\Admin\School\SectionManager::class)->name('admin.school.sections');
+        Route::get('/school/subjects', \App\Livewire\Admin\School\SubjectManager::class)->name('admin.school.subjects');
+        Route::get('/school/grades', \App\Livewire\Admin\School\GradeEntry::class)->name('admin.school.grades');
     });
 
     // --- MODULO: INVENTARIO ---
