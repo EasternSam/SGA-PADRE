@@ -27,7 +27,7 @@ return new class extends Migration
             $table->string('attachment_path')->nullable();
             $table->timestamps();
 
-            $table->index(['academic_year_id', 'is_published', 'publish_date']);
+            $table->index(['academic_year_id', 'is_published', 'publish_date'], 'sa_year_pub_date_idx');
         });
 
         // Acuses de recibo
