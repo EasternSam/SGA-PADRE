@@ -7,6 +7,7 @@ use App\Models\Section;
 use App\Models\SectionSubject;
 use App\Models\EvaluationPeriod;
 use App\Models\AcademicYear;
+use App\Models\GradeLockPeriod;
 use App\Models\Student;
 use Livewire\Component;
 
@@ -56,6 +57,12 @@ class GradeEntry extends Component
 
     public function saveGrades()
     {
+        // Check grade lock
+        if ($this->period_id && GradeLockPeriod::isLocked($this->period_id)) {
+            session()->flash('error', '🔒 Este período está bloqueado. No se pueden modificar calificaciones.');
+            return;
+        }
+
         $this->saving = true;
 
         foreach ($this->grades as $gradeData) {
@@ -105,11 +112,14 @@ class GradeEntry extends Component
                 ->get()
             : collect();
 
+        $isLocked = $this->period_id ? GradeLockPeriod::isLocked($this->period_id) : false;
+
         return view('livewire.admin.school.grade-entry', [
             'activeYear'      => $activeYear,
             'sections'        => $sections,
             'periods'         => $periods,
             'sectionSubjects' => $sectionSubjects,
+            'isLocked'        => $isLocked,
         ])->layout('layouts.dashboard');
     }
 }

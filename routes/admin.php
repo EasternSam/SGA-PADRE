@@ -90,6 +90,8 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
         Route::get('/school/honor-roll', \App\Livewire\Admin\School\HonorRoll::class)->name('admin.school.honor-roll');
         Route::get('/school/guardians', \App\Livewire\Admin\School\GuardianManager::class)->name('admin.school.guardians');
         Route::get('/school/promotions', \App\Livewire\Admin\School\PromotionManager::class)->name('admin.school.promotions');
+        Route::get('/school/alerts', \App\Livewire\Admin\School\AlertCenter::class)->name('admin.school.alerts');
+        Route::get('/school/grade-locks', \App\Livewire\Admin\School\GradeLockManager::class)->name('admin.school.grade-locks');
         Route::get('/school/settings', \App\Livewire\Admin\School\SchoolSettings::class)->name('admin.school.settings');
     });
 
