@@ -102,6 +102,14 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     Route::get('/reports/schedule/teacher/{teacher}', [\App\Http\Controllers\SchedulePdfController::class, 'teacherSchedule'])->name('reports.schedule.teacher');
     Route::get('/reports/grades/section/{section}/{period}', [\App\Http\Controllers\GradeReportPdfController::class, 'sectionGrades'])->name('reports.grades.section');
 
+    // --- DOCUMENTOS OFICIALES PDF ---
+    Route::get('/documents/constancia/{student}', [\App\Http\Controllers\SchoolDocumentsPdfController::class, 'constanciaEstudios'])->name('documents.constancia');
+    Route::get('/documents/conducta/{student}', [\App\Http\Controllers\SchoolDocumentsPdfController::class, 'cartaConducta'])->name('documents.conducta');
+    Route::get('/documents/record/{student}', [\App\Http\Controllers\SchoolDocumentsPdfController::class, 'recordNotas'])->name('documents.record');
+    Route::get('/documents/certificado/{student}', [\App\Http\Controllers\SchoolDocumentsPdfController::class, 'certificadoEstudios'])->name('documents.certificado');
+    Route::get('/documents/ficha/{student}', [\App\Http\Controllers\SchoolDocumentsPdfController::class, 'fichaInscripcion'])->name('documents.ficha');
+    Route::get('/documents/lista/{section}', [\App\Http\Controllers\SchoolDocumentsPdfController::class, 'listaClase'])->name('documents.lista');
+
     // --- MODULO: INVENTARIO ---
     Route::middleware(['feature:inventory', 'role:Admin|Contabilidad'])->group(function () {
         if (class_exists(InventoryIndex::class)) {

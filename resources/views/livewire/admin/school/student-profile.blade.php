@@ -43,10 +43,13 @@
                         <span>📊 {{ $st->status ?? 'Activo' }}</span>
                     </div>
                 </div>
-                <div class="text-right">
-                    <a href="{{ route('reports.attendance.student', $st->id) }}" target="_blank" class="inline-flex items-center gap-1 rounded-lg bg-white/20 px-3 py-1.5 text-sm hover:bg-white/30 transition">
-                        📄 Asistencia PDF
-                    </a>
+                <div class="text-right space-y-1">
+                    <a href="{{ route('documents.constancia', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">📄 Constancia</a>
+                    <a href="{{ route('documents.conducta', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">📋 Conducta</a>
+                    <a href="{{ route('documents.record', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">📝 Récord</a>
+                    <a href="{{ route('documents.certificado', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">🎓 Certificado</a>
+                    <a href="{{ route('documents.ficha', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">📎 Ficha</a>
+                    <a href="{{ route('reports.attendance.student', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">✅ Asistencia</a>
                 </div>
             </div>
         </div>
