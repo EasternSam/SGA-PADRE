@@ -49,5 +49,8 @@ class DatabaseSeeder extends Seeder
             ]
         );
         $admin->assignRole($roleAdmin);
+
+        // ─── Datos de demostración ───
+        $this->call(SchoolDemoSeeder::class);
     }
 }
