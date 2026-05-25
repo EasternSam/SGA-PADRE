@@ -77,6 +77,8 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
         Route::get('/school/subjects', \App\Livewire\Admin\School\SubjectManager::class)->name('admin.school.subjects');
         Route::get('/school/grades', \App\Livewire\Admin\School\GradeEntry::class)->name('admin.school.grades');
         Route::get('/school/attendance', \App\Livewire\Admin\School\AttendanceRegister::class)->name('admin.school.attendance');
+        Route::get('/school/enrollment', \App\Livewire\Admin\School\EnrollmentManager::class)->name('admin.school.enrollment');
+        Route::get('/school/discipline', \App\Livewire\Admin\School\DisciplineManager::class)->name('admin.school.discipline');
         Route::get('/school/settings', \App\Livewire\Admin\School\SchoolSettings::class)->name('admin.school.settings');
     });
 
