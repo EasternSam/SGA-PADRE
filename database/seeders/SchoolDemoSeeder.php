@@ -68,16 +68,16 @@ class SchoolDemoSeeder extends Seeder
         // enum level: inicial, primario, secundario
         $gradeLevels = [];
         $gradeData = [
-            ['1ro Primaria',  '1ro', 'primario',   'primer_ciclo',  1, 65],
-            ['2do Primaria',  '2do', 'primario',   'primer_ciclo',  2, 65],
-            ['3ro Primaria',  '3ro', 'primario',   'primer_ciclo',  3, 65],
-            ['4to Primaria',  '4to', 'primario',   'segundo_ciclo', 4, 65],
-            ['5to Primaria',  '5to', 'primario',   'segundo_ciclo', 5, 65],
-            ['6to Primaria',  '6to', 'primario',   'segundo_ciclo', 6, 65],
-            ['1ro Secundaria','1ro Sec', 'secundario', 'primer_ciclo', 7, 70],
-            ['2do Secundaria','2do Sec', 'secundario', 'primer_ciclo', 8, 70],
-            ['3ro Secundaria','3ro Sec', 'secundario', 'segundo_ciclo', 9, 70],
-            ['4to Secundaria','4to Sec', 'secundario', 'segundo_ciclo', 10, 70],
+            ['1ro Primaria',  '1ro', 'primario',   1, 1, 65],
+            ['2do Primaria',  '2do', 'primario',   1, 2, 65],
+            ['3ro Primaria',  '3ro', 'primario',   1, 3, 65],
+            ['4to Primaria',  '4to', 'primario',   2, 4, 65],
+            ['5to Primaria',  '5to', 'primario',   2, 5, 65],
+            ['6to Primaria',  '6to', 'primario',   2, 6, 65],
+            ['1ro Secundaria','1ro Sec', 'secundario', 1, 7, 70],
+            ['2do Secundaria','2do Sec', 'secundario', 1, 8, 70],
+            ['3ro Secundaria','3ro Sec', 'secundario', 2, 9, 70],
+            ['4to Secundaria','4to Sec', 'secundario', 2, 10, 70],
         ];
         foreach ($gradeData as $i => [$name, $short, $level, $cycle, $gradeNum, $minScore]) {
             $gradeLevels[] = GradeLevel::create([
