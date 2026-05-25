@@ -92,6 +92,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
         Route::get('/school/promotions', \App\Livewire\Admin\School\PromotionManager::class)->name('admin.school.promotions');
         Route::get('/school/alerts', \App\Livewire\Admin\School\AlertCenter::class)->name('admin.school.alerts');
         Route::get('/school/grade-locks', \App\Livewire\Admin\School\GradeLockManager::class)->name('admin.school.grade-locks');
+        Route::get('/school/report-center', \App\Livewire\Admin\School\ReportCenter::class)->name('admin.school.report-center');
         Route::get('/school/settings', \App\Livewire\Admin\School\SchoolSettings::class)->name('admin.school.settings');
     });
 
@@ -111,6 +112,11 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     Route::get('/documents/certificado/{student}', [\App\Http\Controllers\SchoolDocumentsPdfController::class, 'certificadoEstudios'])->name('documents.certificado');
     Route::get('/documents/ficha/{student}', [\App\Http\Controllers\SchoolDocumentsPdfController::class, 'fichaInscripcion'])->name('documents.ficha');
     Route::get('/documents/lista/{section}', [\App\Http\Controllers\SchoolDocumentsPdfController::class, 'listaClase'])->name('documents.lista');
+
+    // --- REPORTES MINERD ---
+    Route::get('/reports/minerd/re1', [\App\Http\Controllers\MinerdReportsPdfController::class, 're1'])->name('reports.minerd.re1');
+    Route::get('/reports/minerd/re2/{period}', [\App\Http\Controllers\MinerdReportsPdfController::class, 're2'])->name('reports.minerd.re2');
+    Route::get('/reports/minerd/re3/{month?}', [\App\Http\Controllers\MinerdReportsPdfController::class, 're3'])->name('reports.minerd.re3');
 
     // --- MODULO: INVENTARIO ---
     Route::middleware(['feature:inventory', 'role:Admin|Contabilidad'])->group(function () {
