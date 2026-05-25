@@ -105,11 +105,42 @@
         @endif
     </div>
 
+    {{-- EXPORTACIONES CSV --}}
+    <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+        📥 Exportaciones CSV / Excel
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        @if($selectedSection)
+            <a href="{{ route('export.students', $selectedSection) }}" class="rounded-xl border border-green-200 bg-green-50 p-4 shadow-sm hover:shadow-md transition dark:bg-green-900/20 dark:border-green-800">
+                <div class="text-lg mb-1">📋</div>
+                <h3 class="text-sm font-bold text-green-900 dark:text-green-400">Lista CSV</h3>
+                <p class="text-[10px] text-green-700">Exportar nómina de estudiantes</p>
+            </a>
+            <a href="{{ route('export.attendance', $selectedSection) }}" class="rounded-xl border border-green-200 bg-green-50 p-4 shadow-sm hover:shadow-md transition dark:bg-green-900/20 dark:border-green-800">
+                <div class="text-lg mb-1">✅</div>
+                <h3 class="text-sm font-bold text-green-900 dark:text-green-400">Asistencia CSV</h3>
+                <p class="text-[10px] text-green-700">Exportar asistencia anual</p>
+            </a>
+            @if($selectedPeriod)
+                <a href="{{ route('export.grades', [$selectedSection, $selectedPeriod]) }}" class="rounded-xl border border-green-200 bg-green-50 p-4 shadow-sm hover:shadow-md transition dark:bg-green-900/20 dark:border-green-800">
+                    <div class="text-lg mb-1">📊</div>
+                    <h3 class="text-sm font-bold text-green-900 dark:text-green-400">Notas CSV</h3>
+                    <p class="text-[10px] text-green-700">Exportar calificaciones</p>
+                </a>
+            @endif
+        @endif
+        <a href="{{ route('export.payments') }}" class="rounded-xl border border-green-200 bg-green-50 p-4 shadow-sm hover:shadow-md transition dark:bg-green-900/20 dark:border-green-800">
+            <div class="text-lg mb-1">💰</div>
+            <h3 class="text-sm font-bold text-green-900 dark:text-green-400">Pagos CSV</h3>
+            <p class="text-[10px] text-green-700">Exportar todos los pagos</p>
+        </a>
+    </div>
+
     {{-- INFO --}}
     <div class="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4">
         <h4 class="text-sm font-bold text-blue-800 dark:text-blue-400 mb-2">💡 Documentos Individuales</h4>
         <p class="text-xs text-blue-700 dark:text-blue-300">
-            Para documentos por estudiante (Constancia, Certificado, Conducta, Récord, Ficha), 
+            Para documentos por estudiante (Constancia, Certificado, Conducta, Récord, Ficha, Boletín Final), 
             ve a <strong>Ficha del Estudiante</strong> y selecciona el documento deseado desde el perfil.
         </p>
     </div>

@@ -51,6 +51,7 @@
                     <a href="{{ route('documents.ficha', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">📎 Ficha</a>
                     <a href="{{ route('documents.transferencia', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">🔄 Transferencia</a>
                     <a href="{{ route('documents.pagos', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">💰 Pagos</a>
+                    <a href="{{ route('documents.boletin-final', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">📋 Boletín Final</a>
                     <a href="{{ route('reports.attendance.student', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">✅ Asistencia</a>
                 </div>
             </div>

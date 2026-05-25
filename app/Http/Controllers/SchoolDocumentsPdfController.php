@@ -254,4 +254,83 @@ class SchoolDocumentsPdfController extends Controller
 
         return $pdf->stream('Pagos_' . $student->last_name . '_' . $student->first_name . '.pdf');
     }
+
+    /**
+     * Boletín Final Anual (todas las calificaciones del año consolidadas)
+     */
+    public function boletinFinal(Student $student)
+    {
+        $student->load('gradeLevel');
+        $schoolConfig = SchoolConfig::current();
+        $activeYear = AcademicYear::where('status', 'active')->first();
+        $section = Section::with('gradeLevel')->find($student->section_id);
+
+        $periods = $activeYear
+            ? EvaluationPeriod::where('academic_year_id', $activeYear->id)->orderBy('number')->get()
+            : collect();
+
+        $sectionSubjects = $section
+            ? \App\Models\SectionSubject::where('section_id', $section->id)->with('subject')->get()
+            : collect();
+
+        $subjectData = [];
+        $periodAvgs = [];
+
+        foreach ($sectionSubjects as $ss) {
+            $entry = [
+                'subject_name' => $ss->subject?->name ?? '—',
+                'scores'       => [],
+                'final'        => null,
+            ];
+
+            $total = 0;
+            $count = 0;
+
+            foreach ($periods as $p) {
+                $grade = StudentGrade::where('student_id', $student->id)
+                    ->where('section_subject_id', $ss->id)
+                    ->where('evaluation_period_id', $p->id)
+                    ->first();
+                $score = $grade?->score;
+                $entry['scores'][$p->id] = $score;
+                if ($score !== null) { $total += $score; $count++; }
+            }
+
+            $entry['final'] = $count > 0 ? round($total / $count, 1) : null;
+            $subjectData[] = $entry;
+        }
+
+        // Period averages
+        foreach ($periods as $p) {
+            $pScores = collect($subjectData)->pluck('scores')->map(fn($s) => $s[$p->id] ?? null)->filter();
+            $periodAvgs[$p->id] = $pScores->count() > 0 ? round($pScores->avg(), 1) : null;
+        }
+
+        $generalAvg = collect($subjectData)->pluck('final')->filter()->count() > 0
+            ? round(collect($subjectData)->pluck('final')->filter()->avg(), 1)
+            : null;
+
+        // Attendance
+        $att = StudentAttendance::where('student_id', $student->id)
+            ->when($activeYear, fn($q) => $q->whereDate('date', '>=', $activeYear->start_date))
+            ->get();
+        $attendance = [
+            'present' => $att->where('status', 'present')->count(),
+            'absent'  => $att->where('status', 'absent')->count(),
+            'late'    => $att->where('status', 'late')->count(),
+            'total'   => $att->count(),
+            'pct'     => $att->count() > 0 ? round(($att->where('status', 'present')->count() / $att->count()) * 100, 1) : 0,
+        ];
+
+        $promotion = PromotionRecord::where('student_id', $student->id)
+            ->where('academic_year_id', $activeYear?->id)
+            ->first();
+
+        $data = compact('student', 'schoolConfig', 'activeYear', 'section', 'periods', 'subjectData', 'periodAvgs', 'generalAvg', 'attendance', 'promotion');
+
+        $pdf = Pdf::loadView('reports.documents.boletin-final', $data);
+        $pdf->setPaper('letter', 'portrait');
+
+        return $pdf->stream('BoletinFinal_' . $student->last_name . '_' . $student->first_name . '.pdf');
+    }
 }

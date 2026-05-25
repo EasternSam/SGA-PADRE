@@ -118,11 +118,18 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     Route::get('/documents/lista/{section}', [\App\Http\Controllers\SchoolDocumentsPdfController::class, 'listaClase'])->name('documents.lista');
     Route::get('/documents/transferencia/{student}', [\App\Http\Controllers\SchoolDocumentsPdfController::class, 'cartaTransferencia'])->name('documents.transferencia');
     Route::get('/documents/pagos/{student}', [\App\Http\Controllers\SchoolDocumentsPdfController::class, 'historialPagos'])->name('documents.pagos');
+    Route::get('/documents/boletin-final/{student}', [\App\Http\Controllers\SchoolDocumentsPdfController::class, 'boletinFinal'])->name('documents.boletin-final');
 
     // --- REPORTES MINERD ---
     Route::get('/reports/minerd/re1', [\App\Http\Controllers\MinerdReportsPdfController::class, 're1'])->name('reports.minerd.re1');
     Route::get('/reports/minerd/re2/{period}', [\App\Http\Controllers\MinerdReportsPdfController::class, 're2'])->name('reports.minerd.re2');
     Route::get('/reports/minerd/re3/{month?}', [\App\Http\Controllers\MinerdReportsPdfController::class, 're3'])->name('reports.minerd.re3');
+
+    // --- EXPORTACIONES CSV ---
+    Route::get('/export/students/{section}', [\App\Http\Controllers\ExcelExportController::class, 'studentList'])->name('export.students');
+    Route::get('/export/grades/{section}/{period}', [\App\Http\Controllers\ExcelExportController::class, 'grades'])->name('export.grades');
+    Route::get('/export/attendance/{section}', [\App\Http\Controllers\ExcelExportController::class, 'attendance'])->name('export.attendance');
+    Route::get('/export/payments', [\App\Http\Controllers\ExcelExportController::class, 'payments'])->name('export.payments');
 
     // --- MODULO: INVENTARIO ---
     Route::middleware(['feature:inventory', 'role:Admin|Contabilidad'])->group(function () {
