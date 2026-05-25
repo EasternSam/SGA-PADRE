@@ -657,7 +657,7 @@ class SchoolDemoSeeder extends Seeder
             $employee = Employee::firstOrCreate([
                 'user_id' => $teacher->id,
             ], [
-                'biometric_id' => 'EMP-' . str_pad($teacher->id, 4, '0', STR_PAD_LEFT),
+                'biometric_id' => $teacher->id,
                 'position' => 'Docente por Asignación',
                 'department' => 'Académico',
                 'contract_type' => 'Fijo',
