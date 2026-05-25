@@ -43,6 +43,19 @@ class Student extends Model
         'tutor_cedula',
         'tutor_phone',
         'tutor_relationship',
+
+        // Campos escolares MINERD
+        'grade_level_id',
+        'section_id',
+        'academic_year_id',
+        'enrollment_date',
+        'blood_type',
+        'allergies',
+        'medical_conditions',
+        'emergency_contact_name',
+        'emergency_contact_phone',
+        'previous_school',
+        'documents_status',
     ];
 
     /**
@@ -51,9 +64,11 @@ class Student extends Model
      * @var array
      */
     protected $casts = [
-        'birth_date' => 'date',
-        'is_minor' => 'boolean',
-        'balance' => 'decimal:2',
+        'birth_date'       => 'date',
+        'enrollment_date'  => 'date',
+        'is_minor'         => 'boolean',
+        'balance'          => 'decimal:2',
+        'documents_status' => 'array',
     ];
 
     /**
@@ -104,11 +119,51 @@ class Student extends Model
         return $this->hasMany(StudentRequest::class);
     }
 
+    // ── Relaciones Escolares MINERD ─────────────────────────
+
+    public function gradeLevel()
+    {
+        return $this->belongsTo(GradeLevel::class);
+    }
+
+    public function section()
+    {
+        return $this->belongsTo(Section::class);
+    }
+
+    public function academicYear()
+    {
+        return $this->belongsTo(AcademicYear::class);
+    }
+
+    public function studentGrades()
+    {
+        return $this->hasMany(StudentGrade::class);
+    }
+
+    public function reportCards()
+    {
+        return $this->hasMany(ReportCard::class);
+    }
+
     /**
      * Obtiene el nombre completo del estudiante.
      */
     public function getFullNameAttribute()
     {
         return "{$this->first_name} {$this->last_name}";
+    }
+
+    /**
+     * Promedio general del estudiante en un período.
+     */
+    public function getAverageForPeriod(int $periodId): ?float
+    {
+        $grades = $this->studentGrades()
+            ->where('evaluation_period_id', $periodId)
+            ->whereNotNull('score')
+            ->get();
+
+        return $grades->isEmpty() ? null : round($grades->avg('score'), 2);
     }
 }
