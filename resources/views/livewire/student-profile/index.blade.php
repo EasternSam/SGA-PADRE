@@ -176,9 +176,11 @@
                         <i class="fas fa-id-card-alt mr-2"></i>Ficha Académica
                     </a>
 
+                    @if(\App\Helpers\SaaS::showCourses())
                     <button wire:click="generateReport" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
                         <i class="fas fa-file-pdf mr-2"></i>Generar Reporte
                     </button>
+                    @endif
 
                     @hasanyrole('Admin|Contabilidad|Caja')
                     <button wire:click="$dispatch('openPaymentModal')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
