@@ -21,15 +21,11 @@ class SaaS
 
     /**
      * Obtiene el modo académico de la licencia.
-     * Retorna: 'courses', 'careers', 'both'
+     * Retorna: 'courses', 'careers', 'both', 'school'
      */
     public static function academicMode(): string
     {
-        if (env('SAAS_MODE_ENABLED', true) === false) {
-            return 'both';
-        }
-
-        return Cache::get('saas_academic_mode', 'both');
+        return 'school';
     }
 
     /**
@@ -37,8 +33,7 @@ class SaaS
      */
     public static function showCourses(): bool
     {
-        $mode = self::academicMode();
-        return $mode === 'courses' || $mode === 'both';
+        return false;
     }
 
     /**
@@ -46,15 +41,7 @@ class SaaS
      */
     public static function showCareers(): bool
     {
-        // 1. Verificar la configuración local (override manual del administrador)
-        $localToggle = \App\Models\Setting::get('enable_careers', 'true');
-        if ($localToggle === 'false') {
-            return false;
-        }
-
-        // 2. Verificar la licencia SaaS en la nube
-        $mode = self::academicMode();
-        return $mode === 'careers' || $mode === 'both';
+        return false;
     }
 
     /**

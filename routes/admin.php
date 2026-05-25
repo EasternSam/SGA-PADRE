@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('admin')->group(function () {
 
-    Route::get('/dashboard', \App\Livewire\Dashboard\Index::class)->name('admin.dashboard');
+    Route::get('/dashboard', \App\Livewire\Admin\School\SchoolDashboard::class)->name('admin.dashboard');
 
     // --- GESTIÓN DE MÓDULOS (Solo Admin) ---
     Route::middleware(['role:Admin'])->group(function () {
