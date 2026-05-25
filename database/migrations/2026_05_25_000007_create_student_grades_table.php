@@ -15,7 +15,7 @@ return new class extends Migration
             $table->foreignId('evaluation_period_id')->constrained()->cascadeOnDelete();
 
             // Calificación numérica MINERD (0-100)
-            $table->unsignedDecimal('score', 5, 2)->nullable(); // null = aún no calificado
+            $table->decimal('score', 5, 2)->unsigned()->nullable(); // null = aún no calificado
 
             // Nivel de desempeño MINERD (auto-calculado)
             $table->enum('performance_level', [
