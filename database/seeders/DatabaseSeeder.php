@@ -2,31 +2,52 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
+use App\Models\User;
 
 class DatabaseSeeder extends Seeder
 {
     /**
      * Seed the application's database.
+     * Solo crea roles, permisos y el usuario administrador.
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Reset cached roles and permissions
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
+        // ─── Permisos ───
+        Permission::firstOrCreate(['name' => 'ver dashboard']);
+        Permission::firstOrCreate(['name' => 'gestionar usuarios']);
+        Permission::firstOrCreate(['name' => 'ver cursos']);
+        Permission::firstOrCreate(['name' => 'gestionar cursos']);
+        Permission::firstOrCreate(['name' => 'ver estudiantes']);
 
-        // Llama al seeder de Roles y Permisos (esto crea los usuarios base)
-        $this->call(RolesAndPermissionsSeeder::class);
+        // ─── Roles ───
+        $roleAdmin        = Role::firstOrCreate(['name' => 'Admin']);
+        $roleProfesor     = Role::firstOrCreate(['name' => 'Profesor']);
+        $roleEstudiante   = Role::firstOrCreate(['name' => 'Estudiante']);
+        $roleRegistro     = Role::firstOrCreate(['name' => 'Registro']);
+        $roleContabilidad = Role::firstOrCreate(['name' => 'Contabilidad']);
+        $roleCaja         = Role::firstOrCreate(['name' => 'Caja']);
+        $roleSolicitante  = Role::firstOrCreate(['name' => 'Solicitante']);
 
-        // --- AÑADIDO ---
-        // Llama al nuevo seeder para crear datos de demostración
-        $this->call(DemoDataSeeder::class);
-        $this->call(MassiveDataSeeder::class); // <-- AÑADIDO: Seeder Masivo
-        // --- FIN DE LO AÑADIDO ---
+        // ─── Asignar permisos ───
+        $roleAdmin->givePermissionTo(Permission::all());
+        $roleProfesor->givePermissionTo(['ver dashboard', 'ver cursos', 'ver estudiantes']);
+        $roleEstudiante->givePermissionTo(['ver dashboard', 'ver cursos']);
+        $roleSolicitante->givePermissionTo(['ver dashboard']);
+
+        // ─── Usuario Admin único ───
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@admin.com'],
+            [
+                'name'     => 'Administrador',
+                'password' => bcrypt('Password'),
+            ]
+        );
+        $admin->assignRole($roleAdmin);
     }
 }
