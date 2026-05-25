@@ -96,6 +96,10 @@
                             </button>
                             
                             <div x-show="openSchool" x-collapse class="pl-10 space-y-1 mt-1">
+                                <a href="{{ route('admin.school.dashboard') }}" wire:navigate 
+                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.dashboard') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
+                                    {{ __('📊 Panel Escolar') }}
+                                </a>
                                 <a href="{{ route('admin.school.academic-years') }}" wire:navigate 
                                     class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.academic-years') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
                                     {{ __('Años Escolares') }}
@@ -135,6 +139,10 @@
                                 <a href="{{ route('admin.school.calendar') }}" wire:navigate 
                                     class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.calendar') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
                                     {{ __('Calendario') }}
+                                </a>
+                                <a href="{{ route('admin.school.announcements') }}" wire:navigate 
+                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.announcements') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
+                                    {{ __('Comunicaciones') }}
                                 </a>
                                 <a href="{{ route('admin.school.settings') }}" wire:navigate 
                                     class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.settings') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">

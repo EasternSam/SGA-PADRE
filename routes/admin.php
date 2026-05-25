@@ -82,6 +82,8 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
         Route::get('/school/report-cards', \App\Livewire\Admin\School\ReportCardManager::class)->name('admin.school.report-cards');
         Route::get('/school/schedule', \App\Livewire\Admin\School\ScheduleBuilder::class)->name('admin.school.schedule');
         Route::get('/school/calendar', \App\Livewire\Admin\School\CalendarManager::class)->name('admin.school.calendar');
+        Route::get('/school/announcements', \App\Livewire\Admin\School\AnnouncementsManager::class)->name('admin.school.announcements');
+        Route::get('/school/dashboard', \App\Livewire\Admin\School\SchoolDashboard::class)->name('admin.school.dashboard');
         Route::get('/school/settings', \App\Livewire\Admin\School\SchoolSettings::class)->name('admin.school.settings');
     });
 
