@@ -1,0 +1,473 @@
+/* ==========================================
+   GRIDBASE DESIGN KIT ADAPTATION FOR SGA
+   Premium SaaS aesthetic over Tailwind base
+   ========================================== */
+
+/* ── Design Tokens (Gridbase-compatible) ─────── */
+:root {
+    --gb-bg-app: #F4F5F7;
+    --gb-bg-card: #FFFFFF;
+    --gb-bg-hover: #F3F4F6;
+    --gb-text-primary: #111827;
+    --gb-text-secondary: #4B5563;
+    --gb-text-muted: #9CA3AF;
+    --gb-border: #E5E7EB;
+    --gb-border-hover: #D1D5DB;
+    --gb-shadow-sm: 0px 1px 2px rgba(0, 0, 0, 0.05);
+    --gb-shadow-md: 0px 4px 6px -1px rgba(0, 0, 0, 0.03), 0px 2px 4px -1px rgba(0, 0, 0, 0.02);
+    --gb-shadow-lg: 0px 10px 15px -3px rgba(0, 0, 0, 0.05), 0px 4px 6px -2px rgba(0, 0, 0, 0.02);
+    --gb-radius-md: 8px;
+    --gb-radius-lg: 12px;
+    --gb-radius-xl: 16px;
+    --gb-transition: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Status Colors */
+    --gb-success-bg: #DEF7EC;
+    --gb-success-text: #03543F;
+    --gb-danger-bg: #FDE8E8;
+    --gb-danger-text: #9B1C1C;
+    --gb-warning-bg: #FEF3C7;
+    --gb-warning-text: #92400E;
+    --gb-info-bg: #E0E7FF;
+    --gb-info-text: #3730A3;
+}
+
+/* ── Workspace Panel ─────────────────────────── */
+.workspace-panel {
+    background-color: var(--gb-bg-card);
+    border: 1px solid var(--gb-border);
+    border-radius: var(--gb-radius-xl);
+    padding: 24px 28px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Metric Cards (Gridbase Style) ───────────── */
+.gb-metric {
+    background-color: var(--gb-bg-card);
+    border: 1px solid var(--gb-border);
+    border-radius: var(--gb-radius-xl);
+    padding: 20px 24px;
+    box-shadow: var(--gb-shadow-sm);
+    transition: var(--gb-transition);
+    position: relative;
+    overflow: hidden;
+}
+.gb-metric:hover {
+    box-shadow: var(--gb-shadow-md);
+    border-color: var(--gb-border-hover);
+}
+.gb-metric-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--gb-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+.gb-metric-value {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--gb-text-primary);
+    line-height: 1;
+    margin-top: 12px;
+}
+.gb-metric-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gb-text-secondary);
+    margin-top: 4px;
+}
+.gb-metric-trend {
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 8px;
+    border-radius: 9999px;
+}
+.gb-metric-trend.up {
+    color: #10B981;
+    background-color: rgba(16, 185, 129, 0.08);
+}
+.gb-metric-trend.down {
+    color: #EF4444;
+    background-color: rgba(239, 68, 68, 0.08);
+}
+
+/* ── Premium Buttons (Gridbase Charcoal) ─────── */
+.gb-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 9px 16px;
+    border-radius: var(--gb-radius-md);
+    cursor: pointer;
+    transition: var(--gb-transition);
+    white-space: nowrap;
+    user-select: none;
+    border: none;
+    text-decoration: none;
+}
+.gb-btn-primary {
+    background-color: #111827;
+    background-image: linear-gradient(180deg, #1F2937 0%, #111827 100%);
+    color: #FFFFFF;
+    border: 1px solid #111827;
+    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05), inset 0px 1px 0px rgba(255, 255, 255, 0.1);
+}
+.gb-btn-primary:hover {
+    background-image: linear-gradient(180deg, #374151 0%, #1F2937 100%);
+}
+.gb-btn-secondary {
+    background-color: #FFFFFF;
+    color: var(--gb-text-primary);
+    border: 1px solid var(--gb-border);
+    box-shadow: var(--gb-shadow-sm);
+}
+.gb-btn-secondary:hover {
+    background-color: var(--gb-bg-hover);
+    border-color: var(--gb-border-hover);
+}
+.gb-btn-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: var(--gb-radius-md);
+    background-color: #FFFFFF;
+    color: var(--gb-text-secondary);
+    border: 1px solid var(--gb-border);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--gb-transition);
+}
+.gb-btn-icon:hover {
+    background-color: var(--gb-bg-hover);
+    color: var(--gb-text-primary);
+    border-color: var(--gb-border-hover);
+}
+
+/* ── Vertical Divider ────────────────────────── */
+.gb-divider-v {
+    width: 1px;
+    height: 24px;
+    background-color: var(--gb-border);
+    margin: 0 8px;
+    align-self: center;
+}
+
+/* ── Status Badges (Gridbase Style) ──────────── */
+.gb-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 9999px;
+    line-height: 1.4;
+    letter-spacing: 0.02em;
+}
+.gb-badge-success {
+    background-color: var(--gb-success-bg);
+    color: var(--gb-success-text);
+    border: 1px solid rgba(16, 185, 129, 0.12);
+}
+.gb-badge-danger {
+    background-color: var(--gb-danger-bg);
+    color: var(--gb-danger-text);
+    border: 1px solid rgba(239, 68, 68, 0.12);
+}
+.gb-badge-warning {
+    background-color: var(--gb-warning-bg);
+    color: var(--gb-warning-text);
+    border: 1px solid rgba(245, 158, 11, 0.12);
+}
+.gb-badge-info {
+    background-color: var(--gb-info-bg);
+    color: var(--gb-info-text);
+    border: 1px solid rgba(99, 102, 241, 0.12);
+}
+
+/* ── Segmented Control (Tabs) ────────────────── */
+.gb-segmented {
+    display: inline-flex;
+    background-color: var(--gb-bg-hover);
+    padding: 3px;
+    border-radius: var(--gb-radius-lg);
+    gap: 2px;
+}
+.gb-segment {
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gb-text-secondary);
+    border-radius: var(--gb-radius-md);
+    cursor: pointer;
+    transition: var(--gb-transition);
+    user-select: none;
+    border: none;
+    background: transparent;
+}
+.gb-segment:hover {
+    color: var(--gb-text-primary);
+}
+.gb-segment.active,
+.gb-segment[aria-selected="true"] {
+    background-color: #FFFFFF;
+    color: var(--gb-text-primary);
+    box-shadow: var(--gb-shadow-sm);
+    font-weight: 600;
+}
+
+/* ── Data Table (Gridbase Style) ─────────────── */
+.gb-table-outer {
+    background-color: #FFFFFF;
+    border: 1px solid var(--gb-border);
+    border-radius: var(--gb-radius-xl);
+    box-shadow: var(--gb-shadow-sm);
+    overflow: hidden;
+}
+.gb-table-toolbar {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--gb-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.gb-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+.gb-table th {
+    background-color: #FFFFFF;
+    padding: 12px 24px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gb-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--gb-border);
+    user-select: none;
+}
+.gb-table td {
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--gb-border);
+    color: var(--gb-text-secondary);
+    font-size: 13px;
+    vertical-align: middle;
+}
+.gb-table tbody tr {
+    transition: var(--gb-transition);
+}
+.gb-table tbody tr:hover {
+    background-color: var(--gb-bg-hover);
+}
+.gb-table tbody tr:last-child td {
+    border-bottom: none;
+}
+.gb-table .user-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.gb-table .user-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gb-text-primary);
+}
+.gb-table .user-sub {
+    font-size: 12px;
+    color: var(--gb-text-muted);
+}
+.gb-link-id {
+    font-weight: 500;
+    color: var(--gb-text-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--gb-text-muted);
+    transition: var(--gb-transition);
+}
+.gb-link-id:hover {
+    text-decoration-color: var(--gb-text-primary);
+}
+
+/* ── Keycap (Keyboard Shortcut) ──────────────── */
+.gb-keycap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--gb-text-secondary);
+    background-color: #FFFFFF;
+    border: 1px solid var(--gb-border);
+    border-radius: 4px;
+    width: 20px;
+    height: 20px;
+    box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.05), inset 0px -1px 0px rgba(0, 0, 0, 0.05);
+    line-height: 1;
+}
+
+/* ── Card Section Header ─────────────────────── */
+.gb-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gb-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ── Empty State ─────────────────────────────── */
+.gb-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    text-align: center;
+}
+.gb-empty-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--gb-radius-xl);
+    background-color: var(--gb-bg-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 16px;
+}
+.gb-empty-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--gb-text-primary);
+    margin-bottom: 4px;
+}
+.gb-empty-desc {
+    font-size: 13px;
+    color: var(--gb-text-muted);
+}
+
+/* ── Page Header ─────────────────────────────── */
+.gb-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.gb-page-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--gb-text-primary);
+}
+.gb-page-subtitle {
+    font-size: 13px;
+    color: var(--gb-text-secondary);
+    margin-top: 2px;
+}
+
+/* ── Form Inputs (Gridbase override) ─────────── */
+.gb-input {
+    width: 100%;
+    background-color: #FFFFFF;
+    border: 1px solid var(--gb-border);
+    border-radius: var(--gb-radius-md);
+    padding: 9px 12px;
+    font-size: 13px;
+    color: var(--gb-text-primary);
+    transition: var(--gb-transition);
+}
+.gb-input:focus {
+    border-color: var(--gb-border-hover);
+    box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.05);
+    outline: none;
+}
+.gb-input::placeholder {
+    color: var(--gb-text-muted);
+}
+
+/* ── Animated Counter ────────────────────────── */
+@keyframes gb-count-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.gb-animate-in {
+    animation: gb-count-up 0.4s ease-out forwards;
+}
+
+/* ── Card hover lift ─────────────────────────── */
+.gb-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.gb-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--gb-shadow-lg);
+}
+
+/* ── Dark Mode Overrides ─────────────────────── */
+.dark .workspace-panel,
+.dark .gb-metric,
+.dark .gb-table-outer,
+.dark .gb-btn-secondary,
+.dark .gb-btn-icon {
+    background-color: #1a1a2e;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+.dark .gb-metric-value,
+.dark .gb-page-title {
+    color: #F9FAFB;
+}
+.dark .gb-metric-label,
+.dark .gb-page-subtitle {
+    color: #9CA3AF;
+}
+.dark .gb-table th {
+    background-color: #1a1a2e;
+    border-color: rgba(255, 255, 255, 0.06);
+}
+.dark .gb-table td {
+    border-color: rgba(255, 255, 255, 0.06);
+    color: #D1D5DB;
+}
+.dark .gb-table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+}
+.dark .gb-table-toolbar {
+    border-color: rgba(255, 255, 255, 0.06);
+}
+.dark .gb-input {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #F9FAFB;
+}
+.dark .gb-segmented {
+    background-color: rgba(255, 255, 255, 0.06);
+}
+.dark .gb-segment.active {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #F9FAFB;
+}
+.dark .gb-section-title {
+    color: #6B7280;
+}
+.dark .gb-empty-icon {
+    background-color: rgba(255, 255, 255, 0.06);
+}
+.dark .gb-btn-secondary {
+    color: #E5E7EB;
+}
