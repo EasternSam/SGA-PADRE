@@ -52,9 +52,9 @@
         @hasanyrole('Admin|Registro|Contabilidad|Caja')
             <div class="pt-4 space-y-1">
                 
-                @if(\App\Helpers\SaaS::has('academic'))
+                @if(true) {{-- Distribución Escolar: siempre visible --}}
                     <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white/80">
-                        {{ __('Gestión Académica') }}
+                        {{ __('Gestión Escolar') }}
                     </p>
                     
                     @hasanyrole('Admin|Registro')
@@ -78,39 +78,6 @@
                             <span>{{ __('Docentes') }}</span>
                         </x-responsive-nav-link>
 
-                        <!-- DESPLEGABLE ACADÉMICO DINÁMICO -->
-                        <div x-data="{ openAcademic: {{ request()->routeIs(['admin.courses.*', 'admin.careers.*']) ? 'true' : 'false' }} }">
-                            <button @click="openAcademic = !openAcademic" 
-                                class="flex w-full items-center justify-between px-4 py-2 text-sm font-medium transition duration-150 ease-in-out rounded-md focus:outline-none {{ request()->routeIs(['admin.courses.*', 'admin.careers.*']) ? 'bg-white text-gray-900' : 'text-white hover:bg-white/10 focus:bg-white/10' }}">
-                                <div class="flex items-center gap-3">
-                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M11.25 4.533A9.707 9.707 0 0 0 6 3a9.735 9.735 0 0 0-3.25.555.75.75 0 0 0-.5.707v14.25a.75.75 0 0 0 1 .707A8.237 8.237 0 0 1 6 18.75c1.995 0 3.823.707 5.25 1.886V4.533ZM12.75 20.636A8.214 8.214 0 0 1 18 18.75c.966 0 1.89.166 2.75.47a.75.75 0 0 0 1-.708V4.262a.75.75 0 0 0-.5-.707A9.735 9.735 0 0 0 18 3a9.707 9.707 0 0 0-5.25 1.533v16.103Z" />
-                                    </svg>
-                                    <span>{{ __('Académico') }}</span>
-                                </div>
-                                <svg class="h-4 w-4 transform transition-transform duration-200" :class="openAcademic ? 'rotate-180' : ''" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M12.53 16.28a.75.75 0 0 1-1.06 0l-7.5-7.5a.75.75 0 0 1 1.06-1.06L12 14.69l6.97-6.97a.75.75 0 1 1 1.06 1.06l-7.5 7.5Z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                            
-                            <div x-show="openAcademic" x-collapse class="pl-10 space-y-1 mt-1">
-                                <!-- Cursos (Instituto) -->
-                                @if(\App\Helpers\SaaS::showCourses())
-                                    <a href="{{ route('admin.courses.index') }}" wire:navigate 
-                                        class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.courses.index') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
-                                        {{ __('Cursos') }}
-                                    </a>
-                                @endif
-                                
-                                <!-- Carreras (Universidad) -->
-                                @if(\App\Helpers\SaaS::showCareers())
-                                    <a href="{{ route('admin.careers.index') }}" wire:navigate 
-                                        class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.careers.*') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/10' }}">
-                                        {{ __('Carreras') }}
-                                    </a>
-                                @endif
-                            </div>
-                        </div>
 
                         {{-- GESTIÓN ESCOLAR MINERD --}}
                         <div x-data="{ openSchool: {{ request()->routeIs('admin.school.*') ? 'true' : 'false' }} }">
@@ -157,25 +124,7 @@
                             <span>{{ __('Calendario') }}</span>
                         </x-responsive-nav-link>
 
-                        {{-- TRÁMITES Y ADMISIONES (SÓLO SI CARRERAS ESTÁ HABILITADO) --}}
-                        @if(\App\Helpers\SaaS::showCareers())
-                            {{-- SOLICITUDES --}}
-                            <x-responsive-nav-link :href="route('admin.requests')" :active="request()->routeIs('admin.requests')" wire:navigate>
-                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                  <path fill-rule="evenodd" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375c.621 0 1.125.504 1.125 1.125v.375M10.125 2.25v3.375c0 .621.504 1.125 1.125 1.125h3.375M9 15l2.25 2.25L15 15m-6 6h6" />
-                                </svg>
-                                <span>{{ __('Trámites') }}</span>
-                            </x-responsive-nav-link>
-
-                            {{-- ADMISIONES --}}
-                            <x-responsive-nav-link :href="route('admin.admissions.index')" :active="request()->routeIs('admin.admissions.index')" wire:navigate>
-                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M4.5 3.75a3 3 0 0 0-3 3v.75h21v-.75a3 3 0 0 0-3-3h-15Z" />
-                                    <path fill-rule="evenodd" d="M22.5 9.75h-21v7.5a3 3 0 0 0 3 3h15a3 3 0 0 0 3-3v-7.5Zm-18 3.75a.75.75 0 0 1 .75-.75h6a.75.75 0 0 1 0 1.5h-6a.75.75 0 0 1-.75-.75Zm.75 2.25a.75.75 0 0 0 0 1.5h3a.75.75 0 0 0 0-1.5h-3Z" clip-rule="evenodd" />
-                                </svg>
-                                <span>{{ __('Admisiones') }}</span>
-                            </x-responsive-nav-link>
-                        @endif
+                        {{-- Trámites y Admisiones removidos en distribución escolar --}}
 
                         @if(\App\Helpers\SaaS::has('inventory'))
                             <x-responsive-nav-link :href="route('admin.inventory.index')" :active="request()->routeIs('admin.inventory.index')" wire:navigate>
@@ -418,34 +367,11 @@
                     </x-responsive-nav-link>
                 @endif
 
-                @if(\App\Helpers\SaaS::showCareers())
-                    <x-responsive-nav-link :href="route('student.requests')" :active="request()->routeIs('student.requests')" wire:navigate>
-                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd" d="M1.5 5.625c0-1.036.84-1.875 1.875-1.875h17.25c1.035 0 1.875.84 1.875 1.875v12.75c0 1.035-.84 1.875-1.875 1.875H3.375A1.875 1.875 0 0 1 1.5 18.375V5.625ZM21 9.375A.375.375 0 0 0 20.625 9h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm10.875 18.75a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5ZM3.375 15h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0 .375.375v1.5c0 .207.168.375.375.375ZM3.375 11.25h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0 .375.375v1.5c0 .207.168.375.375.375Z" clip-rule="evenodd" />
-                        </svg>
-                        <span>{{ __('Mis Solicitudes') }}</span>
-                    </x-responsive-nav-link>
-                @endif
+                {{-- Solicitudes removidas en distribución escolar --}}
             </div>
         @endrole
 
-        <!-- Sección Solicitante -->
-        @if(\App\Helpers\SaaS::showCareers())
-            @role('Solicitante')
-                <div class="pt-4 space-y-1">
-                    <p class="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-white/80">
-                        {{ __('Admisiones') }}
-                    </p>
-                    <x-responsive-nav-link :href="route('applicant.portal')" :active="request()->routeIs('applicant.portal')" wire:navigate>
-                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M4.5 3.75a3 3 0 0 0-3 3v.75h21v-.75a3 3 0 0 0-3-3h-15Z" />
-                            <path fill-rule="evenodd" d="M22.5 9.75h-21v7.5a3 3 0 0 0 3 3h15a3 3 0 0 0 3-3v-7.5Zm-18 3.75a.75.75 0 0 1 .75-.75h6a.75.75 0 0 1 0 1.5h-6a.75.75 0 0 1-.75-.75Zm.75 2.25a.75.75 0 0 0 0 1.5h3a.75.75 0 0 0 0-1.5h-3Z" clip-rule="evenodd" />
-                        </svg>
-                        <span>{{ __('Mi Solicitud') }}</span>
-                    </x-responsive-nav-link>
-                </div>
-            @endrole
-        @endif
+        {{-- Sección Solicitante removida en distribución escolar --}}
 
         <!-- Sección Profesor -->
         @role('Profesor')
