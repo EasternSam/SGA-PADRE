@@ -4,15 +4,13 @@ namespace App\Livewire\Admin\School;
 
 use App\Models\AcademicYear;
 use App\Models\DisciplineRecord;
-use App\Models\GradeLevel;
-use App\Models\SchoolAnnouncement;
-use App\Models\SchoolConfig;
-use App\Models\SchoolEnrollment;
+use App\Models\EvaluationPeriod;
+use App\Models\SchoolAlert;
 use App\Models\Section;
 use App\Models\Student;
 use App\Models\StudentAttendance;
 use App\Models\StudentGrade;
-use App\Models\Subject;
+use Carbon\Carbon;
 use Livewire\Component;
 
 class SchoolDashboard extends Component
@@ -20,90 +18,96 @@ class SchoolDashboard extends Component
     public function render()
     {
         $activeYear = AcademicYear::where('status', 'active')->first();
-        $schoolConfig = SchoolConfig::current();
 
-        // Enrollment stats
-        $enrollment = [
-            'total_students'  => Student::where('status', 'Activo')->count(),
-            'total_sections'  => $activeYear ? Section::where('academic_year_id', $activeYear->id)->count() : 0,
-            'total_subjects'  => Subject::active()->count(),
-            'grade_levels'    => GradeLevel::active()->count(),
-        ];
+        // General stats
+        $totalStudents = Student::where('status', 'Activo')->count();
+        $totalSections = $activeYear ? Section::where('academic_year_id', $activeYear->id)->count() : 0;
+        $totalTeachers = \App\Models\User::whereHas('roles', fn($q) => $q->whereIn('name', ['Docente', 'Teacher', 'Profesor']))->count();
 
-        // Students per grade level
-        $studentsByGrade = [];
-        if ($activeYear) {
-            $grades = GradeLevel::active()->ordered()->get();
-            foreach ($grades as $grade) {
-                $count = Student::where('status', 'Activo')
-                    ->where('grade_level_id', $grade->id)
-                    ->count();
-                if ($count > 0) {
-                    $studentsByGrade[] = [
-                        'name'  => $grade->short_name ?? $grade->name,
-                        'count' => $count,
-                    ];
-                }
-            }
-        }
+        // Gender breakdown
+        $males = Student::where('status', 'Activo')
+            ->whereIn(\Illuminate\Support\Facades\DB::raw('LOWER(gender)'), ['m', 'masculino', 'male'])->count();
+        $females = $totalStudents - $males;
 
         // Attendance today
-        $todayAttendance = [
-            'present' => StudentAttendance::whereDate('date', today())->where('status', 'present')->count(),
-            'absent'  => StudentAttendance::whereDate('date', today())->where('status', 'absent')->count(),
-            'late'    => StudentAttendance::whereDate('date', today())->where('status', 'late')->count(),
-            'total'   => StudentAttendance::whereDate('date', today())->count(),
-        ];
+        $today = now()->toDateString();
+        $todayPresent = StudentAttendance::whereDate('date', $today)->where('status', 'present')->count();
+        $todayAbsent = StudentAttendance::whereDate('date', $today)->where('status', 'absent')->count();
+        $todayLate = StudentAttendance::whereDate('date', $today)->where('status', 'late')->count();
+        $todayTotal = $todayPresent + $todayAbsent + $todayLate;
+
+        // This week attendance
+        $weekStart = now()->startOfWeek();
+        $weekPresent = StudentAttendance::where('date', '>=', $weekStart)->where('status', 'present')->count();
+        $weekTotal = StudentAttendance::where('date', '>=', $weekStart)->count();
+        $weekPct = $weekTotal > 0 ? round(($weekPresent / $weekTotal) * 100, 1) : 0;
+
+        // Academic overview (latest period)
+        $latestPeriod = $activeYear
+            ? EvaluationPeriod::where('academic_year_id', $activeYear->id)
+                ->whereHas('grades')
+                ->orderByDesc('number')->first()
+            : null;
+
+        $gradeStats = ['avg' => null, 'above70' => 0, 'below70' => 0, 'total' => 0];
+        if ($latestPeriod) {
+            $grades = StudentGrade::where('evaluation_period_id', $latestPeriod->id)
+                ->whereNotNull('score')->get();
+            $gradeStats['avg'] = round($grades->avg('score'), 1);
+            $gradeStats['above70'] = $grades->where('score', '>=', 70)->count();
+            $gradeStats['below70'] = $grades->where('score', '<', 70)->count();
+            $gradeStats['total'] = $grades->count();
+        }
+
+        // Active alerts
+        $activeAlerts = SchoolAlert::where('is_resolved', false)
+            ->orderByDesc('severity')
+            ->limit(5)->get();
+        $alertCount = SchoolAlert::where('is_resolved', false)->count();
+        $criticalAlerts = SchoolAlert::where('is_resolved', false)->where('severity', 'critical')->count();
 
         // Discipline this month
-        $disciplineMonth = [
-            'total'     => DisciplineRecord::whereMonth('date', now()->month)->when($activeYear, fn($q) => $q->where('academic_year_id', $activeYear->id))->count(),
-            'leve'      => DisciplineRecord::whereMonth('date', now()->month)->when($activeYear, fn($q) => $q->where('academic_year_id', $activeYear->id))->where('severity', 'leve')->count(),
-            'grave'     => DisciplineRecord::whereMonth('date', now()->month)->when($activeYear, fn($q) => $q->where('academic_year_id', $activeYear->id))->where('severity', 'grave')->count(),
-            'muy_grave' => DisciplineRecord::whereMonth('date', now()->month)->when($activeYear, fn($q) => $q->where('academic_year_id', $activeYear->id))->where('severity', 'muy_grave')->count(),
-        ];
+        $monthDiscipline = DisciplineRecord::whereMonth('date', now()->month)
+            ->when($activeYear, fn($q) => $q->where('academic_year_id', $activeYear->id))
+            ->count();
 
-        // Enrollment status
-        $enrollmentStatus = [];
+        // Section ranking by attendance
+        $sectionRanking = [];
         if ($activeYear) {
-            $enrollmentStatus = [
-                'pending'  => SchoolEnrollment::where('academic_year_id', $activeYear->id)->where('status', 'pending')->count(),
-                'approved' => SchoolEnrollment::where('academic_year_id', $activeYear->id)->where('status', 'approved')->count(),
-                'enrolled' => SchoolEnrollment::where('academic_year_id', $activeYear->id)->where('status', 'enrolled')->count(),
-            ];
-        }
-
-        // Recent announcements
-        $recentAnnouncements = SchoolAnnouncement::published()
-            ->orderByDesc('publish_date')
-            ->limit(5)
-            ->get();
-
-        // Academic performance (average per grade level)
-        $gradePerformance = [];
-        if ($activeYear) {
-            $periods = $activeYear->evaluationPeriods()->orderBy('number')->get();
-            $latestPeriod = $periods->last();
-            if ($latestPeriod) {
-                foreach (GradeLevel::active()->ordered()->get() as $grade) {
-                    $studentIds = Student::where('grade_level_id', $grade->id)->where('status', 'Activo')->pluck('id');
-                    $avg = StudentGrade::whereIn('student_id', $studentIds)
-                        ->where('evaluation_period_id', $latestPeriod->id)
-                        ->avg('score');
-                    if ($avg) {
-                        $gradePerformance[] = [
-                            'name' => $grade->short_name ?? $grade->name,
-                            'avg'  => round($avg, 1),
-                        ];
-                    }
-                }
+            $sections = Section::where('academic_year_id', $activeYear->id)->with('gradeLevel')->get();
+            foreach ($sections as $sec) {
+                $studIds = Student::where('section_id', $sec->id)->where('status', 'Activo')->pluck('id');
+                $attTotal = StudentAttendance::whereIn('student_id', $studIds)->where('date', '>=', $weekStart)->count();
+                $attPresent = StudentAttendance::whereIn('student_id', $studIds)->where('date', '>=', $weekStart)->where('status', 'present')->count();
+                $sectionRanking[] = [
+                    'name' => ($sec->gradeLevel?->short_name ?? '') . ' ' . $sec->name,
+                    'students' => $studIds->count(),
+                    'pct' => $attTotal > 0 ? round(($attPresent / $attTotal) * 100) : null,
+                ];
             }
+            usort($sectionRanking, fn($a, $b) => ($b['pct'] ?? 0) - ($a['pct'] ?? 0));
+            $sectionRanking = array_slice($sectionRanking, 0, 8);
         }
 
-        return view('livewire.admin.school.school-dashboard', compact(
-            'activeYear', 'schoolConfig', 'enrollment', 'studentsByGrade',
-            'todayAttendance', 'disciplineMonth', 'enrollmentStatus',
-            'recentAnnouncements', 'gradePerformance'
-        ))->layout('layouts.dashboard');
+        return view('livewire.admin.school.school-dashboard', [
+            'activeYear'      => $activeYear,
+            'totalStudents'   => $totalStudents,
+            'totalSections'   => $totalSections,
+            'totalTeachers'   => $totalTeachers,
+            'males'           => $males,
+            'females'         => $females,
+            'todayPresent'    => $todayPresent,
+            'todayAbsent'     => $todayAbsent,
+            'todayLate'       => $todayLate,
+            'todayTotal'      => $todayTotal,
+            'weekPct'         => $weekPct,
+            'latestPeriod'    => $latestPeriod,
+            'gradeStats'      => $gradeStats,
+            'activeAlerts'    => $activeAlerts,
+            'alertCount'      => $alertCount,
+            'criticalAlerts'  => $criticalAlerts,
+            'monthDiscipline' => $monthDiscipline,
+            'sectionRanking'  => $sectionRanking,
+        ])->layout('layouts.dashboard');
     }
 }

@@ -188,6 +188,10 @@
                                     class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.reinscription') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
                                     {{ __('🔄 Reinscripción') }}
                                 </a>
+                                <a href="{{ route('admin.school.subject-stats') }}" wire:navigate 
+                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.subject-stats') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
+                                    {{ __('📊 Estadísticas') }}
+                                </a>
                                 <a href="{{ route('admin.school.settings') }}" wire:navigate 
                                     class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.settings') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
                                     {{ __('Config. Centro') }}
