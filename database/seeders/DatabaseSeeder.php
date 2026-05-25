@@ -11,7 +11,7 @@ class DatabaseSeeder extends Seeder
 {
     /**
      * Seed the application's database.
-     * Solo crea roles, permisos y el usuario administrador.
+     * Registra roles, permisos, y cuentas oficiales para cada departamento del colegio.
      */
     public function run(): void
     {
@@ -40,7 +40,9 @@ class DatabaseSeeder extends Seeder
         $roleEstudiante->givePermissionTo(['ver dashboard', 'ver cursos']);
         $roleSolicitante->givePermissionTo(['ver dashboard']);
 
-        // ─── Usuario Admin único ───
+        // ─── Cuentas Oficiales para Roles ───
+
+        // 1. Administrador General
         $admin = User::firstOrCreate(
             ['email' => 'admin@admin.com'],
             [
@@ -48,7 +50,83 @@ class DatabaseSeeder extends Seeder
                 'password' => bcrypt('Password'),
             ]
         );
-        $admin->assignRole($roleAdmin);
+        if (!$admin->hasRole('Admin')) {
+            $admin->assignRole($roleAdmin);
+        }
+
+        // 2. Profesor de Prueba
+        $profesor = User::firstOrCreate(
+            ['email' => 'profesor@colegio.edu.do'],
+            [
+                'name'     => 'Profesor de Prueba',
+                'password' => bcrypt('Password'),
+            ]
+        );
+        if (!$profesor->hasRole('Profesor')) {
+            $profesor->assignRole($roleProfesor);
+        }
+
+        // 3. Encargado de Registro
+        $registro = User::firstOrCreate(
+            ['email' => 'registro@colegio.edu.do'],
+            [
+                'name'     => 'Encargado de Registro',
+                'password' => bcrypt('Password'),
+            ]
+        );
+        if (!$registro->hasRole('Registro')) {
+            $registro->assignRole($roleRegistro);
+        }
+
+        // 4. Encargado de Contabilidad
+        $contabilidad = User::firstOrCreate(
+            ['email' => 'contabilidad@colegio.edu.do'],
+            [
+                'name'     => 'Encargado de Contabilidad',
+                'password' => bcrypt('Password'),
+            ]
+        );
+        if (!$contabilidad->hasRole('Contabilidad')) {
+            $contabilidad->assignRole($roleContabilidad);
+        }
+
+        // 5. Cajero Principal
+        $caja = User::firstOrCreate(
+            ['email' => 'caja@colegio.edu.do'],
+            [
+                'name'     => 'Cajero Principal',
+                'password' => bcrypt('Password'),
+            ]
+        );
+        if (!$caja->hasRole('Caja')) {
+            $caja->assignRole($roleCaja);
+        }
+
+        // 6. Estudiante de Prueba
+        $estudiante = User::firstOrCreate(
+            ['email' => 'estudiante@colegio.edu.do'],
+            [
+                'name'     => 'Estudiante de Prueba',
+                'password' => bcrypt('Password'),
+            ]
+        );
+        if (!$estudiante->hasRole('Estudiante')) {
+            $estudiante->assignRole($roleEstudiante);
+        }
+
+        // 7. Aspirante de Prueba (Admisiones)
+        $solicitante = User::firstOrCreate(
+            ['email' => 'solicitante@colegio.edu.do'],
+            [
+                'name'     => 'Aspirante de Prueba',
+                'password' => bcrypt('Password'),
+            ]
+        );
+        if (!$solicitante->hasRole('Solicitante')) {
+            $solicitante->assignRole($roleSolicitante);
+        }
+
+        $this->command->info('Cuentas oficiales para todos los roles del colegio creadas correctamente');
 
         // ─── Datos de demostración ───
         $this->call(SchoolDemoSeeder::class);
