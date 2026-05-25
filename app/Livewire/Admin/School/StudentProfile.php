@@ -18,6 +18,16 @@ class StudentProfile extends Component
     public $search = '';
     public $studentData = null;
 
+    public function mount()
+    {
+        if (request()->has('student_id')) {
+            $this->student_id = request()->get('student_id');
+            $this->loadProfile();
+        } elseif (request()->has('search')) {
+            $this->search = request()->get('search');
+        }
+    }
+
     public function updatedSearch()
     {
         $this->student_id = '';

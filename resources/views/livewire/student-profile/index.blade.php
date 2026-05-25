@@ -1,6 +1,5 @@
-{{-- Eliminamos el @php de Carbon --}}
 <div class="container mx-auto p-4 md:p-6 lg:p-8"
-     x-data="{ activeTab: 'enrollments' }">
+     x-data="{ activeTab: {{ \App\Helpers\SaaS::showCourses() ? "'enrollments'" : "'payments'" }} }">
 
     {{-- Mensajes Flash (Toast) --}}
     <div x-data="{ show: false, message: '', type: 'success' }"
@@ -48,8 +47,16 @@
                 <h1 class="text-2xl font-bold text-gray-900">{{ $student->fullName }}</h1>
                 <p class="text-sm text-gray-600">{{ $student->email }}</p>
                 <p class="text-sm text-gray-600">Cédula: {{ $student->cedula ?? 'N/A' }}</p>
-                @if($student->course)
+                @if(\App\Helpers\SaaS::showCourses() && $student->course)
                     <p class="text-sm font-semibold text-indigo-700 mt-2 hover:underline cursor-help" title="Programa/Curso Principal">{{ $student->course->name }}</p>
+                @endif
+                @if($student->gradeLevel)
+                    <p class="text-sm font-semibold text-indigo-700 mt-2 flex items-center justify-center gap-1.5" title="Grado Escolar">
+                        <i class="fas fa-graduation-cap text-xs"></i> <span>{{ $student->gradeLevel->name }}</span>
+                        @if($student->section)
+                            <span class="text-gray-300">|</span> <span>Sección: {{ $student->section->name }}</span>
+                        @endif
+                    </p>
                 @endif
                 @if($student->scholarship)
                     <p class="text-xs font-semibold text-green-700 mt-1" title="Beca Asignada">{{ $student->scholarship->name }} (-{{ number_format($student->scholarship->discount_percentage, 0) }}%)</p>
@@ -158,13 +165,17 @@
                             <span class="text-sm text-red-600 font-medium">Requiere usuario web</span>
                         @endif
                     </div>
-                </div>
-
-                <div class="flex flex-wrap gap-2">
+                               <div class="flex flex-wrap gap-2">
+                    @if(\App\Helpers\SaaS::showCourses())
                     <button wire:click="openEnrollmentModal" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
                         <i class="fas fa-plus-circle mr-2"></i>Inscribir a Curso
                     </button>
+                    @endif
                     
+                    <a href="{{ route('admin.school.student-profile', ['student_id' => $student->id]) }}" wire:navigate class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150 flex items-center">
+                        <i class="fas fa-id-card-alt mr-2"></i>Ficha Académica
+                    </a>
+
                     <button wire:click="generateReport" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow transition ease-in-out duration-150">
                         <i class="fas fa-file-pdf mr-2"></i>Generar Reporte
                     </button>
@@ -184,11 +195,13 @@
         <!-- Pestañas -->
         <div class="border-b border-gray-200">
             <nav class="-mb-px flex space-x-6 px-6" aria-label="Tabs">
+                @if(\App\Helpers\SaaS::showCourses())
                 <button @click="activeTab = 'enrollments'"
                         :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'enrollments', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'enrollments' }"
                         class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                     Cursos Inscritos
                 </button>
+                @endif
                 <button @click="activeTab = 'payments'"
                         :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'payments', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'payments' }"
                         class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
@@ -202,6 +215,7 @@
             </nav>
         </div>
 
+        @if(\App\Helpers\SaaS::showCourses())
         <div class="p-6 space-y-8" x-show="activeTab === 'enrollments'" x-cloak>
             
             <!-- 1. Inscripciones Pendientes de Pago -->
@@ -403,6 +417,7 @@
             @endif
 
         </div>
+        @endif
 
         {{-- Historial de Pagos --}}
         <div class="p-6" x-show="activeTab === 'payments'" x-cloak>

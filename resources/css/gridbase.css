@@ -42,7 +42,8 @@
 }
 
 /* ── Metric Cards (Gridbase Style) ───────────── */
-.gb-metric {
+/* ── Metric Cards (Gridbase & Showcase Style) ── */
+.gb-metric, .metric-card {
     background-color: var(--gb-bg-card);
     border: 1px solid var(--gb-border);
     border-radius: var(--gb-radius-xl);
@@ -52,11 +53,11 @@
     position: relative;
     overflow: hidden;
 }
-.gb-metric:hover {
+.gb-metric:hover, .metric-card:hover {
     box-shadow: var(--gb-shadow-md);
     border-color: var(--gb-border-hover);
 }
-.gb-metric-icon {
+.gb-metric-icon, .metric-icon-box {
     width: 36px;
     height: 36px;
     border-radius: var(--gb-radius-md);
@@ -66,7 +67,7 @@
     font-size: 16px;
     flex-shrink: 0;
 }
-.gb-metric-value {
+.gb-metric-value, .metric-value {
     font-size: 28px;
     font-weight: 700;
     letter-spacing: -0.03em;
@@ -74,13 +75,13 @@
     line-height: 1;
     margin-top: 12px;
 }
-.gb-metric-label {
+.gb-metric-label, .gb-metric-title, .metric-title, .metric-label {
     font-size: 12px;
     font-weight: 500;
     color: var(--gb-text-secondary);
     margin-top: 4px;
 }
-.gb-metric-trend {
+.gb-metric-trend, .metric-trend {
     font-size: 11px;
     font-weight: 600;
     display: inline-flex;
@@ -89,17 +90,17 @@
     padding: 2px 8px;
     border-radius: 9999px;
 }
-.gb-metric-trend.up {
+.gb-metric-trend.up, .metric-trend.up {
     color: #10B981;
     background-color: rgba(16, 185, 129, 0.08);
 }
-.gb-metric-trend.down {
+.gb-metric-trend.down, .metric-trend.down {
     color: #EF4444;
     background-color: rgba(239, 68, 68, 0.08);
 }
 
-/* ── Premium Buttons (Gridbase Charcoal) ─────── */
-.gb-btn {
+/* ── Premium Buttons (Gridbase Dynamic Branding) ── */
+.gb-btn, .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -115,27 +116,30 @@
     border: none;
     text-decoration: none;
 }
-.gb-btn-primary {
-    background-color: #111827;
-    background-image: linear-gradient(180deg, #1F2937 0%, #111827 100%);
-    color: #FFFFFF;
-    border: 1px solid #111827;
-    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05), inset 0px 1px 0px rgba(255, 255, 255, 0.1);
+.gb-btn-primary, .btn-primary {
+    background-color: rgb(var(--color-primary)) !important;
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.12) 100%) !important;
+    color: #FFFFFF !important;
+    border: 1px solid rgba(0, 0, 0, 0.15) !important;
+    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05), inset 0px 1px 0px rgba(255, 255, 255, 0.15) !important;
+    font-weight: 600 !important;
 }
-.gb-btn-primary:hover {
-    background-image: linear-gradient(180deg, #374151 0%, #1F2937 100%);
+.gb-btn-primary:hover, .btn-primary:hover {
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0.18) 100%) !important;
+    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.08), inset 0px 1px 0px rgba(255, 255, 255, 0.2) !important;
 }
-.gb-btn-secondary {
-    background-color: #FFFFFF;
-    color: var(--gb-text-primary);
-    border: 1px solid var(--gb-border);
-    box-shadow: var(--gb-shadow-sm);
+.gb-btn-secondary, .btn-secondary {
+    background-color: #FFFFFF !important;
+    color: var(--gb-text-primary) !important;
+    border: 1px solid var(--gb-border) !important;
+    box-shadow: var(--gb-shadow-sm) !important;
+    font-weight: 600 !important;
 }
-.gb-btn-secondary:hover {
-    background-color: var(--gb-bg-hover);
-    border-color: var(--gb-border-hover);
+.gb-btn-secondary:hover, .btn-secondary:hover {
+    background-color: var(--gb-bg-hover) !important;
+    border-color: var(--gb-border-hover) !important;
 }
-.gb-btn-icon {
+.gb-btn-icon, .btn-icon {
     width: 36px;
     height: 36px;
     padding: 0;
@@ -149,14 +153,14 @@
     cursor: pointer;
     transition: var(--gb-transition);
 }
-.gb-btn-icon:hover {
+.gb-btn-icon:hover, .btn-icon:hover {
     background-color: var(--gb-bg-hover);
     color: var(--gb-text-primary);
     border-color: var(--gb-border-hover);
 }
 
 /* ── Vertical Divider ────────────────────────── */
-.gb-divider-v {
+.gb-divider-v, .vertical-divider {
     width: 1px;
     height: 24px;
     background-color: var(--gb-border);
@@ -164,49 +168,50 @@
     align-self: center;
 }
 
-/* ── Status Badges (Gridbase Style) ──────────── */
-.gb-badge {
+/* ── Status Badges (Gridbase Showcase) ─────────── */
+.gb-badge, .badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 4px 12px;
+    padding: 6px 14px;
     font-size: 11px;
     font-weight: 600;
     border-radius: 9999px;
     line-height: 1.4;
     letter-spacing: 0.02em;
+    text-transform: capitalize;
 }
-.gb-badge-success {
+.gb-badge-success, .badge-active {
     background-color: var(--gb-success-bg);
     color: var(--gb-success-text);
     border: 1px solid rgba(16, 185, 129, 0.12);
 }
-.gb-badge-danger {
+.gb-badge-danger, .badge-inactive {
     background-color: var(--gb-danger-bg);
     color: var(--gb-danger-text);
     border: 1px solid rgba(239, 68, 68, 0.12);
 }
-.gb-badge-warning {
+.gb-badge-warning, .badge-onboarding {
     background-color: var(--gb-warning-bg);
     color: var(--gb-warning-text);
     border: 1px solid rgba(245, 158, 11, 0.12);
 }
-.gb-badge-info {
+.gb-badge-info, .badge-info {
     background-color: var(--gb-info-bg);
     color: var(--gb-info-text);
     border: 1px solid rgba(99, 102, 241, 0.12);
 }
 
-/* ── Segmented Control (Tabs) ────────────────── */
-.gb-segmented {
+/* ── Segmented Control (Tabs Capsule) ─────────── */
+.gb-segmented, .segmented-control {
     display: inline-flex;
     background-color: var(--gb-bg-hover);
     padding: 3px;
     border-radius: var(--gb-radius-lg);
     gap: 2px;
 }
-.gb-segment {
-    padding: 8px 18px;
+.gb-segment, .segment-item {
+    padding: 10px 22px; /* Increased vertical and horizontal padding for cushiony, modern capsule design */
     font-size: 13px;
     font-weight: 500;
     color: var(--gb-text-secondary);
@@ -217,26 +222,26 @@
     border: none;
     background: transparent;
 }
-.gb-segment:hover {
+.gb-segment:hover, .segment-item:hover {
     color: var(--gb-text-primary);
 }
-.gb-segment.active,
-.gb-segment[aria-selected="true"] {
-    background-color: #FFFFFF;
-    color: var(--gb-text-primary);
-    box-shadow: var(--gb-shadow-sm);
-    font-weight: 600;
+.gb-segment.active, .segment-item.active,
+.gb-segment[aria-selected="true"], .segment-item[aria-selected="true"] {
+    background-color: #FFFFFF !important;
+    color: var(--gb-text-primary) !important;
+    box-shadow: var(--gb-shadow-sm) !important;
+    font-weight: 600 !important;
 }
 
-/* ── Data Table (Gridbase Style) ─────────────── */
-.gb-table-outer {
+/* ── Data Table (Gridbase Showcase) ────────────── */
+.gb-table-outer, .table-outer {
     background-color: #FFFFFF;
     border: 1px solid var(--gb-border);
     border-radius: var(--gb-radius-xl);
     box-shadow: var(--gb-shadow-sm);
     overflow: hidden;
 }
-.gb-table-toolbar {
+.gb-table-toolbar, .table-toolbar {
     padding: 16px 24px;
     border-bottom: 1px solid var(--gb-border);
     display: flex;
@@ -245,12 +250,12 @@
     gap: 12px;
     flex-wrap: wrap;
 }
-.gb-table {
+.gb-table, .data-table {
     width: 100%;
     border-collapse: collapse;
     text-align: left;
 }
-.gb-table th {
+.gb-table th, .data-table th {
     background-color: #FFFFFF;
     padding: 12px 24px;
     font-size: 11px;
@@ -261,37 +266,37 @@
     border-bottom: 1px solid var(--gb-border);
     user-select: none;
 }
-.gb-table td {
+.gb-table td, .data-table td {
     padding: 12px 24px;
     border-bottom: 1px solid var(--gb-border);
     color: var(--gb-text-secondary);
     font-size: 13px;
     vertical-align: middle;
 }
-.gb-table tbody tr {
+.gb-table tbody tr, .data-table tbody tr {
     transition: var(--gb-transition);
 }
-.gb-table tbody tr:hover {
+.gb-table tbody tr:hover, .data-table tbody tr:hover {
     background-color: var(--gb-bg-hover);
 }
-.gb-table tbody tr:last-child td {
+.gb-table tbody tr:last-child td, .data-table tbody tr:last-child td {
     border-bottom: none;
 }
-.gb-table .user-cell {
+.gb-table .user-cell, .data-table .user-cell {
     display: flex;
     align-items: center;
     gap: 12px;
 }
-.gb-table .user-name {
+.gb-table .user-name, .data-table .user-name {
     font-size: 13px;
     font-weight: 600;
     color: var(--gb-text-primary);
 }
-.gb-table .user-sub {
+.gb-table .user-sub, .data-table .user-sub {
     font-size: 12px;
     color: var(--gb-text-muted);
 }
-.gb-link-id {
+.gb-link-id, .link-id {
     font-weight: 500;
     color: var(--gb-text-primary);
     text-decoration: underline;
@@ -299,12 +304,12 @@
     text-decoration-color: var(--gb-text-muted);
     transition: var(--gb-transition);
 }
-.gb-link-id:hover {
+.gb-link-id:hover, .link-id:hover {
     text-decoration-color: var(--gb-text-primary);
 }
 
 /* ── Keycap (Keyboard Shortcut) ──────────────── */
-.gb-keycap {
+.gb-keycap, .keycap {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -321,7 +326,7 @@
 }
 
 /* ── Card Section Header ─────────────────────── */
-.gb-section-title {
+.gb-section-title, .section-title {
     font-size: 11px;
     font-weight: 600;
     color: var(--gb-text-muted);
@@ -330,7 +335,7 @@
 }
 
 /* ── Empty State ─────────────────────────────── */
-.gb-empty-state {
+.gb-empty-state, .empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -338,7 +343,7 @@
     padding: 48px 24px;
     text-align: center;
 }
-.gb-empty-icon {
+.gb-empty-icon, .empty-icon {
     width: 56px;
     height: 56px;
     border-radius: var(--gb-radius-xl);
@@ -349,13 +354,13 @@
     font-size: 24px;
     margin-bottom: 16px;
 }
-.gb-empty-title {
+.gb-empty-title, .empty-title {
     font-size: 15px;
     font-weight: 600;
     color: var(--gb-text-primary);
     margin-bottom: 4px;
 }
-.gb-empty-desc {
+.gb-empty-desc, .empty-desc {
     font-size: 13px;
     color: var(--gb-text-muted);
 }
