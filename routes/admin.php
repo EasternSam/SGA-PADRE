@@ -79,8 +79,13 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
         Route::get('/school/attendance', \App\Livewire\Admin\School\AttendanceRegister::class)->name('admin.school.attendance');
         Route::get('/school/enrollment', \App\Livewire\Admin\School\EnrollmentManager::class)->name('admin.school.enrollment');
         Route::get('/school/discipline', \App\Livewire\Admin\School\DisciplineManager::class)->name('admin.school.discipline');
+        Route::get('/school/report-cards', \App\Livewire\Admin\School\ReportCardManager::class)->name('admin.school.report-cards');
         Route::get('/school/settings', \App\Livewire\Admin\School\SchoolSettings::class)->name('admin.school.settings');
     });
+
+    // --- REPORTES ESCOLARES PDF ---
+    Route::get('/reports/report-card/{student}/{period}', [\App\Http\Controllers\ReportCardPdfController::class, 'download'])->name('reports.report-card');
+    Route::get('/reports/report-cards/{section}/{period}', [\App\Http\Controllers\ReportCardPdfController::class, 'downloadSection'])->name('reports.report-cards.batch');
 
     // --- MODULO: INVENTARIO ---
     Route::middleware(['feature:inventory', 'role:Admin|Contabilidad'])->group(function () {
