@@ -1,55 +1,53 @@
 <div>
     <style>
-        /* ... (Estilos CSS anteriores se mantienen igual) ... */
-        .sys-settings-wrapper { font-family: system-ui, sans-serif; background-color: #f9fafb; min-height: 100vh; padding-bottom: 3rem; color: #111827; }
-        .sys-header-container { display: flex; flex-direction: column; gap: 0.5rem; }
+        .sys-settings-wrapper { font-family: 'Inter', system-ui, sans-serif; background-color: var(--gb-bg-app); min-height: 100vh; padding: 32px 24px; color: var(--gb-text-primary); }
+        .sys-header-container { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
         @media (min-width: 640px) { .sys-header-container { flex-direction: row; align-items: center; justify-content: space-between; } }
-        .sys-title { font-size: 1.5rem; font-weight: 700; margin: 0; color: #111827; letter-spacing: -0.025em; }
-        .sys-subtitle { margin: 0.25rem 0 0 0; font-size: 0.875rem; color: #6b7280; }
-        .sys-layout { max-width: 98%; margin: 2rem auto 0 auto; padding: 0 1rem; display: flex; flex-direction: column; gap: 1.5rem; }
-        @media (min-width: 768px) { .sys-layout { flex-direction: row; padding: 0 1.5rem; } }
+        .sys-title { font-size: 24px; font-weight: 800; margin: 0; color: var(--gb-text-primary); letter-spacing: -0.03em; }
+        .sys-subtitle { margin: 4px 0 0 0; font-size: 13px; color: var(--gb-text-secondary); }
+        .sys-layout { max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+        @media (min-width: 768px) { .sys-layout { flex-direction: row; } }
         .sys-sidebar { width: 100%; flex-shrink: 0; }
-        @media (min-width: 768px) { .sys-sidebar { width: 16rem; } }
-        .sys-nav { display: flex; flex-direction: column; gap: 0.25rem; }
-        .sys-tab { display: flex; align-items: center; width: 100%; padding: 0.75rem 1rem; font-size: 0.875rem; font-weight: 500; border-radius: 0.75rem; border: none; background: transparent; color: #4b5563; cursor: pointer; transition: all 0.2s ease-in-out; text-align: left; }
-        .sys-tab:hover { background-color: #f3f4f6; color: #111827; }
-        .sys-tab.active { background-color: #eef2ff; color: #4338ca; }
-        .sys-tab-icon { width: 1.25rem; height: 1.25rem; margin-right: 0.75rem; color: #9ca3af; transition: color 0.2s; }
-        .sys-tab:hover .sys-tab-icon { color: #6b7280; }
-        .sys-tab.active .sys-tab-icon { color: #4338ca; }
-        .sys-content { flex: 1; background-color: #ffffff; border-radius: 1rem; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); overflow: hidden; }
-        .sys-alert-success { padding: 1rem 1.5rem; background-color: #ecfdf5; border-bottom: 1px solid #a7f3d0; color: #065f46; font-size: 0.875rem; font-weight: 500; display: flex; align-items: center; }
-        .sys-alert-icon { width: 1.25rem; height: 1.25rem; margin-right: 0.5rem; color: #10b981; }
-        .sys-error-text { color: #dc2626; font-size: 0.75rem; font-weight: 600; margin: 0.25rem 0 0 0; }
-        .sys-input-error { border-color: #fca5a5 !important; background-color: #fef2f2; }
-        .sys-input-error:focus { border-color: #ef4444 !important; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important; }
-        .sys-form-body { padding: 1.5rem; }
-        @media (min-width: 640px) { .sys-form-body { padding: 2rem; } }
-        .sys-section { margin-bottom: 2rem; }
+        @media (min-width: 768px) { .sys-sidebar { width: 240px; } }
+        .sys-nav { display: flex; flex-direction: column; gap: 6px; }
+        .sys-tab { display: flex; align-items: center; width: 100%; padding: 12px 16px; font-size: 13px; font-weight: 600; border-radius: var(--gb-radius-md); border: 1px solid transparent; background: transparent; color: var(--gb-text-secondary); cursor: pointer; transition: var(--gb-transition); text-align: left; }
+        .sys-tab:hover { background-color: var(--gb-bg-hover); color: var(--gb-text-primary); }
+        .sys-tab.active { background-color: rgba(var(--color-primary), 0.08); border-color: rgba(var(--color-primary), 0.15); color: rgb(var(--color-primary)); }
+        .sys-tab-icon { width: 18px; height: 18px; margin-right: 12px; color: var(--gb-text-muted); transition: color 0.15s; }
+        .sys-tab:hover .sys-tab-icon { color: var(--gb-text-secondary); }
+        .sys-tab.active .sys-tab-icon { color: rgb(var(--color-primary)); }
+        .sys-content { flex: 1; background-color: var(--gb-bg-card); border-radius: var(--gb-radius-xl); border: 1px solid var(--gb-border); box-shadow: var(--gb-shadow-md); overflow: hidden; }
+        .sys-alert-success { padding: 14px 20px; background-color: var(--gb-success-bg); border-bottom: 1px solid rgba(16, 185, 129, 0.12); color: var(--gb-success-text); font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .sys-alert-icon { width: 18px; height: 18px; color: #10B981; }
+        .sys-error-text { color: var(--gb-danger-text); font-size: 12px; font-weight: 600; margin: 4px 0 0 0; }
+        .sys-input-error { border-color: rgba(239, 68, 68, 0.3) !important; background-color: #FFF5F5; }
+        .sys-input-error:focus { border-color: #EF4444 !important; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important; }
+        .sys-form-body { padding: 28px; }
+        .sys-section { margin-bottom: 32px; }
         .sys-section:last-child { margin-bottom: 0; }
-        .sys-section-title { font-size: 1rem; font-weight: 700; color: #111827; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem; }
-        .sys-section-icon { width: 1.5rem; height: 1.5rem; }
-        .sys-wp-logo { height: 1.5rem; width: auto; filter: grayscale(100%); opacity: 0.7; }
-        .sys-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; background-color: #f9fafb; padding: 1.25rem; border-radius: 0.75rem; border: 1px solid #f3f4f6; }
+        .sys-section-title { font-size: 15px; font-weight: 700; color: var(--gb-text-primary); margin: 0 0 16px 0; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--gb-border); padding-bottom: 8px; }
+        .sys-section-icon { width: 20px; height: 20px; color: rgb(var(--color-primary)); }
+        .sys-wp-logo { height: 20px; width: auto; filter: grayscale(100%); opacity: 0.7; }
+        .sys-grid { display: grid; grid-template-columns: 1fr; gap: 16px; background-color: #F8FAFC; padding: 20px; border-radius: var(--gb-radius-lg); border: 1px solid var(--gb-border); }
         @media (min-width: 768px) { .sys-grid-2 { grid-template-columns: repeat(2, 1fr); } }
         .sys-col-full { grid-column: 1 / -1; }
-        .sys-form-group { display: flex; flex-direction: column; gap: 0.375rem; }
-        .sys-label { font-size: 0.875rem; font-weight: 600; color: #374151; margin: 0; }
-        .sys-input { width: 100%; padding: 0.625rem 0.75rem; font-size: 0.875rem; color: #111827; background-color: #ffffff; border: 1px solid #d1d5db; border-radius: 0.5rem; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out, background-color 0.15s; outline: none; }
-        .sys-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
-        .sys-input::placeholder { color: #9ca3af; }
-        .sys-help-text { font-size: 0.75rem; color: #6b7280; margin: 0; }
-        .sys-color-wrapper { display: flex; align-items: center; gap: 1rem; }
-        .sys-color-input { height: 3rem; width: 4rem; padding: 0.25rem; border: 1px solid #d1d5db; border-radius: 0.375rem; cursor: pointer; background: #fff; }
-        .sys-footer { background-color: #f9fafb; padding: 1rem 1.5rem; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 1rem; }
-        .sys-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.625rem 1.5rem; font-size: 0.875rem; font-weight: 700; color: #ffffff; background-color: #4f46e5; border: 1px solid transparent; border-radius: 0.75rem; cursor: pointer; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: all 0.2s; }
-        .sys-btn-primary:hover { background-color: #4338ca; }
-        .sys-btn-primary:focus { outline: none; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4); }
+        .sys-form-group { display: flex; flex-direction: column; gap: 6px; }
+        .sys-label { font-size: 13px; font-weight: 600; color: var(--gb-text-secondary); margin: 0; }
+        .sys-input { width: 100%; padding: 10px 14px; font-size: 13px; color: var(--gb-text-primary); background-color: #ffffff; border: 1px solid var(--gb-border); border-radius: var(--gb-radius-md); box-shadow: var(--gb-shadow-sm); transition: var(--gb-transition); outline: none; }
+        .sys-input:focus { border-color: rgb(var(--color-primary)); box-shadow: 0 0 0 3px rgba(var(--color-primary), 0.15); }
+        .sys-input::placeholder { color: var(--gb-text-muted); }
+        .sys-help-text { font-size: 11px; color: var(--gb-text-secondary); margin: 0; line-height: 1.4; }
+        .sys-color-wrapper { display: flex; align-items: center; gap: 12px; }
+        .sys-color-input { height: 42px; width: 64px; padding: 4px; border: 1px solid var(--gb-border); border-radius: var(--gb-radius-md); cursor: pointer; background: #fff; }
+        .sys-footer { background-color: #F8FAFC; padding: 16px 28px; border-top: 1px solid var(--gb-border); display: flex; justify-content: flex-end; gap: 12px; }
+        .sys-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 13px; padding: 10px 20px; border-radius: var(--gb-radius-md); cursor: pointer; transition: var(--gb-transition); white-space: nowrap; border: none; background-color: rgb(var(--color-primary)) !important; background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.12) 100%) !important; color: #FFFFFF !important; border: 1px solid rgba(0, 0, 0, 0.15) !important; box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05), inset 0px 1px 0px rgba(255, 255, 255, 0.15) !important; }
+        .sys-btn-primary:hover { background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0.18) 100%) !important; box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.08), inset 0px 1px 0px rgba(255, 255, 255, 0.2) !important; }
+        .sys-btn-primary:focus { outline: none; box-shadow: 0 0 0 3px rgba(var(--color-primary), 0.4); }
         .sys-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-        .sys-btn-secondary { display: inline-flex; align-items: center; justify-content: center; padding: 0.625rem 1.5rem; font-size: 0.875rem; font-weight: 600; color: #374151; background-color: #ffffff; border: 1px solid #d1d5db; border-radius: 0.75rem; cursor: pointer; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: all 0.2s; }
-        .sys-btn-secondary:hover { background-color: #f3f4f6; color: #111827; }
-        .sys-fade-in { animation: sysFadeIn 0.3s ease-in-out; }
-        @keyframes sysFadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .sys-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 13px; padding: 10px 20px; border-radius: var(--gb-radius-md); cursor: pointer; transition: var(--gb-transition); white-space: nowrap; background-color: #FFFFFF !important; color: var(--gb-text-primary) !important; border: 1px solid var(--gb-border) !important; box-shadow: var(--gb-shadow-sm) !important; }
+        .sys-btn-secondary:hover { background-color: var(--gb-bg-hover) !important; border-color: var(--gb-border-hover) !important; }
+        .sys-fade-in { animation: sysFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes sysFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         .sys-spin { animation: sysSpin 1s linear infinite; }
         @keyframes sysSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
