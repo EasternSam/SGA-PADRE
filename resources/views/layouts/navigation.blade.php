@@ -144,6 +144,14 @@
                                     class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.announcements') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
                                     {{ __('Comunicaciones') }}
                                 </a>
+                                <a href="{{ route('admin.school.student-profile') }}" wire:navigate 
+                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.student-profile') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
+                                    {{ __('Ficha Estudiante') }}
+                                </a>
+                                <a href="{{ route('admin.school.teacher-schedule') }}" wire:navigate 
+                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.teacher-schedule') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
+                                    {{ __('Horario Docente') }}
+                                </a>
                                 <a href="{{ route('admin.school.settings') }}" wire:navigate 
                                     class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->routeIs('admin.school.settings') ? 'bg-white text-gray-900 font-bold' : 'text-gray-200 hover:text-white hover:bg-white/5' }}">
                                     {{ __('Config. Centro') }}

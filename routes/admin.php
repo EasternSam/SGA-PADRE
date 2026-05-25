@@ -84,12 +84,16 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
         Route::get('/school/calendar', \App\Livewire\Admin\School\CalendarManager::class)->name('admin.school.calendar');
         Route::get('/school/announcements', \App\Livewire\Admin\School\AnnouncementsManager::class)->name('admin.school.announcements');
         Route::get('/school/dashboard', \App\Livewire\Admin\School\SchoolDashboard::class)->name('admin.school.dashboard');
+        Route::get('/school/student-profile', \App\Livewire\Admin\School\StudentProfile::class)->name('admin.school.student-profile');
+        Route::get('/school/teacher-schedule', \App\Livewire\Admin\School\TeacherScheduleView::class)->name('admin.school.teacher-schedule');
         Route::get('/school/settings', \App\Livewire\Admin\School\SchoolSettings::class)->name('admin.school.settings');
     });
 
     // --- REPORTES ESCOLARES PDF ---
     Route::get('/reports/report-card/{student}/{period}', [\App\Http\Controllers\ReportCardPdfController::class, 'download'])->name('reports.report-card');
     Route::get('/reports/report-cards/{section}/{period}', [\App\Http\Controllers\ReportCardPdfController::class, 'downloadSection'])->name('reports.report-cards.batch');
+    Route::get('/reports/attendance/section/{section}', [\App\Http\Controllers\AttendanceReportPdfController::class, 'sectionReport'])->name('reports.attendance.section');
+    Route::get('/reports/attendance/student/{student}', [\App\Http\Controllers\AttendanceReportPdfController::class, 'studentReport'])->name('reports.attendance.student');
 
     // --- MODULO: INVENTARIO ---
     Route::middleware(['feature:inventory', 'role:Admin|Contabilidad'])->group(function () {
