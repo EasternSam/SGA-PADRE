@@ -48,9 +48,9 @@
                                         @if($cell['has_class'])
                                             <div class="rounded-lg bg-emerald-50 border border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800 p-2 text-left">
                                                 <div class="text-xs font-bold text-emerald-800 dark:text-emerald-300">{{ $cell['subject'] }}</div>
-                                                <div class="text-[10px] text-gray-600 dark:text-gray-400 mt-0.5">🏫 {{ $cell['section'] }}</div>
+                                                <div class="text-[10px] text-gray-600 dark:text-gray-400 mt-0.5">{{ $cell['section'] }}</div>
                                                 @if($cell['classroom'])
-                                                    <div class="text-[10px] text-gray-500">📍 {{ $cell['classroom'] }}</div>
+                                                    <div class="text-[10px] text-gray-500">{{ $cell['classroom'] }}</div>
                                                 @endif
                                             </div>
                                         @else
@@ -72,7 +72,7 @@
         </div>
     @else
         <div class="rounded-xl border-2 border-dashed border-gray-300 p-12 text-center dark:border-gray-600">
-            <p class="text-lg text-gray-400 mb-1">👆 Selecciona un docente</p>
+            <p class="text-lg text-gray-400 mb-1">Selecciona un docente</p>
             <p class="text-sm text-gray-400">para ver su horario de clases</p>
         </div>
     @endif

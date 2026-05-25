@@ -8,7 +8,7 @@
 
     @if(session()->has('message'))
         <div class="mb-4 rounded-lg bg-green-50 p-4 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400" x-data x-init="setTimeout(() => $el.remove(), 3000)">
-            ✅ {{ session('message') }}
+            {{ session('message') }}
         </div>
     @endif
 
@@ -40,11 +40,11 @@
                             @foreach($assignments as $a)
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                     <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
-                                        📚 {{ $a['subject_name'] }}
+                                        {{ $a['subject_name'] }}
                                     </td>
                                     <td class="px-4 py-3 text-sm">
                                         @if($a['teacher_id'])
-                                            <span class="text-gray-900 dark:text-white font-medium">👩‍🏫 {{ $a['teacher_name'] }}</span>
+                                            <span class="text-gray-900 dark:text-white font-medium">‍{{ $a['teacher_name'] }}</span>
                                         @else
                                             <span class="text-gray-400 italic">Sin asignar</span>
                                         @endif
@@ -77,7 +77,7 @@
 
         {{-- Right: Teacher workload --}}
         <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 h-fit">
-            <h3 class="text-base font-bold text-gray-900 dark:text-white mb-4">📊 Carga Docente</h3>
+            <h3 class="text-base font-bold text-gray-900 dark:text-white mb-4">Carga Docente</h3>
             @if(count($workloads) > 0)
                 <div class="space-y-2">
                     @php $maxLoad = max($workloads) ?: 1; @endphp

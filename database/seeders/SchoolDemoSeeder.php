@@ -30,7 +30,7 @@ class SchoolDemoSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->command->info('🏫 Creando datos de demostración escolar...');
+        $this->command->info('Creando datos de demostración escolar...');
 
         $admin = User::where('email', 'admin@admin.com')->first();
 
@@ -41,7 +41,7 @@ class SchoolDemoSeeder extends Seeder
             'end_date'   => '2026-06-30',
             'status'     => 'active', // enum: planning, active, closed
         ]);
-        $this->command->info('  ✅ Año académico 2025-2026');
+        $this->command->info('  Año académico 2025-2026');
 
         // ─── PERÍODOS DE EVALUACIÓN ──────────────────────
         // enum status: upcoming, active, grading, closed
@@ -62,7 +62,7 @@ class SchoolDemoSeeder extends Seeder
                 'status'           => $status,
             ]);
         }
-        $this->command->info('  ✅ 4 Períodos de evaluación');
+        $this->command->info('  4 Períodos de evaluación');
 
         // ─── GRADOS (MINERD) ─────────────────────────────
         // enum level: inicial, primario, secundario
@@ -86,7 +86,7 @@ class SchoolDemoSeeder extends Seeder
                 'min_passing_score' => $minScore, 'order' => $i + 1, 'is_active' => true,
             ]);
         }
-        $this->command->info('  ✅ 10 Grados escolares');
+        $this->command->info('  10 Grados escolares');
 
         // ─── ASIGNATURAS ─────────────────────────────────
         $subjectData = [
@@ -108,7 +108,7 @@ class SchoolDemoSeeder extends Seeder
                 'is_core' => $core, 'weekly_hours' => $hours, 'is_active' => true,
             ]);
         }
-        $this->command->info('  ✅ 10 Asignaturas');
+        $this->command->info('  10 Asignaturas');
 
         // ─── DOCENTES ────────────────────────────────────
         $teacherNames = [
@@ -125,7 +125,7 @@ class SchoolDemoSeeder extends Seeder
             $u->assignRole('Profesor');
             $teachers[] = $u;
         }
-        $this->command->info('  ✅ 8 Docentes');
+        $this->command->info('  8 Docentes');
 
         // ─── SECCIONES ───────────────────────────────────
         $sections = [];
@@ -145,7 +145,7 @@ class SchoolDemoSeeder extends Seeder
                 ]);
             }
         }
-        $this->command->info('  ✅ ' . count($sections) . ' Secciones');
+        $this->command->info('  ' . count($sections) . ' Secciones');
 
         // ─── ASIGNAR ASIGNATURAS A SECCIONES ─────────────
         foreach ($sections as $section) {
@@ -159,7 +159,7 @@ class SchoolDemoSeeder extends Seeder
                 ]);
             }
         }
-        $this->command->info('  ✅ Asignaturas asignadas a secciones');
+        $this->command->info('  Asignaturas asignadas a secciones');
 
         // ─── ASIGNACIONES DOCENTES ───────────────────────
         foreach ($sections as $section) {
@@ -173,7 +173,7 @@ class SchoolDemoSeeder extends Seeder
                 ], ['is_homeroom' => $ss->teacher_id === $section->homeroom_teacher_id]);
             }
         }
-        $this->command->info('  ✅ Asignaciones docentes');
+        $this->command->info('  Asignaciones docentes');
 
         // ─── ESTUDIANTES ─────────────────────────────────
         $firstNames = [
@@ -238,7 +238,7 @@ class SchoolDemoSeeder extends Seeder
                 $studentIdx++;
             }
         }
-        $this->command->info('  ✅ ' . count($students) . ' Estudiantes');
+        $this->command->info('  ' . count($students) . ' Estudiantes');
 
         // ─── TUTORES / PADRES ────────────────────────────
         // enum relationship: padre, madre, tutor, abuelo, abuela, tio, tia, otro
@@ -260,7 +260,7 @@ class SchoolDemoSeeder extends Seeder
                 $guardianCount++;
             }
         }
-        $this->command->info("  ✅ $guardianCount Tutores/Padres");
+        $this->command->info("  $guardianCount Tutores/Padres");
 
         // ─── INSCRIPCIONES ───────────────────────────────
         // enum status: pending, approved, enrolled, transferred_out, withdrawn, graduated
@@ -286,7 +286,7 @@ class SchoolDemoSeeder extends Seeder
                 'processed_by'           => $admin?->id,
             ]);
         }
-        $this->command->info('  ✅ Inscripciones');
+        $this->command->info('  Inscripciones');
 
         // ─── CALIFICACIONES ──────────────────────────────
         // enum performance_level: destacado, logro_evidenciado, en_proceso, insuficiente
@@ -320,7 +320,7 @@ class SchoolDemoSeeder extends Seeder
                 }
             }
         }
-        $this->command->info("  ✅ $gradeCount Calificaciones");
+        $this->command->info("  $gradeCount Calificaciones");
 
         // ─── ASISTENCIA ──────────────────────────────────
         // enum status: present, absent, late, excused, permission
@@ -353,7 +353,7 @@ class SchoolDemoSeeder extends Seeder
                 $attendanceCount++;
             }
         }
-        $this->command->info("  ✅ $attendanceCount Asistencias");
+        $this->command->info("  $attendanceCount Asistencias");
 
         // ─── DISCIPLINA ──────────────────────────────────
         // enum severity: leve, grave, muy_grave
@@ -376,7 +376,7 @@ class SchoolDemoSeeder extends Seeder
                 $discCount++;
             }
         }
-        $this->command->info("  ✅ $discCount Disciplina");
+        $this->command->info("  $discCount Disciplina");
 
         // ─── PAGOS ───────────────────────────────────────
         // enum type: inscription, monthly, uniform, material, event, other
@@ -429,7 +429,7 @@ class SchoolDemoSeeder extends Seeder
                 $payCount++;
             }
         }
-        $this->command->info("  ✅ $payCount Pagos");
+        $this->command->info("  $payCount Pagos");
 
         // ─── ORIENTACIÓN ─────────────────────────────────
         // enum type: interview, observation, referral, followup, psychological, family, academic
@@ -460,7 +460,7 @@ class SchoolDemoSeeder extends Seeder
                 $orientCount++;
             }
         }
-        $this->command->info("  ✅ $orientCount Orientación");
+        $this->command->info("  $orientCount Orientación");
 
         // ─── COMUNICACIONES ──────────────────────────────
         // enum channel: whatsapp, email, sms, push, internal
@@ -485,7 +485,7 @@ class SchoolDemoSeeder extends Seeder
                 'sent_at' => now()->subDays(rand(1, 90)),
             ]);
         }
-        $this->command->info('  ✅ 7 Comunicaciones');
+        $this->command->info('  7 Comunicaciones');
 
         // ─── CIRCULARES ──────────────────────────────────
         // enum type: circular, announcement, alert, event, memo
@@ -510,7 +510,7 @@ class SchoolDemoSeeder extends Seeder
                 'requires_acknowledgment' => (bool) rand(0, 1),
             ]);
         }
-        $this->command->info('  ✅ 6 Circulares');
+        $this->command->info('  6 Circulares');
 
         // ─── CALENDARIO ESCOLAR ──────────────────────────
         // enum type: school_day, holiday, teacher_day, exam_day, event, vacation, makeup_day
@@ -541,7 +541,7 @@ class SchoolDemoSeeder extends Seeder
                 'affects_attendance' => in_array($type, ['holiday', 'vacation']),
             ]);
         }
-        $this->command->info('  ✅ ' . count($calData) . ' Calendario');
+        $this->command->info('  ' . count($calData) . ' Calendario');
 
         // ─── ALERTAS ─────────────────────────────────────
         // enum type: absence_streak, low_performance, dropout_risk, discipline, custom
@@ -569,7 +569,7 @@ class SchoolDemoSeeder extends Seeder
                 'is_resolved'     => (bool) rand(0, 1),
             ]);
         }
-        $this->command->info('  ✅ ' . count($alertStudents) . ' Alertas');
+        $this->command->info('  ' . count($alertStudents) . ' Alertas');
 
         // ─── AUDITORÍA ───────────────────────────────────
         $auditActions = ['created', 'updated', 'login', 'exported', 'approved'];
@@ -585,7 +585,7 @@ class SchoolDemoSeeder extends Seeder
                 'ip_address'  => '192.168.1.' . rand(1, 254),
             ]);
         }
-        $this->command->info('  ✅ 25 Auditoría');
+        $this->command->info('  25 Auditoría');
 
         // ─── USUARIO EXTRA: REGISTRO ─────────────────────
         $regUser = User::create([
@@ -593,11 +593,11 @@ class SchoolDemoSeeder extends Seeder
             'password' => bcrypt('Password'),
         ]);
         $regUser->assignRole('Registro');
-        $this->command->info('  ✅ Usuario Registro');
+        $this->command->info('  Usuario Registro');
 
         // ─── RESUMEN FINAL ───────────────────────────────
         $this->command->newLine();
-        $this->command->info('🎉 ¡Datos de demostración creados!');
+        $this->command->info('¡Datos de demostración creados!');
         $this->command->table(
             ['Entidad', 'Cantidad'],
             [

@@ -5,18 +5,18 @@
             <p class="text-sm text-gray-500 dark:text-gray-400">Gestión de días lectivos, feriados, eventos y vacaciones</p>
         </div>
         <button wire:click="generateSchoolDays" wire:confirm="¿Generar días lectivos automáticamente (L-V)?" class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-700 transition">
-            ⚡ Auto-Generar Días
+            Auto-Generar Días
         </button>
     </div>
 
     @if(session()->has('message'))
         <div class="mb-4 rounded-lg bg-green-50 p-4 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400" x-data x-init="setTimeout(() => $el.remove(), 3000)">
-            ✅ {{ session('message') }}
+            {{ session('message') }}
         </div>
     @endif
     @if(session()->has('error'))
         <div class="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800 dark:bg-red-900/30 dark:text-red-400">
-            ❌ {{ session('error') }}
+            {{ session('error') }}
         </div>
     @endif
 
@@ -24,19 +24,19 @@
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <div class="rounded-xl bg-blue-50 dark:bg-blue-900/20 p-4 text-center border border-blue-200 dark:border-blue-800">
             <span class="text-2xl font-bold text-blue-700 dark:text-blue-400">{{ $stats['school_days'] }}</span>
-            <p class="text-xs text-blue-600 mt-1">📚 Días Lectivos</p>
+            <p class="text-xs text-blue-600 mt-1">Días Lectivos</p>
         </div>
         <div class="rounded-xl bg-red-50 dark:bg-red-900/20 p-4 text-center border border-red-200 dark:border-red-800">
             <span class="text-2xl font-bold text-red-700 dark:text-red-400">{{ $stats['holidays'] }}</span>
-            <p class="text-xs text-red-600 mt-1">🎉 Feriados</p>
+            <p class="text-xs text-red-600 mt-1">Feriados</p>
         </div>
         <div class="rounded-xl bg-cyan-50 dark:bg-cyan-900/20 p-4 text-center border border-cyan-200 dark:border-cyan-800">
             <span class="text-2xl font-bold text-cyan-700 dark:text-cyan-400">{{ $stats['vacations'] }}</span>
-            <p class="text-xs text-cyan-600 mt-1">🏖️ Vacaciones</p>
+            <p class="text-xs text-cyan-600 mt-1">Vacaciones</p>
         </div>
         <div class="rounded-xl bg-green-50 dark:bg-green-900/20 p-4 text-center border border-green-200 dark:border-green-800">
             <span class="text-2xl font-bold text-green-700 dark:text-green-400">{{ $stats['events'] }}</span>
-            <p class="text-xs text-green-600 mt-1">🎭 Eventos</p>
+            <p class="text-xs text-green-600 mt-1">Eventos</p>
         </div>
     </div>
 
@@ -131,7 +131,7 @@
                 <div class="flex justify-between gap-3 pt-4 mt-4 border-t dark:border-gray-700">
                     @if($editId)
                         <button wire:click="deleteEntry" class="rounded-lg px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400">
-                            🗑️ Eliminar
+                            Eliminar
                         </button>
                     @else
                         <div></div>

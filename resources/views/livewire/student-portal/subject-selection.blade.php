@@ -445,11 +445,11 @@
                                                 
                                                 @if($module['status'] === 'aprobada')
                                                     <span class="status-badge status-approved">
-                                                        ✓ Aprobada
+                                                        Aprobada
                                                     </span>
                                                 @elseif($module['status'] === 'bloqueada')
                                                     <span class="status-badge status-blocked">
-                                                        ⚠ Bloqueada
+                                                        Bloqueada
                                                     </span>
                                                 @endif
                                             </div>
@@ -503,8 +503,8 @@
                                                             
                                                             <div class="sec-details">
                                                                 <div class="sec-row">
-                                                                    <span>📅 {{ $days }}</span>
-                                                                    <span>⏰ {{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }}</span>
+                                                                    <span>{{ $days }}</span>
+                                                                    <span>{{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }}</span>
                                                                 </div>
                                                                 <div class="sec-row" style="margin-top:2px;">
                                                                     <span>Profesor: {{ Str::limit($schedule->teacher->name ?? 'Por asignar', 25) }}</span>

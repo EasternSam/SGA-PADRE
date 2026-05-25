@@ -20,27 +20,27 @@ class OrientationRecord extends Model
     ];
 
     const TYPES = [
-        'interview'     => '🗣️ Entrevista',
-        'observation'   => '👁️ Observación',
-        'referral'      => '📋 Referimiento',
-        'followup'      => '🔄 Seguimiento',
-        'psychological' => '🧠 Psicológico',
-        'family'        => '👨‍👩‍👧 Familiar',
-        'academic'      => '📚 Académico',
+        'interview'     => 'Entrevista',
+        'observation'   => 'Observación',
+        'referral'      => 'Referimiento',
+        'followup'      => 'Seguimiento',
+        'psychological' => 'Psicológico',
+        'family'        => '‍‍Familiar',
+        'academic'      => 'Académico',
     ];
 
     const PRIORITIES = [
-        'low'    => '🟢 Baja',
-        'medium' => '🟡 Media',
-        'high'   => '🟠 Alta',
-        'urgent' => '🔴 Urgente',
+        'low'    => 'Baja',
+        'medium' => 'Media',
+        'high'   => 'Alta',
+        'urgent' => 'Urgente',
     ];
 
     const STATUSES = [
-        'open'        => '📂 Abierto',
-        'in_progress' => '🔄 En Progreso',
-        'resolved'    => '✅ Resuelto',
-        'referred'    => '📤 Referido',
+        'open'        => 'Abierto',
+        'in_progress' => 'En Progreso',
+        'resolved'    => 'Resuelto',
+        'referred'    => 'Referido',
     ];
 
     public function student(): BelongsTo

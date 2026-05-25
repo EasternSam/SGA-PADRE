@@ -8,12 +8,12 @@
 
     @if(session()->has('message'))
         <div class="mb-4 rounded-lg bg-green-50 p-4 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400" x-data x-init="setTimeout(() => $el.remove(), 4000)">
-            ✅ {{ session('message') }}
+            {{ session('message') }}
         </div>
     @endif
     @if(session()->has('error'))
         <div class="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800 dark:bg-red-900/30 dark:text-red-400">
-            ❌ {{ session('error') }}
+            {{ session('error') }}
         </div>
     @endif
 
@@ -39,7 +39,7 @@
             </div>
             @if(count($attendances) > 0)
                 <button wire:click="markAllPresent" class="rounded-lg bg-green-100 px-4 py-2 text-sm font-medium text-green-700 hover:bg-green-200 transition dark:bg-green-900/30 dark:text-green-400">
-                    ✅ Marcar todos presente
+                    Marcar todos presente
                 </button>
             @endif
         </div>
@@ -96,23 +96,23 @@
                                     <div class="flex justify-center gap-1">
                                         <button wire:click="setStatus({{ $index }}, 'present')" title="Presente"
                                             class="rounded-lg px-3 py-1.5 text-xs font-semibold transition {{ $attendance['status'] === 'present' ? 'bg-green-500 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-green-100 dark:bg-gray-700 dark:text-gray-400' }}">
-                                            ✅ P
+                                            P
                                         </button>
                                         <button wire:click="setStatus({{ $index }}, 'absent')" title="Ausente"
                                             class="rounded-lg px-3 py-1.5 text-xs font-semibold transition {{ $attendance['status'] === 'absent' ? 'bg-red-500 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-red-100 dark:bg-gray-700 dark:text-gray-400' }}">
-                                            ❌ A
+                                            A
                                         </button>
                                         <button wire:click="setStatus({{ $index }}, 'late')" title="Tardanza"
                                             class="rounded-lg px-3 py-1.5 text-xs font-semibold transition {{ $attendance['status'] === 'late' ? 'bg-yellow-500 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-yellow-100 dark:bg-gray-700 dark:text-gray-400' }}">
-                                            ⏰ T
+                                            T
                                         </button>
                                         <button wire:click="setStatus({{ $index }}, 'excused')" title="Excusa"
                                             class="rounded-lg px-3 py-1.5 text-xs font-semibold transition {{ $attendance['status'] === 'excused' ? 'bg-blue-500 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-blue-100 dark:bg-gray-700 dark:text-gray-400' }}">
-                                            📋 E
+                                            E
                                         </button>
                                         <button wire:click="setStatus({{ $index }}, 'permission')" title="Permiso"
                                             class="rounded-lg px-3 py-1.5 text-xs font-semibold transition {{ $attendance['status'] === 'permission' ? 'bg-purple-500 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-purple-100 dark:bg-gray-700 dark:text-gray-400' }}">
-                                            📝 PM
+                                            PM
                                         </button>
                                     </div>
                                 </td>

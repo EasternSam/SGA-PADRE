@@ -7,7 +7,7 @@
     </div>
 
     @if(session()->has('message'))
-        <div class="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400" x-data x-init="setTimeout(() => $el.remove(), 3000)">✅ {{ session('message') }}</div>
+        <div class="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400" x-data x-init="setTimeout(() => $el.remove(), 3000)">{{ session('message') }}</div>
     @endif
 
     <div class="flex flex-wrap gap-4 mb-6 items-end">
@@ -22,7 +22,7 @@
         </div>
         @if(count($students) > 0)
             <button wire:click="autoPromote" wire:confirm="¿Ejecutar promoción automática? (≥70 = Promovido, <70 = Repitente)" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition">
-                ⚡ Auto-Promover
+                Auto-Promover
             </button>
         @endif
     </div>
@@ -89,10 +89,10 @@
                             </td>
                             <td class="px-4 py-3 text-center">
                                 <div class="flex justify-center gap-1">
-                                    <button wire:click="setResult({{ $s['id'] }}, 'promoted')" class="rounded px-2 py-1 text-xs {{ $s['result'] === 'promoted' ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 hover:bg-green-100' }}">✅</button>
-                                    <button wire:click="setResult({{ $s['id'] }}, 'retained')" class="rounded px-2 py-1 text-xs {{ $s['result'] === 'retained' ? 'bg-red-600 text-white' : 'bg-red-50 text-red-700 hover:bg-red-100' }}">🔄</button>
-                                    <button wire:click="setResult({{ $s['id'] }}, 'transferred')" class="rounded px-2 py-1 text-xs {{ $s['result'] === 'transferred' ? 'bg-purple-600 text-white' : 'bg-purple-50 text-purple-700 hover:bg-purple-100' }}">🔀</button>
-                                    <button wire:click="setResult({{ $s['id'] }}, 'withdrawn')" class="rounded px-2 py-1 text-xs {{ $s['result'] === 'withdrawn' ? 'bg-gray-600 text-white' : 'bg-gray-50 text-gray-700 hover:bg-gray-100' }}">❌</button>
+                                    <button wire:click="setResult({{ $s['id'] }}, 'promoted')" class="rounded px-2 py-1 text-xs {{ $s['result'] === 'promoted' ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 hover:bg-green-100' }}"></button>
+                                    <button wire:click="setResult({{ $s['id'] }}, 'retained')" class="rounded px-2 py-1 text-xs {{ $s['result'] === 'retained' ? 'bg-red-600 text-white' : 'bg-red-50 text-red-700 hover:bg-red-100' }}"></button>
+                                    <button wire:click="setResult({{ $s['id'] }}, 'transferred')" class="rounded px-2 py-1 text-xs {{ $s['result'] === 'transferred' ? 'bg-purple-600 text-white' : 'bg-purple-50 text-purple-700 hover:bg-purple-100' }}"></button>
+                                    <button wire:click="setResult({{ $s['id'] }}, 'withdrawn')" class="rounded px-2 py-1 text-xs {{ $s['result'] === 'withdrawn' ? 'bg-gray-600 text-white' : 'bg-gray-50 text-gray-700 hover:bg-gray-100' }}"></button>
                                 </div>
                             </td>
                         </tr>

@@ -106,7 +106,7 @@
                         <tr>
                             <td colspan="7">
                                 <div class="gb-empty-state">
-                                    <div class="gb-empty-icon">📢</div>
+                                    <div class="gb-empty-icon"></div>
                                     <div class="gb-empty-title">Sin comunicados enviados</div>
                                     <div class="gb-empty-desc">Envía tu primer comunicado para ver el historial</div>
                                 </div>

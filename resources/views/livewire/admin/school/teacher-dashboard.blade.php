@@ -69,7 +69,7 @@
                     </div>
                 @empty
                     <div class="gb-empty-state !py-8">
-                        <div class="gb-empty-icon !w-12 !h-12">🏫</div>
+                        <div class="gb-empty-icon !w-12 !h-12"></div>
                         <div class="gb-empty-title !text-sm">Sin secciones asignadas</div>
                     </div>
                 @endforelse
@@ -102,7 +102,7 @@
                                 </div>
                                 <span class="text-xs font-bold {{ $pg['entered'] === 0 ? 'text-red-600' : 'text-amber-600' }}">{{ $pg['entered'] }}/{{ $pg['total'] }}</span>
                                 @if($pg['locked'])
-                                    <span class="gb-badge gb-badge-danger !py-0.5 !px-1.5 !text-[8px]">🔒</span>
+                                    <span class="gb-badge gb-badge-danger !py-0.5 !px-1.5 !text-[8px]"></span>
                                 @endif
                             </div>
                         </div>
@@ -141,7 +141,7 @@
                 </div>
             @empty
                 <div class="col-span-2 gb-empty-state !py-6">
-                    <div class="gb-empty-icon !w-10 !h-10 !text-base">📊</div>
+                    <div class="gb-empty-icon !w-10 !h-10 !text-base"></div>
                     <div class="gb-empty-desc">Sin notas recientes</div>
                 </div>
             @endforelse

@@ -24,17 +24,25 @@ class SubjectManager extends Component
             'code' => 'required|string|max:10|unique:subjects,code,' . $this->editingId,
             'area' => 'required|string',
             'weekly_hours' => 'required|integer|min:1|max:10',
+            'description' => 'nullable|string|max:500',
         ];
+    }
+
+    public function updatedCode($value)
+    {
+        $this->code = strtoupper($value);
     }
 
     public function create()
     {
+        $this->resetValidation();
         $this->reset(['name', 'code', 'area', 'is_core', 'weekly_hours', 'description', 'editingId']);
         $this->showModal = true;
     }
 
     public function edit($id)
     {
+        $this->resetValidation();
         $subject = Subject::findOrFail($id);
         $this->editingId = $subject->id;
         $this->name = $subject->name;

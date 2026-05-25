@@ -120,9 +120,9 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
                         <select wire:model="status" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-blue-500 focus:ring-blue-500">
-                            <option value="planning">📋 Planificación</option>
-                            <option value="active">✅ Activo</option>
-                            <option value="closed">🔒 Cerrado</option>
+                            <option value="planning">Planificación</option>
+                            <option value="active">Activo</option>
+                            <option value="closed">Cerrado</option>
                         </select>
                     </div>
                     <div class="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">

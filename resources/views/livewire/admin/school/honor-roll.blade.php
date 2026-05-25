@@ -1,7 +1,7 @@
 <div class="p-6">
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">🏆 Cuadro de Honor</h1>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Cuadro de Honor</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400">Estudiantes destacados por rendimiento académico</p>
         </div>
     </div>
@@ -50,7 +50,7 @@
                         {{ strtoupper(substr($honorStudents[1]['student']->first_name, 0, 1)) }}{{ strtoupper(substr($honorStudents[1]['student']->last_name, 0, 1)) }}
                     </div>
                     <div class="mt-2">
-                        <span class="text-2xl">🥈</span>
+                        <span class="text-2xl"></span>
                         <p class="text-sm font-bold text-gray-900 dark:text-white">{{ $honorStudents[1]['student']->full_name }}</p>
                         <p class="text-lg font-bold text-gray-600">{{ $honorStudents[1]['average'] }}</p>
                     </div>
@@ -61,7 +61,7 @@
                         {{ strtoupper(substr($honorStudents[0]['student']->first_name, 0, 1)) }}{{ strtoupper(substr($honorStudents[0]['student']->last_name, 0, 1)) }}
                     </div>
                     <div class="mt-2">
-                        <span class="text-3xl">🥇</span>
+                        <span class="text-3xl"></span>
                         <p class="text-base font-bold text-gray-900 dark:text-white">{{ $honorStudents[0]['student']->full_name }}</p>
                         <p class="text-xl font-bold text-yellow-600">{{ $honorStudents[0]['average'] }}</p>
                     </div>
@@ -72,7 +72,7 @@
                         {{ strtoupper(substr($honorStudents[2]['student']->first_name, 0, 1)) }}{{ strtoupper(substr($honorStudents[2]['student']->last_name, 0, 1)) }}
                     </div>
                     <div class="mt-2">
-                        <span class="text-2xl">🥉</span>
+                        <span class="text-2xl"></span>
                         <p class="text-sm font-bold text-gray-900 dark:text-white">{{ $honorStudents[2]['student']->full_name }}</p>
                         <p class="text-lg font-bold text-amber-700">{{ $honorStudents[2]['average'] }}</p>
                     </div>
@@ -98,10 +98,7 @@
                     @foreach($honorStudents as $i => $h)
                         <tr class="{{ $i < 3 ? 'bg-yellow-50/50 dark:bg-yellow-900/10' : '' }} hover:bg-gray-50 dark:hover:bg-gray-700/50">
                             <td class="px-4 py-3 text-sm font-bold text-gray-700 dark:text-gray-300">
-                                @if($i === 0) 🥇
-                                @elseif($i === 1) 🥈
-                                @elseif($i === 2) 🥉
-                                @else {{ $i + 1 }}
+                                @if($i === 0) @elseif($i === 1) @elseif($i === 2) @else {{ $i + 1 }}
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
@@ -131,7 +128,7 @@
         </div>
     @else
         <div class="rounded-xl border-2 border-dashed border-gray-300 p-12 text-center dark:border-gray-600">
-            <p class="text-lg text-gray-400 mb-1">🏆 Selecciona un período</p>
+            <p class="text-lg text-gray-400 mb-1">Selecciona un período</p>
             <p class="text-sm text-gray-400">para ver el cuadro de honor</p>
         </div>
     @endif

@@ -59,7 +59,7 @@ class GradeEntry extends Component
     {
         // Check grade lock
         if ($this->period_id && GradeLockPeriod::isLocked($this->period_id)) {
-            session()->flash('error', '🔒 Este período está bloqueado. No se pueden modificar calificaciones.');
+            session()->flash('error', 'Este período está bloqueado. No se pueden modificar calificaciones.');
             return;
         }
 

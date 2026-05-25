@@ -108,7 +108,7 @@
                                     </div>
                                     <div>
                                         <div class="user-name">{{ $r->student?->full_name ?? '—' }}</div>
-                                        @if($r->is_confidential) <span class="text-[9px] text-red-500 font-bold uppercase">🔒 Confidencial</span> @endif
+                                        @if($r->is_confidential) <span class="text-[9px] text-red-500 font-bold uppercase">Confidencial</span> @endif
                                     </div>
                                 </div>
                             </td>
@@ -161,7 +161,7 @@
                         <tr>
                             <td colspan="7">
                                 <div class="gb-empty-state">
-                                    <div class="gb-empty-icon">🧠</div>
+                                    <div class="gb-empty-icon"></div>
                                     <div class="gb-empty-title">Sin registros de orientación</div>
                                     <div class="gb-empty-desc">Crea un nuevo registro para comenzar el seguimiento</div>
                                 </div>
@@ -248,7 +248,7 @@
                     </div>
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" wire:model="is_confidential" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                        <span class="text-sm text-gray-700 dark:text-gray-300 font-medium">🔒 Caso Confidencial</span>
+                        <span class="text-sm text-gray-700 dark:text-gray-300 font-medium">Caso Confidencial</span>
                     </label>
                     <div class="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
                         <button type="button" wire:click="$set('showModal', false)" class="gb-btn gb-btn-secondary">Cancelar</button>

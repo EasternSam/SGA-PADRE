@@ -19,13 +19,13 @@ class SchoolCalendar extends Model
     ];
 
     const TYPES = [
-        'school_day'  => '📚 Día Lectivo',
-        'holiday'     => '🎉 Feriado',
-        'teacher_day' => '👩‍🏫 Día de Docentes',
-        'exam_day'    => '📝 Período de Exámenes',
-        'event'       => '🎭 Evento Escolar',
-        'vacation'    => '🏖️ Vacaciones',
-        'makeup_day'  => '🔄 Día de Recuperación',
+        'school_day'  => 'Día Lectivo',
+        'holiday'     => 'Feriado',
+        'teacher_day' => '‍Día de Docentes',
+        'exam_day'    => 'Período de Exámenes',
+        'event'       => 'Evento Escolar',
+        'vacation'    => 'Vacaciones',
+        'makeup_day'  => 'Día de Recuperación',
     ];
 
     const TYPE_COLORS = [

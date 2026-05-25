@@ -1,9 +1,9 @@
 <div class="p-6">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">🔄 Reinscripción Masiva</h1>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">Reinscripción Masiva</h1>
     <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Promueve y reinscribe estudiantes para el siguiente año escolar</p>
 
     @if(session()->has('message'))
-        <div class="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400">✅ {{ session('message') }}</div>
+        <div class="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400">{{ session('message') }}</div>
     @endif
 
     <div class="flex flex-wrap gap-4 mb-6 items-end">
@@ -22,7 +22,7 @@
                 @foreach($years as $y) <option value="{{ $y->id }}">{{ $y->name }}</option> @endforeach
             </select>
         </div>
-        <button wire:click="generatePreview" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">🔍 Vista Previa</button>
+        <button wire:click="generatePreview" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Vista Previa</button>
     </div>
 
     @if(count($preview) > 0)
@@ -74,7 +74,7 @@
 
         <button wire:click="processReinscription" wire:confirm="¿Confirma la reinscripción masiva? Esta acción actualizará los grados de los estudiantes."
             class="rounded-lg bg-green-600 px-6 py-3 text-sm font-bold text-white hover:bg-green-700 transition" {{ $isProcessing ? 'disabled' : '' }}>
-            {{ $isProcessing ? '⏳ Procesando...' : '✅ Ejecutar Reinscripción' }}
+            {{ $isProcessing ? 'Procesando...' : 'Ejecutar Reinscripción' }}
         </button>
     @endif
 </div>

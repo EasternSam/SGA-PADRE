@@ -55,7 +55,7 @@ class ReinscriptionManager extends Component
                 'current_grade' => $currentGrade?->short_name ?? '—',
                 'current_section' => $promo->section?->name ?? '',
                 'result'       => PromotionRecord::RESULTS[$promo->result] ?? $promo->result,
-                'next_grade'   => $nextGrade?->short_name ?? ($action === 'graduated' ? '🎓 Graduado' : '—'),
+                'next_grade'   => $nextGrade?->short_name ?? ($action === 'graduated' ? 'Graduado' : '—'),
                 'next_grade_id' => $nextGrade?->id,
                 'action'       => $action,
                 'avg'          => $promo->final_average,
@@ -85,7 +85,7 @@ class ReinscriptionManager extends Component
         }
 
         $this->isProcessing = false;
-        session()->flash('message', "✅ Reinscripción completada: {$processed} estudiantes actualizados. Asigne secciones manualmente.");
+        session()->flash('message', "Reinscripción completada: {$processed} estudiantes actualizados. Asigne secciones manualmente.");
         $this->preview = [];
     }
 

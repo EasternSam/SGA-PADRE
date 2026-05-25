@@ -101,7 +101,7 @@ class Index extends Component
             if ($this->is_minor) {
                 $this->tutor_name = trim($citizen['nombres'] . ' ' . $citizen['apellido1'] . ' ' . $citizen['apellido2']);
                 $this->tutor_cedula = $this->cedula;
-                $this->cedulaLookupMessage = '✓ Tutor verificado: ' . $this->tutor_name;
+                $this->cedulaLookupMessage = 'Tutor verificado: ' . $this->tutor_name;
                 $this->cedulaVerified = false; // No bloquear campos del estudiante
             } else {
                 // Cédula del estudiante → auto-rellenar y bloquear
@@ -126,7 +126,7 @@ class Index extends Component
                 }
 
                 $this->cedulaVerified = true;
-                $this->cedulaLookupMessage = '✓ Identidad verificada en el padrón electoral.';
+                $this->cedulaLookupMessage = 'Identidad verificada en el padrón electoral.';
             }
         } else {
             $this->cedulaVerified = false;

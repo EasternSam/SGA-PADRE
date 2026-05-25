@@ -31,12 +31,12 @@ class SchoolEnrollment extends Model
     ];
 
     const STATUSES = [
-        'pending'         => '⏳ Pendiente',
-        'approved'        => '✅ Aprobada',
-        'enrolled'        => '🎓 Matriculado',
-        'transferred_out' => '🔄 Trasladado',
-        'withdrawn'       => '❌ Retirado',
-        'graduated'       => '🎉 Egresado',
+        'pending'         => 'Pendiente',
+        'approved'        => 'Aprobada',
+        'enrolled'        => 'Matriculado',
+        'transferred_out' => 'Trasladado',
+        'withdrawn'       => 'Retirado',
+        'graduated'       => 'Egresado',
     ];
 
     const STATUS_COLORS = [

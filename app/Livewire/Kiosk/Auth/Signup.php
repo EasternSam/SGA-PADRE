@@ -151,7 +151,7 @@ class Signup extends Component
             $this->first_name = $citizen['nombres'];
             $this->last_name = trim($citizen['apellido1'] . ' ' . $citizen['apellido2']);
             $this->cedulaVerified = true;
-            $this->cedulaLookupMessage = '✓ Identidad verificada.';
+            $this->cedulaLookupMessage = 'Identidad verificada.';
         } else {
             $this->cedulaVerified = false;
             $this->cedulaLookupMessage = $result['error'] ?? 'Cédula no encontrada.';

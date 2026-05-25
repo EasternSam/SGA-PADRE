@@ -84,6 +84,6 @@ class MinerdSubjectsSeeder extends Seeder
             $grade->subjects()->attach($secSpecific);
         }
 
-        $this->command->info('✅ Asignaturas MINERD creadas y asignadas a grados');
+        $this->command->info('Asignaturas MINERD creadas y asignadas a grados');
     }
 }

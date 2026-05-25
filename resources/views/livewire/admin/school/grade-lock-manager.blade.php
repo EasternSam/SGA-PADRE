@@ -1,9 +1,9 @@
 <div class="p-6">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">🔒 Bloqueo de Calificaciones</h1>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">Bloqueo de Calificaciones</h1>
     <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Controla cuándo se bloquea la edición de notas por período</p>
 
     @if(session()->has('message'))
-        <div class="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400" x-data x-init="setTimeout(() => $el.remove(), 3000)">✅ {{ session('message') }}</div>
+        <div class="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400" x-data x-init="setTimeout(() => $el.remove(), 3000)">{{ session('message') }}</div>
     @endif
 
     @if(count($locks) > 0)
@@ -14,12 +14,9 @@
                         <div class="flex items-center gap-4">
                             <div class="text-2xl">
                                 @if($lock['is_locked'])
-                                    🔒
-                                @elseif($lock['lock_date'] && \Carbon\Carbon::parse($lock['lock_date'])->isPast())
-                                    🔒
-                                @else
-                                    🔓
-                                @endif
+                                    @elseif($lock['lock_date'] && \Carbon\Carbon::parse($lock['lock_date'])->isPast())
+                                    @else
+                                    @endif
                             </div>
                             <div>
                                 <h3 class="text-base font-bold text-gray-900 dark:text-white">{{ $lock['period_name'] }}</h3>
@@ -42,7 +39,7 @@
                                 <input type="date" wire:model="locks.{{ $i }}.lock_date" wire:change="saveLock({{ $i }})" class="rounded-lg border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
                             </div>
                             <button wire:click="toggleLock({{ $i }})" class="rounded-lg px-4 py-2 text-sm font-semibold transition {{ $lock['is_locked'] ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-red-600 text-white hover:bg-red-700' }}">
-                                {{ $lock['is_locked'] ? '🔓 Desbloquear' : '🔒 Bloquear' }}
+                                {{ $lock['is_locked'] ? 'Desbloquear' : 'Bloquear' }}
                             </button>
                         </div>
                     </div>

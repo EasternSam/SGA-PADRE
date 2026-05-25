@@ -1,17 +1,17 @@
 <div class="p-6">
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">🚨 Centro de Alertas</h1>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Centro de Alertas</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400">Monitoreo de asistencia, rendimiento y riesgo de abandono</p>
         </div>
         <div class="flex gap-2">
-            <button wire:click="markAllRead" class="rounded-lg bg-gray-200 px-3 py-2 text-sm dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 transition">✓ Marcar leídas</button>
-            <button wire:click="scan" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition">🔍 Escanear Ahora</button>
+            <button wire:click="markAllRead" class="rounded-lg bg-gray-200 px-3 py-2 text-sm dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 transition">Marcar leídas</button>
+            <button wire:click="scan" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition">Escanear Ahora</button>
         </div>
     </div>
 
     @if(session()->has('message'))
-        <div class="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400" x-data x-init="setTimeout(() => $el.remove(), 4000)">✅ {{ session('message') }}</div>
+        <div class="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400" x-data x-init="setTimeout(() => $el.remove(), 4000)">{{ session('message') }}</div>
     @endif
 
     {{-- Stats --}}
@@ -42,9 +42,9 @@
         </select>
         <select wire:model.live="filterSeverity" class="rounded-lg border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
             <option value="">Toda severidad</option>
-            <option value="critical">🔴 Crítica</option>
-            <option value="warning">🟡 Advertencia</option>
-            <option value="info">🔵 Informativa</option>
+            <option value="critical">Crítica</option>
+            <option value="warning">Advertencia</option>
+            <option value="info">Informativa</option>
         </select>
         <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
             <input type="checkbox" wire:model.live="showResolved" class="rounded border-gray-300 text-blue-600">
@@ -62,7 +62,7 @@
                 {{ $alert->is_resolved ? 'opacity-60' : '' }}">
                 <div class="flex items-start gap-4">
                     <div class="text-2xl">
-                        {{ \App\Models\SchoolAlert::TYPES[$alert->type] ? explode(' ', \App\Models\SchoolAlert::TYPES[$alert->type])[0] : '📌' }}
+                        {{ \App\Models\SchoolAlert::TYPES[$alert->type] ? explode(' ', \App\Models\SchoolAlert::TYPES[$alert->type])[0] : '' }}
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 mb-1">
@@ -73,23 +73,23 @@
                         </div>
                         <p class="text-xs text-gray-600 dark:text-gray-400">{{ $alert->description }}</p>
                         <div class="flex gap-3 mt-1 text-[10px] text-gray-500">
-                            <span>🎓 {{ $alert->student?->full_name ?? '—' }}</span>
-                            <span>📅 {{ $alert->created_at->format('d/m/Y H:i') }}</span>
+                            <span>{{ $alert->student?->full_name ?? '—' }}</span>
+                            <span>{{ $alert->created_at->format('d/m/Y H:i') }}</span>
                         </div>
                     </div>
                     @if(!$alert->is_resolved)
                         <div class="flex gap-1">
                             @if(!$alert->is_read)
-                                <button wire:click="markRead({{ $alert->id }})" class="rounded px-2 py-1 text-xs bg-gray-100 text-gray-600 hover:bg-gray-200">👁️</button>
+                                <button wire:click="markRead({{ $alert->id }})" class="rounded px-2 py-1 text-xs bg-gray-100 text-gray-600 hover:bg-gray-200"></button>
                             @endif
-                            <button wire:click="openResolve({{ $alert->id }})" class="rounded px-2 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200">✅ Resolver</button>
+                            <button wire:click="openResolve({{ $alert->id }})" class="rounded px-2 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200">Resolver</button>
                         </div>
                     @endif
                 </div>
             </div>
         @empty
             <div class="rounded-xl border-2 border-dashed border-gray-300 p-8 text-center dark:border-gray-600">
-                <p class="text-lg text-gray-400 mb-1">🎉 Sin alertas activas</p>
+                <p class="text-lg text-gray-400 mb-1">Sin alertas activas</p>
                 <p class="text-sm text-gray-400">Presiona "Escanear Ahora" para revisar todos los estudiantes</p>
             </div>
         @endforelse
@@ -102,7 +102,7 @@
         <div class="flex min-h-screen items-center justify-center p-4">
             <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" wire:click="$set('showResolveModal', false)"></div>
             <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-800">
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">✅ Resolver Alerta</h3>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Resolver Alerta</h3>
                 <div class="space-y-3">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nota de resolución (opcional)</label>

@@ -8,7 +8,7 @@
 
     @if(session()->has('message'))
         <div class="mb-4 rounded-lg bg-green-50 p-4 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400" x-data x-init="setTimeout(() => $el.remove(), 3000)">
-            ✅ {{ session('message') }}
+            {{ session('message') }}
         </div>
     @endif
 
@@ -30,7 +30,7 @@
             </div>
             @if(!$hasBlocks)
                 <button wire:click="generateDefaultBlocks" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition">
-                    ⚡ Generar Bloques Horarios
+                    Generar Bloques Horarios
                 </button>
             @endif
         </div>
@@ -74,10 +74,10 @@
                                                 @if($cell && $cell['subject_name'])
                                                     <div class="text-xs font-bold text-blue-800 dark:text-blue-300 truncate">{{ $cell['subject_name'] }}</div>
                                                     @if($cell['teacher_name'])
-                                                        <div class="text-[10px] text-gray-600 dark:text-gray-400 truncate mt-0.5">👩‍🏫 {{ $cell['teacher_name'] }}</div>
+                                                        <div class="text-[10px] text-gray-600 dark:text-gray-400 truncate mt-0.5">‍{{ $cell['teacher_name'] }}</div>
                                                     @endif
                                                     @if($cell['classroom'])
-                                                        <div class="text-[10px] text-gray-500 truncate">📍 {{ $cell['classroom'] }}</div>
+                                                        <div class="text-[10px] text-gray-500 truncate">{{ $cell['classroom'] }}</div>
                                                     @endif
                                                 @else
                                                     <div class="text-xs text-gray-400 text-center">
@@ -110,7 +110,7 @@
                 <p class="font-semibold text-indigo-800 dark:text-indigo-400 mb-2">No hay bloques horarios configurados</p>
                 <p class="text-sm text-indigo-600 dark:text-indigo-500 mb-4">Genera los bloques según la tanda del centro educativo</p>
                 <button wire:click="generateDefaultBlocks" class="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition">
-                    ⚡ Generar Bloques Automáticamente
+                    Generar Bloques Automáticamente
                 </button>
             </div>
         @endif
@@ -162,7 +162,7 @@
 
                 <div class="flex justify-between gap-3 pt-4 mt-4 border-t dark:border-gray-700">
                     <button wire:click="clearCell" class="rounded-lg px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400">
-                        🗑️ Vaciar
+                        Vaciar
                     </button>
                     <div class="flex gap-2">
                         <button wire:click="$set('showModal', false)" class="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300">Cancelar</button>

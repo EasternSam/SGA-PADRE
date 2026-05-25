@@ -40,7 +40,7 @@
                                         <div class="teacher">{{ $row['cells'][$day]['teacher'] }}</div>
                                     @endif
                                     @if($row['cells'][$day]['room'])
-                                        <div class="room">📍 {{ $row['cells'][$day]['room'] }}</div>
+                                        <div class="room">{{ $row['cells'][$day]['room'] }}</div>
                                     @endif
                                 @else
                                     <span style="color: #d1d5db;">—</span>

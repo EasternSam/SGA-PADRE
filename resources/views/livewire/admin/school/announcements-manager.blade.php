@@ -12,13 +12,13 @@
 
     @if(session()->has('message'))
         <div class="mb-4 rounded-lg bg-green-50 p-4 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400" x-data x-init="setTimeout(() => $el.remove(), 3000)">
-            ✅ {{ session('message') }}
+            {{ session('message') }}
         </div>
     @endif
 
     {{-- Filtros --}}
     <div class="flex flex-wrap gap-3 mb-4">
-        <input type="text" wire:model.live.debounce.300ms="search" placeholder="🔍 Buscar por título..." class="rounded-lg border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white w-60" />
+        <input type="text" wire:model.live.debounce.300ms="search" placeholder="Buscar por título..." class="rounded-lg border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white w-60" />
         <select wire:model.live="filterType" class="rounded-lg border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
             <option value="">Todos los tipos</option>
             @foreach($types as $key => $label)
@@ -54,14 +54,14 @@
                         <h3 class="text-base font-bold text-gray-900 dark:text-white">{{ $a->title }}</h3>
                         <p class="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{{ Str::limit($a->body, 150) }}</p>
                         <div class="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                            <span>📅 {{ $a->publish_date->format('d/m/Y') }}</span>
-                            <span>👤 {{ $a->author?->name }}</span>
+                            <span>{{ $a->publish_date->format('d/m/Y') }}</span>
+                            <span>{{ $a->author?->name }}</span>
                             <span>{{ $audiences[$a->audience] ?? $a->audience }}</span>
                             @if($a->gradeLevel)
-                                <span>🎓 {{ $a->gradeLevel->short_name }}</span>
+                                <span>{{ $a->gradeLevel->short_name }}</span>
                             @endif
                             @if($a->requires_acknowledgment)
-                                <span class="text-blue-600">📋 Requiere acuse</span>
+                                <span class="text-blue-600">Requiere acuse</span>
                             @endif
                         </div>
                     </div>
@@ -195,8 +195,8 @@
                 </div>
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ $previewAnnouncement->title }}</h3>
                 <div class="text-xs text-gray-500 mb-4 flex gap-3">
-                    <span>📅 {{ $previewAnnouncement->publish_date->format('d/m/Y') }}</span>
-                    <span>👤 {{ $previewAnnouncement->author?->name }}</span>
+                    <span>{{ $previewAnnouncement->publish_date->format('d/m/Y') }}</span>
+                    <span>{{ $previewAnnouncement->author?->name }}</span>
                     <span>{{ $audiences[$previewAnnouncement->audience] ?? '' }}</span>
                 </div>
                 <div class="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ $previewAnnouncement->body }}</div>

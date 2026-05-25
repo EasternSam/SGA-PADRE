@@ -1,5 +1,5 @@
 <div class="p-6">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">📊 Estadísticas por Asignatura</h1>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">Estadísticas por Asignatura</h1>
     <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Rendimiento académico por materia: promedios, aprobación, mínimos y máximos</p>
 
     <div class="mb-6">
@@ -19,16 +19,16 @@
         @endphp
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4">
-                <p class="text-xs text-green-600 font-medium">🏆 Mejor Asignatura</p>
+                <p class="text-xs text-green-600 font-medium">Mejor Asignatura</p>
                 <p class="text-lg font-bold text-green-800 dark:text-green-400">{{ $bestSubject['name'] ?? '' }}</p>
                 <p class="text-sm text-green-700">Promedio: {{ $bestSubject['avg'] ?? '' }}</p>
             </div>
             <div class="rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4">
-                <p class="text-xs text-blue-600 font-medium">📊 Promedio General</p>
+                <p class="text-xs text-blue-600 font-medium">Promedio General</p>
                 <p class="text-3xl font-bold text-blue-800 dark:text-blue-400">{{ $overallAvg }}</p>
             </div>
             <div class="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
-                <p class="text-xs text-red-600 font-medium">⚠️ Mayor Dificultad</p>
+                <p class="text-xs text-red-600 font-medium">Mayor Dificultad</p>
                 <p class="text-lg font-bold text-red-800 dark:text-red-400">{{ $worstSubject['name'] ?? '' }}</p>
                 <p class="text-sm text-red-700">Promedio: {{ $worstSubject['avg'] ?? '' }}</p>
             </div>

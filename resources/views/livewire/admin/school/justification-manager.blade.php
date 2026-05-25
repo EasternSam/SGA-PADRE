@@ -1,14 +1,14 @@
 <div class="p-6">
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">📋 Justificaciones de Ausencia</h1>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Justificaciones de Ausencia</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400">Registro y aprobación de excusas médicas y familiares</p>
         </div>
         <button wire:click="create" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition">+ Nueva Justificación</button>
     </div>
 
     @if(session()->has('message'))
-        <div class="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400" x-data x-init="setTimeout(() => $el.remove(), 3000)">✅ {{ session('message') }}</div>
+        <div class="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400" x-data x-init="setTimeout(() => $el.remove(), 3000)">{{ session('message') }}</div>
     @endif
 
     <select wire:model.live="filterStatus" class="rounded-lg border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white mb-4">
@@ -44,17 +44,17 @@
                         </td>
                         <td class="px-4 py-3 text-center">
                             @if($j->document_path)
-                                <a href="{{ asset('storage/' . $j->document_path) }}" target="_blank" class="text-blue-600 text-sm">📎</a>
+                                <a href="{{ asset('storage/' . $j->document_path) }}" target="_blank" class="text-blue-600 text-sm"></a>
                             @else
                                 <span class="text-gray-400 text-sm">—</span>
                             @endif
                         </td>
                         <td class="px-4 py-3 text-right">
                             @if($j->status === 'pending')
-                                <button wire:click="approve({{ $j->id }})" class="text-xs text-green-600 hover:text-green-800 font-medium mr-1">✅ Aprobar</button>
-                                <button wire:click="reject({{ $j->id }})" class="text-xs text-red-500 hover:text-red-700 font-medium mr-1">❌ Rechazar</button>
+                                <button wire:click="approve({{ $j->id }})" class="text-xs text-green-600 hover:text-green-800 font-medium mr-1">Aprobar</button>
+                                <button wire:click="reject({{ $j->id }})" class="text-xs text-red-500 hover:text-red-700 font-medium mr-1">Rechazar</button>
                             @endif
-                            <button wire:click="delete({{ $j->id }})" wire:confirm="¿Eliminar?" class="text-xs text-gray-400 hover:text-red-500">🗑️</button>
+                            <button wire:click="delete({{ $j->id }})" wire:confirm="¿Eliminar?" class="text-xs text-gray-400 hover:text-red-500"></button>
                         </td>
                     </tr>
                 @empty

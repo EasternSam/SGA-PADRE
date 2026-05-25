@@ -76,6 +76,6 @@ class MinerdGradeLevelsSeeder extends Seeder
             ]));
         }
 
-        $this->command->info('✅ Grados MINERD creados: Pre-Primario + 1ro-6to Primaria + 1ro-6to Secundaria');
+        $this->command->info('Grados MINERD creados: Pre-Primario + 1ro-6to Primaria + 1ro-6to Secundaria');
     }
 }

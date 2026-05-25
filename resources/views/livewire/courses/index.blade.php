@@ -314,7 +314,7 @@
     <!-- Modal de Confirmación de Limpieza (EXISTENTE) -->
     <x-modal name="confirm-clear-unused-modal">
         <div class="p-6">
-            <h2 class="text-lg font-medium text-red-600 mb-4">⚠️ Confirmar Limpieza Masiva</h2>
+            <h2 class="text-lg font-medium text-red-600 mb-4">Confirmar Limpieza Masiva</h2>
             <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
                 <div class="flex">
                     <div class="flex-shrink-0">
@@ -344,7 +344,7 @@
     <!-- Modal de Confirmación de Eliminación Individual (NUEVO) -->
     <x-modal name="confirm-delete-modal">
         <div class="p-6">
-            <h2 class="text-lg font-medium text-red-600 mb-4">⚠️ Confirmar Eliminación</h2>
+            <h2 class="text-lg font-medium text-red-600 mb-4">Confirmar Eliminación</h2>
             
             <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
                 <div class="flex">

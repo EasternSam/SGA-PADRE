@@ -129,7 +129,7 @@ class ScheduleBuilder extends Component
         );
 
         if ($conflict) {
-            $this->conflictWarning = '⚠️ Este docente ya está asignado en ' .
+            $this->conflictWarning = 'Este docente ya está asignado en ' .
                 ($conflict->section?->gradeLevel?->short_name ?? '') . ' ' .
                 ($conflict->section?->name ?? '') . ' (' .
                 ($conflict->subject?->name ?? '') . ')';

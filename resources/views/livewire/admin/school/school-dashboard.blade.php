@@ -16,7 +16,7 @@
             <div>
                 <div class="flex items-center gap-3 mb-2">
                     <div class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner">
-                        <span class="text-2xl">🏫</span>
+                        <span class="text-2xl"></span>
                     </div>
                     <div>
                         <h1 class="text-2xl lg:text-3xl font-bold tracking-tight">Panel Escolar</h1>
@@ -26,10 +26,10 @@
             </div>
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('admin.school.alerts') }}" wire:navigate class="rounded-xl bg-white/15 backdrop-blur-sm px-4 py-2 text-sm font-medium hover:bg-white/25 transition-all duration-200 flex items-center gap-2 border border-white/20">
-                    🚨 Alertas <span class="bg-white/25 rounded-lg px-2 py-0.5 text-xs font-bold">{{ $alertCount }}</span>
+                    Alertas <span class="bg-white/25 rounded-lg px-2 py-0.5 text-xs font-bold">{{ $alertCount }}</span>
                 </a>
                 <a href="{{ route('admin.school.report-center') }}" wire:navigate class="rounded-xl bg-white/15 backdrop-blur-sm px-4 py-2 text-sm font-medium hover:bg-white/25 transition-all duration-200 flex items-center gap-2 border border-white/20">
-                    📊 Reportes
+                    Reportes
                 </a>
             </div>
         </div>
@@ -39,11 +39,11 @@
     <div class="grid grid-cols-2 md:grid-cols-5 gap-3 lg:gap-4 mb-8">
         @php
         $kpis = [
-            ['value' => $totalStudents, 'label' => 'Estudiantes', 'icon' => '🎓', 'sub' => "M: {$males} / F: {$females}", 'gradient' => 'from-blue-500/10 to-blue-600/5', 'border' => 'border-blue-200 dark:border-blue-800', 'text' => 'text-blue-600 dark:text-blue-400', 'ring' => 'ring-blue-500/20'],
-            ['value' => $totalSections, 'label' => 'Secciones', 'icon' => '🏫', 'sub' => null, 'gradient' => 'from-purple-500/10 to-purple-600/5', 'border' => 'border-purple-200 dark:border-purple-800', 'text' => 'text-purple-600 dark:text-purple-400', 'ring' => 'ring-purple-500/20'],
-            ['value' => $totalTeachers, 'label' => 'Docentes', 'icon' => '👩‍🏫', 'sub' => null, 'gradient' => 'from-emerald-500/10 to-emerald-600/5', 'border' => 'border-emerald-200 dark:border-emerald-800', 'text' => 'text-emerald-600 dark:text-emerald-400', 'ring' => 'ring-emerald-500/20'],
-            ['value' => $weekPct, 'label' => 'Asist. Semanal', 'icon' => '✅', 'sub' => null, 'gradient' => 'from-amber-500/10 to-amber-600/5', 'border' => 'border-amber-200 dark:border-amber-800', 'text' => 'text-amber-600 dark:text-amber-400', 'ring' => 'ring-amber-500/20', 'suffix' => '%'],
-            ['value' => $alertCount, 'label' => 'Alertas', 'icon' => '🚨', 'sub' => $criticalAlerts > 0 ? "{$criticalAlerts} críticas" : null, 'gradient' => $criticalAlerts > 0 ? 'from-red-500/10 to-red-600/5' : 'from-gray-500/10 to-gray-600/5', 'border' => $criticalAlerts > 0 ? 'border-red-200 dark:border-red-800' : 'border-gray-200 dark:border-gray-700', 'text' => $criticalAlerts > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400', 'ring' => $criticalAlerts > 0 ? 'ring-red-500/20' : 'ring-gray-500/10'],
+            ['value' => $totalStudents, 'label' => 'Estudiantes', 'icon' => '', 'sub' => "M: {$males} / F: {$females}", 'gradient' => 'from-blue-500/10 to-blue-600/5', 'border' => 'border-blue-200 dark:border-blue-800', 'text' => 'text-blue-600 dark:text-blue-400', 'ring' => 'ring-blue-500/20'],
+            ['value' => $totalSections, 'label' => 'Secciones', 'icon' => '', 'sub' => null, 'gradient' => 'from-purple-500/10 to-purple-600/5', 'border' => 'border-purple-200 dark:border-purple-800', 'text' => 'text-purple-600 dark:text-purple-400', 'ring' => 'ring-purple-500/20'],
+            ['value' => $totalTeachers, 'label' => 'Docentes', 'icon' => '‍', 'sub' => null, 'gradient' => 'from-emerald-500/10 to-emerald-600/5', 'border' => 'border-emerald-200 dark:border-emerald-800', 'text' => 'text-emerald-600 dark:text-emerald-400', 'ring' => 'ring-emerald-500/20'],
+            ['value' => $weekPct, 'label' => 'Asist. Semanal', 'icon' => '', 'sub' => null, 'gradient' => 'from-amber-500/10 to-amber-600/5', 'border' => 'border-amber-200 dark:border-amber-800', 'text' => 'text-amber-600 dark:text-amber-400', 'ring' => 'ring-amber-500/20', 'suffix' => '%'],
+            ['value' => $alertCount, 'label' => 'Alertas', 'icon' => '', 'sub' => $criticalAlerts > 0 ? "{$criticalAlerts} críticas" : null, 'gradient' => $criticalAlerts > 0 ? 'from-red-500/10 to-red-600/5' : 'from-gray-500/10 to-gray-600/5', 'border' => $criticalAlerts > 0 ? 'border-red-200 dark:border-red-800' : 'border-gray-200 dark:border-gray-700', 'text' => $criticalAlerts > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400', 'ring' => $criticalAlerts > 0 ? 'ring-red-500/20' : 'ring-gray-500/10'],
         ];
         @endphp
         @foreach($kpis as $kpi)
@@ -101,7 +101,7 @@
             @else
                 <div class="flex flex-col items-center justify-center py-8 text-gray-400">
                     <div class="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-3">
-                        <span class="text-2xl opacity-50">📋</span>
+                        <span class="text-2xl opacity-50"></span>
                     </div>
                     <p class="text-sm font-medium">Sin registros hoy</p>
                     <p class="text-xs mt-1">La asistencia aún no ha sido tomada</p>
@@ -129,17 +129,17 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div class="rounded-xl bg-emerald-50/80 dark:bg-emerald-900/20 p-3 text-center border border-emerald-100 dark:border-emerald-800/50">
                         <span class="text-xl font-bold text-emerald-700 dark:text-emerald-400">{{ $gradeStats['above70'] }}</span>
-                        <p class="text-[10px] text-emerald-600 font-medium mt-0.5">✅ Aprobados</p>
+                        <p class="text-[10px] text-emerald-600 font-medium mt-0.5">Aprobados</p>
                     </div>
                     <div class="rounded-xl bg-red-50/80 dark:bg-red-900/20 p-3 text-center border border-red-100 dark:border-red-800/50">
                         <span class="text-xl font-bold text-red-700 dark:text-red-400">{{ $gradeStats['below70'] }}</span>
-                        <p class="text-[10px] text-red-600 font-medium mt-0.5">❌ Reprobados</p>
+                        <p class="text-[10px] text-red-600 font-medium mt-0.5">Reprobados</p>
                     </div>
                 </div>
             @else
                 <div class="flex flex-col items-center justify-center py-8 text-gray-400">
                     <div class="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-3">
-                        <span class="text-2xl opacity-50">📊</span>
+                        <span class="text-2xl opacity-50"></span>
                     </div>
                     <p class="text-sm font-medium">Sin calificaciones</p>
                     <p class="text-xs mt-1">No hay datos para este período</p>
@@ -161,7 +161,7 @@
                     </div>
                     <div>
                         <p class="text-sm font-semibold text-gray-900 dark:text-white">Incidencias</p>
-                        <p class="text-xs text-gray-500">{{ $monthDiscipline === 0 ? '🎉 ¡Sin incidencias este mes!' : 'Registros este mes' }}</p>
+                        <p class="text-xs text-gray-500">{{ $monthDiscipline === 0 ? '¡Sin incidencias este mes!' : 'Registros este mes' }}</p>
                     </div>
                 </div>
             </div>
@@ -171,10 +171,10 @@
                 <h2 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-3">Accesos Rápidos</h2>
                 <div class="grid grid-cols-2 gap-2">
                     @foreach([
-                        ['route' => 'admin.school.attendance', 'icon' => '✅', 'label' => 'Asistencia', 'color' => 'hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200'],
-                        ['route' => 'admin.school.grades', 'icon' => '📝', 'label' => 'Notas', 'color' => 'hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-200'],
-                        ['route' => 'admin.school.orientation', 'icon' => '🧠', 'label' => 'Orientación', 'color' => 'hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-200'],
-                        ['route' => 'admin.school.payments', 'icon' => '💰', 'label' => 'Pagos', 'color' => 'hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:border-amber-200'],
+                        ['route' => 'admin.school.attendance', 'icon' => '', 'label' => 'Asistencia', 'color' => 'hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200'],
+                        ['route' => 'admin.school.grades', 'icon' => '', 'label' => 'Notas', 'color' => 'hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-200'],
+                        ['route' => 'admin.school.orientation', 'icon' => '', 'label' => 'Orientación', 'color' => 'hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-200'],
+                        ['route' => 'admin.school.payments', 'icon' => '', 'label' => 'Pagos', 'color' => 'hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:border-amber-200'],
                     ] as $qa)
                     <a href="{{ route($qa['route']) }}" wire:navigate class="rounded-xl border border-gray-100 dark:border-gray-700 p-3 flex items-center gap-2.5 transition-all duration-200 {{ $qa['color'] }} group">
                         <span class="text-base group-hover:scale-110 transition-transform duration-200">{{ $qa['icon'] }}</span>
@@ -200,7 +200,7 @@
                 @forelse($activeAlerts as $alert)
                     <div class="flex items-start gap-3 p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150 group">
                         <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 {{ $alert->severity === 'critical' ? 'bg-red-100 dark:bg-red-900/30' : 'bg-amber-100 dark:bg-amber-900/30' }}">
-                            <span class="text-sm">{{ $alert->severity === 'critical' ? '🔴' : '🟡' }}</span>
+                            <span class="text-sm">{{ $alert->severity === 'critical' ? '' : '' }}</span>
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ $alert->title }}</p>
@@ -211,7 +211,7 @@
                 @empty
                     <div class="flex flex-col items-center justify-center py-6 text-gray-400">
                         <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mb-2">
-                            <span class="text-xl">✨</span>
+                            <span class="text-xl"></span>
                         </div>
                         <p class="text-sm font-medium text-emerald-600">¡Sin alertas activas!</p>
                         <p class="text-xs mt-0.5">Todo está funcionando correctamente</p>
@@ -232,7 +232,7 @@
                         <div class="flex items-center gap-3 group">
                             <div class="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0
                                 {{ $i === 0 ? 'bg-amber-100 dark:bg-amber-900/30' : ($i === 1 ? 'bg-gray-100 dark:bg-gray-700' : ($i === 2 ? 'bg-orange-100 dark:bg-orange-900/30' : 'bg-gray-50 dark:bg-gray-700/50')) }}">
-                                {{ $i < 3 ? ['🥇','🥈','🥉'][$i] : $i + 1 }}
+                                {{ $i < 3 ? ['','',''][$i] : $i + 1 }}
                             </div>
                             <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 w-20 truncate">{{ $sr['name'] }}</span>
                             <div class="flex-1">
@@ -251,7 +251,7 @@
             @else
                 <div class="flex flex-col items-center justify-center py-6 text-gray-400">
                     <div class="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-2">
-                        <span class="text-xl opacity-50">🏆</span>
+                        <span class="text-xl opacity-50"></span>
                     </div>
                     <p class="text-sm font-medium">Sin datos esta semana</p>
                 </div>

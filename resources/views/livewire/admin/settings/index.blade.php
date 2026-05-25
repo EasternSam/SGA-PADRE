@@ -312,7 +312,7 @@
                                                 @elseif (!empty($state['favicon']))
                                                     <img src="{{ $state['favicon'] }}" class="h-12 w-12 object-contain rounded p-1 shadow-sm bg-white border">
                                                 @else
-                                                    <div class="h-12 w-12 bg-gray-200 rounded flex items-center justify-center text-gray-400 font-bold text-xs border">🌐</div>
+                                                    <div class="h-12 w-12 bg-gray-200 rounded flex items-center justify-center text-gray-400 font-bold text-xs border"></div>
                                                 @endif
                                             </div>
                                             <div class="flex-1">
@@ -348,7 +348,7 @@
                                                 @elseif (!empty($state['app_icon']))
                                                     <img src="{{ $state['app_icon'] }}" class="h-16 w-16 object-cover rounded-lg shadow-sm border">
                                                 @else
-                                                    <div class="h-16 w-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-2xl shadow-sm">📱</div>
+                                                    <div class="h-16 w-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-2xl shadow-sm"></div>
                                                 @endif
                                             </div>
                                             <div class="flex-1">

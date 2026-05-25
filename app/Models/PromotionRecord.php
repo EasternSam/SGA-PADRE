@@ -18,11 +18,11 @@ class PromotionRecord extends Model
     ];
 
     const RESULTS = [
-        'promoted'    => '✅ Promovido',
-        'retained'    => '🔄 Repitente',
-        'transferred' => '🔀 Trasladado',
-        'withdrawn'   => '❌ Retirado',
-        'graduated'   => '🎓 Graduado',
+        'promoted'    => 'Promovido',
+        'retained'    => 'Repitente',
+        'transferred' => 'Trasladado',
+        'withdrawn'   => 'Retirado',
+        'graduated'   => 'Graduado',
     ];
 
     const RESULT_COLORS = [

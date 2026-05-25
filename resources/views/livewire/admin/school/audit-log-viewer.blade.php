@@ -76,7 +76,7 @@
                         <tr>
                             <td colspan="6">
                                 <div class="gb-empty-state">
-                                    <div class="gb-empty-icon">📋</div>
+                                    <div class="gb-empty-icon"></div>
                                     <div class="gb-empty-title">Sin registros de auditoría</div>
                                     <div class="gb-empty-desc">Las acciones del sistema aparecerán aquí</div>
                                 </div>

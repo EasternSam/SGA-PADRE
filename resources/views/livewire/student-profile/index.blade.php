@@ -49,10 +49,10 @@
                 <p class="text-sm text-gray-600">{{ $student->email }}</p>
                 <p class="text-sm text-gray-600">Cédula: {{ $student->cedula ?? 'N/A' }}</p>
                 @if($student->course)
-                    <p class="text-sm font-semibold text-indigo-700 mt-2 hover:underline cursor-help" title="Programa/Curso Principal">🎓 {{ $student->course->name }}</p>
+                    <p class="text-sm font-semibold text-indigo-700 mt-2 hover:underline cursor-help" title="Programa/Curso Principal">{{ $student->course->name }}</p>
                 @endif
                 @if($student->scholarship)
-                    <p class="text-xs font-semibold text-green-700 mt-1" title="Beca Asignada">🎟️ {{ $student->scholarship->name }} (-{{ number_format($student->scholarship->discount_percentage, 0) }}%)</p>
+                    <p class="text-xs font-semibold text-green-700 mt-1" title="Beca Asignada">{{ $student->scholarship->name }} (-{{ number_format($student->scholarship->discount_percentage, 0) }}%)</p>
                 @endif
                 @if($student->rnc)
                     <p class="text-xs text-gray-500 mt-1">Resp. Financiero RNC: {{ $student->rnc }}</p>

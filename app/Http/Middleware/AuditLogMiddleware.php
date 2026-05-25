@@ -32,7 +32,7 @@ class AuditLogMiddleware
         // 4. Escribir en el log dedicado 'audit'
         // Ignoramos peticiones de debugbar o assets para no saturar
         if (!$request->is('livewire/message*') && !$request->is('_debugbar*')) {
-            Log::channel('audit')->info("🌍 WEB REQUEST", [
+            Log::channel('audit')->info("WEB REQUEST", [
                 'Usuario' => $userId,
                 'IP' => $request->ip(),
                 'Método' => $request->method(),
@@ -47,7 +47,7 @@ class AuditLogMiddleware
              $component = $request->input('components.0.snapshot');
              $memo = $component ? json_decode($component, true)['memo']['name'] ?? 'Unknown' : 'Unknown';
              
-             Log::channel('audit')->info("⚡ LIVEWIRE ACTION [{$memo}]", [
+             Log::channel('audit')->info("LIVEWIRE ACTION [{$memo}]", [
                 'Usuario' => $userId,
                 'URL' => $request->header('referer'), // De dónde vino
                 'Updates' => json_encode($request->input('components.0.updates')),

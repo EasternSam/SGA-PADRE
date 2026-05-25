@@ -47,17 +47,17 @@ class PaymentObserver
         ];
 
         // 3. Log Estándar (siempre visible)
-        Log::info("💰 PAGO CREADO (ID: {$payment->id}) | Monto: {$payment->amount}", $context);
+        Log::info("PAGO CREADO (ID: {$payment->id}) | Monto: {$payment->amount}", $context);
 
         // 4. ALERTA NUCLEAR PARA MONTOS > 1500 (o el monto sospechoso)
         if ($payment->amount >= 1500) {
-            Log::emergency("🚨🚨🚨 ¡¡¡PAGO FANTASMA DETECTADO (ID: {$payment->id}) DE {$payment->amount}!!! 🚨🚨🚨");
+            Log::emergency("¡¡¡PAGO FANTASMA DETECTADO (ID: {$payment->id}) DE {$payment->amount}!!! ");
             Log::emergency("================================================================");
-            Log::emergency("🔍 CULPABLE (APP): " . ($appSource ?? 'NO ENCONTRADO EN APP/'));
-            Log::emergency("👤 USUARIO: " . $context['User_ID_Auth']);
-            Log::emergency("🌍 URL: " . $context['Request_URL']);
-            Log::emergency("📂 PARÁMETROS REQUEST: " . json_encode($context['Request_Params']));
-            Log::emergency("📜 TRAZA COMPLETA (PRIMEROS 20):");
+            Log::emergency("CULPABLE (APP): " . ($appSource ?? 'NO ENCONTRADO EN APP/'));
+            Log::emergency("USUARIO: " . $context['User_ID_Auth']);
+            Log::emergency("URL: " . $context['Request_URL']);
+            Log::emergency("PARÁMETROS REQUEST: " . json_encode($context['Request_Params']));
+            Log::emergency("TRAZA COMPLETA (PRIMEROS 20):");
             foreach ($stack->take(20) as $index => $line) {
                 Log::emergency("   #{$index}: {$line}");
             }

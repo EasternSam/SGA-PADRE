@@ -11,7 +11,7 @@
 <body class="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center p-4">
     <div class="w-full max-w-md">
         <div class="text-center mb-8">
-            <div class="text-6xl mb-3">🎓</div>
+            <div class="text-6xl mb-3"></div>
             <h1 class="text-3xl font-bold text-white">Portal de Padres</h1>
             <p class="text-blue-200 text-sm mt-2">Consulta las calificaciones, asistencia y pagos de tu hijo/a</p>
         </div>
@@ -36,7 +36,7 @@
                         class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white placeholder-blue-300/50 focus:border-blue-400 focus:ring-blue-400 text-center text-2xl tracking-[0.5em]" />
                 </div>
                 <button type="submit" class="w-full rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 text-sm transition shadow-lg">
-                    🔑 Acceder al Portal
+                    Acceder al Portal
                 </button>
             </form>
         </div>

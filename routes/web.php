@@ -155,7 +155,7 @@ Route::post('/api/log-click', function (Request $request) {
     $user = auth()->user() ? "ID:".auth()->id() : 'Guest';
     $data = json_decode($request->getContent(), true) ?? [];
 
-    Log::channel('audit')->info("🖱️ CLIC DETECTADO ($user)", [
+    Log::channel('audit')->info("CLIC DETECTADO ($user)", [
         'Elemento' => $data['tag'] ?? '?',
         'Texto' => $data['text'] ?? '',
         'Wire:Click' => $data['wire_click'] ?? '',

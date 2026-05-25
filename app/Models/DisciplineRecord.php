@@ -20,9 +20,9 @@ class DisciplineRecord extends Model
     ];
 
     const SEVERITIES = [
-        'leve'      => '🟡 Leve',
-        'grave'     => '🟠 Grave',
-        'muy_grave' => '🔴 Muy Grave',
+        'leve'      => 'Leve',
+        'grave'     => 'Grave',
+        'muy_grave' => 'Muy Grave',
     ];
 
     const CATEGORIES = [

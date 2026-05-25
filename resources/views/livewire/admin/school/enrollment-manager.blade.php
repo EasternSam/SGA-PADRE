@@ -12,12 +12,12 @@
 
     @if(session()->has('message'))
         <div class="mb-4 rounded-lg bg-green-50 p-4 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400" x-data x-init="setTimeout(() => $el.remove(), 4000)">
-            ✅ {{ session('message') }}
+            {{ session('message') }}
         </div>
     @endif
     @if(session()->has('error'))
         <div class="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800 dark:bg-red-900/30 dark:text-red-400">
-            ❌ {{ session('error') }}
+            {{ session('error') }}
         </div>
     @endif
 
@@ -43,7 +43,7 @@
 
     {{-- Filtros --}}
     <div class="flex flex-wrap gap-3 mb-4">
-        <input type="text" wire:model.live.debounce.300ms="search" placeholder="🔍 Buscar estudiante..." class="rounded-lg border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white w-60" />
+        <input type="text" wire:model.live.debounce.300ms="search" placeholder="Buscar estudiante..." class="rounded-lg border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white w-60" />
         <select wire:model.live="filterStatus" class="rounded-lg border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
             <option value="">Todos los estados</option>
             @foreach($statuses as $key => $label)
@@ -200,13 +200,13 @@
         <div class="flex min-h-screen items-center justify-center p-4">
             <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" wire:click="$set('showDocsModal', false)"></div>
             <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-800">
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">📋 Checklist de Documentos</h3>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Checklist de Documentos</h3>
                 <form wire:submit="saveDocs" class="space-y-3">
                     @foreach($requiredDocs as $field => $label)
                         <label class="flex items-center gap-3 p-3 rounded-lg border {{ ($docs[$field] ?? false) ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20' : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50' }} cursor-pointer transition">
                             <input type="checkbox" wire:model="docs.{{ $field }}" class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
                             <span class="text-sm font-medium {{ ($docs[$field] ?? false) ? 'text-green-800 dark:text-green-400' : 'text-gray-700 dark:text-gray-300' }}">
-                                {{ ($docs[$field] ?? false) ? '✅' : '⬜' }} {{ $label }}
+                                {{ ($docs[$field] ?? false) ? '' : '⬜' }} {{ $label }}
                             </span>
                         </label>
                     @endforeach

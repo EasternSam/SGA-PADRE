@@ -8,7 +8,7 @@
 
     @if(session()->has('message'))
         <div class="mb-4 rounded-lg bg-green-50 p-4 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400" x-data x-init="setTimeout(() => $el.remove(), 3000)">
-            ✅ {{ session('message') }}
+            {{ session('message') }}
         </div>
     @endif
 
@@ -68,7 +68,7 @@
                                 </td>
                                 <td class="px-4 py-2 text-center">
                                     @if($card && $card['teacher_comments'])
-                                        <span class="text-green-500 text-xs font-medium">✅ Tiene</span>
+                                        <span class="text-green-500 text-xs font-medium">Tiene</span>
                                     @else
                                         <span class="text-gray-400 text-xs">Sin observaciones</span>
                                     @endif
@@ -78,10 +78,10 @@
                                 </td>
                                 <td class="px-4 py-2 text-right space-x-2">
                                     <button wire:click="openNotes({{ $student['id'] }})" class="text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 font-medium">
-                                        ✏️ Observaciones
+                                        Observaciones
                                     </button>
                                     <a href="{{ route('reports.report-card', ['student' => $student['id'], 'period' => $period_id]) }}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 font-medium">
-                                        📄 PDF
+                                        PDF
                                     </a>
                                 </td>
                             </tr>

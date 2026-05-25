@@ -19,17 +19,17 @@ class AbsenceJustification extends Model
     ];
 
     const REASONS = [
-        'medical'     => '🏥 Médica',
-        'family'      => '👨‍👩‍👧 Familiar',
-        'travel'      => '✈️ Viaje',
-        'appointment' => '📋 Cita/Trámite',
-        'other'       => '📌 Otra',
+        'medical'     => 'Médica',
+        'family'      => '‍‍Familiar',
+        'travel'      => 'Viaje',
+        'appointment' => 'Cita/Trámite',
+        'other'       => 'Otra',
     ];
 
     const STATUSES = [
-        'pending'  => '⏳ Pendiente',
-        'approved' => '✅ Aprobada',
-        'rejected' => '❌ Rechazada',
+        'pending'  => 'Pendiente',
+        'approved' => 'Aprobada',
+        'rejected' => 'Rechazada',
     ];
 
     public function student(): BelongsTo

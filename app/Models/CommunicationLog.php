@@ -18,18 +18,18 @@ class CommunicationLog extends Model
     ];
 
     const CHANNELS = [
-        'whatsapp' => '📱 WhatsApp',
-        'email'    => '📧 Email',
-        'sms'      => '💬 SMS',
-        'push'     => '🔔 Push',
-        'internal' => '📨 Interno',
+        'whatsapp' => 'WhatsApp',
+        'email'    => 'Email',
+        'sms'      => 'SMS',
+        'push'     => 'Push',
+        'internal' => 'Interno',
     ];
 
     const TYPES = [
-        'individual' => '👤 Individual',
-        'section'    => '🏫 Sección',
-        'grade'      => '📊 Grado',
-        'all'        => '📢 Todos',
+        'individual' => 'Individual',
+        'section'    => 'Sección',
+        'grade'      => 'Grado',
+        'all'        => 'Todos',
     ];
 
     public function sender(): BelongsTo

@@ -152,7 +152,7 @@
                         <tr>
                             <td colspan="8">
                                 <div class="gb-empty-state">
-                                    <div class="gb-empty-icon">💰</div>
+                                    <div class="gb-empty-icon"></div>
                                     <div class="gb-empty-title">Sin registros de pagos</div>
                                     <div class="gb-empty-desc">Crea un nuevo cobro para comenzar</div>
                                 </div>
@@ -248,7 +248,7 @@
             <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" wire:click="$set('showPayModal', false)"></div>
             <div class="relative w-full max-w-sm rounded-2xl bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700">
                 <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">💵 Registrar Pago</h3>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Registrar Pago</h3>
                     <button wire:click="$set('showPayModal', false)" class="gb-btn-icon !w-8 !h-8">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>

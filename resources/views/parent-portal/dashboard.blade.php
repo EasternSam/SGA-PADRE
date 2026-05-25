@@ -13,13 +13,13 @@
     <header class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white shadow-lg">
         <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <span class="text-3xl">🎓</span>
+                <span class="text-3xl"></span>
                 <div>
                     <h1 class="text-lg font-bold">{{ $student->first_name }} {{ $student->last_name }}</h1>
                     <p class="text-blue-200 text-xs">{{ $student->gradeLevel?->name ?? '' }} {{ $student->section?->name ?? '' }} · {{ $activeYear?->name ?? '' }}</p>
                 </div>
             </div>
-            <a href="{{ route('parent.logout') }}" class="rounded-lg bg-white/20 px-3 py-1.5 text-xs hover:bg-white/30 transition">🚪 Salir</a>
+            <a href="{{ route('parent.logout') }}" class="rounded-lg bg-white/20 px-3 py-1.5 text-xs hover:bg-white/30 transition">Salir</a>
         </div>
     </header>
 
@@ -28,27 +28,27 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div class="rounded-xl bg-white p-4 shadow-sm border border-gray-200 text-center">
                 <div class="text-2xl font-bold text-blue-600">{{ $attendance['pct'] }}%</div>
-                <p class="text-xs text-gray-500 mt-1">✅ Asistencia</p>
+                <p class="text-xs text-gray-500 mt-1">Asistencia</p>
             </div>
             <div class="rounded-xl bg-white p-4 shadow-sm border border-gray-200 text-center">
                 @php $lastAvg = !empty($gradeData) ? end($gradeData)['avg'] : null; @endphp
                 <div class="text-2xl font-bold {{ ($lastAvg ?? 0) >= 70 ? 'text-green-600' : 'text-red-600' }}">{{ $lastAvg ?? '—' }}</div>
-                <p class="text-xs text-gray-500 mt-1">📊 Último Promedio</p>
+                <p class="text-xs text-gray-500 mt-1">Último Promedio</p>
             </div>
             <div class="rounded-xl bg-white p-4 shadow-sm border border-gray-200 text-center">
                 <div class="text-2xl font-bold text-red-600">{{ $attendance['absent'] }}</div>
-                <p class="text-xs text-gray-500 mt-1">❌ Ausencias</p>
+                <p class="text-xs text-gray-500 mt-1">Ausencias</p>
             </div>
             <div class="rounded-xl bg-white p-4 shadow-sm border border-gray-200 text-center">
                 @php $balance = $totalDue - $totalPaid; @endphp
                 <div class="text-2xl font-bold {{ $balance > 0 ? 'text-red-600' : 'text-green-600' }}">RD${{ number_format($balance, 0) }}</div>
-                <p class="text-xs text-gray-500 mt-1">💰 Balance</p>
+                <p class="text-xs text-gray-500 mt-1">Balance</p>
             </div>
         </div>
 
         {{-- Grades --}}
         <div class="rounded-xl bg-white border border-gray-200 shadow-sm p-5 mb-6">
-            <h2 class="text-base font-bold text-gray-900 mb-4">📝 Calificaciones</h2>
+            <h2 class="text-base font-bold text-gray-900 mb-4">Calificaciones</h2>
             @forelse($gradeData as $gd)
                 <div class="mb-4 {{ !$loop->last ? 'pb-4 border-b border-gray-100' : '' }}">
                     <div class="flex items-center justify-between mb-2">
@@ -72,7 +72,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             {{-- Attendance --}}
             <div class="rounded-xl bg-white border border-gray-200 shadow-sm p-5">
-                <h2 class="text-base font-bold text-gray-900 mb-4">✅ Asistencia</h2>
+                <h2 class="text-base font-bold text-gray-900 mb-4">Asistencia</h2>
                 <div class="flex items-center justify-center mb-4">
                     <div class="relative w-24 h-24">
                         @php $pct = $attendance['pct']; @endphp
@@ -95,7 +95,7 @@
 
             {{-- Payments --}}
             <div class="rounded-xl bg-white border border-gray-200 shadow-sm p-5">
-                <h2 class="text-base font-bold text-gray-900 mb-4">💰 Pagos</h2>
+                <h2 class="text-base font-bold text-gray-900 mb-4">Pagos</h2>
                 <div class="grid grid-cols-2 gap-3 mb-4">
                     <div class="rounded-lg bg-blue-50 p-3 text-center">
                         <div class="text-lg font-bold text-blue-700">RD${{ number_format($totalDue, 0) }}</div>

@@ -19,16 +19,16 @@ class AuditLog extends Model
     ];
 
     const ACTIONS = [
-        'created'  => '➕ Creado',
-        'updated'  => '✏️ Editado',
-        'deleted'  => '🗑️ Eliminado',
-        'exported' => '📥 Exportado',
-        'login'    => '🔑 Login',
-        'logout'   => '🚪 Logout',
-        'approved' => '✅ Aprobado',
-        'rejected' => '❌ Rechazado',
-        'locked'   => '🔒 Bloqueado',
-        'unlocked' => '🔓 Desbloqueado',
+        'created'  => 'Creado',
+        'updated'  => 'Editado',
+        'deleted'  => 'Eliminado',
+        'exported' => 'Exportado',
+        'login'    => 'Login',
+        'logout'   => 'Logout',
+        'approved' => 'Aprobado',
+        'rejected' => 'Rechazado',
+        'locked'   => 'Bloqueado',
+        'unlocked' => 'Desbloqueado',
     ];
 
     public function user(): BelongsTo

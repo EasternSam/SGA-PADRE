@@ -43,9 +43,9 @@
                     </span>
                 </div>
                 <div class="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-                    <p>📅 {{ $section->academicYear?->name ?? 'Sin año' }}</p>
-                    <p>🏫 {{ $section->gradeLevel?->name ?? 'Sin grado' }}</p>
-                    <p>👩‍🏫 {{ $section->homeroomTeacher?->name ?? 'Sin maestro titular' }}</p>
+                    <p>{{ $section->academicYear?->name ?? 'Sin año' }}</p>
+                    <p>{{ $section->gradeLevel?->name ?? 'Sin grado' }}</p>
+                    <p>‍{{ $section->homeroomTeacher?->name ?? 'Sin maestro titular' }}</p>
                 </div>
                 <div class="mt-3 flex gap-2 border-t pt-3 dark:border-gray-700">
                     <button wire:click="edit({{ $section->id }})" class="text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 font-medium">Editar</button>

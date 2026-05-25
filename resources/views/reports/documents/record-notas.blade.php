@@ -26,7 +26,7 @@
         <table class="data-table" style="margin-bottom: 15px;">
             <tr>
                 <td colspan="20" class="year-header">
-                    📅 {{ $history['year']->name }}
+                    {{ $history['year']->name }}
                     @if($history['promotion'])
                         — {{ \App\Models\PromotionRecord::RESULTS[$history['promotion']->result] ?? '' }}
                         @if($history['promotion']->final_average)

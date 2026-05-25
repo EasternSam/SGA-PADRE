@@ -43,11 +43,11 @@ class StudentAttendance extends Model
     ];
 
     const STATUS_ICONS = [
-        'present'    => '✅',
-        'absent'     => '❌',
-        'late'       => '⏰',
-        'excused'    => '📋',
-        'permission' => '📝',
+        'present'    => '',
+        'absent'     => '',
+        'late'       => '',
+        'excused'    => '',
+        'permission' => '',
     ];
 
     // ── Accessors ────────────────────────────────────────────
@@ -64,7 +64,7 @@ class StudentAttendance extends Model
 
     public function getStatusIconAttribute(): string
     {
-        return self::STATUS_ICONS[$this->status] ?? '❓';
+        return self::STATUS_ICONS[$this->status] ?? '';
     }
 
     // ── Relationships ────────────────────────────────────────

@@ -85,20 +85,20 @@
                         <td class="px-4 py-2 text-center">
                             @switch($record->severity)
                                 @case('leve')
-                                    <span class="inline-flex rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-400">🟡 Leve</span>
+                                    <span class="inline-flex rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-400">Leve</span>
                                     @break
                                 @case('grave')
-                                    <span class="inline-flex rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-900/40 dark:text-orange-400">🟠 Grave</span>
+                                    <span class="inline-flex rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-900/40 dark:text-orange-400">Grave</span>
                                     @break
                                 @case('muy_grave')
-                                    <span class="inline-flex rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/40 dark:text-red-400">🔴 Muy Grave</span>
+                                    <span class="inline-flex rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/40 dark:text-red-400">Muy Grave</span>
                                     @break
                             @endswitch
                         </td>
                         <td class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 max-w-xs truncate">{{ $record->description }}</td>
                         <td class="px-4 py-2 text-center">
                             @if($record->parent_notified)
-                                <span class="text-green-500" title="Padre notificado">✅</span>
+                                <span class="text-green-500" title="Padre notificado"></span>
                             @else
                                 <span class="text-gray-300" title="Sin notificar">⬜</span>
                             @endif
@@ -112,7 +112,7 @@
                     <tr>
                         <td colspan="7" class="px-6 py-12 text-center text-gray-500">
                             <p class="text-sm font-medium">No hay incidencias registradas</p>
-                            <p class="text-xs mt-1">¡Buen comportamiento! 🎉</p>
+                            <p class="text-xs mt-1">¡Buen comportamiento! </p>
                         </td>
                     </tr>
                 @endforelse

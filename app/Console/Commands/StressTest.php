@@ -36,7 +36,7 @@ class StressTest extends Command
         $batches = $this->argument('batches');
         $baseUrl = config('app.url'); // Asegúrate que APP_URL en .env sea correcto (ej: http://localhost:8000)
 
-        $this->info("🚀 INICIANDO PRUEBA DE ESTRÉS");
+        $this->info("INICIANDO PRUEBA DE ESTRÉS");
         $this->info("Objetivo: $baseUrl");
         $this->info("Simulación: $batches oleadas de $concurrency usuarios simultáneos (" . ($concurrency * $batches) . " peticiones totales)");
         $this->newLine();
@@ -122,9 +122,9 @@ class StressTest extends Command
 
     private function rateSpeed($ms)
     {
-        if ($ms < 200) return '<info>Rapidísimo 🚀</info>';
-        if ($ms < 500) return '<comment>Aceptable ⚠️</comment>';
-        return '<error>Lento 🐢</error>';
+        if ($ms < 200) return '<info>Rapidísimo </info>';
+        if ($ms < 500) return '<comment>Aceptable </comment>';
+        return '<error>Lento </error>';
     }
 
     private function diagnose($avgTime, $failures)

@@ -17,10 +17,10 @@ class TimeBlock extends Model
     ];
 
     const TYPES = [
-        'class'    => '📚 Clase',
-        'break'    => '☕ Recreo',
-        'lunch'    => '🍽️ Almuerzo',
-        'assembly' => '🎤 Acto/Formación',
+        'class'    => 'Clase',
+        'break'    => 'Recreo',
+        'lunch'    => 'Almuerzo',
+        'assembly' => 'Acto/Formación',
     ];
 
     // Plantillas por tanda

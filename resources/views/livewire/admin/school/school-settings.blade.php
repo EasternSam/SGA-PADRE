@@ -6,7 +6,7 @@
 
     @if(session()->has('message'))
         <div class="mb-4 rounded-lg bg-green-50 p-4 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-400" x-data x-init="setTimeout(() => $el.remove(), 3000)">
-            ✅ {{ session('message') }}
+            {{ session('message') }}
         </div>
     @endif
 
@@ -15,7 +15,7 @@
         {{-- Datos del Centro --}}
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                🏫 Identificación del Centro
+                Identificación del Centro
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="md:col-span-2">
@@ -65,7 +65,7 @@
         {{-- Ubicación MINERD --}}
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                📍 Ubicación y Regional MINERD
+                Ubicación y Regional MINERD
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -104,7 +104,7 @@
         {{-- Director --}}
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                👤 Director/a del Centro
+                Director/a del Centro
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -121,7 +121,7 @@
         {{-- Contacto --}}
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                📞 Contacto
+                Contacto
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -141,7 +141,7 @@
 
         {{-- Logo --}}
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">🎨 Logo del Centro</h2>
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Logo del Centro</h2>
             <div class="flex items-center gap-6">
                 @if($currentConfig?->logo_path)
                     <img src="{{ asset('storage/' . $currentConfig->logo_path) }}" class="h-20 w-20 rounded-lg object-contain border" alt="Logo actual" />

@@ -34,9 +34,9 @@
                             @if($row['type'] === 'class')
                                 @if($row['cells'][$day]['subject'])
                                     <div class="subject">{{ $row['cells'][$day]['subject'] }}</div>
-                                    <div class="section">🏫 {{ $row['cells'][$day]['section'] }}</div>
+                                    <div class="section">{{ $row['cells'][$day]['section'] }}</div>
                                     @if($row['cells'][$day]['room'])
-                                        <div class="room">📍 {{ $row['cells'][$day]['room'] }}</div>
+                                        <div class="room">{{ $row['cells'][$day]['room'] }}</div>
                                     @endif
                                 @else
                                     <span style="color: #d1d5db;">Libre</span>

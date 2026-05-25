@@ -21,11 +21,11 @@ class SchoolAlert extends Model
     ];
 
     const TYPES = [
-        'absence_streak'  => '🔴 Ausencias Consecutivas',
-        'low_performance'  => '📉 Bajo Rendimiento',
-        'dropout_risk'     => '⚠️ Riesgo de Abandono',
-        'discipline'       => '🟠 Disciplina',
-        'custom'           => '📌 Personalizada',
+        'absence_streak'  => 'Ausencias Consecutivas',
+        'low_performance'  => 'Bajo Rendimiento',
+        'dropout_risk'     => 'Riesgo de Abandono',
+        'discipline'       => 'Disciplina',
+        'custom'           => 'Personalizada',
     ];
 
     const SEVERITIES = [

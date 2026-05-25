@@ -21,27 +21,27 @@ class StudentPayment extends Model
     ];
 
     const TYPES = [
-        'inscription' => '📝 Inscripción',
-        'monthly'     => '📅 Mensualidad',
-        'uniform'     => '👕 Uniforme',
-        'material'    => '📚 Material',
-        'event'       => '🎉 Evento',
-        'other'       => '📌 Otro',
+        'inscription' => 'Inscripción',
+        'monthly'     => 'Mensualidad',
+        'uniform'     => 'Uniforme',
+        'material'    => 'Material',
+        'event'       => 'Evento',
+        'other'       => 'Otro',
     ];
 
     const STATUSES = [
-        'pending' => '⏳ Pendiente',
-        'partial' => '🔶 Parcial',
-        'paid'    => '✅ Pagado',
-        'waived'  => '🔹 Exonerado',
+        'pending' => 'Pendiente',
+        'partial' => 'Parcial',
+        'paid'    => 'Pagado',
+        'waived'  => 'Exonerado',
     ];
 
     const METHODS = [
-        'cash'     => '💵 Efectivo',
-        'transfer' => '🏦 Transferencia',
-        'card'     => '💳 Tarjeta',
-        'check'    => '📄 Cheque',
-        'other'    => '📌 Otro',
+        'cash'     => 'Efectivo',
+        'transfer' => 'Transferencia',
+        'card'     => 'Tarjeta',
+        'check'    => 'Cheque',
+        'other'    => 'Otro',
     ];
 
     public function student(): BelongsTo

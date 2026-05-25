@@ -4,7 +4,7 @@
 
     {{-- Búsqueda --}}
     <div class="mb-6 max-w-md">
-        <input type="text" wire:model.live.debounce.300ms="search" placeholder="🔍 Buscar por nombre o matrícula..." class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm" />
+        <input type="text" wire:model.live.debounce.300ms="search" placeholder="Buscar por nombre o matrícula..." class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm" />
         @if($searchResults->count() > 0 && !$student_id)
             <div class="mt-1 rounded-lg border border-gray-200 bg-white shadow-lg max-h-60 overflow-y-auto dark:bg-gray-700 dark:border-gray-600">
                 @foreach($searchResults as $s)
@@ -35,24 +35,24 @@
                 <div class="flex-1">
                     <h2 class="text-2xl font-bold">{{ $st->first_name ?? '' }} {{ $st->last_name ?? '' }}</h2>
                     <div class="flex flex-wrap gap-4 mt-1 text-blue-100 text-sm">
-                        <span>🎓 {{ $sec?->grade_level?->name ?? 'Sin grado' }} {{ $sec?->name ?? '' }}</span>
-                        <span>🆔 {{ $st->student_id ?? 'N/A' }}</span>
+                        <span>{{ $sec?->grade_level?->name ?? 'Sin grado' }} {{ $sec?->name ?? '' }}</span>
+                        <span>{{ $st->student_id ?? 'N/A' }}</span>
                         @if($st->birth_date ?? null)
-                            <span>🎂 {{ \Carbon\Carbon::parse($st->birth_date)->format('d/m/Y') }}</span>
+                            <span>{{ \Carbon\Carbon::parse($st->birth_date)->format('d/m/Y') }}</span>
                         @endif
-                        <span>📊 {{ $st->status ?? 'Activo' }}</span>
+                        <span>{{ $st->status ?? 'Activo' }}</span>
                     </div>
                 </div>
                 <div class="text-right space-y-1">
-                    <a href="{{ route('documents.constancia', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">📄 Constancia</a>
-                    <a href="{{ route('documents.conducta', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">📋 Conducta</a>
-                    <a href="{{ route('documents.record', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">📝 Récord</a>
-                    <a href="{{ route('documents.certificado', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">🎓 Certificado</a>
-                    <a href="{{ route('documents.ficha', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">📎 Ficha</a>
-                    <a href="{{ route('documents.transferencia', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">🔄 Transferencia</a>
-                    <a href="{{ route('documents.pagos', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">💰 Pagos</a>
-                    <a href="{{ route('documents.boletin-final', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">📋 Boletín Final</a>
-                    <a href="{{ route('reports.attendance.student', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">✅ Asistencia</a>
+                    <a href="{{ route('documents.constancia', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">Constancia</a>
+                    <a href="{{ route('documents.conducta', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">Conducta</a>
+                    <a href="{{ route('documents.record', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">Récord</a>
+                    <a href="{{ route('documents.certificado', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">Certificado</a>
+                    <a href="{{ route('documents.ficha', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">Ficha</a>
+                    <a href="{{ route('documents.transferencia', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">Transferencia</a>
+                    <a href="{{ route('documents.pagos', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">Pagos</a>
+                    <a href="{{ route('documents.boletin-final', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">Boletín Final</a>
+                    <a href="{{ route('reports.attendance.student', $st->id) }}" target="_blank" class="block rounded-lg bg-white/20 px-3 py-1 text-xs hover:bg-white/30 transition">Asistencia</a>
                 </div>
             </div>
         </div>
@@ -82,7 +82,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {{-- Calificaciones --}}
             <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                <h3 class="text-base font-bold text-gray-900 dark:text-white mb-4">📝 Calificaciones por Período</h3>
+                <h3 class="text-base font-bold text-gray-900 dark:text-white mb-4">Calificaciones por Período</h3>
                 @foreach($grades as $gp)
                     <div class="mb-3">
                         <div class="flex items-center justify-between mb-1">
@@ -119,16 +119,16 @@
 
             {{-- Disciplina --}}
             <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                <h3 class="text-base font-bold text-gray-900 dark:text-white mb-4">⚠️ Historial Disciplinario</h3>
+                <h3 class="text-base font-bold text-gray-900 dark:text-white mb-4">Historial Disciplinario</h3>
                 @if(count($disc) > 0)
                     <div class="space-y-2">
                         @foreach($disc as $d)
                             <div class="flex items-start gap-3 p-2 rounded-lg {{ $d['severity'] === 'muy_grave' ? 'bg-red-50 dark:bg-red-900/20' : ($d['severity'] === 'grave' ? 'bg-orange-50 dark:bg-orange-900/20' : 'bg-yellow-50 dark:bg-yellow-900/20') }}">
                                 <span class="text-lg mt-0.5">
                                     @switch($d['severity'])
-                                        @case('leve') 🟡 @break
-                                        @case('grave') 🟠 @break
-                                        @case('muy_grave') 🔴 @break
+                                        @case('leve') @break
+                                        @case('grave') @break
+                                        @case('muy_grave') @break
                                     @endswitch
                                 </span>
                                 <div class="flex-1 min-w-0">
@@ -142,13 +142,13 @@
                         @endforeach
                     </div>
                 @else
-                    <p class="text-center text-green-500 text-sm py-4">🎉 Sin incidencias disciplinarias</p>
+                    <p class="text-center text-green-500 text-sm py-4">Sin incidencias disciplinarias</p>
                 @endif
             </div>
         </div>
     @else
         <div class="rounded-xl border-2 border-dashed border-gray-300 p-12 text-center dark:border-gray-600">
-            <p class="text-lg text-gray-400 mb-1">👆 Busca un estudiante para ver su ficha completa</p>
+            <p class="text-lg text-gray-400 mb-1">Busca un estudiante para ver su ficha completa</p>
             <p class="text-sm text-gray-400">Incluye: calificaciones, asistencia, disciplina e inscripción</p>
         </div>
     @endif

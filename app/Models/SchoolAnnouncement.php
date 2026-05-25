@@ -23,25 +23,25 @@ class SchoolAnnouncement extends Model
     ];
 
     const TYPES = [
-        'circular'     => '📜 Circular',
-        'announcement' => '📢 Aviso',
-        'alert'        => '🚨 Alerta',
-        'event'        => '🎭 Evento',
-        'memo'         => '📝 Memorándum',
+        'circular'     => 'Circular',
+        'announcement' => 'Aviso',
+        'alert'        => 'Alerta',
+        'event'        => 'Evento',
+        'memo'         => 'Memorándum',
     ];
 
     const PRIORITIES = [
-        'normal'    => '🟢 Normal',
-        'important' => '🟡 Importante',
-        'urgent'    => '🔴 Urgente',
+        'normal'    => 'Normal',
+        'important' => 'Importante',
+        'urgent'    => 'Urgente',
     ];
 
     const AUDIENCES = [
-        'all'      => '👥 Todos',
-        'teachers' => '👩‍🏫 Docentes',
-        'parents'  => '👨‍👩‍👧 Padres/Tutores',
-        'students' => '🎓 Estudiantes',
-        'staff'    => '🏢 Personal Admin.',
+        'all'      => 'Todos',
+        'teachers' => '‍Docentes',
+        'parents'  => '‍‍Padres/Tutores',
+        'students' => 'Estudiantes',
+        'staff'    => 'Personal Admin.',
     ];
 
     public function academicYear(): BelongsTo
