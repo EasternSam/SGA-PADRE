@@ -24,6 +24,9 @@ use App\Models\SchoolAnnouncement;
 use App\Models\SchoolCalendar;
 use App\Models\AuditLog;
 use App\Models\SchoolAlert;
+use App\Models\Employee;
+use App\Models\Payroll;
+use App\Models\PayrollItem;
 use Carbon\Carbon;
 
 class SchoolDemoSeeder extends Seeder
@@ -131,7 +134,7 @@ class SchoolDemoSeeder extends Seeder
         ];
         $teachers = [];
         foreach ($teacherNames as $i => $name) {
-            $email = 'profesor' . ($i + 1) . '@colegio.edu.do';
+            $email = ($i === 0) ? 'profesor@colegio.edu.do' : 'profesor' . $i . '@colegio.edu.do';
             $u = User::firstOrCreate([
                 'email' => $email,
             ], [
@@ -635,6 +638,57 @@ class SchoolDemoSeeder extends Seeder
             }
         }
         $this->command->info('  25 Auditoría');
+
+        // ─── EMPLEADOS Y NÓMINAS (PARA DOCENTES) ──────────
+        $this->command->info('Creando expedientes de empleados y nóminas...');
+        
+        $payroll = Payroll::firstOrCreate([
+            'name' => 'Nómina Docente Mayo 2026',
+        ], [
+            'start_date' => '2026-05-01',
+            'end_date' => '2026-05-31',
+            'status' => 'Pagado',
+            'total_amount' => 0.00,
+        ]);
+        
+        $totalPayrollAmount = 0;
+
+        foreach ($teachers as $i => $teacher) {
+            $employee = Employee::firstOrCreate([
+                'user_id' => $teacher->id,
+            ], [
+                'biometric_id' => 'EMP-' . str_pad($teacher->id, 4, '0', STR_PAD_LEFT),
+                'position' => 'Docente por Asignación',
+                'department' => 'Académico',
+                'contract_type' => 'Fijo',
+                'base_salary' => 45000.00 + ($i * 1500.00),
+                'hourly_rate' => 350.00,
+                'hire_date' => '2025-08-15',
+                'status' => 'active',
+            ]);
+            
+            $baseAmount = $employee->base_salary;
+            $deductions = round($baseAmount * 0.0591, 2);
+            $netAmount = $baseAmount - $deductions;
+            
+            PayrollItem::firstOrCreate([
+                'payroll_id' => $payroll->id,
+                'employee_id' => $employee->id,
+            ], [
+                'base_amount' => $baseAmount,
+                'deductions' => $deductions,
+                'net_amount' => $netAmount,
+                'details' => [
+                    'formula' => "Sueldo Base RD$ " . number_format($baseAmount, 2) . " - Deducciones de Ley (5.91%)",
+                    'notes' => 'Pago mensual ordinario correspondiente al mes de mayo.'
+                ]
+            ]);
+
+            $totalPayrollAmount += $netAmount;
+        }
+
+        $payroll->update(['total_amount' => $totalPayrollAmount]);
+        $this->command->info('  Expedientes de empleados y nómina de mayo creados.');
 
         // ─── USUARIO EXTRA: REGISTRO ─────────────────────
         $regUser = User::firstOrCreate([

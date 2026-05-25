@@ -3,32 +3,42 @@
 namespace App\Livewire\TeacherPortal;
 
 use Livewire\Component;
-use App\Models\CourseSchedule;
-use App\Models\Enrollment;
-use App\Models\Attendance as AttendanceModel;
+use App\Models\Section;
+use App\Models\Student;
+use App\Models\StudentAttendance;
+use App\Models\TeacherAssignment;
+use App\Models\AcademicYear;
 use Illuminate\Contracts\View\View;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Livewire\Attributes\Computed;
 
 class Attendance extends Component
 {
-    public CourseSchedule $section;
-    public $enrollments = [];
+    public Section $section;
+    public $students = [];
     public $attendanceDate;
     public $attendanceData = []; 
-
     public $isLocked = false; 
     public $errorMessage = '';
 
-    public function mount(CourseSchedule $section)
+    public function mount(Section $section)
     {
-        $this->section = $section->load(['module.course', 'enrollments' => function($query) {
-            $query->whereNotIn('status', ['Pendiente', 'pendiente'])
-                  ->with('student');
-        }]);
+        $teacherId = Auth::id();
         
-        $this->enrollments = $this->section->enrollments;
+        // Autorizar: El usuario debe ser administrador o tener asignación en esta sección o ser su tutor
+        $isAssigned = TeacherAssignment::where('section_id', $section->id)
+            ->where('teacher_id', $teacherId)
+            ->exists();
+        
+        if (Auth::user()->hasRole('Profesor') && !$isAssigned && $section->homeroom_teacher_id !== $teacherId) {
+            abort(403, 'No tienes permiso para ver la asistencia de esta sección.');
+        }
+
+        $this->section = $section->load(['gradeLevel', 'academicYear']);
+        $this->students = Student::where('section_id', $section->id)
+            ->get()
+            ->sortBy('fullName');
+
         $this->attendanceDate = now()->format('Y-m-d');
         
         $this->checkLockStatus();
@@ -40,13 +50,6 @@ class Attendance extends Component
         $this->isLocked = false;
         $this->errorMessage = '';
         
-        // 0. Candado Oficial
-        if ($this->section->is_locked) {
-            $this->isLocked = true;
-            $this->errorMessage = 'ESTADO SELLADO: La sección ha sido cerrada.';
-            return;
-        }
-
         $date = Carbon::parse($this->attendanceDate);
         
         // 1. No permitir fechas futuras
@@ -56,18 +59,17 @@ class Attendance extends Component
             return;
         }
 
-        // 2. Bloqueo de días pasados (Ej: 48 horas) - Salvo Admins
+        // 2. Bloqueo de días pasados (Ej: 48 horas) - Salvo Admins o Registro
         if (!Auth::user()->hasRole('Admin') && !Auth::user()->hasRole('Registro')) {
             if ($date->diffInHours(now()) > 48) {
                 // Verificamos si YA se tomó asistencia ese día. Si ya existe, se bloquea la edición.
-                // Si NO existe, se permite (caso de profesor que olvidó marcarla ayer).
-                $exists = AttendanceModel::where('course_schedule_id', $this->section->id)
-                    ->whereDate('attendance_date', $date)
+                $exists = StudentAttendance::where('section_id', $this->section->id)
+                    ->whereDate('date', $date)
                     ->exists();
                 
                 if ($exists) {
                     $this->isLocked = true;
-                    $this->errorMessage = 'El periodo de edición para esta fecha ha expirado.';
+                    $this->errorMessage = 'El periodo de edición de asistencia para esta fecha ha expirado (48 horas límite).';
                 }
             }
         }
@@ -78,14 +80,14 @@ class Attendance extends Component
         $date = Carbon::parse($this->attendanceDate);
         $this->attendanceData = []; 
 
-        $attendances = AttendanceModel::where('course_schedule_id', $this->section->id)
-            ->whereDate('attendance_date', $date)
+        $attendances = StudentAttendance::where('section_id', $this->section->id)
+            ->whereDate('date', $date)
             ->get()
-            ->keyBy('enrollment_id');
+            ->keyBy('student_id');
 
-        foreach ($this->enrollments as $enrollment) {
-            $existingAttendance = $attendances->get($enrollment->id);
-            $this->attendanceData[$enrollment->id] = $existingAttendance?->status ?? 'Presente';
+        foreach ($this->students as $student) {
+            $existingAttendance = $attendances->get($student->id);
+            $this->attendanceData[$student->id] = $existingAttendance?->status ?? 'present';
         }
     }
 
@@ -97,7 +99,6 @@ class Attendance extends Component
 
     public function saveAttendance()
     {
-        // Re-validar al guardar por seguridad
         $this->checkLockStatus();
         if ($this->isLocked) {
              session()->flash('error', $this->errorMessage);
@@ -105,45 +106,31 @@ class Attendance extends Component
         }
 
         $date = Carbon::parse($this->attendanceDate);
+        $activeYear = AcademicYear::where('status', 'active')->first() 
+            ?? AcademicYear::orderByDesc('id')->first();
 
-        foreach ($this->attendanceData as $enrollmentId => $status) {
-            AttendanceModel::updateOrCreate(
+        foreach ($this->attendanceData as $studentId => $status) {
+            StudentAttendance::updateOrCreate(
                 [
-                    'enrollment_id' => $enrollmentId,
-                    'course_schedule_id' => $this->section->id,
-                    'attendance_date' => $date,
+                    'student_id' => $studentId,
+                    'section_id' => $this->section->id,
+                    'date' => $date,
                 ],
                 [
-                    'status' => $status
+                    'academic_year_id' => $activeYear?->id,
+                    'status' => $status,
+                    'recorded_by' => auth()->id(),
                 ]
             );
         }
 
-        session()->flash('message', 'Asistencia guardada para el ' . $date->format('d/m/Y'));
-        unset($this->completedDates);
-    }
-
-    #[Computed(persist: true)] 
-    public function completedDates()
-    {
-        return AttendanceModel::where('course_schedule_id', $this->section->id)
-            ->select('attendance_date')
-            ->distinct()
-            ->orderBy('attendance_date', 'desc')
-            ->get()
-            ->pluck('attendance_date'); 
-    }
-
-    public function generateReport()
-    {
-        $url = route('reports.attendance.pdf', ['section' => $this->section->id]);
-        $this->dispatch('open-pdf-modal', url: $url);
+        session()->flash('message', 'Registro de asistencia guardado exitosamente para el ' . $date->format('d/m/Y'));
     }
 
     public function render(): View
     {
         return view('livewire.teacher-portal.attendance', [
-            'title' => 'Asistencia - ' . $this->section->module->name
+            'title' => 'Asistencia - ' . $this->section->full_name
         ])->layout('layouts.dashboard');
     }
 }

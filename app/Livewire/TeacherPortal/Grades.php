@@ -3,23 +3,23 @@
 namespace App\Livewire\TeacherPortal;
 
 use Livewire\Component;
-use App\Models\CourseSchedule;
-use App\Models\Enrollment;
-use App\Models\AcademicEvent;
+use App\Models\SectionSubject;
+use App\Models\StudentGrade;
+use App\Models\EvaluationPeriod;
+use App\Models\AcademicYear;
+use App\Models\Student;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Log;
-use App\Mail\GradePostedMail;
 use Livewire\Attributes\Layout;
-use Carbon\Carbon;
 
 #[Layout('layouts.dashboard')]
 class Grades extends Component
 {
-    public CourseSchedule $section;
-    public $enrollments = [];
+    public SectionSubject $sectionSubject;
+    public $students = [];
+    public $periods = [];
+    public $selectedPeriodId;
     public $grades = [];
     public $isLocked = false;
     public $lockReason = '';
@@ -34,68 +34,105 @@ class Grades extends Component
         'grades.*.max' => 'La calificación no puede ser mayor que 100.',
     ];
 
-    public function mount(CourseSchedule $section): void
+    public function mount(SectionSubject $sectionSubject): void
     {
-        // 1. Seguridad de Propiedad
-        if (Auth::user()->hasRole('Profesor') && $section->teacher_id !== Auth::id()) {
+        // 1. Autorización
+        if (Auth::user()->hasRole('Profesor') && $sectionSubject->teacher_id !== Auth::id()) {
             abort(403, 'No tienes permiso para ver esta sección.');
         }
 
-        $this->section = $section->load('module.course', 'enrollments.student');
+        $this->sectionSubject = $sectionSubject->load(['section.gradeLevel', 'subject']);
         
-        // 2. Validación de Fechas (Regla de Negocio)
+        // 2. Obtener el año activo
+        $activeYear = AcademicYear::where('status', 'active')->first() 
+            ?? AcademicYear::orderByDesc('id')->first();
+
+        // 3. Obtener los períodos evaluativos escolares
+        if ($activeYear) {
+            $this->periods = EvaluationPeriod::where('academic_year_id', $activeYear->id)
+                ->orderBy('number')
+                ->get();
+        }
+
+        // Seleccionar periodo activo por defecto, o el primero
+        $activePeriod = collect($this->periods)->firstWhere('status', 'active') 
+            ?? collect($this->periods)->first();
+        
+        $this->selectedPeriodId = $activePeriod?->id;
+
+        // 4. Cargar estudiantes y calificaciones
+        $this->loadStudentsAndGrades();
+    }
+
+    public function selectPeriod($periodId)
+    {
+        $this->selectedPeriodId = $periodId;
+        $this->loadStudentsAndGrades();
+    }
+
+    public function loadStudentsAndGrades()
+    {
+        // Obtener estudiantes de la sección
+        $this->students = Student::where('section_id', $this->sectionSubject->section_id)
+            ->get()
+            ->sortBy('fullName');
+
         $this->checkGradingAvailability();
 
-        $this->enrollments = $this->section->enrollments->sortBy('student.fullName');
+        // Obtener calificaciones ya guardadas para este período
+        if ($this->selectedPeriodId) {
+            $existingGrades = StudentGrade::where('section_subject_id', $this->sectionSubject->id)
+                ->where('evaluation_period_id', $this->selectedPeriodId)
+                ->get()
+                ->keyBy('student_id');
 
-        $this->grades = $this->enrollments->mapWithKeys(function ($enrollment) {
-            return [$enrollment->id => $enrollment->final_grade];
-        })->toArray();
+            $this->grades = [];
+            foreach ($this->students as $student) {
+                $this->grades[$student->id] = $existingGrades->get($student->id)?->score;
+            }
+        }
     }
 
     /**
-     * Verifica si el periodo de digitación está activo.
+     * Verifica si el periodo de digitación está cerrado o abierto.
      */
     private function checkGradingAvailability()
     {
-        // 1. Candado Oficial (Aplica para todos, incluso admins, hasta que lo abran explícitamente)
-        if ($this->section->is_locked) {
+        if (!$this->selectedPeriodId) {
             $this->isLocked = true;
-            $this->lockReason = 'ESTADO SELLADO: Esta sección ha sido cerrada oficialmente por Registro/Administración. Las modificaciones están bloqueadas.';
+            $this->lockReason = 'No hay un período evaluativo seleccionado.';
             return;
         }
 
-        // Admin siempre puede editar si no está sellada
+        $period = EvaluationPeriod::find($this->selectedPeriodId);
+        
+        if ($period && $period->status === 'closed') {
+            $this->isLocked = true;
+            $this->lockReason = 'ESTADO CERRADO: El periodo de evaluación seleccionado (' . $period->name . ') ha sido cerrado oficialmente por la dirección del centro.';
+            return;
+        }
+
+        // Admin o Registro siempre pueden editar
         if (Auth::user()->hasRole('Admin') || Auth::user()->hasRole('Registro')) {
             $this->isLocked = false;
             $this->lockReason = '';
             return;
         }
 
-        $now = Carbon::now();
-        $endDate = Carbon::parse($this->section->end_date);
-        
-        // REGLA 1: No se puede calificar antes de que termine la materia (Opcional, a veces se permite)
-        // if ($now->lt($endDate->subDays(7))) { // Ejemplo: Permitir solo la última semana
-        //     $this->isLocked = true;
-        //     $this->lockReason = 'El periodo de calificación inicia al finalizar el curso.';
-        //     return;
-        // }
-
-        // REGLA 2: Plazo estándar de 15 días después de finalizar
-        $deadline = $endDate->copy()->addDays(15);
-
-        // REGLA 3: Excepción por Evento Académico (Prórroga)
-        $isExtensionActive = AcademicEvent::isActionActive('grading_extension');
-
-        if ($now->gt($deadline) && !$isExtensionActive) {
+        // Si el periodo no es activo o grading, está bloqueado para profesores
+        if ($period && !in_array($period->status, ['active', 'grading'])) {
             $this->isLocked = true;
-            $this->lockReason = 'El periodo de calificación cerró el ' . $deadline->format('d/m/Y') . '.';
+            $this->lockReason = 'PERIODO BLOQUEADO: El periodo seleccionado (' . $period->name . ') no está abierto para digitación en este momento.';
+            return;
         }
+
+        $this->isLocked = false;
+        $this->lockReason = '';
     }
 
     public function saveGrades(): void
     {
+        $this->checkGradingAvailability();
         if ($this->isLocked) {
             session()->flash('error', $this->lockReason);
             return;
@@ -104,89 +141,40 @@ class Grades extends Component
         $this->validate();
 
         try {
-            $enrollmentsToNotify = [];
-
-            DB::transaction(function () use (&$enrollmentsToNotify) {
-                foreach ($this->grades as $enrollmentId => $grade) {
-                    $enrollment = Enrollment::with('student', 'courseSchedule.module')->find($enrollmentId);
+            DB::transaction(function () {
+                foreach ($this->grades as $studentId => $score) {
+                    $scoreVal = $score !== '' && $score !== null ? round((float)$score, 2) : null;
                     
-                    if ($enrollment && $enrollment->course_schedule_id === $this->section->id) {
-                        
-                        // Detectar cambio
-                        $oldGrade = $enrollment->final_grade;
-                        $newGrade = $grade !== '' && $grade !== null ? round($grade, 2) : null;
-
-                        if ($oldGrade !== $newGrade) {
-                            $enrollment->final_grade = $newGrade;
-                            
-                            // --- AUTOMATIZACIÓN DE ESTADO ---
-                            if (!is_null($newGrade)) {
-                                // Nota mínima aprobatoria (Configurable, aquí hardcoded 70)
-                                if ($newGrade >= 70) {
-                                    $enrollment->status = 'Aprobado';
-                                } else {
-                                    $enrollment->status = 'Reprobado';
-                                }
-                            } else {
-                                // Si borran la nota, vuelve a cursando
-                                $enrollment->status = 'Cursando';
-                            }
-
-                            $enrollment->save();
-
-                            // Solo notificar si hay nota real
-                            if (!is_null($newGrade)) {
-                                $enrollmentsToNotify[] = $enrollment;
-                            }
-                        }
-                    }
+                    StudentGrade::updateOrCreate([
+                        'student_id' => $studentId,
+                        'section_subject_id' => $this->sectionSubject->id,
+                        'evaluation_period_id' => $this->selectedPeriodId,
+                    ], [
+                        'score' => $scoreVal,
+                        'recorded_by' => auth()->id(),
+                        'recorded_at' => now(),
+                    ]);
                 }
             });
 
-            // Enviar correos (Queue o directo)
-            foreach ($enrollmentsToNotify as $enrollment) {
-                if ($enrollment->student && $enrollment->student->email) {
-                    try {
-                        Mail::to($enrollment->student->email)->send(new GradePostedMail($enrollment));
-                    } catch (\Exception $e) {
-                        Log::error("Error mail notas: " . $e->getMessage());
-                    }
-                }
-            }
-
-            session()->flash('message', 'Calificaciones y estatus académicos actualizados correctamente.');
-            
-            $this->section->refresh();
-            $this->enrollments = $this->section->enrollments->sortBy('student.fullName');
+            session()->flash('message', 'Calificaciones actualizadas correctamente en la malla oficial.');
+            $this->loadStudentsAndGrades();
 
         } catch (\Exception $e) {
             session()->flash('error', 'Error al guardar: ' . $e->getMessage());
         }
     }
 
-    public function toggleLock()
-    {
-        // Solo Admin o Registro pueden sellar/abrir la bóveda de notas
-        if (!Auth::user()->hasRole('Admin') && !Auth::user()->hasRole('Registro')) {
-            abort(403, 'No tienes permisos para sellar actas.');
-        }
-
-        $this->section->is_locked = !$this->section->is_locked;
-        $this->section->save();
-        $this->checkGradingAvailability();
-
-        activity()
-            ->performedOn($this->section)
-            ->causedBy(auth()->user())
-            ->log($this->section->is_locked ? 'Sección y récord de notas SELLADOS oficialmente.' : 'Sección REABIERTA para modificación excepcional de notas.');
-
-        session()->flash('message', $this->section->is_locked ? 'Sección Sellada (Solo lectura)' : 'Sección Reabierta (Edición permitida)');
-    }
-
     public function render(): View
     {
+        $periodName = '';
+        if ($this->selectedPeriodId) {
+            $p = collect($this->periods)->firstWhere('id', $this->selectedPeriodId);
+            $periodName = $p ? ' - ' . $p->name : '';
+        }
+
         return view('livewire.teacher-portal.grades', [
-            'title' => 'Calificaciones - ' . $this->section->module->name
-        ])->layout('layouts.dashboard');
+            'title' => 'Calificaciones - ' . ($this->sectionSubject->subject->name ?? '') . $periodName
+        ]);
     }
 }

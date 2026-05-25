@@ -78,7 +78,7 @@
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-gray-500 truncate">Secciones Asignadas</p>
                         <div class="flex items-baseline gap-2">
-                            <p class="text-2xl font-bold text-gray-900 tracking-tight">{{ $totalSchedules }}</p>
+                            <p class="text-2xl font-bold text-gray-900 tracking-tight">{{ $totalClasses }}</p>
                             <span class="text-xs text-gray-400 font-medium">Activas</span>
                         </div>
                     </div>
@@ -104,30 +104,30 @@
                 </div>
             </div>
 
-            <!-- Tarjeta 3: Próxima Clase -->
+            <!-- Tarjeta 3: Tutoría de Aula -->
             <div class="group relative overflow-hidden rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5 transition-all hover:shadow-lg hover:-translate-y-1">
                 <div class="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-amber-50 opacity-50 blur-xl transition-all group-hover:bg-amber-100"></div>
                 <div class="flex items-center gap-4 relative z-10">
                     <div class="shrink-0 rounded-lg bg-amber-50 p-3 text-amber-600 ring-1 ring-amber-100">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.57 50.57 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M12 2.25V4.5m0 16.35V22" />
                         </svg>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-500 truncate">Próxima Clase</p>
-                        @if ($nextClassToday)
+                        <p class="text-sm font-medium text-gray-500 truncate">Tutoría de Aula (Homeroom)</p>
+                        @if ($hasHomeroom)
                             <div class="flex flex-col">
-                                <p class="text-lg font-bold text-gray-900 truncate tracking-tight" title="{{ $nextClassToday->module->course->name }}">
-                                    {{ \Illuminate\Support\Str::limit($nextClassToday->module->name, 18) }}
+                                <p class="text-lg font-bold text-gray-900 truncate tracking-tight">
+                                    {{ $homeroomSectionName }}
                                 </p>
                                 <span class="text-xs font-medium text-amber-600 bg-amber-50 rounded-full px-2 py-0.5 inline-block w-fit mt-1 border border-amber-100">
-                                    Hoy, {{ \Carbon\Carbon::parse($nextClassToday->start_time)->format('h:i A') }}
+                                    Aula a Cargo
                                 </span>
                             </div>
                         @else
                              <div class="flex flex-col">
-                                <p class="text-lg font-bold text-gray-400 truncate tracking-tight">Sin clases pendientes</p>
-                                <span class="text-xs text-gray-400 mt-1">Por el día de hoy</span>
+                                <p class="text-lg font-bold text-gray-400 truncate tracking-tight">Sin aula asignada</p>
+                                <span class="text-xs text-gray-400 mt-1">Este año escolar</span>
                             </div>
                         @endif
                     </div>
@@ -170,52 +170,56 @@
                         <table class="min-w-full divide-y divide-gray-100">
                             <thead class="bg-gray-50/50">
                                 <tr>
-                                    <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider sm:pl-6">Curso / Módulo</th>
-                                    <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Horario</th>
+                                    <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider sm:pl-6">Asignatura</th>
+                                    <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Grado y Sección</th>
                                     <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Estudiantes</th>
                                     <th scope="col" class="px-3 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider sm:pr-6">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 bg-white">
-                                @forelse ($courseSchedules as $schedule)
-                                    <tr class="hover:bg-gray-50/50 transition-colors group">
-                                        <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-6">
-                                            <div class="flex items-center">
-                                                <div class="h-10 w-10 flex-shrink-0 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold border border-indigo-100 group-hover:scale-105 transition-transform">
-                                                    {{ substr($schedule->module->course->name ?? 'C', 0, 1) }}
+                                @forelse ($assignments as $assignment)
+                                    @if($assignment->section && $assignment->subject)
+                                        <tr class="hover:bg-gray-50/50 transition-colors group">
+                                            <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-6">
+                                                <div class="flex items-center">
+                                                    <div class="h-10 w-10 flex-shrink-0 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold border border-indigo-100 group-hover:scale-105 transition-transform">
+                                                        {{ substr($assignment->subject->name ?? 'A', 0, 1) }}
+                                                    </div>
+                                                    <div class="ml-4">
+                                                        <div class="font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">{{ $assignment->subject->name ?? 'N/A' }}</div>
+                                                        <div class="text-gray-500 text-xs mt-0.5">{{ $assignment->subject->area ?? 'General' }}</div>
+                                                    </div>
                                                 </div>
-                                                <div class="ml-4">
-                                                    <div class="font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">{{ $schedule->module->course->name ?? 'N/A' }}</div>
-                                                    <div class="text-gray-500 text-xs mt-0.5">{{ $schedule->module->name ?? 'N/A' }}</div>
+                                            </td>
+                                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                <div class="flex flex-col">
+                                                    <span class="font-medium text-gray-700">{{ $assignment->section->full_name }}</span>
+                                                    <span class="text-xs text-gray-400 mt-0.5">
+                                                        {{ $assignment->section->gradeLevel->name ?? '' }}
+                                                    </span>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                            <div class="flex flex-col">
-                                                <span class="font-medium text-gray-700">{{ $schedule->day_of_week }}</span>
-                                                <span class="text-xs text-gray-400 mt-0.5">
-                                                    {{ \Carbon\Carbon::parse($schedule->start_time)->format('h:i A') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('h:i A') }}
+                                            </td>
+                                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                                                    {{ $assignment->enrollments_count ?? 0 }} Alumnos
                                                 </span>
-                                            </div>
-                                        </td>
-                                        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                            <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                                                {{ $schedule->enrollments_count }} Inscritos
-                                            </span>
-                                        </td>
-                                        <td class="whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                            <div class="flex gap-3 justify-end">
-                                                <a href="{{ route('teacher.grades', $schedule->id) }}" wire:navigate
-                                                   class="text-gray-500 hover:text-indigo-600 bg-gray-50 hover:bg-indigo-50 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-indigo-200 transition-all text-xs font-semibold flex items-center gap-1">
-                                                    <i class="fas fa-star text-[10px]"></i> Notas
-                                                </a>
-                                                <a href="{{ route('teacher.attendance', $schedule->id) }}" wire:navigate
-                                                   class="text-gray-500 hover:text-emerald-600 bg-gray-50 hover:bg-emerald-50 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-emerald-200 transition-all text-xs font-semibold flex items-center gap-1">
-                                                    <i class="fas fa-check-square text-[10px]"></i> Asistencia
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                            </td>
+                                            <td class="whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                                <div class="flex gap-3 justify-end">
+                                                    @if($assignment->section_subject_id)
+                                                        <a href="{{ route('teacher.grades', $assignment->section_subject_id) }}" wire:navigate
+                                                           class="text-gray-500 hover:text-indigo-600 bg-gray-50 hover:bg-indigo-50 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-indigo-200 transition-all text-xs font-semibold flex items-center gap-1">
+                                                            <i class="fas fa-star text-[10px]"></i> Notas
+                                                        </a>
+                                                    @endif
+                                                    <a href="{{ route('teacher.attendance', $assignment->section_id) }}" wire:navigate
+                                                       class="text-gray-500 hover:text-emerald-600 bg-gray-50 hover:bg-emerald-50 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-emerald-200 transition-all text-xs font-semibold flex items-center gap-1">
+                                                        <i class="fas fa-check-square text-[10px]"></i> Asistencia
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endif
                                 @empty
                                     <tr>
                                         <td colspan="4" class="px-6 py-12 text-center">

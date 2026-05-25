@@ -4,73 +4,91 @@ namespace App\Livewire\TeacherPortal;
 
 use Livewire\Component;
 use Livewire\Attributes\Layout;
-use App\Models\CourseSchedule; // Importar el modelo
-use Illuminate\Support\Facades\Auth; // Para obtener el usuario autenticado
-use Illuminate\Database\Eloquent\Collection; // Para inicializar la colección
-use Illuminate\Support\Str; // <-- MEJORA: Para limitar texto
+use App\Models\TeacherAssignment;
+use App\Models\SchoolEnrollment;
+use App\Models\SectionSubject;
+use App\Models\AcademicYear;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 #[Layout('layouts.dashboard')]
 class Dashboard extends Component
 {
-    // Propiedades públicas para la vista
-    public Collection $courseSchedules;
     public $teacher;
-    public $totalSchedules = 0;
+    public $assignments = [];
+    public $totalClasses = 0;
     public $totalStudents = 0;
+    public $hasHomeroom = false;
+    public $homeroomSectionName = '';
+    public $chartLabels = [];
+    public $chartData = [];
 
-    // --- MEJORAS ---
-    public $nextClassToday = null; // Para la tarjeta de "Próxima Clase"
-    public $chartLabels; // Para el gráfico
-    public $chartData; // Para el gráfico
-
-    /**
-     * El método mount() se ejecuta una vez cuando el componente se carga.
-     * Aquí es donde cargaremos los datos.
-     */
     public function mount()
     {
-        // Obtener el profesor autenticado
         $this->teacher = Auth::user();
         $teacherId = $this->teacher->id;
 
-        // Cargar los horarios de los cursos para este profesor
-        $this->courseSchedules = CourseSchedule::where('teacher_id', $teacherId)
-            ->with([
-                'module.course', // Carga el módulo y el curso asociado
-            ])
-            ->withCount('enrollments') // Esto crea la propiedad 'enrollments_count'
-            ->get();
+        // 1. Get the active academic year
+        $activeYear = AcademicYear::where('status', 'active')->first() 
+            ?? AcademicYear::orderByDesc('id')->first();
 
-        // --- MEJORAS: Calcular KPIs ---
-        $this->totalSchedules = $this->courseSchedules->count();
-        $this->totalStudents = $this->courseSchedules->sum('enrollments_count');
+        if ($activeYear) {
+            // 2. Load teacher assignments for the active year
+            $this->assignments = TeacherAssignment::where('teacher_id', $teacherId)
+                ->where('academic_year_id', $activeYear->id)
+                ->with(['section.gradeLevel', 'subject'])
+                ->get();
+        }
 
-        // --- MEJORA: Lógica para "Próxima Clase" ---
-        $todayName = ucfirst(now()->isoFormat('dddd')); // e.g., 'Sábado'
-        $nowTime = now()->format('H:i:s');
+        $this->totalClasses = count($this->assignments);
 
-        $this->nextClassToday = CourseSchedule::where('teacher_id', $teacherId)
-            ->whereJsonContains('days_of_week', $todayName)
-            ->where('end_time', '>', $nowTime) // Clase que aún no ha terminado
-            ->orderBy('start_time', 'asc')
-            ->with('module.course')
-            ->first();
+        // 3. Calculate total unique students taught across all assigned sections
+        $sectionIds = collect($this->assignments)->pluck('section_id')->unique()->toArray();
+        
+        if (!empty($sectionIds)) {
+            $this->totalStudents = SchoolEnrollment::whereIn('section_id', $sectionIds)
+                ->where('status', 'enrolled')
+                ->where('academic_year_id', $activeYear->id)
+                ->count();
+        }
 
-        // --- MEJORA: Preparar datos del Chart ---
-        // Usamos el nombre del curso y módulo como etiqueta
-        $this->chartLabels = $this->courseSchedules->map(function ($schedule) {
-            $courseName = $schedule->module->course->name ?? 'Curso desc.';
-            $moduleName = $schedule->module->name ?? 'Módulo desc.';
-            // Acortar para que quepa en el gráfico
-            return Str::limit($courseName . ' (' . $moduleName . ')', 30);
-        });
-        $this->chartData = $this->courseSchedules->pluck('enrollments_count');
+        // 4. Check if they are a homeroom/tutor teacher
+        $homeroomAssignment = collect($this->assignments)->firstWhere('is_homeroom', true);
+        if ($homeroomAssignment && $homeroomAssignment->section) {
+            $this->hasHomeroom = true;
+            $this->homeroomSectionName = $homeroomAssignment->section->full_name;
+        }
+
+        // 5. Prepare chart data and attach IDs
+        $labels = [];
+        $data = [];
+        foreach ($this->assignments as $assignment) {
+            if ($assignment->section && $assignment->subject) {
+                // Find and attach SectionSubject ID for route mapping
+                $sectionSubject = SectionSubject::where('section_id', $assignment->section_id)
+                    ->where('subject_id', $assignment->subject_id)
+                    ->first();
+                
+                $assignment->section_subject_id = $sectionSubject?->id;
+
+                $sectionName = $assignment->section->full_name;
+                $subjectName = $assignment->subject->name;
+                $labels[] = Str::limit($sectionName . ' - ' . $subjectName, 30);
+                
+                // Get student count for this section
+                $studentCount = SchoolEnrollment::where('section_id', $assignment->section_id)
+                    ->where('status', 'enrolled')
+                    ->where('academic_year_id', $activeYear->id)
+                    ->count();
+                
+                $assignment->enrollments_count = $studentCount;
+                $data[] = $studentCount;
+            }
+        }
+        $this->chartLabels = $labels;
+        $this->chartData = $data;
     }
 
-    /**
-     * Ahora el método render solo necesita mostrar la vista.
-     * La vista tendrá acceso automáticamente a las propiedades públicas.
-     */
     public function render()
     {
         return view('livewire.teacher-portal.dashboard');
