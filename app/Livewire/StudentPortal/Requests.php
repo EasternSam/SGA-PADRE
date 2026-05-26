@@ -65,19 +65,15 @@ class Requests extends Component
     {
         if (!$this->selectedType) return;
 
-        // Regla 1: Requiere estar CURSANDO (Activo)
-        if ($this->selectedType->requires_enrolled_course) {
-            $this->availableEnrollments = Enrollment::where('student_id', $this->student->id)
-                ->whereIn('status', ['Cursando', 'cursando', 'Activo', 'activo'])
-                ->with('courseSchedule.module.course')
-                ->get();
-        } 
-        // Regla 2: Requiere haber COMPLETADO (Aprobado)
-        elseif ($this->selectedType->requires_completed_course) {
-            $this->availableEnrollments = Enrollment::where('student_id', $this->student->id)
-                ->whereIn('status', ['Completado', 'completado', 'Aprobado', 'aprobado'])
-                ->with('courseSchedule.module.course')
-                ->get();
+        // En el entorno escolar, el estudiante está matriculado en las asignaturas de su sección
+        if ($this->selectedType->requires_enrolled_course || $this->selectedType->requires_completed_course) {
+            if ($this->student && $this->student->section_id) {
+                $this->availableEnrollments = \App\Models\SectionSubject::where('section_id', $this->student->section_id)
+                    ->with(['subject', 'teacher'])
+                    ->get();
+            } else {
+                $this->availableEnrollments = [];
+            }
         }
     }
 
@@ -85,11 +81,10 @@ class Requests extends Component
     {
         $this->validate([
             'typeId' => 'required|exists:request_types,id',
-            'details' => 'nullable|string', // Cambiado a nullable según solicitud
+            'details' => 'nullable|string',
         ]);
 
         // Asegurarnos de tener el tipo seleccionado cargado y fresco
-        // A veces Livewire puede perder el estado de objetos complejos, mejor recargar por ID
         $typeModel = RequestType::find($this->typeId);
         
         // Verificación de seguridad adicional
@@ -98,53 +93,53 @@ class Requests extends Component
             return;
         }
         
-        // Actualizamos la propiedad pública para la vista por si acaso
         $this->selectedType = $typeModel;
 
-        // Validación de curso requerido
+        // Validación de asignatura escolar requerida
         if ($typeModel->requires_enrolled_course || $typeModel->requires_completed_course) {
             $this->validate([
-                'selectedTargetId' => 'required|exists:enrollments,id'
+                'selectedTargetId' => 'required|exists:section_subjects,id'
             ]);
         }
 
-        // Obtener curso ID si aplica
-        $courseId = null;
+        // Obtener curso ID para preservar integridad relacional (carrera/programa del estudiante si existe)
+        $courseId = $this->student->course_id;
         $finalDetails = $this->details;
+        $targetDetails = "";
 
         if ($this->selectedTargetId) {
-            $enrollment = Enrollment::with('courseSchedule.module.course')->find($this->selectedTargetId);
+            $sectionSubject = \App\Models\SectionSubject::with(['subject', 'teacher'])->find($this->selectedTargetId);
             
-            if ($enrollment && $enrollment->courseSchedule && $enrollment->courseSchedule->module) {
-                $courseId = $enrollment->courseSchedule->module->course_id;
-                $courseName = $enrollment->courseSchedule->module->course->name ?? 'N/A';
+            if ($sectionSubject) {
+                $subjectName = $sectionSubject->subject->name ?? 'N/A';
+                $teacherName = $sectionSubject->teacher->name ?? 'N/A';
                 
-                // Agregar contexto al detalle si hay algo escrito, sino solo info del curso
-                $context = "Curso Relacionado: $courseName\nEstado Inscripción: {$enrollment->status}";
+                $targetDetails = "[Asignatura ID: {$this->selectedTargetId}]";
+                // Agregar contexto al detalle
+                $context = "Asignatura Relacionada: $subjectName\nDocente: $teacherName\n$targetDetails";
                 $finalDetails = $this->details ? "$context\n\n{$this->details}" : $context;
             }
         }
 
-        // Verificar duplicados para trámites importantes (ej: Diplomas)
-        if ($typeModel->requires_completed_course && $courseId) {
+        // Verificar duplicados para trámites activos
+        if ($this->selectedTargetId) {
             $exists = StudentRequest::where('student_id', $this->student->id)
                 ->where('request_type_id', $this->typeId)
-                ->where('course_id', $courseId)
+                ->where('details', 'like', '%' . $targetDetails . '%')
                 ->whereIn('status', ['pendiente', 'aprobado'])
                 ->exists();
             
             if ($exists) {
-                $this->addError('typeId', 'Ya tienes una solicitud activa de este tipo para este curso.');
+                $this->addError('typeId', 'Ya tienes una solicitud activa de este tipo para esta asignatura.');
                 return;
             }
         }
 
         // Crear Solicitud
-        // Usamos $typeModel->name explícitamente para asegurar que no sea nulo
         StudentRequest::create([
             'student_id' => $this->student->id,
             'request_type_id' => $this->typeId,
-            'type' => $typeModel->name, // Nombre recuperado directamente de la BD en este ciclo
+            'type' => $typeModel->name,
             'course_id' => $courseId,
             'details' => $finalDetails,
             'status' => 'pendiente',
