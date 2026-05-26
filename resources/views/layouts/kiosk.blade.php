@@ -141,7 +141,7 @@
                     <x-application-logo class="block h-auto w-full drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]" />
                 </div>
                 <div>
-                    <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 drop-shadow-sm uppercase tracking-widest">CENTU</h1>
+                    <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 drop-shadow-sm uppercase tracking-widest">{{ \App\Models\SchoolConfig::get('school_name', config('app.name', 'Academic+')) }}</h1>
                     <p class="text-indigo-300 font-bold text-sm leading-tight uppercase tracking-[0.3em]">Terminal Kiosco</p>
                 </div>
             </div>
@@ -195,7 +195,7 @@
         
         <!-- Footer simple (Glass) -->
         <footer class="bg-white/5 backdrop-blur-md py-4 text-center text-indigo-200/60 text-sm font-medium shrink-0 border-t border-white/5 z-10 tracking-widest">
-            &copy; {{ date('Y') }} ACADEMIA CENTU &bull; TOQUE LA PANTALLA CUIDADOSAMENTE
+            &copy; {{ date('Y') }} {{ strtoupper(\App\Models\SchoolConfig::get('school_name', config('app.name', 'Academic+'))) }} &bull; TOQUE LA PANTALLA CUIDADOSAMENTE
         </footer>
     </div>
 

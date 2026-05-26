@@ -31,6 +31,7 @@ Route::prefix('kiosk')->group(function () {
         Route::get('/finances', \App\Livewire\Kiosk\Finances::class)->name('kiosk.finances');
         Route::get('/schedule', \App\Livewire\Kiosk\Schedule::class)->name('kiosk.schedule');
         Route::get('/grades', \App\Livewire\Kiosk\Grades::class)->name('kiosk.grades');
+        Route::get('/attendance', \App\Livewire\Kiosk\Attendance::class)->name('kiosk.attendance');
         Route::get('/academic-offer', \App\Livewire\Kiosk\AcademicOffer::class)->name('kiosk.academic-offer');
     });
 });
