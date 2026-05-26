@@ -10,6 +10,7 @@ use App\Models\Section;
 use App\Models\Student;
 use App\Models\StudentAttendance;
 use App\Models\StudentGrade;
+use App\Services\StudentLifecycleService;
 use Livewire\Component;
 
 class StudentProfile extends Component
@@ -94,6 +95,10 @@ class StudentProfile extends Component
             ->limit(10)
             ->get();
 
+        // Journey / Lifecycle
+        $lifecycleService = app(StudentLifecycleService::class);
+        $journey = $lifecycleService->calculate($student);
+
         $this->studentData = [
             'student'    => $student->toArray(),
             'section'    => $section?->toArray(),
@@ -102,6 +107,7 @@ class StudentProfile extends Component
             'attendance' => $attendanceSummary,
             'discipline' => $disciplineRecords->toArray(),
             'activeYear' => $activeYear?->toArray(),
+            'journey'    => $journey,
         ];
     }
 

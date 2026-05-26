@@ -85,6 +85,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
         Route::get('/school/announcements', \App\Livewire\Admin\School\AnnouncementsManager::class)->name('admin.school.announcements');
         Route::get('/school/dashboard', \App\Livewire\Admin\School\SchoolDashboard::class)->name('admin.school.dashboard');
         Route::get('/school/student-profile', \App\Livewire\Admin\School\StudentProfile::class)->name('admin.school.student-profile');
+        Route::get('/school/student-journey', \App\Livewire\Admin\School\StudentJourney::class)->name('admin.school.student-journey');
         Route::get('/school/teacher-schedule', \App\Livewire\Admin\School\TeacherScheduleView::class)->name('admin.school.teacher-schedule');
         Route::get('/school/teacher-assignments', \App\Livewire\Admin\School\TeacherAssignments::class)->name('admin.school.teacher-assignments');
         Route::get('/school/honor-roll', \App\Livewire\Admin\School\HonorRoll::class)->name('admin.school.honor-roll');

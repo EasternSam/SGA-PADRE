@@ -57,6 +57,42 @@
             </div>
         </div>
 
+        {{-- Ciclo de Vida Compacto --}}
+        @if(isset($studentData['journey']))
+            @php $journey = $studentData['journey']; @endphp
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 mb-6">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Progreso del Ciclo Escolar</h3>
+                    <div class="flex items-center gap-3">
+                        <span class="text-lg font-black {{ $journey['overall_progress'] >= 80 ? 'text-emerald-600' : ($journey['overall_progress'] >= 40 ? 'text-indigo-600' : 'text-gray-400') }}">{{ $journey['overall_progress'] }}%</span>
+                        <a href="{{ route('admin.school.student-journey', ['student_id' => $st->id]) }}" class="text-xs text-indigo-600 hover:text-indigo-700 font-semibold dark:text-indigo-400">Ver detalle →</a>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    @foreach($journey['stages'] as $stage)
+                        <div class="flex-1 group relative">
+                            <div class="h-2.5 rounded-full transition-all
+                                @if($stage['status'] === 'completed') bg-emerald-500
+                                @elseif($stage['status'] === 'in_progress') bg-indigo-500 animate-pulse
+                                @elseif($stage['status'] === 'warning') bg-amber-500
+                                @elseif($stage['status'] === 'danger') bg-red-500
+                                @else bg-gray-200 dark:bg-gray-700
+                                @endif
+                            "></div>
+                            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-medium">
+                                {{ $stage['name'] }}: {{ $stage['description'] }}
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                <div class="flex justify-between mt-1.5">
+                    @foreach($journey['stages'] as $stage)
+                        <span class="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider text-center flex-1">{{ $stage['name'] }}</span>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         {{-- Stats Row --}}
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div class="rounded-xl bg-green-50 dark:bg-green-900/20 p-4 text-center border border-green-200 dark:border-green-800">
