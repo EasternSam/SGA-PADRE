@@ -36,10 +36,10 @@ class SecurityHeaders
         $response->headers->set(
             'Content-Security-Policy',
             "frame-src 'self' https://*.cardnet.com.do https://{$cardnetDomain}; " .
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.cardnet.com.do https://{$cardnetDomain} https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.bunny.net; " .
-            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://cdnjs.cloudflare.com; " .
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.cardnet.com.do https://{$cardnetDomain} https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.bunny.net https://cdn.tailwindcss.com https://static.cloudflareinsights.com; " .
+            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; " .
             "img-src 'self' data: https: blob:; " .
-            "font-src 'self' https://fonts.bunny.net https://cdnjs.cloudflare.com; " .
+            "font-src 'self' https://fonts.bunny.net https://cdnjs.cloudflare.com https://fonts.gstatic.com; " .
             "connect-src 'self' https://*.cardnet.com.do https://{$cardnetDomain};"
         );
 

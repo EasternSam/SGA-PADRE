@@ -202,9 +202,6 @@
     <!-- Livewire Scripts -->
     @livewireScripts
 
-    <!-- Script de Cierre de Sesión por Inactividad -->
-    <script>
-        document.addEventListener('alpine:init', () => {
     <!-- Script de Cierre de Sesión por Inactividad y Funciones Globales (Reloj) -->
     <script>
         document.addEventListener('alpine:init', () => {
