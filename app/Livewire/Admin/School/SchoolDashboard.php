@@ -49,13 +49,21 @@ class SchoolDashboard extends Component
                 ->orderByDesc('number')->first()
             : null;
 
-        $gradeStats = ['avg' => null, 'above70' => 0, 'below70' => 0, 'total' => 0];
+        $gradeStats = ['avg' => null, 'above_passing' => 0, 'below_passing' => 0, 'total' => 0];
         if ($latestPeriod) {
             $grades = StudentGrade::where('evaluation_period_id', $latestPeriod->id)
-                ->whereNotNull('score')->get();
+                ->whereNotNull('score')
+                ->with(['student.gradeLevel'])
+                ->get();
             $gradeStats['avg'] = round($grades->avg('score'), 1);
-            $gradeStats['above70'] = $grades->where('score', '>=', 70)->count();
-            $gradeStats['below70'] = $grades->where('score', '<', 70)->count();
+            foreach ($grades as $grade) {
+                $passingScore = $grade->student?->gradeLevel?->min_passing_score ?? 70;
+                if ($grade->score >= $passingScore) {
+                    $gradeStats['above_passing']++;
+                } else {
+                    $gradeStats['below_passing']++;
+                }
+            }
             $gradeStats['total'] = $grades->count();
         }
 

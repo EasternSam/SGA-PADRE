@@ -62,11 +62,19 @@ class JustificationManager extends Component
 
     public function approve($id)
     {
-        AbsenceJustification::findOrFail($id)->update([
+        $justification = AbsenceJustification::findOrFail($id);
+        $justification->update([
             'status'      => 'approved',
             'reviewed_by' => auth()->id(),
         ]);
-        session()->flash('message', 'Justificación aprobada.');
+
+        // Sincronizar asistencia: marcar ausencias en el rango como 'excused'
+        \App\Models\StudentAttendance::where('student_id', $justification->student_id)
+            ->whereBetween('date', [$justification->date_from, $justification->date_to])
+            ->where('status', 'absent')
+            ->update(['status' => 'excused']);
+
+        session()->flash('message', 'Justificación aprobada y asistencia actualizada.');
     }
 
     public function reject($id)

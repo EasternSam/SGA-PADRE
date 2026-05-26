@@ -33,6 +33,7 @@ class HonorRoll extends Component
 
         // Get students query
         $studentsQuery = Student::where('status', 'Activo')
+            ->with('gradeLevel')
             ->when($this->grade_level_id, fn($q) => $q->where('grade_level_id', $this->grade_level_id));
 
         $students = $studentsQuery->get();
@@ -47,17 +48,22 @@ class HonorRoll extends Component
             if ($grades->isEmpty()) continue;
 
             $avg = round($grades->avg('score'), 2);
-            if ($avg >= $this->minAverage) {
-                $section = Section::with('gradeLevel')->find($student->section_id);
-                $results[] = [
-                    'student'    => $student,
-                    'average'    => $avg,
-                    'grade_count'=> $grades->count(),
-                    'min_score'  => $grades->min('score'),
-                    'max_score'  => $grades->max('score'),
-                    'section'    => $section,
-                ];
-            }
+            if ($avg < $this->minAverage) continue;
+
+            // Verificar que NINGUNA asignatura esté reprobada
+            $passingScore = $student->gradeLevel?->min_passing_score ?? 70;
+            $hasFailedSubject = $grades->contains(fn($g) => $g->score < $passingScore);
+            if ($hasFailedSubject) continue;
+
+            $section = Section::with('gradeLevel')->find($student->section_id);
+            $results[] = [
+                'student'    => $student,
+                'average'    => $avg,
+                'grade_count'=> $grades->count(),
+                'min_score'  => $grades->min('score'),
+                'max_score'  => $grades->max('score'),
+                'section'    => $section,
+            ];
         }
 
         // Sort by average descending

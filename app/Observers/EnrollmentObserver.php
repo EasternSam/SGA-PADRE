@@ -72,10 +72,11 @@ class EnrollmentObserver
             } catch (\Exception $e) {}
         }
 
-        // Lógica de calificación (Existente)
+        // Lógica de calificación — distinguir Aprobado vs Reprobado
         if ($enrollment->isDirty('final_grade')) {
             if (!is_null($enrollment->final_grade)) {
-                $enrollment->status = 'Completado';
+                $minScore = $enrollment->student?->gradeLevel?->min_passing_score ?? 70;
+                $enrollment->status = $enrollment->final_grade >= $minScore ? 'Aprobado' : 'Reprobado';
             } elseif (is_null($enrollment->final_grade)) {
                 $enrollment->status = 'Cursando';
             }

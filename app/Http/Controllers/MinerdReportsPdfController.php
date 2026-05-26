@@ -106,7 +106,8 @@ class MinerdReportsPdfController extends Controller
                 }
 
                 $avg = $count > 0 ? round($total / $count, 1) : null;
-                if ($avg !== null) { $avg >= 70 ? $approved++ : $failed++; }
+                $passingScore = $section->gradeLevel?->min_passing_score ?? 70;
+                if ($avg !== null) { $avg >= $passingScore ? $approved++ : $failed++; }
 
                 $matrix[] = [
                     'student' => $student,
