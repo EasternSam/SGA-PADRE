@@ -260,6 +260,12 @@ class SchoolDemoSeeder extends Seeder
                     'emergency_contact_name' => $firstNames[rand(0, count($firstNames) - 1)] . ' ' . $lastNames[rand(0, count($lastNames) - 1)],
                     'emergency_contact_phone'=> '809-' . rand(200, 999) . '-' . str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT),
                 ]);
+                if ($studentIdx === 0) {
+                    $u = User::where('email', 'estudiante@colegio.edu.do')->first();
+                    if ($u) {
+                        $student->update(['user_id' => $u->id]);
+                    }
+                }
                 $students[] = $student;
                 $studentIdx++;
             }

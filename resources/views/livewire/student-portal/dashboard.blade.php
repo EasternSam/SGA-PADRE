@@ -8,7 +8,7 @@
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight text-gray-900">
-                    Hola, {{ explode(' ', $student->first_name)[0] }} </h1>
+                    Hola, {{ explode(' ', $student?->first_name ?? Auth::user()->name)[0] }} </h1>
                 {{-- NUEVO: Mostrar carrera activa si existe --}}
                 @if($activeCareer)
                     <p class="text-sm text-indigo-600 font-medium mt-1 flex items-center">

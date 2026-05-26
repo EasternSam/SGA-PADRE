@@ -47,33 +47,33 @@
                 {{-- 2nd place --}}
                 <div class="text-center mt-8">
                     <div class="w-20 h-20 rounded-full bg-gradient-to-br from-gray-300 to-gray-400 mx-auto flex items-center justify-center text-xl font-bold text-white shadow-lg">
-                        {{ strtoupper(substr($honorStudents[1]['student']->first_name, 0, 1)) }}{{ strtoupper(substr($honorStudents[1]['student']->last_name, 0, 1)) }}
+                        {{ strtoupper(substr($honorStudents[1]['student']?->first_name ?? '?', 0, 1)) }}{{ strtoupper(substr($honorStudents[1]['student']?->last_name ?? '', 0, 1)) }}
                     </div>
                     <div class="mt-2">
                         <span class="text-2xl"></span>
-                        <p class="text-sm font-bold text-gray-900 dark:text-white">{{ $honorStudents[1]['student']->full_name }}</p>
+                        <p class="text-sm font-bold text-gray-900 dark:text-white">{{ $honorStudents[1]['student']?->full_name ?? 'Estudiante' }}</p>
                         <p class="text-lg font-bold text-gray-600">{{ $honorStudents[1]['average'] }}</p>
                     </div>
                 </div>
                 {{-- 1st place --}}
                 <div class="text-center">
                     <div class="w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 mx-auto flex items-center justify-center text-2xl font-bold text-white shadow-xl ring-4 ring-yellow-300">
-                        {{ strtoupper(substr($honorStudents[0]['student']->first_name, 0, 1)) }}{{ strtoupper(substr($honorStudents[0]['student']->last_name, 0, 1)) }}
+                        {{ strtoupper(substr($honorStudents[0]['student']?->first_name ?? '?', 0, 1)) }}{{ strtoupper(substr($honorStudents[0]['student']?->last_name ?? '', 0, 1)) }}
                     </div>
                     <div class="mt-2">
                         <span class="text-3xl"></span>
-                        <p class="text-base font-bold text-gray-900 dark:text-white">{{ $honorStudents[0]['student']->full_name }}</p>
+                        <p class="text-base font-bold text-gray-900 dark:text-white">{{ $honorStudents[0]['student']?->full_name ?? 'Estudiante' }}</p>
                         <p class="text-xl font-bold text-yellow-600">{{ $honorStudents[0]['average'] }}</p>
                     </div>
                 </div>
                 {{-- 3rd place --}}
                 <div class="text-center mt-12">
                     <div class="w-18 h-18 rounded-full bg-gradient-to-br from-amber-600 to-amber-700 mx-auto flex items-center justify-center text-lg font-bold text-white shadow-lg" style="width: 4.5rem; height: 4.5rem;">
-                        {{ strtoupper(substr($honorStudents[2]['student']->first_name, 0, 1)) }}{{ strtoupper(substr($honorStudents[2]['student']->last_name, 0, 1)) }}
+                        {{ strtoupper(substr($honorStudents[2]['student']?->first_name ?? '?', 0, 1)) }}{{ strtoupper(substr($honorStudents[2]['student']?->last_name ?? '', 0, 1)) }}
                     </div>
                     <div class="mt-2">
                         <span class="text-2xl"></span>
-                        <p class="text-sm font-bold text-gray-900 dark:text-white">{{ $honorStudents[2]['student']->full_name }}</p>
+                        <p class="text-sm font-bold text-gray-900 dark:text-white">{{ $honorStudents[2]['student']?->full_name ?? 'Estudiante' }}</p>
                         <p class="text-lg font-bold text-amber-700">{{ $honorStudents[2]['average'] }}</p>
                     </div>
                 </div>
@@ -102,7 +102,7 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
-                                {{ $h['student']->full_name }}
+                                {{ $h['student']?->full_name ?? 'Estudiante' }}
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                                 {{ $h['section']?->gradeLevel?->short_name ?? '' }} {{ $h['section']?->name ?? '' }}
