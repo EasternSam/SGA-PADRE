@@ -406,6 +406,51 @@
                                     </div>
                                 </div>
                             </div>
+                            <hr class="sys-divider">
+                            <div class="sys-section">
+                                <h3 class="sys-section-title">
+                                    <svg class="sys-section-icon text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1.5rem; height: 1.5rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    Facturación Gridbase Bills API
+                                </h3>
+                                <div class="sys-grid">
+                                    <div class="sys-form-group sys-col-full">
+                                        <label class="sys-label">¿Habilitar Facturación Externa (Bills)?</label>
+                                        <div class="flex items-center gap-3 bg-white p-4 border border-gray-200 rounded-lg">
+                                            <input 
+                                                type="checkbox" 
+                                                id="enable_bills_invoicing_checkbox"
+                                                wire:model="state.enable_bills_invoicing" 
+                                                value="true"
+                                                class="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                                @if($state['enable_bills_invoicing'] === 'true') checked @endif
+                                                wire:click="$set('state.enable_bills_invoicing', $event.target.checked ? 'true' : 'false')"
+                                            >
+                                            <div>
+                                                <span class="text-sm font-semibold text-gray-900">Activar sincronización de facturas en Bills</span>
+                                                <p class="text-xs text-gray-500 mt-1">Crea automáticamente las facturas en el sistema externo Bills al completar cobros en el SGA.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @if($state['enable_bills_invoicing'] === 'true')
+                                        <div class="sys-form-group sys-col-full">
+                                            <label class="sys-label">URL Base de Gridbase Bills API (incluyendo /api/v1)</label>
+                                            <input type="text" wire:model="state.bills_api_url" class="sys-input" placeholder="Ej: https://facturas.tuservicio.com/api/v1">
+                                            @error('state.bills_api_url') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                        </div>
+                                        <div class="sys-form-group sys-col-full">
+                                            <label class="sys-label">Bearer Token de API (empieza con gb_)</label>
+                                            <input type="password" wire:model="state.bills_api_token" class="sys-input" placeholder="gb_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                                            @error('state.bills_api_token') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                        </div>
+                                        <div class="sys-form-group sys-col-full">
+                                            <label class="sys-label">Tasa ITBIS por Defecto (%)</label>
+                                            <input type="number" wire:model="state.bills_default_tax_rate" class="sys-input" min="0" max="100" placeholder="Ej: 18 o 0 si es exento">
+                                            @error('state.bills_default_tax_rate') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
                         </div>
 
                         <!-- TAB: CORREO / SMTP -->

@@ -66,6 +66,10 @@ class Index extends Component
             'cardnet_terminal_id' => $settings['cardnet_terminal_id'] ?? '',
             'ecf_rnc_emisor'      => $settings['ecf_rnc_emisor'] ?? '101000000',
             'enable_electronic_billing' => $settings['enable_electronic_billing'] ?? 'true',
+            'enable_bills_invoicing'    => $settings['enable_bills_invoicing'] ?? 'false',
+            'bills_api_url'             => $settings['bills_api_url'] ?? '',
+            'bills_api_token'           => $settings['bills_api_token'] ?? '',
+            'bills_default_tax_rate'    => $settings['bills_default_tax_rate'] ?? '0',
         ];
 
         // Cargar configuraciones de degradado guardadas
@@ -130,6 +134,10 @@ class Index extends Component
         $this->state['smtp_password'] = '';
         $this->state['smtp_encryption'] = 'tls';
         $this->state['smtp_from_address'] = '';
+        $this->state['enable_bills_invoicing'] = 'false';
+        $this->state['bills_api_url'] = '';
+        $this->state['bills_api_token'] = '';
+        $this->state['bills_default_tax_rate'] = '0';
         $this->logo = null;
         $this->favicon = null;
         $this->app_icon = null;
@@ -217,6 +225,10 @@ class Index extends Component
             'app_icon'                  => 'nullable|image|mimes:png,webp|max:1024',
             'state.wp_api_url'          => 'nullable|url',
             'state.moodle_url'          => 'nullable|url',
+            'state.enable_bills_invoicing' => 'in:true,false',
+            'state.bills_api_url'       => 'nullable|url',
+            'state.bills_api_token'     => 'nullable|string',
+            'state.bills_default_tax_rate' => 'nullable|numeric|min:0|max:100',
         ]);
 
         if ($this->logo) {
@@ -287,11 +299,11 @@ class Index extends Component
 
         // Guardar configuraciones estándar
         foreach ($this->state as $key => $value) {
-            $type = str_contains($key, 'secret') || str_contains($key, 'token') ? 'password' : 'string';
+            $type = str_contains($key, 'secret') || str_contains($key, 'token') || str_contains($key, 'api_token') ? 'password' : 'string';
             if (in_array($key, ['institution_logo', 'favicon', 'app_icon'])) $type = 'image';
 
             $group = 'general';
-            if (str_starts_with($key, 'wp_') || str_starts_with($key, 'moodle_')) $group = 'apis';
+            if (str_starts_with($key, 'wp_') || str_starts_with($key, 'moodle_') || str_starts_with($key, 'bills_') || $key === 'enable_bills_invoicing') $group = 'apis';
             if (str_starts_with($key, 'cardnet_') || str_starts_with($key, 'ecf_')) $group = 'finance';
 
             try {
