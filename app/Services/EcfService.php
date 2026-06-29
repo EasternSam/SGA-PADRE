@@ -15,6 +15,13 @@ class EcfService
      */
     public function emitirComprobante(Payment $payment)
     {
+        // Si la facturación externa en Bills está activa, omitimos la generación local de NCF,
+        // ya que Bills se encargará de ello a través de su API y lo sincronizaremos después.
+        if (Setting::get('enable_bills_invoicing', 'false') === 'true') {
+            Log::info("ECF: Facturación delegada en Bills API para el pago {$payment->id}. Se omite NCF local.");
+            return;
+        }
+
         // Verificar si la facturación electrónica está habilitada
         if (!$this->isElectronicBillingEnabled()) {
             Log::info("ECF: Facturación electrónica deshabilitada. Pago {$payment->id} sin NCF.");
