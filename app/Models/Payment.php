@@ -141,12 +141,21 @@ class Payment extends Model
     protected static function processPaymentBillsSync($payment)
     {
         if (\App\Models\Setting::get('enable_bills_invoicing', 'false') === 'true') {
-            // Sincronizar solo si está completado y no se ha sincronizado o intentado procesar aún
-            if (($payment->status === 'paid' || $payment->status === 'Completado') 
+            // Caso 1: Aún no tiene factura en Bills (creación)
+            if (empty($payment->bills_invoice_id) 
                 && $payment->bills_sync_status !== 'synced' 
                 && $payment->bills_sync_status !== 'processing') {
                 
-                // Despachar el Job asíncrono
+                // Despachar el Job asíncrono para crear la factura en Bills
+                \App\Jobs\SyncPaymentToBillsJob::dispatch($payment);
+            }
+            // Caso 2: Ya tiene factura en Bills, pero localmente se completó el pago
+            // Si el estado es Completado/paid y todavía no tiene NCF (el cual Bills asigna al marcarse como paga)
+            elseif (!empty($payment->bills_invoice_id) 
+                && ($payment->status === 'paid' || $payment->status === 'Completado')
+                && empty($payment->ncf)) {
+                
+                // Despachar el Job asíncrono para actualizar el estado a PAGO y obtener datos e-CF
                 \App\Jobs\SyncPaymentToBillsJob::dispatch($payment);
             }
         }

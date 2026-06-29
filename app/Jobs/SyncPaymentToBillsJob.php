@@ -35,11 +35,69 @@ class SyncPaymentToBillsJob implements ShouldQueue
         $this->payment = $payment;
     }
 
-    /**
-     * Execute the job.
-     */
     public function handle(BillsApiService $apiService): void
     {
+        // Caso 2: Si ya tiene bills_invoice_id, actualizamos su estado a PAGO si el pago local está completado/paid
+        if (!empty($this->payment->bills_invoice_id)) {
+            if ($this->payment->status === 'paid' || $this->payment->status === 'Completado') {
+                try {
+                    $this->payment->updateQuietly([
+                        'bills_sync_status' => 'processing',
+                        'bills_sync_error' => null
+                    ]);
+
+                    $apiService->updateInvoiceStatus($this->payment->bills_invoice_id, 'paid');
+
+                    // Recuperar detalles para traer el NCF generado tras el pago
+                    $ncf = null;
+                    $securityCode = null;
+                    $dgiiStatus = 'pending';
+                    $dgiiTrackId = null;
+
+                    try {
+                        $details = $apiService->getInvoiceDetails($this->payment->bills_invoice_id);
+                        if (!empty($details['encf'])) {
+                            $ncf = $details['encf'];
+                        }
+                        if (!empty($details['security_code'])) {
+                            $securityCode = $details['security_code'];
+                        }
+                        if (!empty($details['dgii_status'])) {
+                            $dgiiStatus = $details['dgii_status'];
+                        }
+                        if (!empty($details['dgii_track_id'])) {
+                            $dgiiTrackId = $details['dgii_track_id'];
+                        }
+                    } catch (\Exception $detailsEx) {
+                        Log::warning("BILLS_JOB: No se pudieron obtener detalles de e-CF tras marcar como paga: " . $detailsEx->getMessage());
+                    }
+
+                    $updateData = [
+                        'bills_sync_status' => 'synced',
+                        'bills_sync_error' => null
+                    ];
+
+                    if (!empty($ncf)) {
+                        $updateData['ncf'] = $ncf;
+                        $updateData['security_code'] = $securityCode;
+                        $updateData['dgii_status'] = $dgiiStatus;
+                        $updateData['dgii_track_id'] = $dgiiTrackId;
+                    }
+
+                    $this->payment->updateQuietly($updateData);
+                    Log::info("BILLS_JOB: Factura #{$this->payment->bills_invoice_number} (ID: {$this->payment->bills_invoice_id}) marcada como PAGA en Bills.");
+                } catch (\Exception $e) {
+                    $this->payment->updateQuietly([
+                        'bills_sync_status' => 'failed',
+                        'bills_sync_error' => 'Fallo al marcar como paga: ' . substr($e->getMessage(), 0, 450)
+                    ]);
+                    throw $e;
+                }
+            }
+            return;
+        }
+
+        // Caso 1: Crear factura por primera vez
         // Verificar si ya está sincronizado
         if ($this->payment->bills_sync_status === 'synced') {
             Log::info("BILLS_JOB: El pago #{$this->payment->id} ya está sincronizado.");

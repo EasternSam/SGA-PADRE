@@ -244,4 +244,51 @@ class BillsApiService
             ];
         }
     }
+
+    /**
+     * Actualiza el estado de una factura en Bills.
+     *
+     * @param int $id
+     * @param string $status
+     * @return array
+     * @throws \Exception
+     */
+    public function updateInvoiceStatus(int $id, string $status): array
+    {
+        if (!$this->isConfigured()) {
+            throw new \Exception("La integración con Gridbase Bills no está activa o le faltan configuraciones.");
+        }
+
+        $fullUrl = rtrim($this->apiUrl, '/') . "/invoices/{$id}";
+
+        try {
+            $response = Http::withoutVerifying()
+                ->timeout(30)
+                ->withHeaders([
+                    'Authorization' => 'Bearer ' . $this->apiToken,
+                    'Accept' => 'application/json',
+                    'User-Agent' => 'Laravel-SGA-Centu-Client/1.0',
+                ])
+                ->put($fullUrl, [
+                    'status' => $status
+                ]);
+
+            if ($response->successful()) {
+                return $response->json() ?: [];
+            }
+
+            $errorBody = $response->body();
+            Log::error("BILLS_API: Error al actualizar factura #{$id} en Bills (Status: {$response->status()})", [
+                'response' => substr($errorBody, 0, 1000)
+            ]);
+
+            throw new \Exception("Error al actualizar factura #{$id} en Bills (Status: {$response->status()}): " . ($response->json('error') ?: 'Respuesta inválida.'));
+
+        } catch (\Exception $e) {
+            Log::error("BILLS_API: Excepción al actualizar factura #{$id}", [
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
 }
