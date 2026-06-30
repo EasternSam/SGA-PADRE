@@ -419,11 +419,8 @@
                                             <input 
                                                 type="checkbox" 
                                                 id="enable_bills_invoicing_checkbox"
-                                                wire:model="state.enable_bills_invoicing" 
-                                                value="true"
+                                                wire:model.live="state.enable_bills_invoicing" 
                                                 class="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                                                @if($state['enable_bills_invoicing'] === 'true') checked @endif
-                                                wire:click="$set('state.enable_bills_invoicing', $event.target.checked ? 'true' : 'false')"
                                             >
                                             <div>
                                                 <span class="text-sm font-semibold text-gray-900">Activar sincronización de facturas en Bills</span>
@@ -432,7 +429,7 @@
                                         </div>
                                     </div>
 
-                                    @if($state['enable_bills_invoicing'] === 'true')
+                                    @if($state['enable_bills_invoicing'])
                                         <div class="sys-form-group sys-col-full">
                                             <label class="sys-label">URL Base de Gridbase Bills API (incluyendo /api/v1)</label>
                                             <input type="text" wire:model="state.bills_api_url" class="sys-input" placeholder="Ej: https://facturas.tuservicio.com/api/v1">
@@ -520,8 +517,7 @@
                                         <div class="flex items-center gap-3 bg-white p-4 border border-gray-200 rounded-lg">
                                             <input 
                                                 type="checkbox" 
-                                                wire:model="state.enable_electronic_billing" 
-                                                value="true"
+                                                wire:model.live="state.enable_electronic_billing" 
                                                 class="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                                             >
                                             <div>
@@ -531,7 +527,7 @@
                                         </div>
                                     </div>
 
-                                    <div class="sys-form-group" x-show="$wire.state.enable_electronic_billing === 'true'">
+                                    <div class="sys-form-group" x-show="$wire.state.enable_electronic_billing">
                                         <label class="sys-label">RNC Emisor</label>
                                         <input type="text" wire:model="state.ecf_rnc_emisor" class="sys-input" placeholder="101000000">
                                         <p class="sys-help-text">RNC de tu institución para generar comprobantes fiscales.</p>

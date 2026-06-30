@@ -65,8 +65,8 @@ class Index extends Component
             'cardnet_merchant_id' => $settings['cardnet_merchant_id'] ?? '',
             'cardnet_terminal_id' => $settings['cardnet_terminal_id'] ?? '',
             'ecf_rnc_emisor'      => $settings['ecf_rnc_emisor'] ?? '101000000',
-            'enable_electronic_billing' => $settings['enable_electronic_billing'] ?? 'true',
-            'enable_bills_invoicing'    => $settings['enable_bills_invoicing'] ?? 'false',
+            'enable_electronic_billing' => ($settings['enable_electronic_billing'] ?? 'true') === 'true',
+            'enable_bills_invoicing'    => ($settings['enable_bills_invoicing'] ?? 'false') === 'true',
             'bills_api_url'             => $settings['bills_api_url'] ?? '',
             'bills_api_token'           => $settings['bills_api_token'] ?? '',
             'bills_default_tax_rate'    => $settings['bills_default_tax_rate'] ?? '0',
@@ -225,7 +225,8 @@ class Index extends Component
             'app_icon'                  => 'nullable|image|mimes:png,webp|max:1024',
             'state.wp_api_url'          => 'nullable|url',
             'state.moodle_url'          => 'nullable|url',
-            'state.enable_bills_invoicing' => 'in:true,false',
+            'state.enable_electronic_billing' => 'boolean',
+            'state.enable_bills_invoicing' => 'boolean',
             'state.bills_api_url'       => 'nullable|url',
             'state.bills_api_token'     => 'nullable|string',
             'state.bills_default_tax_rate' => 'nullable|numeric|min:0|max:100',
@@ -299,6 +300,11 @@ class Index extends Component
 
         // Guardar configuraciones estándar
         foreach ($this->state as $key => $value) {
+            // Normalizar booleano a string 'true'/'false'
+            if (is_bool($value)) {
+                $value = $value ? 'true' : 'false';
+            }
+            
             $type = str_contains($key, 'secret') || str_contains($key, 'token') || str_contains($key, 'api_token') ? 'password' : 'string';
             if (in_array($key, ['institution_logo', 'favicon', 'app_icon'])) $type = 'image';
 
