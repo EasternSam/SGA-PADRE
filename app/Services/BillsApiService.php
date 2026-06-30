@@ -291,4 +291,46 @@ class BillsApiService
             throw $e;
         }
     }
+
+    /**
+     * Descarga el PDF de una factura desde Bills como binario.
+     *
+     * @param int $id
+     * @param string $template
+     * @return string Contenido binario del PDF
+     * @throws \Exception
+     */
+    public function getInvoicePdfStream(int $id, string $template = 'thermal'): string
+    {
+        if (!$this->isConfigured()) {
+            throw new \Exception("La integración con Gridbase Bills no está activa.");
+        }
+
+        $fullUrl = rtrim($this->apiUrl, '/') . "/invoices/{$id}/pdf";
+
+        try {
+            $response = Http::withoutVerifying()
+                ->timeout(45)
+                ->withHeaders([
+                    'Authorization' => 'Bearer ' . $this->apiToken,
+                    'Accept' => 'application/pdf',
+                    'User-Agent' => 'Laravel-SGA-Centu-Client/1.0',
+                ])
+                ->get($fullUrl, [
+                    'template' => $template
+                ]);
+
+            if ($response->successful()) {
+                return $response->body();
+            }
+
+            throw new \Exception("Fallo al descargar PDF de Bills (Status: {$response->status()}): " . $response->body());
+
+        } catch (\Exception $e) {
+            Log::error("BILLS_API: Excepción al descargar PDF para factura #{$id}", [
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
 }

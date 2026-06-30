@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Models\Payment;
 use App\Models\Student;
+use App\Models\Setting;
+use App\Services\BillsApiService;
+use Illuminate\Support\Facades\Log;
 
 class FinancialPdfController extends Controller
 {
@@ -128,6 +131,20 @@ class FinancialPdfController extends Controller
 
     public function ticket(Payment $payment)
     {
+        // Si la facturación por Bills está activa y el pago tiene ID de factura en Bills
+        if (Setting::get('enable_bills_invoicing', 'false') === 'true' && !empty($payment->bills_invoice_id)) {
+            try {
+                $billsService = app(BillsApiService::class);
+                $pdfContent = $billsService->getInvoicePdfStream($payment->bills_invoice_id, 'thermal');
+                
+                return response($pdfContent)
+                    ->header('Content-Type', 'application/pdf')
+                    ->header('Content-Disposition', 'inline; filename="Ticket-' . ($payment->bills_invoice_number ?: $payment->id) . '.pdf"');
+            } catch (\Exception $e) {
+                Log::error("BILLS_TICKET: Fallo al descargar PDF desde Bills, mostrando local: " . $e->getMessage());
+            }
+        }
+
         $payment->load('student', 'paymentConcept', 'enrollment.courseSchedule.module');
         return view('reports.thermal-invoice', compact('payment'));
     }
