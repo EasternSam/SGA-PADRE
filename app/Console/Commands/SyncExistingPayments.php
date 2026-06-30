@@ -16,6 +16,7 @@ class SyncExistingPayments extends Command
     protected $signature = 'bills:sync-existing 
                             {--only-paid : Sincronizar solo los cobros que estén completados o pagados}
                             {--limit= : Limitar la cantidad de cobros a procesar (evitar sobrecargas)}
+                            {--delay= : Segundos a esperar entre cada sincronización para evitar rate limits}
                             {--dry-run : Ejecutar una simulación sin encolar los trabajos}';
 
     /**
@@ -71,10 +72,16 @@ class SyncExistingPayments extends Command
         $bar = $this->output->createProgressBar(count($payments));
         $bar->start();
 
+        $delay = (int) $this->option('delay');
+
         foreach ($payments as $payment) {
             // Encolar el job asíncrono
             SyncPaymentToBillsJob::dispatch($payment);
             $bar->advance();
+
+            if ($delay > 0) {
+                sleep($delay);
+            }
         }
 
         $bar->finish();
