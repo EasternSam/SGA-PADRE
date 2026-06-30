@@ -61,17 +61,25 @@ class BillsApiService
         }
 
         // 1. Resolver los datos del cliente para Bills
-        $clientTaxId = !empty($payment->rnc_client) ? $payment->rnc_client : (!empty($student->rnc) ? $student->rnc : '');
-        $clientName = !empty($payment->company_name) ? $payment->company_name : $student->post_title;
+        $clientTaxId = (string) trim($payment->rnc_client ?: ($student->rnc ?: ($student->cedula ?: '00000000000')));
+        $clientName = (string) trim($payment->company_name ?: ($student->full_name ?: trim($student->first_name . ' ' . $student->last_name)));
+        if (empty($clientName)) {
+            $clientName = 'Cliente General';
+        }
         
+        $contactName = (string) trim($student->full_name ?: trim($student->first_name . ' ' . $student->last_name));
+        if (empty($contactName)) {
+            $contactName = 'Cliente General';
+        }
+
         $clientPayload = [
             'tax_id' => $clientTaxId,
             'company_name' => $clientName,
-            'contact_name' => $student->post_title,
-            'email' => $student->email,
-            'phone' => $student->telefono,
-            'whatsapp' => $student->telefono,
-            'address_line1' => $student->direccion ?: 'República Dominicana',
+            'contact_name' => $contactName,
+            'email' => (string) ($student->email ?: 'cliente@90s.agency'),
+            'phone' => (string) ($student->mobile_phone ?: ($student->home_phone ?: '809-221-3222')),
+            'whatsapp' => (string) ($student->mobile_phone ?: ($student->home_phone ?: '809-221-3222')),
+            'address_line1' => (string) ($student->address ?: 'República Dominicana'),
         ];
 
         // 2. Resolver concepto e items
