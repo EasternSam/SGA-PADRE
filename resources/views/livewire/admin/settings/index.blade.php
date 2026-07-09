@@ -397,6 +397,9 @@
                                                     <span class="text-[10px] text-indigo-600 mt-1 font-semibold">
                                                         Expira en: {{ max(0, ceil(($pairingCodeExpiresAt - now()->timestamp) / 60)) }} min
                                                     </span>
+                                                    <button type="button" wire:click="generatePairingCode" class="mt-2 text-[11px] text-indigo-600 hover:text-indigo-800 underline font-medium">
+                                                        Renovar Código
+                                                    </button>
                                                 </div>
                                             @else
                                                 <button type="button" wire:click="generatePairingCode" class="sys-btn-primary text-xs bg-indigo-600 hover:bg-indigo-700 whitespace-nowrap shadow-sm">

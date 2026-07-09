@@ -506,6 +506,12 @@ class WordpressIntegrationController extends Controller
             $pendingPayments = Payment::whereIn('status', ['Pendiente', 'unpaid', 'Por Pagar'])->count();
             $paidPaymentsSum = Payment::whereIn('status', ['paid', 'Completado', 'Pagado'])->sum('amount');
 
+            $brandPrimaryColor = \App\Models\Setting::val('brand_primary_color', '#0B484C');
+            $navbarType = \App\Models\Setting::val('navbar_type', 'gradient');
+            $navbarGradientStart = \App\Models\Setting::val('navbar_gradient_start', '#5a1256');
+            $navbarGradientEnd = \App\Models\Setting::val('navbar_gradient_end', '#1a0a53');
+            $navbarGradientDirection = \App\Models\Setting::val('navbar_gradient_direction', 'to bottom right');
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -514,6 +520,13 @@ class WordpressIntegrationController extends Controller
                     'pending_enrollments' => $pendingEnrollments,
                     'pending_payments'    => $pendingPayments,
                     'total_revenue'       => (float) $paidPaymentsSum,
+                    'branding' => [
+                        'brand_primary_color'       => $brandPrimaryColor,
+                        'navbar_type'               => $navbarType,
+                        'navbar_gradient_start'     => $navbarGradientStart,
+                        'navbar_gradient_end'       => $navbarGradientEnd,
+                        'navbar_gradient_direction' => $navbarGradientDirection,
+                    ]
                 ]
             ], 200);
         } catch (\Exception $e) {
@@ -571,12 +584,25 @@ class WordpressIntegrationController extends Controller
             // Limpiar caché
             \Illuminate\Support\Facades\Cache::flush();
 
+            $brandPrimaryColor = \App\Models\Setting::val('brand_primary_color', '#0B484C');
+            $navbarType = \App\Models\Setting::val('navbar_type', 'gradient');
+            $navbarGradientStart = \App\Models\Setting::val('navbar_gradient_start', '#5a1256');
+            $navbarGradientEnd = \App\Models\Setting::val('navbar_gradient_end', '#1a0a53');
+            $navbarGradientDirection = \App\Models\Setting::val('navbar_gradient_direction', 'to bottom right');
+
             return response()->json([
                 'success'       => true,
                 'message'       => 'Emparejamiento exitoso.',
                 'api_url'       => url('/api/v1'),
                 'api_token'     => $pairingData['api_token'],
                 'wp_api_secret' => $pairingData['wp_api_secret'],
+                'branding' => [
+                    'brand_primary_color'       => $brandPrimaryColor,
+                    'navbar_type'               => $navbarType,
+                    'navbar_gradient_start'     => $navbarGradientStart,
+                    'navbar_gradient_end'       => $navbarGradientEnd,
+                    'navbar_gradient_direction' => $navbarGradientDirection,
+                ]
             ], 200);
 
         } catch (\Exception $e) {
