@@ -131,6 +131,32 @@ class Student extends Model
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error("Error al sincronizar estudiante creado a WordPress: " . $e->getMessage());
             }
+
+            // Enviar correo de bienvenida si es un usuario recién creado (primer inicio de sesión)
+            try {
+                $user = $student->user;
+                if ($user && $user->created_at && $user->created_at->gt(now()->subMinutes(2))) {
+                    $cleanCedula = preg_replace('/[^0-9]/', '', $student->cedula);
+                    $institutionName = \App\Models\Setting::val('institution_name', config('app.name', 'Academic+'));
+                    $subject = '🎓 ¡Bienvenido a ' . $institutionName . '! Tus credenciales de acceso';
+                    $loginUrl = url('/login');
+                    $message = "¡Hola {$student->first_name}!\n\n"
+                             . "Te damos la más cordial bienvenida a nuestra plataforma académica **{$institutionName}**.\n\n"
+                             . "Tu cuenta ya está activa para ingresar a la plataforma y gestionar tus clases, calificaciones y pagos.\n\n"
+                             . "Puedes acceder desde el siguiente enlace:\n"
+                             . "{$loginUrl}\n\n"
+                             . "Tus credenciales de acceso son:\n"
+                             . "• Usuario: {$student->email} (o tu número de cédula: {$student->cedula})\n"
+                             . "• Contraseña temporal: {$cleanCedula} (tu cédula sin guiones)\n\n"
+                             . "Te sugerimos cambiar tu contraseña al ingresar por primera vez por motivos de seguridad.\n\n"
+                             . "¡Mucho éxito en tus estudios!";
+
+                    \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\CustomSystemMail($subject, $message));
+                    \Illuminate\Support\Facades\Log::info("Correo de bienvenida enviado automáticamente a {$user->email}.");
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Error al enviar correo de bienvenida al estudiante: " . $e->getMessage());
+            }
         });
 
         static::updated(function ($student) {
