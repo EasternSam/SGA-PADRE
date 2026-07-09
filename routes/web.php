@@ -310,6 +310,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('/notifications', \App\Livewire\NotificationsList::class)->name('notifications.index');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/admissions/document/{admission}/{key}', [AdmissionDocumentController::class, 'show'])->name('admissions.document');

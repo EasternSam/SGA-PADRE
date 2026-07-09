@@ -90,7 +90,7 @@
         </div>
         
         <div class="p-2 border-t border-gray-100 bg-gray-50 rounded-b-md text-center">
-            <a href="#" class="text-xs text-gray-500 hover:text-gray-700">Ver historial completo</a>
+            <a href="{{ route('notifications.index') }}" wire:navigate class="text-xs text-gray-500 hover:text-gray-700 font-medium">Ver historial completo</a>
         </div>
     </div>
 </div>
