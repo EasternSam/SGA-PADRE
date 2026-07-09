@@ -5,10 +5,10 @@
             <span class="px-3 py-1 bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs font-semibold uppercase tracking-wider rounded-full border border-indigo-500/20">
                 Notificaciones
             </span>
-            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-2 text-slate-800 dark:text-slate-100">
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-2 text-design-primary">
                 Centro de Notificaciones
             </h1>
-            <p class="text-slate-500 dark:text-slate-400 mt-2 text-sm">
+            <p class="text-design-secondary mt-2 text-sm">
                 Revisa las alertas de sistema, avisos automáticos e interacciones del centro.
             </p>
         </div>
@@ -47,15 +47,15 @@
     </div>
 
     <!-- Lista de Notificaciones (workspace-panel p-0) -->
-    <div class="workspace-panel p-0 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
+    <div class="workspace-panel p-0 overflow-hidden divide-y border-design divide-slate-100 dark:divide-slate-800">
         @forelse ($notifications as $notification)
             @php
                 $type = $notification->data['type'] ?? 'info';
                 $bgColor = match($type) {
-                    'success' => 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800/30 text-green-700 dark:text-green-400',
-                    'warning' => 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/30 text-amber-700 dark:text-amber-400',
-                    'danger', 'error' => 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800/30 text-red-700 dark:text-red-400',
-                    default => 'bg-indigo-50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800/30 text-indigo-700 dark:text-indigo-400',
+                    'success' => 'bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400',
+                    'warning' => 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400',
+                    'danger', 'error' => 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400',
+                    default => 'bg-indigo-500/10 border-indigo-500/20 text-indigo-600 dark:text-indigo-400',
                 };
                 $icon = match($type) {
                     'success' => 'check-circle',
@@ -66,7 +66,7 @@
                 $iconName = $notification->data['icon'] ?? $icon;
             @endphp
             
-            <div class="p-5 flex gap-4 transition duration-200 {{ $notification->read_at ? 'bg-white dark:bg-[#161D30]/30' : 'bg-indigo-50/5 dark:bg-indigo-950/5 border-l-4 border-indigo-500 dark:border-indigo-600' }}">
+            <div class="p-5 flex gap-4 transition duration-200 {{ $notification->read_at ? 'bg-design-card' : 'bg-design-app border-l-4 border-indigo-500 dark:border-indigo-600' }}">
                 <!-- Icono -->
                 <div class="flex-shrink-0">
                     <div class="h-10 w-10 rounded-full border flex items-center justify-center {{ $bgColor }} shadow-sm">
@@ -78,10 +78,10 @@
                 <div class="flex-1 min-w-0">
                     <div class="flex items-start justify-between gap-4">
                         <div>
-                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">
+                            <h3 class="text-sm font-bold text-design-primary">
                                 {{ $notification->data['title'] ?? 'Notificación' }}
                             </h3>
-                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                            <p class="text-xs text-design-muted mt-0.5">
                                 {{ $notification->created_at->format('d/m/Y h:i A') }} · {{ $notification->created_at->diffForHumans() }}
                             </p>
                         </div>
@@ -103,7 +103,7 @@
                         </div>
                     </div>
 
-                    <div class="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+                    <div class="mt-2 text-sm text-design-secondary leading-relaxed whitespace-pre-line">
                         {{ $notification->data['message'] ?? '' }}
                     </div>
 
@@ -118,12 +118,12 @@
                 </div>
             </div>
         @empty
-            <div class="py-16 text-center text-slate-400 dark:text-slate-600 space-y-3">
-                <div class="inline-flex p-4 rounded-full bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-700">
+            <div class="py-16 text-center text-design-muted space-y-3">
+                <div class="inline-flex p-4 rounded-full bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-700 border border-design">
                     <i class="fas fa-bell-slash text-2xl"></i>
                 </div>
-                <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300">No hay notificaciones</h3>
-                <p class="text-xs text-slate-400 dark:text-slate-500 max-w-xs mx-auto">
+                <h3 class="text-sm font-bold text-design-primary">No hay notificaciones</h3>
+                <p class="text-xs text-design-muted max-w-xs mx-auto">
                     {{ $filter === 'all' ? 'Tu historial de notificaciones está vacío.' : 'No se encontraron notificaciones en esta categoría.' }}
                 </p>
             </div>
