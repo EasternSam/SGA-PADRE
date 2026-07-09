@@ -49,6 +49,18 @@ class EnrollmentObserver
         } catch (\Exception $e) {
             Log::error("Error registrando log de inscripción: " . $e->getMessage());
         }
+
+        // Sincronizar inscripción a WordPress
+        $this->syncEnrollmentToWordpress($enrollment);
+    }
+
+    /**
+     * Handle the Enrollment "updated" event.
+     */
+    public function updated(Enrollment $enrollment)
+    {
+        // Sincronizar inscripción modificada a WordPress
+        $this->syncEnrollmentToWordpress($enrollment);
     }
 
     /**
@@ -96,5 +108,53 @@ class EnrollmentObserver
                 'user_agent' => request()->userAgent(),
             ]);
         } catch (\Exception $e) {}
+
+        // Sincronizar anulación a WordPress
+        try {
+            $student = $enrollment->student;
+            $courseSchedule = $enrollment->courseSchedule;
+            
+            if ($student && $courseSchedule) {
+                $courseName = $courseSchedule->module->course->name ?? 'Curso';
+                $wpApiService = app(\App\Services\WordpressApiService::class);
+                $wpApiService->syncEnrollment([
+                    'cedula'          => $student->cedula,
+                    'course_name'     => $courseName,
+                    'schedule_string' => '',
+                    'status'          => 'Cancelado',
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error("Error al sincronizar anulación a WordPress: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Auxiliar para sincronizar la inscripción con WordPress.
+     */
+    protected function syncEnrollmentToWordpress(Enrollment $enrollment)
+    {
+        try {
+            $student = $enrollment->student;
+            $courseSchedule = $enrollment->courseSchedule;
+            
+            if (!$student || !$courseSchedule) {
+                return;
+            }
+
+            // Módulo -> Curso
+            $courseName = $courseSchedule->module->course->name ?? 'Curso';
+            $scheduleString = $courseSchedule->section_name ?? 'Horario';
+
+            $wpApiService = app(\App\Services\WordpressApiService::class);
+            $wpApiService->syncEnrollment([
+                'cedula'          => $student->cedula,
+                'course_name'     => $courseName,
+                'schedule_string' => $scheduleString,
+                'status'          => $enrollment->status,
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error al sincronizar inscripción a WordPress: " . $e->getMessage());
+        }
     }
 }

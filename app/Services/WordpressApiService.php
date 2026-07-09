@@ -155,4 +155,80 @@ class WordpressApiService
         Log::warning("WP_API: No se pudieron obtener estadísticas de inscripciones.");
         return ['labels' => [], 'data' => []];
     }
+
+    /**
+     * Sincroniza la información de un perfil de estudiante con WordPress.
+     *
+     * @param array $studentData
+     * @return bool
+     */
+    public function syncStudent(array $studentData): bool
+    {
+        $response = $this->makePostRequest('sga/v1/sync-student/', $studentData);
+        return !empty($response['success']);
+    }
+
+    /**
+     * Sincroniza el estado de una inscripción con WordPress.
+     *
+     * @param array $enrollmentData
+     * @return bool
+     */
+    public function syncEnrollment(array $enrollmentData): bool
+    {
+        $response = $this->makePostRequest('sga/v1/sync-enrollment/', $enrollmentData);
+        return !empty($response['success']);
+    }
+
+    /**
+     * Realiza una solicitud POST a la API de WordPress.
+     *
+     * @param string $endpoint El endpoint de la API
+     * @param array $data Los datos a enviar en el body
+     * @return array|null
+     */
+    private function makePostRequest($endpoint, array $data)
+    {
+        if (empty($this->baseUri) || empty($this->secret)) {
+            Log::warning('WP_API POST: Faltan credenciales (URI o Secret).');
+            return null;
+        }
+
+        $fullUrl = rtrim($this->baseUri, '/') . '/' . ltrim($endpoint, '/');
+
+        Log::info("WP_API POST: Enviando datos...", [
+            'destino' => $fullUrl,
+            'endpoint' => $endpoint
+        ]);
+
+        try {
+            $response = Http::withoutVerifying()
+                ->withOptions(["verify" => false])
+                ->timeout(30)
+                ->withHeaders([
+                    'X-SGA-Signature' => $this->secret,
+                    'Accept' => 'application/json',
+                    'User-Agent' => 'Laravel-SGA-Client/1.0',
+                ])
+                ->post($fullUrl, $data);
+
+            if ($response->successful()) {
+                Log::info("WP_API POST: Éxito ({$response->status()})");
+                return $response->json();
+            }
+
+            Log::error("WP_API POST: Error HTTP {$response->status()}", [
+                'endpoint' => $endpoint,
+                'body_preview' => substr($response->body(), 0, 500)
+            ]);
+            return null;
+
+        } catch (\Exception $e) {
+            Log::error("WP_API POST: Excepción de Conexión", [
+                'endpoint' => $endpoint,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
 }

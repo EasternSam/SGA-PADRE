@@ -113,6 +113,44 @@ class Student extends Model
     }
 
     /**
+     * Booted method to register model events.
+     */
+    protected static function booted()
+    {
+        static::created(function ($student) {
+            try {
+                $wpApiService = app(\App\Services\WordpressApiService::class);
+                $wpApiService->syncStudent([
+                    'cedula'     => $student->cedula,
+                    'first_name' => $student->first_name,
+                    'last_name'  => $student->last_name,
+                    'email'      => $student->email,
+                    'phone'      => $student->mobile_phone ?: $student->home_phone,
+                    'address'    => $student->address,
+                ]);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Error al sincronizar estudiante creado a WordPress: " . $e->getMessage());
+            }
+        });
+
+        static::updated(function ($student) {
+            try {
+                $wpApiService = app(\App\Services\WordpressApiService::class);
+                $wpApiService->syncStudent([
+                    'cedula'     => $student->cedula,
+                    'first_name' => $student->first_name,
+                    'last_name'  => $student->last_name,
+                    'email'      => $student->email,
+                    'phone'      => $student->mobile_phone ?: $student->home_phone,
+                    'address'    => $student->address,
+                ]);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Error al sincronizar estudiante actualizado a WordPress: " . $e->getMessage());
+            }
+        });
+    }
+
+    /**
      * Obtiene el nombre completo del estudiante.
      */
     public function getFullNameAttribute()
