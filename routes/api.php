@@ -32,6 +32,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
  * ESTA RUTA ES PÚBLICA Y NO REQUIERE TOKEN
  */
 Route::post('/enroll', [EnrollmentController::class, 'store']);
+Route::post('/wordpress/pair', [WordpressIntegrationController::class, 'pair']);
 
 
 // --- RUTAS PROTEGIDAS PARA EL PLUGIN DE WORDPRESS ---

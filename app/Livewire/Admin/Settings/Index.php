@@ -35,9 +35,23 @@ class Index extends Component
     public $presets = [];
     public $new_preset_name = '';
 
+    // Propiedades para Enlace Rápido WordPress
+    public $pairingCode;
+    public $pairingCodeExpiresAt;
+
     public function mount()
     {
         $settings = Setting::all()->pluck('value', 'key')->toArray();
+
+        // Verificar código de emparejamiento activo
+        $pairingDataJson = $settings['wp_pairing_data'] ?? null;
+        if (!empty($pairingDataJson)) {
+            $pairingData = json_decode($pairingDataJson, true);
+            if (is_array($pairingData) && isset($pairingData['code']) && now()->timestamp <= $pairingData['expires_at']) {
+                $this->pairingCode = $pairingData['code'];
+                $this->pairingCodeExpiresAt = $pairingData['expires_at'];
+            }
+        }
 
         $this->state = [
             'institution_name'    => $settings['institution_name'] ?? config('app.name'),
@@ -426,6 +440,49 @@ class Index extends Component
                 Cache::flush();
             } catch(\Exception $e) {}
         }
+    }
+
+    public function generatePairingCode()
+    {
+        // 1. Generar código único aleatorio de 6 caracteres
+        $code = 'SGA-' . strtoupper(\Illuminate\Support\Str::random(6));
+
+        // 2. Obtener/crear token de Sanctum para el usuario actual o primer administrador
+        $user = Auth::user();
+        if (!$user) {
+            $user = \App\Models\User::role('administrator')->first() ?? \App\Models\User::first();
+        }
+
+        if (!$user) {
+            session()->flash('error', 'No se pudo generar el token: no hay usuarios registrados.');
+            return;
+        }
+
+        // Eliminar tokens previos con el mismo nombre para no acumular basura
+        $tokenName = 'WordPress Catalog Integration';
+        $user->tokens()->where('name', $tokenName)->delete();
+
+        // Crear nuevo token
+        $token = $user->createToken($tokenName)->plainTextToken;
+
+        // 3. Generar secreto de firma
+        $wp_api_secret = \Illuminate\Support\Str::random(40);
+
+        // 4. Guardar datos de emparejamiento con validez de 15 minutos
+        $expiresAt = now()->addMinutes(15);
+        $pairingData = [
+            'code' => $code,
+            'api_token' => $token,
+            'wp_api_secret' => $wp_api_secret,
+            'expires_at' => $expiresAt->timestamp
+        ];
+
+        Setting::set('wp_pairing_data', json_encode($pairingData), 'apis', 'json');
+
+        $this->pairingCode = $code;
+        $this->pairingCodeExpiresAt = $expiresAt->timestamp;
+
+        session()->flash('message', '¡Código de enlace generado con éxito! Úsalo en WordPress antes de que expire.');
     }
 
     public function render()

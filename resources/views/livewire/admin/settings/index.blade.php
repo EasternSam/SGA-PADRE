@@ -379,6 +379,32 @@
                                     Conexión WordPress
                                 </h3>
                                 <div class="sys-grid">
+                                    <!-- Enlace Rápido por Código -->
+                                    <div class="sys-col-full p-4 border rounded-lg bg-indigo-50 border-indigo-100 mb-2 flex flex-col md:flex-row items-center justify-between gap-4">
+                                        <div class="flex-1">
+                                            <h4 class="font-bold text-indigo-900 text-sm mb-1">Enlace Rápido Automático</h4>
+                                            <p class="text-xs text-indigo-700 leading-relaxed">
+                                                Genera un código único temporal para vincular este sistema con tu plugin de WordPress automáticamente.
+                                                <br><strong>URL de API a utilizar:</strong> <code class="bg-indigo-100 px-1 py-0.5 rounded text-indigo-900 font-mono"><?php echo url('/api'); ?></code>
+                                            </p>
+                                        </div>
+                                        <div class="shrink-0 flex flex-col items-center gap-2">
+                                            @if($pairingCode && now()->timestamp <= $pairingCodeExpiresAt)
+                                                <div class="flex flex-col items-center">
+                                                    <span class="text-2xl font-black tracking-widest text-indigo-900 bg-white border border-indigo-200 px-4 py-2 rounded-lg shadow-sm select-all font-mono">
+                                                        {{ $pairingCode }}
+                                                    </span>
+                                                    <span class="text-[10px] text-indigo-600 mt-1 font-semibold">
+                                                        Expira en: {{ max(0, ceil(($pairingCodeExpiresAt - now()->timestamp) / 60)) }} min
+                                                    </span>
+                                                </div>
+                                            @else
+                                                <button type="button" wire:click="generatePairingCode" class="sys-btn-primary text-xs bg-indigo-600 hover:bg-indigo-700 whitespace-nowrap shadow-sm">
+                                                    Generar Código de Enlace
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </div>
                                     <div class="sys-form-group">
                                         <label class="sys-label">URL Base de la API</label>
                                         <input type="text" wire:model="state.wp_api_url" class="sys-input">

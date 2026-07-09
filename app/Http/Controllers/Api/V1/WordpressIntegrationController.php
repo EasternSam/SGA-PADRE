@@ -483,4 +483,67 @@ class WordpressIntegrationController extends Controller
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Completa el emparejamiento automático por código temporal.
+     */
+    public function pair(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'code'   => 'required|string',
+            'wp_url' => 'required|url',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $data = $validator->validated();
+
+        try {
+            $pairingDataJson = \App\Models\Setting::val('wp_pairing_data');
+            if (empty($pairingDataJson)) {
+                return response()->json(['success' => false, 'message' => 'Código de enlace no generado o ya expirado.'], 400);
+            }
+
+            $pairingData = json_decode($pairingDataJson, true);
+            if (!is_array($pairingData) || !isset($pairingData['code'])) {
+                return response()->json(['success' => false, 'message' => 'Los datos de enlace están dañados.'], 400);
+            }
+
+            // Normalizar comparación
+            $inputCode = strtoupper(trim($data['code']));
+            $savedCode = strtoupper(trim($pairingData['code']));
+
+            if ($inputCode !== $savedCode) {
+                return response()->json(['success' => false, 'message' => 'El código de enlace ingresado es incorrecto.'], 400);
+            }
+
+            if (now()->timestamp > $pairingData['expires_at']) {
+                return response()->json(['success' => false, 'message' => 'El código de enlace ha expirado (límite 15 minutos).'], 400);
+            }
+
+            // Configurar los settings de WordPress en Laravel
+            \App\Models\Setting::set('wp_api_url', $data['wp_url'], 'apis', 'string');
+            \App\Models\Setting::set('wp_api_secret', $pairingData['wp_api_secret'], 'apis', 'password');
+
+            // Limpiar el código para que no pueda reusarse
+            \App\Models\Setting::set('wp_pairing_data', null, 'apis', 'json');
+
+            // Limpiar caché
+            \Illuminate\Support\Facades\Cache::flush();
+
+            return response()->json([
+                'success'       => true,
+                'message'       => 'Emparejamiento exitoso.',
+                'api_url'       => url('/api/v1'),
+                'api_token'     => $pairingData['api_token'],
+                'wp_api_secret' => $pairingData['wp_api_secret'],
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error("API WordPress Pair Error: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
 }
