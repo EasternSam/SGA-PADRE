@@ -389,6 +389,21 @@
                         </svg>
                         <span>{{ __('Mis Solicitudes') }}</span>
                     </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('student.projection')" :active="request()->routeIs('student.projection')" wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 21a9.004 9.004 0 0 0 8.716-6.747c.105-.394-.183-.753-.591-.753H15v-4.5c0-.414-.336-.75-.75-.75h-4.5c-.414 0-.75.336-.75.75V13.5H3.875c-.408 0-.696.359-.591.753A9.004 9.004 0 0 0 12 21Z" />
+                            <path fill-rule="evenodd" d="M12 2a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0V9H7a1 1 0 1 1 0-2h4V3a1 1 0 0 1 1-1Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ __('Proyección Académica') }}</span>
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('student.documents')" :active="request()->routeIs('student.documents')" wire:navigate>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19.5 21a3 3 0 0 0 3-3v-4.5a3 3 0 0 0-3-3h-15a3 3 0 0 0-3 3V18a3 3 0 0 0 3 3h15ZM3.75 6.75a3 3 0 0 1 3-3h4.875c.621 0 1.125.504 1.125 1.125V6.75h9.75a3 3 0 0 1 3 3H3.75a3 3 0 0 1 0-6h-.001Z" />
+                        </svg>
+                        <span>{{ __('Documentos Académicos') }}</span>
+                    </x-responsive-nav-link>
                 @endif
             </div>
         @endrole
@@ -425,6 +440,13 @@
                         <path fill-rule="evenodd" d="M1.5 12.75a.75.75 0 0 1 .75-.75c.086 0 .17.005.254.015.65.08 1.33.155 2.052.222v2.246c-.722.067-1.402.142-2.052.223a.75.75 0 0 1-.75-.751v-1.205ZM18.75 14.482v-2.246c.722-.067 1.402-.142 2.052-.222.084-.01.168-.015.254-.015a.75.75 0 0 1 .75.75v1.206a.75.75 0 0 1-.75.751c-.65.08-1.33.156-2.052.223Z" clip-rule="evenodd" />
                     </svg>
                     <span>{{ __('Mis Clases') }}</span>
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('teacher.documents')" :active="request()->routeIs('teacher.documents')" wire:navigate>
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19.5 21a3 3 0 0 0 3-3v-4.5a3 3 0 0 0-3-3h-15a3 3 0 0 0-3 3V18a3 3 0 0 0 3 3h15ZM3.75 6.75a3 3 0 0 1 3-3h4.875c.621 0 1.125.504 1.125 1.125V6.75h9.75a3 3 0 0 1 3 3H3.75a3 3 0 0 1 0-6h-.001Z" />
+                    </svg>
+                    <span>{{ __('Repositorio de Materiales') }}</span>
                 </x-responsive-nav-link>
 
                 <x-responsive-nav-link :href="route('teacher.payroll')" :active="request()->routeIs('teacher.payroll')" wire:navigate>

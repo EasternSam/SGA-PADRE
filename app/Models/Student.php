@@ -105,6 +105,14 @@ class Student extends Model
     }
 
     /**
+     * Relación con el Plan de Carrera del estudiante.
+     */
+    public function degreePlan()
+    {
+        return $this->hasOne(DegreePlan::class);
+    }
+
+    /**
      * Obtiene el nombre completo del estudiante.
      */
     public function getFullNameAttribute()

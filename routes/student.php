@@ -30,6 +30,8 @@ Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student
 
         Route::middleware(['feature:academic_careers'])->group(function () {
             Route::get('/selection', StudentPortalSelection::class)->name('selection');
+            Route::get('/projection', \App\Livewire\StudentPortal\AcademicProjection::class)->name('projection');
+            Route::get('/documents', \App\Livewire\StudentPortal\DocumentRepository::class)->name('documents');
         });
     });
 

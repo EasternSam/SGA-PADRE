@@ -17,6 +17,7 @@ use App\Models\Payment;
 use App\Models\ScheduleMapping;
 use App\Models\CourseSchedule;
 use App\Models\PaymentConcept; 
+use App\Models\CallLog;
 
 class WordpressIntegrationController extends Controller
 {
@@ -252,6 +253,233 @@ class WordpressIntegrationController extends Controller
                 'error' => $e->getMessage(),
                 'line' => $e->getLine(),
             ]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Sincroniza un registro de llamada enviado desde WordPress a Laravel.
+     */
+    public function syncCallLog(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'wp_call_id'   => 'required|integer',
+            'cedula'       => 'required|string',
+            'course_name'  => 'required|string',
+            'agent_email'  => 'nullable|email',
+            'comments'     => 'nullable|string',
+            'status'       => 'required|string',
+            'created_at'   => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $data = $validator->validated();
+
+        try {
+            // Buscar estudiante
+            $student = Student::where('cedula', $data['cedula'])->first();
+            if (!$student) {
+                // Fallback: buscar por cédula normalizada
+                $cleanCedula = preg_replace('/[^0-9]/', '', $data['cedula']);
+                $student = Student::where('cedula', $cleanCedula)->first();
+            }
+
+            if (!$student) {
+                return response()->json(['success' => false, 'message' => 'Estudiante no encontrado en Laravel.'], 404);
+            }
+
+            // Buscar agente
+            $agent = null;
+            if (!empty($data['agent_email'])) {
+                $agent = User::where('email', $data['agent_email'])->first();
+            }
+            $agent_id = $agent ? $agent->id : auth()->id();
+
+            // Buscar inscripción (enrollment) por estudiante y curso
+            $enrollment = Enrollment::where('student_id', $student->id)
+                ->whereHas('course', function ($query) use ($data) {
+                    $query->where('name', 'LIKE', '%' . $data['course_name'] . '%');
+                })
+                ->latest()
+                ->first();
+
+            // Sincronizar (crear o actualizar) el CallLog
+            $callLog = CallLog::updateOrCreate(
+                ['wp_call_id' => $data['wp_call_id']],
+                [
+                    'student_id'    => $student->id,
+                    'enrollment_id' => $enrollment ? $enrollment->id : null,
+                    'agent_id'      => $agent_id ?? 1, // Fallback a user ID 1
+                    'comment'       => $data['comments'] ?? '',
+                    'status'        => $data['status'],
+                    'created_at'    => !empty($data['created_at']) ? Carbon::parse($data['created_at']) : now(),
+                ]
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Registro de llamada sincronizado correctamente.',
+                'call_log_id' => $callLog->id
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error("API WP->Laravel (V1): Error al sincronizar llamada.", ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Obtiene el listado de pagos paginado desde Laravel.
+     */
+    public function getPayments(Request $request)
+    {
+        try {
+            $search = $request->input('search');
+            
+            $query = Payment::with(['student', 'paymentConcept', 'enrollment.course']);
+
+            if (!empty($search)) {
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('student', function ($sq) use ($search) {
+                        $sq->where('first_name', 'LIKE', "%{$search}%")
+                           ->orWhere('last_name', 'LIKE', "%{$search}%")
+                           ->orWhere('cedula', 'LIKE', "%{$search}%")
+                           ->orWhere('email', 'LIKE', "%{$search}%");
+                    })
+                    ->orWhere('gateway', 'LIKE', "%{$search}%")
+                    ->orWhere('status', 'LIKE', "%{$search}%")
+                    ->orWhereHas('paymentConcept', function ($cq) use ($search) {
+                        $cq->where('name', 'LIKE', "%{$search}%");
+                    });
+                });
+            }
+
+            $payments = $query->orderBy('due_date', 'desc')->paginate(50);
+
+            return response()->json([
+                'success' => true,
+                'data' => $payments->items(),
+                'current_page' => $payments->currentPage(),
+                'last_page' => $payments->lastPage(),
+                'total' => $payments->total(),
+                'per_page' => $payments->perPage(),
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error("API WP->Laravel (V1): Error al obtener pagos.", ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Actualiza el perfil de estudiante en Laravel.
+     */
+    public function updateStudent(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'cedula'             => 'required|string',
+            'first_name'         => 'nullable|string|max:255',
+            'last_name'          => 'nullable|string|max:255',
+            'email'              => 'nullable|email|max:255',
+            'phone'              => 'nullable|string|max:20',
+            'mobile_phone'       => 'nullable|string|max:20',
+            'address'            => 'nullable|string',
+            'city'               => 'nullable|string|max:255',
+            'sector'             => 'nullable|string|max:255',
+            'tutor_name'         => 'nullable|string|max:255',
+            'tutor_cedula'       => 'nullable|string|max:255',
+            'tutor_phone'        => 'nullable|string|max:255',
+            'tutor_relationship' => 'nullable|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $data = $validator->validated();
+
+        try {
+            $student = Student::where('cedula', $data['cedula'])->first();
+            if (!$student) {
+                // Fallback
+                $cleanCedula = preg_replace('/[^0-9]/', '', $data['cedula']);
+                $student = Student::where('cedula', $cleanCedula)->first();
+            }
+
+            if (!$student) {
+                return response()->json(['success' => false, 'message' => 'Estudiante no encontrado en Laravel.'], 404);
+            }
+
+            $updateData = [];
+            if (isset($data['first_name'])) $updateData['first_name'] = $data['first_name'];
+            if (isset($data['last_name'])) $updateData['last_name'] = $data['last_name'];
+            if (isset($data['email'])) $updateData['email'] = $data['email'];
+            if (isset($data['phone'])) $updateData['home_phone'] = $data['phone'];
+            if (isset($data['mobile_phone'])) $updateData['mobile_phone'] = $data['mobile_phone'];
+            if (isset($data['address'])) $updateData['address'] = $data['address'];
+            if (isset($data['city'])) $updateData['city'] = $data['city'];
+            if (isset($data['sector'])) $updateData['sector'] = $data['sector'];
+            if (isset($data['tutor_name'])) $updateData['tutor_name'] = $data['tutor_name'];
+            if (isset($data['tutor_cedula'])) $updateData['tutor_cedula'] = $data['tutor_cedula'];
+            if (isset($data['tutor_phone'])) $updateData['tutor_phone'] = $data['tutor_phone'];
+            if (isset($data['tutor_relationship'])) $updateData['tutor_relationship'] = $data['tutor_relationship'];
+
+            $student->update($updateData);
+
+            $user = $student->user;
+            if ($user) {
+                $userData = [];
+                if (isset($data['first_name']) || isset($data['last_name'])) {
+                    $userData['name'] = ($data['first_name'] ?? $student->first_name) . ' ' . ($data['last_name'] ?? $student->last_name);
+                }
+                if (isset($data['email'])) {
+                    $userData['email'] = $data['email'];
+                }
+                if (!empty($userData)) {
+                    $user->update($userData);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Datos del estudiante actualizados en Laravel correctamente.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error("API WP->Laravel (V1): Error al actualizar estudiante.", ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Obtiene estadísticas unificadas del centro educativo desde Laravel.
+     */
+    public function getDashboardStats()
+    {
+        try {
+            $totalStudents = Student::count();
+            $totalCourses = Course::where('status', 'Activo')->count();
+            if ($totalCourses === 0) {
+                $totalCourses = Course::count();
+            }
+            $pendingEnrollments = Enrollment::where('status', 'Pendiente')->count();
+            $pendingPayments = Payment::whereIn('status', ['Pendiente', 'unpaid', 'Por Pagar'])->count();
+            $paidPaymentsSum = Payment::whereIn('status', ['paid', 'Completado', 'Pagado'])->sum('amount');
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total_students'      => $totalStudents,
+                    'total_courses'       => $totalCourses,
+                    'pending_enrollments' => $pendingEnrollments,
+                    'pending_payments'    => $pendingPayments,
+                    'total_revenue'       => (float) $paidPaymentsSum,
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error("API WP->Laravel (V1): Error al obtener estadísticas del dashboard.", ['error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }

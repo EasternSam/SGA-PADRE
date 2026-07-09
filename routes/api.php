@@ -83,6 +83,10 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
      * URL: /api/v1/wordpress/new-inscription
      */
     Route::post('/wordpress/new-inscription', [WordpressIntegrationController::class, 'handleNewInscription']);
+    Route::post('/wordpress/sync-call-log', [WordpressIntegrationController::class, 'syncCallLog']);
+    Route::get('/wordpress/payments', [WordpressIntegrationController::class, 'getPayments']);
+    Route::post('/wordpress/update-student', [WordpressIntegrationController::class, 'updateStudent']);
+    Route::get('/wordpress/dashboard-stats', [WordpressIntegrationController::class, 'getDashboardStats']);
     // ====================================================================
 
 
