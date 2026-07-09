@@ -18,6 +18,9 @@ use App\Models\ScheduleMapping;
 use App\Models\CourseSchedule;
 use App\Models\PaymentConcept; 
 use App\Models\CallLog;
+use App\Models\Course;
+use App\Notifications\SystemNotification;
+use Illuminate\Support\Facades\Notification;
 
 class WordpressIntegrationController extends Controller
 {
@@ -56,6 +59,18 @@ class WordpressIntegrationController extends Controller
 
         if ($validator->fails()) {
             Log::warning('API WP->Laravel (V1): Validación fallida', $request->all());
+            
+            $errorsText = implode(', ', $validator->errors()->all());
+            $cedula = $request->input('cedula', 'N/D');
+            $studentName = trim($request->input('first_name', '') . ' ' . $request->input('last_name', ''));
+            $studentName = $studentName ?: 'Estudiante Desconocido';
+            $courseName = $request->input('wp_course_id', 'ID Desconocido');
+            
+            $this->notifyAdminsOfError(
+                "Error de Validación en Inscripción WP",
+                "Fallo al validar inscripción para {$studentName} (Cédula: {$cedula}) para el curso WP ID {$courseName}. Errores: {$errorsText}"
+            );
+
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
@@ -70,6 +85,13 @@ class WordpressIntegrationController extends Controller
 
             if (!$mapping) {
                 Log::error("API WP->Laravel (V1): No se encontró mapeo para el wp_course_id: {$data['wp_course_id']}");
+                
+                $studentName = $data['first_name'] . ' ' . $data['last_name'];
+                $this->notifyAdminsOfError(
+                    "Error de Mapeo de Curso WP",
+                    "El estudiante {$studentName} (Cédula: {$data['cedula']}) intentó inscribirse en el curso WordPress ID {$data['wp_course_id']}, pero no está enlazado con ningún curso en Laravel."
+                );
+
                 return response()->json(['success' => false, 'message' => 'Curso de WordPress no enlazado en Laravel.'], 404);
             }
 
@@ -85,6 +107,14 @@ class WordpressIntegrationController extends Controller
                     'wp_course_id' => $data['wp_course_id'],
                     'wp_schedule_string' => $data['wp_schedule_string']
                 ]);
+
+                $studentName = $data['first_name'] . ' ' . $data['last_name'];
+                $courseName = $laravelCourse->name ?? 'Curso Desconocido';
+                $this->notifyAdminsOfError(
+                    "Error de Mapeo de Sección/Horario WP",
+                    "El estudiante {$studentName} (Cédula: {$data['cedula']}) intentó inscribirse en el curso {$courseName}, pero el horario '{$data['wp_schedule_string']}' no tiene un mapeo de sección en Laravel."
+                );
+
                 return response()->json(['success' => false, 'message' => 'Sección (horario) de WordPress no enlazada en Laravel.'], 404);
             }
             
@@ -253,6 +283,14 @@ class WordpressIntegrationController extends Controller
                 'error' => $e->getMessage(),
                 'line' => $e->getLine(),
             ]);
+
+            $studentName = $request->input('first_name', '') . ' ' . $request->input('last_name', '');
+            $studentName = trim($studentName) ?: 'Estudiante Desconocido';
+            $this->notifyAdminsOfError(
+                "Error Fatal en Inscripción WP",
+                "Error al procesar inscripción para {$studentName}: {$e->getMessage()}"
+            );
+
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
@@ -544,6 +582,41 @@ class WordpressIntegrationController extends Controller
         } catch (\Exception $e) {
             Log::error("API WordPress Pair Error: " . $e->getMessage());
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Envía una notificación de error a los administradores.
+     *
+     * @param string $title
+     * @param string $message
+     * @return void
+     */
+    private function notifyAdminsOfError($title, $message)
+    {
+        try {
+            $admins = User::role('Admin')->get();
+            if ($admins->isEmpty()) {
+                // Si no hay rol Admin, buscar administrador
+                $admins = User::role('administrator')->get();
+            }
+            if ($admins->isEmpty()) {
+                // Último recurso: primer usuario
+                $firstUser = User::first();
+                if ($firstUser) {
+                    $admins = collect([$firstUser]);
+                }
+            }
+
+            if ($admins->isNotEmpty()) {
+                Notification::send($admins, new SystemNotification(
+                    $title,
+                    $message,
+                    'danger'
+                ));
+            }
+        } catch (\Exception $e) {
+            Log::error("Error al enviar notificación de error a administradores: " . $e->getMessage());
         }
     }
 }
