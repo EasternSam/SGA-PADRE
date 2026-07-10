@@ -314,6 +314,13 @@ class Index extends Component
 
         // Guardar configuraciones estándar
         foreach ($this->state as $key => $value) {
+            // Evitar sobreescribir credenciales con vacío debido a pestañas desactualizadas
+            if (in_array($key, ['wp_api_url', 'wp_api_secret', 'moodle_url', 'moodle_token', 'bills_api_url', 'bills_api_token'])) {
+                if (empty($value) && !empty(Setting::val($key))) {
+                    continue;
+                }
+            }
+
             // Normalizar booleano a string 'true'/'false'
             if (is_bool($value)) {
                 $value = $value ? 'true' : 'false';
