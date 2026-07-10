@@ -566,22 +566,37 @@
                         </div>
                     </div>
 
-                    <div class="sys-footer">
-                        {{-- Botón para restaurar valores por defecto --}}
-                        <button type="button" wire:click="restoreDefaults" wire:confirm="¿Estás seguro de que quieres restablecer los colores y el logo a los valores originales del sistema?" class="sys-btn-secondary">
-                            Restaurar Por Defecto
-                        </button>
+                    <div class="sys-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <div class="flex items-center">
+                            @if(!empty($state['wp_api_url']) && !empty($state['wp_api_secret']))
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                                    Academic+ Catalog conectado
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200">
+                                    <span class="h-2 w-2 rounded-full bg-gray-400"></span>
+                                    WordPress desconectado
+                                </span>
+                            @endif
+                        </div>
+                        <div class="flex gap-2">
+                            {{-- Botón para restaurar valores por defecto --}}
+                            <button type="button" wire:click="restoreDefaults" wire:confirm="¿Estás seguro de que quieres restablecer los colores y el logo a los valores originales del sistema?" class="sys-btn-secondary">
+                                Restaurar Por Defecto
+                            </button>
 
-                        <button type="submit" wire:loading.attr="disabled" class="sys-btn-primary">
-                            <span wire:loading.remove>Guardar Configuraciones</span>
-                            <span wire:loading style="display: none; align-items: center; gap: 0.5rem;">
-                                <svg class="sys-spin" style="height: 1rem; width: 1rem; color: #ffffff;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle style="opacity: 0.25;" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path style="opacity: 0.75;" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Guardando...
-                            </span>
-                        </button>
+                            <button type="submit" wire:loading.attr="disabled" class="sys-btn-primary">
+                                <span wire:loading.remove>Guardar Configuraciones</span>
+                                <span wire:loading style="display: none; align-items: center; gap: 0.5rem;">
+                                    <svg class="sys-spin" style="height: 1rem; width: 1rem; color: #ffffff;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle style="opacity: 0.25;" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path style="opacity: 0.75;" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Guardando...
+                                </span>
+                            </button>
+                        </div>
                     </div>
 
                 </form>
