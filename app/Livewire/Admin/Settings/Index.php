@@ -356,6 +356,41 @@ class Index extends Component
 
         Cache::flush();
 
+        // === WEBHOOK: Sincronizar branding con WordPress en tiempo real ===
+        try {
+            $wpApiUrl = Setting::val('wp_api_url');
+            $wpApiSecret = Setting::val('wp_api_secret');
+
+            if (!empty($wpApiUrl) && !empty($wpApiSecret)) {
+                $brandingEndpoint = rtrim($wpApiUrl, '/');
+                // Normalizar: si termina en /wp-json/ usamos esa base, sino construimos
+                if (str_contains($brandingEndpoint, '/wp-json')) {
+                    $brandingEndpoint = preg_replace('#/wp-json/.*$#', '/wp-json/sga/v1/update-branding/', $brandingEndpoint);
+                } else {
+                    $brandingEndpoint .= '/wp-json/sga/v1/update-branding/';
+                }
+
+                $brandingData = [
+                    'branding' => [
+                        'brand_primary_color'       => $this->state['brand_primary_color'],
+                        'navbar_type'               => $this->navbar_type,
+                        'navbar_gradient_start'      => $this->navbar_gradient_start,
+                        'navbar_gradient_end'        => $this->navbar_gradient_end,
+                        'navbar_gradient_direction'   => $this->navbar_gradient_direction,
+                    ]
+                ];
+
+                \Illuminate\Support\Facades\Http::withHeaders([
+                    'X-SGA-Signature' => $wpApiSecret,
+                    'Content-Type' => 'application/json',
+                ])->timeout(5)->post($brandingEndpoint, $brandingData);
+            }
+        } catch (\Exception $e) {
+            // Silencioso: no bloquear el guardado si WP no responde
+            \Illuminate\Support\Facades\Log::warning('Webhook branding a WP falló: ' . $e->getMessage());
+        }
+        // === FIN WEBHOOK ===
+
         // Limpiar propiedades temporales de archivos
         $this->logo = null;
         $this->favicon = null;
