@@ -752,6 +752,10 @@ class Index extends Component
                 'ip_address' => request()->ip()
             ]);
 
+            // Forzar recarga del Dashboard y estadísticas limpiando las cachés
+            \Illuminate\Support\Facades\Cache::put('dashboard_version', now()->timestamp);
+            \Illuminate\Support\Facades\Cache::flush();
+
             session()->flash('wp_sync_success', "¡Sincronización completada! Se procesaron {$syncedCount} estudiantes de WordPress correctamente (sin notificaciones de correo).");
 
         } catch (\Exception $e) {
