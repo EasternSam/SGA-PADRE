@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
+use App\Services\WordpressApiService;
 
 #[Layout('layouts.dashboard')]
 class Index extends Component
@@ -589,6 +590,170 @@ class Index extends Component
         $this->pairingCodeExpiresAt = $expiresAt->timestamp;
 
         session()->flash('message', '¡Código de enlace generado con éxito! Úsalo en WordPress antes de que expire.');
+    }
+
+    /**
+     * Sincroniza manualmente los estudiantes de WordPress en Laravel sin enviar ningún correo electrónico.
+     */
+    public function syncWordPressStudents(WordpressApiService $wpService)
+    {
+        try {
+            $wpStudents = $wpService->getSgaStudents();
+            if (empty($wpStudents)) {
+                session()->flash('wp_sync_error', 'No se encontraron estudiantes en WordPress o la conexión falló.');
+                return;
+            }
+
+            $syncedCount = 0;
+
+            // Desactivar temporalmente los eventos en los modelos críticos
+            \App\Models\User::withoutEvents(function () use ($wpStudents, &$syncedCount) {
+                \App\Models\Student::withoutEvents(function () use ($wpStudents, &$syncedCount) {
+                    \App\Models\Enrollment::withoutEvents(function () use ($wpStudents, &$syncedCount) {
+                        \App\Models\Payment::withoutEvents(function () use ($wpStudents, &$syncedCount) {
+                            
+                            foreach ($wpStudents as $wpStudent) {
+                                $cedula = trim($wpStudent['cedula'] ?? '');
+                                $email = trim($wpStudent['email'] ?? '');
+                                if (empty($cedula) || empty($email)) {
+                                    continue;
+                                }
+
+                                $cleanCedula = preg_replace('/[^0-9]/', '', $cedula);
+
+                                // 1. Buscar o Crear Usuario
+                                $user = \App\Models\User::where('email', $email)->first();
+                                if (!$user) {
+                                    $user = \App\Models\User::create([
+                                        'name' => $wpStudent['nombre'] ?? 'Estudiante WP',
+                                        'email' => $email,
+                                        'password' => \Illuminate\Support\Facades\Hash::make($cleanCedula),
+                                        'email_verified_at' => now(),
+                                    ]);
+                                    $user->assignRole('Estudiante');
+                                }
+
+                                // 2. Buscar o Crear Estudiante
+                                $student = \App\Models\Student::where('cedula', $cedula)
+                                    ->orWhere('cedula', $cleanCedula)
+                                    ->orWhere('user_id', $user->id)
+                                    ->first();
+
+                                // Separar primer nombre y apellido
+                                $parts = explode(' ', trim($wpStudent['nombre'] ?? ''));
+                                $first_name = $parts[0] ?? 'Estudiante';
+                                $last_name = isset($parts[1]) ? implode(' ', array_slice($parts, 1)) : 'WP';
+
+                                if (!$student) {
+                                    $student = \App\Models\Student::create([
+                                        'user_id' => $user->id,
+                                        'first_name' => $first_name,
+                                        'last_name' => $last_name,
+                                        'cedula' => $cedula,
+                                        'email' => $email,
+                                        'mobile_phone' => $wpStudent['telefono'] ?? null,
+                                        'status' => 'Activa',
+                                    ]);
+                                }
+
+                                // 3. Si tiene datos de curso, intentar matricularlo
+                                if (!empty($wpStudent['curso']['nombre'])) {
+                                    $wpCourseName = $wpStudent['curso']['nombre'];
+                                    
+                                    // Buscar curso en Laravel
+                                    // A: Por mapeo de nombre
+                                    $mapping = \App\Models\CourseMapping::where('wp_course_name', $wpCourseName)->first();
+                                    $laravelCourse = null;
+                                    if ($mapping) {
+                                        $laravelCourse = $mapping->course;
+                                    } else {
+                                        // B: Por nombre exacto
+                                        $laravelCourse = \App\Models\Course::where('name', $wpCourseName)->first();
+                                    }
+
+                                    if ($laravelCourse) {
+                                        // Obtener primer módulo del curso
+                                        $module = $laravelCourse->modules()->first();
+                                        if ($module) {
+                                            // Buscar o crear sección por defecto
+                                            $schedule = $module->schedules()->first();
+                                            if (!$schedule) {
+                                                $schedule = \App\Models\CourseSchedule::create([
+                                                    'module_id' => $module->id,
+                                                    'teacher_id' => \App\Models\User::role('Profesor')->first()->id ?? 1,
+                                                    'days_of_week' => ['Lunes'],
+                                                    'section_name' => 'Sección Sincronizada',
+                                                    'modality' => 'Presencial',
+                                                    'start_time' => '18:00',
+                                                    'end_time' => '21:00',
+                                                    'start_date' => now()->format('Y-m-d'),
+                                                    'end_date' => now()->addMonths(3)->format('Y-m-d'),
+                                                ]);
+                                            }
+
+                                            // Crear inscripción si no existe
+                                            $wpStatus = $wpStudent['curso']['estado'] ?? '';
+                                            $laravelStatus = ($wpStatus === 'Matriculado' || $wpStatus === 'pagado') ? 'Cursando' : 'Pendiente';
+
+                                            $enrollment = \App\Models\Enrollment::where('student_id', $student->id)
+                                                ->where('course_schedule_id', $schedule->id)
+                                                ->first();
+
+                                            if (!$enrollment) {
+                                                $enrollment = \App\Models\Enrollment::create([
+                                                    'student_id' => $student->id,
+                                                    'course_id' => $laravelCourse->id,
+                                                    'course_schedule_id' => $schedule->id,
+                                                    'status' => $laravelStatus,
+                                                    'enrollment_date' => now(),
+                                                ]);
+
+                                                // Crear cargos contables asociados si es necesario (sin eventos de disparo)
+                                                $amount = $laravelCourse->registration_fee ?? 0;
+                                                $concept = \App\Models\PaymentConcept::firstOrCreate(['name' => 'Inscripción']);
+                                                
+                                                \App\Models\Payment::create([
+                                                    'student_id' => $student->id,
+                                                    'enrollment_id' => $enrollment->id,
+                                                    'payment_concept_id' => $concept->id,
+                                                    'amount' => $amount,
+                                                    'currency' => 'DOP',
+                                                    'status' => ($laravelStatus === 'Cursando') ? 'Completado' : 'Pendiente',
+                                                    'gateway' => 'Por Pagar',
+                                                    'due_date' => now()->addDays(3),
+                                                ]);
+                                                
+                                                try {
+                                                    app(\App\Services\AccountingEngine::class)->registerStudentDebt($enrollment, $amount);
+                                                } catch (\Exception $e) {
+                                                    Log::error("Accounting Engine Error during background sync: " . $e->getMessage());
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                $syncedCount++;
+                            }
+                        });
+                    });
+                });
+            });
+
+            // Log de la actividad
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'action' => 'Sincronización manual',
+                'description' => "Se sincronizaron manualmente {$syncedCount} estudiantes desde WordPress a Laravel sin envío de correos electrónicos.",
+                'ip_address' => request()->ip()
+            ]);
+
+            session()->flash('wp_sync_success', "¡Sincronización completada! Se procesaron {$syncedCount} estudiantes de WordPress correctamente (sin notificaciones de correo).");
+
+        } catch (\Exception $e) {
+            Log::error('Error al sincronizar estudiantes de WordPress: ' . $e->getMessage());
+            session()->flash('wp_sync_error', 'Ocurrió un error inesperado al sincronizar: ' . $e->getMessage());
+        }
     }
 
     public function render()

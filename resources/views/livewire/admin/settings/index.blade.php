@@ -413,9 +413,47 @@
                                         <input type="text" wire:model="state.wp_api_url" class="sys-input">
                                     </div>
                                     <div class="sys-form-group">
-                                        <label class="sys-label">Token Secreto</label>
-                                        <input type="password" wire:model="state.wp_api_secret" class="sys-input">
-                                    </div>
+                                         <label class="sys-label">Token Secreto</label>
+                                         <input type="password" wire:model="state.wp_api_secret" class="sys-input">
+                                     </div>
+
+                                     <!-- Sincronización Manual de Estudiantes -->
+                                     <div class="sys-col-full p-4 border rounded-lg bg-gray-50 border-gray-200 mt-2">
+                                         <h4 class="font-bold text-gray-900 text-sm mb-1 flex items-center gap-1.5">
+                                             <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                                             Sincronización de Estudiantes desde WordPress
+                                         </h4>
+                                         <p class="text-xs text-gray-600 leading-relaxed mb-3">
+                                             Importa todos los registros de estudiantes inscritos en el catálogo de WordPress hacia la base de datos local.
+                                             <br><strong class="text-indigo-600 font-bold">&bull; Garantía sin Notificaciones:</strong> Este proceso <strong>NO enviará ningún correo</strong> electrónico (ni contraseñas ni alertas de bienvenida) a los estudiantes importados.
+                                         </p>
+
+                                         @if (session()->has('wp_sync_success'))
+                                             <div class="p-3 mb-3 bg-green-50 border border-green-200 text-green-800 text-xs rounded-lg font-semibold">
+                                                 {{ session('wp_sync_success') }}
+                                             </div>
+                                         @endif
+                                         @if (session()->has('wp_sync_error'))
+                                             <div class="p-3 mb-3 bg-red-50 border border-red-200 text-red-800 text-xs rounded-lg font-semibold">
+                                                 {{ session('wp_sync_error') }}
+                                             </div>
+                                         @endif
+
+                                         <button 
+                                             type="button" 
+                                             wire:click="syncWordPressStudents" 
+                                             wire:loading.attr="disabled"
+                                             class="sys-btn-primary text-xs bg-indigo-600 hover:bg-indigo-700 whitespace-nowrap shadow-sm"
+                                         >
+                                             <span wire:loading wire:target="syncWordPressStudents" class="inline-block mr-1">
+                                                 <svg class="animate-spin h-3 w-3 text-white" fill="none" viewBox="0 0 24 24">
+                                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                 </svg>
+                                             </span>
+                                             Sincronizar Estudiantes de WordPress
+                                         </button>
+                                     </div>
                                 </div>
                             </div>
                             <hr class="sys-divider">
