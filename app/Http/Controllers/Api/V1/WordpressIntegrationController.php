@@ -574,8 +574,14 @@ class WordpressIntegrationController extends Controller
                 return response()->json(['success' => false, 'message' => 'El código de enlace ha expirado (límite 15 minutos).'], 400);
             }
 
+            // Normalizar la URL de WordPress para obtener la base de la API (/wp-json/)
+            $wpApiUrl = $data['wp_url'];
+            if (str_contains($wpApiUrl, '/wp-json/')) {
+                $wpApiUrl = preg_replace('#/wp-json/.*$#', '/wp-json/', $wpApiUrl);
+            }
+
             // Configurar los settings de WordPress en Laravel
-            \App\Models\Setting::set('wp_api_url', $data['wp_url'], 'apis', 'string');
+            \App\Models\Setting::set('wp_api_url', $wpApiUrl, 'apis', 'string');
             \App\Models\Setting::set('wp_api_secret', $pairingData['wp_api_secret'], 'apis', 'password');
 
             // Limpiar el código para que no pueda reusarse
