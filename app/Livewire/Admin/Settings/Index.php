@@ -354,12 +354,10 @@ class Index extends Component
             ]);
         }
 
-        Cache::flush();
-
         // === WEBHOOK: Sincronizar branding con WordPress en tiempo real ===
         try {
-            $wpApiUrl = Setting::val('wp_api_url');
-            $wpApiSecret = Setting::val('wp_api_secret');
+            $wpApiUrl = $this->state['wp_api_url'] ?? '';
+            $wpApiSecret = $this->state['wp_api_secret'] ?? '';
 
             if (!empty($wpApiUrl) && !empty($wpApiSecret)) {
                 $brandingEndpoint = rtrim($wpApiUrl, '/');
@@ -390,6 +388,8 @@ class Index extends Component
             \Illuminate\Support\Facades\Log::warning('Webhook branding a WP falló: ' . $e->getMessage());
         }
         // === FIN WEBHOOK ===
+
+        Cache::flush();
 
         // Limpiar propiedades temporales de archivos
         $this->logo = null;
