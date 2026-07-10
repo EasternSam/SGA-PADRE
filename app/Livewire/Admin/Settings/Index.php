@@ -19,6 +19,8 @@ class Index extends Component
 
     public $activeTab = 'general'; 
 
+    public $dirtyKeys = [];
+
     public $logo;
     public $favicon;
     public $app_icon;
@@ -38,6 +40,15 @@ class Index extends Component
     // Propiedades para Enlace Rápido WordPress
     public $pairingCode;
     public $pairingCodeExpiresAt;
+
+    public function switchTab($tabName)
+    {
+        // Si hay cambios sucios, guardarlos automáticamente antes de cambiar de pestaña
+        if (!empty($this->dirtyKeys)) {
+            $this->save(false);
+        }
+        $this->activeTab = $tabName;
+    }
 
     public function mount()
     {
@@ -103,14 +114,27 @@ class Index extends Component
 
     public function updated($propertyName)
     {
+        // Registrar cambios en el array state
+        if (str_starts_with($propertyName, 'state.')) {
+            $key = str_replace('state.', '', $propertyName);
+            $this->dirtyKeys[$key] = true;
+        }
+
+        // Registrar cambios en archivos y marcar correspondientes como sucios
+        if (in_array($propertyName, ['logo', 'favicon', 'app_icon'])) {
+            $this->dirtyKeys[$propertyName] = true;
+        }
+
         // Construir el color en tiempo real si cambian las propiedades del degradado
         if (in_array($propertyName, ['navbar_type', 'navbar_gradient_start', 'navbar_gradient_end', 'navbar_gradient_direction'])) {
+            $this->dirtyKeys[$propertyName] = true;
             $this->buildNavbarColor();
         }
         
         // Si el usuario cambia el color en modo sólido directamente
         if ($propertyName === 'state.brand_primary_color' && $this->navbar_type === 'solid') {
             $this->navbar_gradient_start = $this->state['brand_primary_color'];
+            $this->dirtyKeys['navbar_gradient_start'] = true;
         }
     }
 
@@ -162,6 +186,15 @@ class Index extends Component
         $this->navbar_gradient_end = '#000000';
         $this->navbar_gradient_direction = 'to right';
 
+        // Marcar todas las claves como modificadas (sucias)
+        foreach ($this->state as $key => $val) {
+            $this->dirtyKeys[$key] = true;
+        }
+        $this->dirtyKeys['navbar_type'] = true;
+        $this->dirtyKeys['navbar_gradient_start'] = true;
+        $this->dirtyKeys['navbar_gradient_end'] = true;
+        $this->dirtyKeys['navbar_gradient_direction'] = true;
+
         return $this->save();
     }
 
@@ -207,8 +240,17 @@ class Index extends Component
         }
     }
 
-    public function save()
+    public function save($shouldRedirect = true)
     {
+        // Si no hay nada modificado, omitir proceso y retornar temprano
+        if (empty($this->dirtyKeys)) {
+            session()->flash('message', 'No hay cambios para guardar.');
+            if ($shouldRedirect) {
+                return redirect()->route('admin.settings.index');
+            }
+            return;
+        }
+
         // NOTA: Si los archivos no se suben, verifica estos límites en php.ini:
         // - upload_max_filesize (mínimo 2MB)
         // - post_max_size (mínimo 8MB)
@@ -258,6 +300,7 @@ class Index extends Component
                 $this->logo->storeAs('branding', $filename, 'hosting_public');
                 $url = "/branding/" . $filename;
                 $this->state['institution_logo'] = $url;
+                $this->dirtyKeys['institution_logo'] = true;
             } catch (\Exception $e) {
                 session()->flash('error', 'Error al guardar la imagen: ' . $e->getMessage());
                 return;
@@ -282,6 +325,7 @@ class Index extends Component
                 $this->favicon->storeAs('branding', $filename, 'hosting_public');
                 $url = "/branding/" . $filename;
                 $this->state['favicon'] = $url;
+                $this->dirtyKeys['favicon'] = true;
                 
                 Log::info('Favicon guardado exitosamente', ['url' => $url]);
             } catch (\Exception $e) {
@@ -303,6 +347,7 @@ class Index extends Component
                 $this->app_icon->storeAs('branding', $filename, 'hosting_public');
                 $url = "/branding/" . $filename;
                 $this->state['app_icon'] = $url;
+                $this->dirtyKeys['app_icon'] = true;
             } catch (\Exception $e) {
                 session()->flash('error', 'Error al guardar el icono de app: ' . $e->getMessage());
                 return;
@@ -312,8 +357,12 @@ class Index extends Component
         // Asegurar que el color esté construido correctamente antes de guardar
         $this->buildNavbarColor();
 
-        // Guardar configuraciones estándar
+        // Guardar configuraciones estándar modificadas
         foreach ($this->state as $key => $value) {
+            if (!isset($this->dirtyKeys[$key])) {
+                continue; // Solo guardar lo modificado
+            }
+
             // Evitar sobreescribir credenciales con vacío debido a pestañas desactualizadas
             if (in_array($key, ['wp_api_url', 'wp_api_secret', 'moodle_url', 'moodle_token', 'bills_api_url', 'bills_api_token'])) {
                 if (empty($value) && !empty(Setting::val($key))) {
@@ -342,11 +391,18 @@ class Index extends Component
 
         // Guardar configuraciones adicionales de degradado
         try {
-            Setting::set('navbar_type', $this->navbar_type, 'general', 'string');
-            Setting::set('navbar_gradient_start', $this->navbar_gradient_start, 'general', 'string');
-            Setting::set('navbar_gradient_end', $this->navbar_gradient_end, 'general', 'string');
-            Setting::set('navbar_gradient_direction', $this->navbar_gradient_direction, 'general', 'string');
-            Setting::set('theme_presets', json_encode($this->presets), 'general', 'json');
+            if (isset($this->dirtyKeys['navbar_type'])) {
+                Setting::set('navbar_type', $this->navbar_type, 'general', 'string');
+            }
+            if (isset($this->dirtyKeys['navbar_gradient_start'])) {
+                Setting::set('navbar_gradient_start', $this->navbar_gradient_start, 'general', 'string');
+            }
+            if (isset($this->dirtyKeys['navbar_gradient_end'])) {
+                Setting::set('navbar_gradient_end', $this->navbar_gradient_end, 'general', 'string');
+            }
+            if (isset($this->dirtyKeys['navbar_gradient_direction'])) {
+                Setting::set('navbar_gradient_direction', $this->navbar_gradient_direction, 'general', 'string');
+            }
         } catch (\Exception $e) {
             // Manejar error si es necesario
         }
@@ -355,66 +411,74 @@ class Index extends Component
             ActivityLog::create([
                 'user_id' => Auth::id(),
                 'action' => 'Configuración del Sistema',
-                'description' => 'Actualizó la personalización y ajustes globales.',
+                'description' => 'Actualizó campos de configuración específicos: ' . implode(', ', array_keys($this->dirtyKeys)),
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent()
             ]);
         }
 
         // === WEBHOOK: Sincronizar branding con WordPress en tiempo real ===
-        try {
-            $wpApiUrl = $this->state['wp_api_url'] ?? '';
-            $wpApiSecret = $this->state['wp_api_secret'] ?? '';
-
-            if (!empty($wpApiUrl) && !empty($wpApiSecret)) {
-                $brandingEndpoint = rtrim($wpApiUrl, '/');
-                // Normalizar: si termina en /wp-json/ usamos esa base, sino construimos
-                if (str_contains($brandingEndpoint, '/wp-json')) {
-                    $brandingEndpoint = preg_replace('#/wp-json/.*$#', '/wp-json/sga/v1/update-branding/', $brandingEndpoint);
-                } else {
-                    $brandingEndpoint .= '/wp-json/sga/v1/update-branding/';
-                }
-
-                $brandingData = [
-                    'branding' => [
-                        'brand_primary_color'       => $this->state['brand_primary_color'],
-                        'navbar_type'               => $this->navbar_type,
-                        'navbar_gradient_start'      => $this->navbar_gradient_start,
-                        'navbar_gradient_end'        => $this->navbar_gradient_end,
-                        'navbar_gradient_direction'   => $this->navbar_gradient_direction,
-                    ]
-                ];
-
-                \Illuminate\Support\Facades\Http::withHeaders([
-                    'X-SGA-Signature' => $wpApiSecret,
-                    'Content-Type' => 'application/json',
-                ])->timeout(5)->post($brandingEndpoint, $brandingData);
+        // Solo disparar si se modificó algún parámetro relacionado con colores/branding
+        $colorKeys = ['brand_primary_color', 'navbar_type', 'navbar_gradient_start', 'navbar_gradient_end', 'navbar_gradient_direction'];
+        $brandingModified = false;
+        foreach ($colorKeys as $ck) {
+            if (isset($this->dirtyKeys[$ck])) {
+                $brandingModified = true;
+                break;
             }
-        } catch (\Exception $e) {
-            // Silencioso: no bloquear el guardado si WP no responde
-            \Illuminate\Support\Facades\Log::warning('Webhook branding a WP falló: ' . $e->getMessage());
+        }
+
+        if ($brandingModified) {
+            try {
+                $wpApiUrl = $this->state['wp_api_url'] ?? Setting::val('wp_api_url');
+                $wpApiSecret = $this->state['wp_api_secret'] ?? Setting::val('wp_api_secret');
+
+                if (!empty($wpApiUrl) && !empty($wpApiSecret)) {
+                    $brandingEndpoint = rtrim($wpApiUrl, '/');
+                    // Normalizar: si termina en /wp-json/ usamos esa base, sino construimos
+                    if (str_contains($brandingEndpoint, '/wp-json')) {
+                        $brandingEndpoint = preg_replace('#/wp-json/.*$#', '/wp-json/sga/v1/update-branding/', $brandingEndpoint);
+                    } else {
+                        $brandingEndpoint .= '/wp-json/sga/v1/update-branding/';
+                    }
+
+                    $brandingData = [
+                        'branding' => [
+                            'brand_primary_color'       => $this->state['brand_primary_color'],
+                            'navbar_type'               => $this->navbar_type,
+                            'navbar_gradient_start'      => $this->navbar_gradient_start,
+                            'navbar_gradient_end'        => $this->navbar_gradient_end,
+                            'navbar_gradient_direction'   => $this->navbar_gradient_direction,
+                        ]
+                    ];
+
+                    \Illuminate\Support\Facades\Http::withHeaders([
+                        'X-SGA-Signature' => $wpApiSecret,
+                        'Content-Type' => 'application/json',
+                    ])->timeout(5)->post($brandingEndpoint, $brandingData);
+                }
+            } catch (\Exception $e) {
+                // Silencioso: no bloquear el guardado si WP no responde
+                \Illuminate\Support\Facades\Log::warning('Webhook branding a WP falló: ' . $e->getMessage());
+            }
         }
         // === FIN WEBHOOK ===
 
         Cache::flush();
+
+        // Limpiar llaves modificadas ya guardadas
+        $this->dirtyKeys = [];
 
         // Limpiar propiedades temporales de archivos
         $this->logo = null;
         $this->favicon = null;
         $this->app_icon = null;
 
-        $uploadedItems = [];
-        if (!empty($this->state['institution_logo'])) $uploadedItems[] = 'logo';
-        if (!empty($this->state['favicon'])) $uploadedItems[] = 'favicon';
-        if (!empty($this->state['app_icon'])) $uploadedItems[] = 'icono de app';
+        session()->flash('message', 'Configuración guardada correctamente.');
         
-        $message = 'Personalización guardada correctamente.';
-        if (!empty($uploadedItems)) {
-            $message .= ' Archivos subidos: ' . implode(', ', $uploadedItems) . '.';
+        if ($shouldRedirect) {
+            return redirect()->route('admin.settings.index');
         }
-
-        session()->flash('message', $message);
-        return redirect()->route('admin.settings.index');
     }
 
     // --- FUNCIONES DE PRESETS ---

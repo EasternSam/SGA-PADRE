@@ -69,19 +69,19 @@
             
             <div class="sys-sidebar">
                 <nav class="sys-nav">
-                    <button type="button" wire:click="$set('activeTab', 'general')" class="sys-tab {{ $activeTab === 'general' ? 'active' : '' }}">
+                    <button type="button" wire:click="switchTab('general')" class="sys-tab {{ $activeTab === 'general' ? 'active' : '' }}">
                         <svg class="sys-tab-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" /></svg>
                         Personalización e Identidad
                     </button>
-                    <button type="button" wire:click="$set('activeTab', 'apis')" class="sys-tab {{ $activeTab === 'apis' ? 'active' : '' }}">
+                    <button type="button" wire:click="switchTab('apis')" class="sys-tab {{ $activeTab === 'apis' ? 'active' : '' }}">
                         <svg class="sys-tab-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg>
                         Integraciones API
                     </button>
-                    <button type="button" wire:click="$set('activeTab', 'smtp')" class="sys-tab {{ $activeTab === 'smtp' ? 'active' : '' }}">
+                    <button type="button" wire:click="switchTab('smtp')" class="sys-tab {{ $activeTab === 'smtp' ? 'active' : '' }}">
                         <svg class="sys-tab-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" /></svg>
                         Correo Electrónico (SMTP)
                     </button>
-                    <button type="button" wire:click="$set('activeTab', 'finance')" class="sys-tab {{ $activeTab === 'finance' ? 'active' : '' }}">
+                    <button type="button" wire:click="switchTab('finance')" class="sys-tab {{ $activeTab === 'finance' ? 'active' : '' }}">
                         <svg class="sys-tab-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" /></svg>
                         Pasarelas y Finanzas
                     </button>
