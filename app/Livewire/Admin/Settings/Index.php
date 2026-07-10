@@ -605,15 +605,16 @@ class Index extends Component
                 return;
             }
 
-            // Pre-calcular el hash de la contraseña por defecto ('123456') para ahorrar CPU en el bucle
-            $defaultPasswordHash = \Illuminate\Support\Facades\Hash::make('123456');
+            // Guardar configuración original de rondas de Bcrypt y establecerla al mínimo (4) para velocidad máxima
+            $originalRounds = config('hashing.bcrypt.rounds', 12);
+            config(['hashing.bcrypt.rounds' => 4]);
             $syncedCount = 0;
 
             // Desactivar temporalmente los eventos en los modelos críticos
-            \App\Models\User::withoutEvents(function () use ($wpStudents, &$syncedCount, $defaultPasswordHash) {
-                \App\Models\Student::withoutEvents(function () use ($wpStudents, &$syncedCount, $defaultPasswordHash) {
-                    \App\Models\Enrollment::withoutEvents(function () use ($wpStudents, &$syncedCount, $defaultPasswordHash) {
-                        \App\Models\Payment::withoutEvents(function () use ($wpStudents, &$syncedCount, $defaultPasswordHash) {
+            \App\Models\User::withoutEvents(function () use ($wpStudents, &$syncedCount) {
+                \App\Models\Student::withoutEvents(function () use ($wpStudents, &$syncedCount) {
+                    \App\Models\Enrollment::withoutEvents(function () use ($wpStudents, &$syncedCount) {
+                        \App\Models\Payment::withoutEvents(function () use ($wpStudents, &$syncedCount) {
                             
                             foreach ($wpStudents as $wpStudent) {
                                 $cedula = trim($wpStudent['cedula'] ?? '');
@@ -630,7 +631,7 @@ class Index extends Component
                                     $user = \App\Models\User::create([
                                         'name' => $wpStudent['nombre'] ?? 'Estudiante WP',
                                         'email' => $email,
-                                        'password' => $defaultPasswordHash,
+                                        'password' => \Illuminate\Support\Facades\Hash::make($cleanCedula),
                                         'email_verified_at' => now(),
                                     ]);
                                     $user->assignRole('Estudiante');
@@ -756,6 +757,10 @@ class Index extends Component
         } catch (\Exception $e) {
             Log::error('Error al sincronizar estudiantes de WordPress: ' . $e->getMessage());
             session()->flash('wp_sync_error', 'Ocurrió un error inesperado al sincronizar: ' . $e->getMessage());
+        } finally {
+            if (isset($originalRounds)) {
+                config(['hashing.bcrypt.rounds' => $originalRounds]);
+            }
         }
     }
 
