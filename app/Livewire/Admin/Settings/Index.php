@@ -597,6 +597,7 @@ class Index extends Component
      */
     public function syncWordPressStudents(WordpressApiService $wpService)
     {
+        @set_time_limit(300);
         try {
             $wpStudents = $wpService->getSgaStudents();
             if (empty($wpStudents)) {
@@ -604,10 +605,12 @@ class Index extends Component
                 return;
             }
 
+            // Pre-calcular el hash de la contraseña por defecto ('12345678') para ahorrar CPU en el bucle
+            $defaultPasswordHash = \Illuminate\Support\Facades\Hash::make('12345678');
             $syncedCount = 0;
 
             // Desactivar temporalmente los eventos en los modelos críticos
-            \App\Models\User::withoutEvents(function () use ($wpStudents, &$syncedCount) {
+            \App\Models\User::withoutEvents(function () use ($wpStudents, &$syncedCount, $defaultPasswordHash) {
                 \App\Models\Student::withoutEvents(function () use ($wpStudents, &$syncedCount) {
                     \App\Models\Enrollment::withoutEvents(function () use ($wpStudents, &$syncedCount) {
                         \App\Models\Payment::withoutEvents(function () use ($wpStudents, &$syncedCount) {
@@ -627,7 +630,7 @@ class Index extends Component
                                     $user = \App\Models\User::create([
                                         'name' => $wpStudent['nombre'] ?? 'Estudiante WP',
                                         'email' => $email,
-                                        'password' => \Illuminate\Support\Facades\Hash::make($cleanCedula),
+                                        'password' => $defaultPasswordHash,
                                         'email_verified_at' => now(),
                                     ]);
                                     $user->assignRole('Estudiante');
