@@ -207,6 +207,7 @@ class Index extends Component
              }
 
              return Enrollment::selectRaw($selectRaw)
+                ->where('status', '!=', 'Completado') // Excluir inscripciones históricas completadas
                 ->where('created_at', '>=', $startDate)
                 ->groupBy(...$groupBy)
                 ->get()
