@@ -112,6 +112,17 @@ class WordpressApiService
     }
 
     /**
+     * Obtiene la lista de estudiantes de WordPress.
+     * Endpoint: /sga/v1/students/
+     * @return array
+     */
+    public function getSgaStudents(): array
+    {
+        $response = $this->makeGetRequest('sga/v1/students/');
+        return is_array($response) ? $response : [];
+    }
+
+    /**
      * Alias para compatibilidad con el comando de importación.
      * @return array
      */
