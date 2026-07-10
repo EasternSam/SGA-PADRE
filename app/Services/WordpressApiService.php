@@ -53,6 +53,10 @@ class WordpressApiService
 
         // Corrección de URL para evitar dobles slashes problemáticos
         $fullUrl = rtrim($this->baseUri, '/') . '/' . ltrim($endpoint, '/');
+        
+        // Agregar cache buster para saltarse la caché de LiteSpeed/Cloudflare en WordPress
+        $separator = str_contains($fullUrl, '?') ? '&' : '?';
+        $fullUrl .= $separator . '_cb=' . time();
 
         // Log inicial para rastrear intentos
         Log::info("WP_API: Iniciando conexión...", [

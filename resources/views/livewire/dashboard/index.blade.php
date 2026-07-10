@@ -135,7 +135,7 @@
                 <div class="mt-4 sm:mt-0 flex gap-3 bg-gray-50/80 backdrop-blur-sm p-1.5 rounded-lg border border-gray-100">
                     <div class="flex items-center gap-2 px-3 py-1.5 rounded-md bg-white shadow-sm border border-gray-100">
                         <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></span>
-                        <span class="text-xs font-semibold text-gray-700">Web</span>
+                        <span class="text-xs font-semibold text-gray-700">Academic+ Catalog</span>
                     </div>
                     <div class="flex items-center gap-2 px-3 py-1.5 rounded-md bg-white shadow-sm border border-gray-100">
                         <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
@@ -197,7 +197,7 @@
 
                                 const options = {
                                     series: [{
-                                        name: 'Web (API)',
+                                        name: 'Academic+ Catalog',
                                         data: dataWeb || []
                                     }, {
                                         name: 'Físico (Sistema)',
