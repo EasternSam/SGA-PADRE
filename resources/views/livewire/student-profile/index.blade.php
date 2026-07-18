@@ -64,6 +64,12 @@
                         ])>
                     {{ $student->status }}
                 </span>
+                
+                @if($student->how_found === 'Academic+ Catalog')
+                    <span class="mt-3 inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 border border-indigo-200">
+                        Sincronizado en Academic+ Catalog
+                    </span>
+                @endif
             </div>
 
             <!-- Información Detallada y Acciones -->

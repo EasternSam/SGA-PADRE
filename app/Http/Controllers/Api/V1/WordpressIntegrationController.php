@@ -131,6 +131,9 @@ class WordpressIntegrationController extends Controller
                 if ($student) {
                     // Caso A: El estudiante ya existe por cédula
                     Log::info("API WP->Laravel (V1): Estudiante encontrado por Cédula ({$data['cedula']})");
+                    if (empty($student->how_found)) {
+                        $student->update(['how_found' => 'Academic+ Catalog']);
+                    }
                     
                     // Verificación de consistencia (opcional)
                     if ($user && $student->user_id != $user->id) {
@@ -161,7 +164,7 @@ class WordpressIntegrationController extends Controller
                             'birth_date' => $data['birth_date'] ?? null,
                             'gender' => $data['gender'] ?? null,
                             'nationality' => $data['nationality'] ?? null,
-                            'how_found' => $data['how_found'] ?? null,
+                            'how_found' => $data['how_found'] ?? 'Academic+ Catalog',
                             'is_minor' => $isMinor,
                             'tutor_name' => $data['tutor_name'] ?? null,
                             'tutor_cedula' => $data['tutor_cedula'] ?? null,
@@ -177,6 +180,9 @@ class WordpressIntegrationController extends Controller
                         // El usuario tiene estudiante, pero la cédula no coincidió en la búsqueda inicial
                         if ($student->cedula !== $data['cedula']) {
                              Log::warning("API WP->Laravel (V1): Mismatch de cédula para el usuario {$user->email}. Registrada: {$student->cedula}, Nueva: {$data['cedula']}. Se usará el perfil existente.");
+                        }
+                        if (empty($student->how_found)) {
+                            $student->update(['how_found' => 'Academic+ Catalog']);
                         }
                     }
 
@@ -208,7 +214,7 @@ class WordpressIntegrationController extends Controller
                         'birth_date' => $data['birth_date'] ?? null,
                         'gender' => $data['gender'] ?? null,
                         'nationality' => $data['nationality'] ?? null,
-                        'how_found' => $data['how_found'] ?? null,
+                        'how_found' => $data['how_found'] ?? 'Academic+ Catalog',
                         'is_minor' => $isMinor,
                         'tutor_name' => $data['tutor_name'] ?? null,
                         'tutor_cedula' => $data['tutor_cedula'] ?? null,

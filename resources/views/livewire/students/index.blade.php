@@ -125,6 +125,12 @@
                                                         Mat: {{ $student->student_code }}
                                                     </div>
                                                 @endif
+                                                @if($student->how_found === 'Academic+ Catalog')
+                                                    <div class="text-[10px] font-semibold text-indigo-700 bg-indigo-50/50 px-1.5 py-0.5 rounded w-fit mt-1 border border-indigo-100 flex items-center gap-1">
+                                                        <span class="flex h-1.5 w-1.5 rounded-full bg-indigo-500"></span>
+                                                        Sincronizado en Academic+ Catalog
+                                                    </div>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>

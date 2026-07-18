@@ -649,16 +649,21 @@ class Index extends Component
                                 $last_name = isset($parts[1]) ? implode(' ', array_slice($parts, 1)) : 'WP';
 
                                 if (!$student) {
-                                    $student = \App\Models\Student::create([
-                                        'user_id' => $user->id,
-                                        'first_name' => $first_name,
-                                        'last_name' => $last_name,
-                                        'cedula' => $cedula,
-                                        'email' => $email,
-                                        'mobile_phone' => $wpStudent['telefono'] ?? null,
-                                        'status' => 'Activa',
-                                    ]);
-                                }
+                                     $student = \App\Models\Student::create([
+                                         'user_id' => $user->id,
+                                         'first_name' => $first_name,
+                                         'last_name' => $last_name,
+                                         'cedula' => $cedula,
+                                         'email' => $email,
+                                         'mobile_phone' => $wpStudent['telefono'] ?? null,
+                                         'status' => 'Activa',
+                                         'how_found' => 'Academic+ Catalog',
+                                     ]);
+                                 } else {
+                                     if (empty($student->how_found)) {
+                                         $student->update(['how_found' => 'Academic+ Catalog']);
+                                     }
+                                 }
 
                                 // 3. Si tiene datos de curso, intentar matricularlo
                                 if (!empty($wpStudent['curso']['nombre'])) {
