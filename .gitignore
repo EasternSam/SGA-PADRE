@@ -50,3 +50,10 @@ Thumbs.db
 # Archivos de build/output
 /build_error.log
 /import_errors.log
+composer.phar
+error_log
+public/error_log
+storage/fonts/
+Academic+/
+__pycache__/
+*.pyc

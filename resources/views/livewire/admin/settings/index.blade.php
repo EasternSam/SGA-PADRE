@@ -1,55 +1,111 @@
 <div>
     <style>
-        /* ... (Estilos CSS anteriores se mantienen igual) ... */
-        .sys-settings-wrapper { font-family: system-ui, sans-serif; background-color: #f9fafb; min-height: 100vh; padding-bottom: 3rem; color: #111827; }
+        .sys-settings-wrapper { font-family: system-ui, sans-serif; background-color: transparent; min-height: 100vh; padding-bottom: 3rem; color: #111827; }
+        html.dark .sys-settings-wrapper { color: #f3f4f6; }
+
         .sys-header-container { display: flex; flex-direction: column; gap: 0.5rem; }
         @media (min-width: 640px) { .sys-header-container { flex-direction: row; align-items: center; justify-content: space-between; } }
+        
         .sys-title { font-size: 1.5rem; font-weight: 700; margin: 0; color: #111827; letter-spacing: -0.025em; }
+        html.dark .sys-title { color: #ffffff; }
+
         .sys-subtitle { margin: 0.25rem 0 0 0; font-size: 0.875rem; color: #6b7280; }
+        html.dark .sys-subtitle { color: #94a3b8; }
+
         .sys-layout { max-width: 98%; margin: 2rem auto 0 auto; padding: 0 1rem; display: flex; flex-direction: column; gap: 1.5rem; }
         @media (min-width: 768px) { .sys-layout { flex-direction: row; padding: 0 1.5rem; } }
+        
         .sys-sidebar { width: 100%; flex-shrink: 0; }
         @media (min-width: 768px) { .sys-sidebar { width: 16rem; } }
-        .sys-nav { display: flex; flex-direction: column; gap: 0.25rem; }
-        .sys-tab { display: flex; align-items: center; width: 100%; padding: 0.75rem 1rem; font-size: 0.875rem; font-weight: 500; border-radius: 0.75rem; border: none; background: transparent; color: #4b5563; cursor: pointer; transition: all 0.2s ease-in-out; text-align: left; }
+        
+        .sys-nav { display: flex; flex-direction: column; gap: 0.35rem; }
+        
+        .sys-tab { display: flex; align-items: center; width: 100%; padding: 0.75rem 1rem; font-size: 0.875rem; font-weight: 500; border-radius: 0.75rem; border: 1px solid transparent; background: transparent; color: #4b5563; cursor: pointer; transition: all 0.2s ease-in-out; text-align: left; }
         .sys-tab:hover { background-color: #f3f4f6; color: #111827; }
-        .sys-tab.active { background-color: #eef2ff; color: #4338ca; }
+        .sys-tab.active { background-color: #eef2ff; color: #4338ca; border-color: rgba(99, 102, 241, 0.2); }
+        
+        html.dark .sys-tab { color: #94a3b8; }
+        html.dark .sys-tab:hover { background-color: rgba(255, 255, 255, 0.06); color: #ffffff; }
+        html.dark .sys-tab.active { background-color: rgba(99, 102, 241, 0.18); color: #c7d2fe; border-color: rgba(99, 102, 241, 0.35); }
+
         .sys-tab-icon { width: 1.25rem; height: 1.25rem; margin-right: 0.75rem; color: #9ca3af; transition: color 0.2s; }
         .sys-tab:hover .sys-tab-icon { color: #6b7280; }
         .sys-tab.active .sys-tab-icon { color: #4338ca; }
+        html.dark .sys-tab-icon { color: #64748b; }
+        html.dark .sys-tab:hover .sys-tab-icon { color: #cbd5e1; }
+        html.dark .sys-tab.active .sys-tab-icon { color: #818cf8; }
+
         .sys-content { flex: 1; background-color: #ffffff; border-radius: 1rem; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); overflow: hidden; }
+        html.dark .sys-content { background-color: #0f172a; border-color: #1e293b; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35); }
+
         .sys-alert-success { padding: 1rem 1.5rem; background-color: #ecfdf5; border-bottom: 1px solid #a7f3d0; color: #065f46; font-size: 0.875rem; font-weight: 500; display: flex; align-items: center; }
+        html.dark .sys-alert-success { background-color: rgba(6, 95, 70, 0.2); border-bottom-color: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+
         .sys-alert-icon { width: 1.25rem; height: 1.25rem; margin-right: 0.5rem; color: #10b981; }
         .sys-error-text { color: #dc2626; font-size: 0.75rem; font-weight: 600; margin: 0.25rem 0 0 0; }
+        html.dark .sys-error-text { color: #f87171; }
+
         .sys-input-error { border-color: #fca5a5 !important; background-color: #fef2f2; }
+        html.dark .sys-input-error { border-color: #f87171 !important; background-color: rgba(239, 68, 68, 0.1); }
         .sys-input-error:focus { border-color: #ef4444 !important; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important; }
+
         .sys-form-body { padding: 1.5rem; }
         @media (min-width: 640px) { .sys-form-body { padding: 2rem; } }
+        
         .sys-section { margin-bottom: 2rem; }
         .sys-section:last-child { margin-bottom: 0; }
+        
         .sys-section-title { font-size: 1rem; font-weight: 700; color: #111827; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem; }
-        .sys-section-icon { width: 1.5rem; height: 1.5rem; }
+        .sys-section-icon { width: 1.25rem !important; height: 1.25rem !important; flex-shrink: 0; }
+        html.dark .sys-section-title { color: #f1f5f9; }
+
         .sys-wp-logo { height: 1.5rem; width: auto; filter: grayscale(100%); opacity: 0.7; }
+        html.dark .sys-wp-logo { filter: grayscale(100%) invert(1); opacity: 0.8; }
+
         .sys-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; background-color: #f9fafb; padding: 1.25rem; border-radius: 0.75rem; border: 1px solid #f3f4f6; }
+        html.dark .sys-grid { background-color: rgba(30, 41, 59, 0.4); border-color: rgba(51, 65, 85, 0.4); }
+
         @media (min-width: 768px) { .sys-grid-2 { grid-template-columns: repeat(2, 1fr); } }
         .sys-col-full { grid-column: 1 / -1; }
+        
         .sys-form-group { display: flex; flex-direction: column; gap: 0.375rem; }
+        
         .sys-label { font-size: 0.875rem; font-weight: 600; color: #374151; margin: 0; }
-        .sys-input { width: 100%; padding: 0.625rem 0.75rem; font-size: 0.875rem; color: #111827; background-color: #ffffff; border: 1px solid #d1d5db; border-radius: 0.5rem; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out, background-color 0.15s; outline: none; }
+        html.dark .sys-label { color: #cbd5e1; }
+
+        .sys-input { width: 100%; padding: 0.625rem 0.75rem; font-size: 0.875rem; color: #111827; background-color: #ffffff; border: 1px solid #d1d5db; border-radius: 0.5rem; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out, background-color 0.15s, color 0.15s; outline: none; }
         .sys-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
         .sys-input::placeholder { color: #9ca3af; }
+        html.dark .sys-input { color: #f8fafc; background-color: #0b1329; border-color: #334155; }
+        html.dark .sys-input:focus { border-color: #818cf8; box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.25); }
+        html.dark .sys-input::placeholder { color: #475569; }
+
         .sys-help-text { font-size: 0.75rem; color: #6b7280; margin: 0; }
+        html.dark .sys-help-text { color: #94a3b8; }
+
         .sys-color-wrapper { display: flex; align-items: center; gap: 1rem; }
         .sys-color-input { height: 3rem; width: 4rem; padding: 0.25rem; border: 1px solid #d1d5db; border-radius: 0.375rem; cursor: pointer; background: #fff; }
+        html.dark .sys-color-input { border-color: #334155; background: #0b1329; }
+
         .sys-footer { background-color: #f9fafb; padding: 1rem 1.5rem; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 1rem; }
+        html.dark .sys-footer { background-color: #0b1329; border-top-color: #1e293b; }
+
         .sys-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.625rem 1.5rem; font-size: 0.875rem; font-weight: 700; color: #ffffff; background-color: #4f46e5; border: 1px solid transparent; border-radius: 0.75rem; cursor: pointer; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: all 0.2s; }
         .sys-btn-primary:hover { background-color: #4338ca; }
         .sys-btn-primary:focus { outline: none; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4); }
         .sys-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
         .sys-btn-secondary { display: inline-flex; align-items: center; justify-content: center; padding: 0.625rem 1.5rem; font-size: 0.875rem; font-weight: 600; color: #374151; background-color: #ffffff; border: 1px solid #d1d5db; border-radius: 0.75rem; cursor: pointer; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: all 0.2s; }
         .sys-btn-secondary:hover { background-color: #f3f4f6; color: #111827; }
+        html.dark .sys-btn-secondary { color: #e2e8f0; background-color: #1e293b; border-color: #334155; }
+        html.dark .sys-btn-secondary:hover { background-color: #334155; color: #ffffff; }
+
+        .sys-divider { border-color: #e5e7eb; }
+        html.dark .sys-divider { border-color: #1e293b; }
+
         .sys-fade-in { animation: sysFadeIn 0.3s ease-in-out; }
         @keyframes sysFadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
         .sys-spin { animation: sysSpin 1s linear infinite; }
         @keyframes sysSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
@@ -102,7 +158,7 @@
                         <div x-show="$wire.activeTab === 'general'" class="sys-fade-in" style="display: none;">
                             <div class="sys-section">
                                 <h3 class="sys-section-title">
-                                    <svg class="sys-section-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                    <svg class="sys-section-icon w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                                     Identidad de la Institución
                                 </h3>
                                 <div class="sys-grid">
@@ -136,7 +192,7 @@
                                         @error('state.website_url') <p class="sys-error-text">{{ $message }}</p> @enderror
                                     </div>
 
-                                    <hr class="sys-divider my-4 border-gray-200" style="grid-column: 1 / -1;">
+                                    <hr class="sys-divider my-4 border-gray-200 dark:border-slate-800" style="grid-column: 1 / -1;">
                                     
                                     <div class="sys-form-group">
                                         <label class="sys-label">Perfil de Facebook (URL)</label>
@@ -151,10 +207,10 @@
                                     </div>
 
                                     <!-- MÓDULO UNIVERSITARIO TOGGLE -->
-                                    <div class="sys-form-group sys-col-full p-4 border rounded bg-white mt-2">
+                                    <div class="sys-form-group sys-col-full p-4 border rounded-xl bg-white dark:bg-slate-900/90 border-gray-200 dark:border-slate-800 mt-2 shadow-sm">
                                         <div class="flex items-center justify-between">
                                             <div>
-                                                <h4 class="font-semibold text-gray-700">Módulo Universitario (Carreras)</h4>
+                                                <h4 class="font-semibold text-gray-700 dark:text-slate-200">Módulo Universitario (Carreras)</h4>
                                                 <p class="sys-help-text">Habilita o deshabilita la gestión de Carreras, el flujo de Admisiones, la Selección de Materias y el Portal del Aspirante.</p>
                                             </div>
                                             <!-- Toggle Switch -->
@@ -164,13 +220,13 @@
                                                         <input type="checkbox" id="enable_careers_toggle" class="sr-only" 
                                                                @if($state['enable_careers'] === 'true') checked @endif
                                                                wire:click="$set('state.enable_careers', $event.target.checked ? 'true' : 'false')">
-                                                        <div class="block bg-gray-300 w-14 h-8 rounded-full transition-colors duration-300"
-                                                             :class="{ 'bg-green-500': '{{ $state['enable_careers'] }}' === 'true' }"></div>
+                                                        <div class="block bg-gray-300 dark:bg-slate-700 w-14 h-8 rounded-full transition-colors duration-300"
+                                                             :class="{ 'bg-green-500 dark:bg-green-600': '{{ $state['enable_careers'] }}' === 'true' }"></div>
                                                         <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition transform duration-300 pointer-events-none"
                                                              :class="{ 'translate-x-6': '{{ $state['enable_careers'] }}' === 'true' }"></div>
                                                     </div>
                                                     <div class="ml-3 text-sm font-medium" 
-                                                         :class="'{{ $state['enable_careers'] }}' === 'true' ? 'text-green-600' : 'text-gray-500'"
+                                                         :class="'{{ $state['enable_careers'] }}' === 'true' ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-slate-400'"
                                                          x-text="'{{ $state['enable_careers'] }}' === 'true' ? 'Habilitado' : 'Deshabilitado'">
                                                     </div>
                                                 </label>
@@ -179,18 +235,18 @@
                                     </div>
 
                                     <!-- APARIENCIA DEL MENÚ -->
-                                    <div class="sys-form-group sys-col-full p-4 border rounded bg-white">
-                                        <h4 class="font-semibold text-gray-700 mb-3">Estilo del Menú Lateral (Sidebar)</h4>
+                                    <div class="sys-form-group sys-col-full p-4 border rounded-xl bg-white dark:bg-slate-900/90 border-gray-200 dark:border-slate-800 shadow-sm">
+                                        <h4 class="font-semibold text-gray-700 dark:text-slate-200 mb-3">Estilo del Menú Lateral (Sidebar)</h4>
                                         
                                         <div class="flex flex-col gap-4">
                                             <div class="flex items-center gap-4">
                                                 <label class="inline-flex items-center">
                                                     <input type="radio" wire:model.live="navbar_type" value="solid" class="form-radio text-indigo-600">
-                                                    <span class="ml-2 text-sm text-gray-700">Color Sólido</span>
+                                                    <span class="ml-2 text-sm text-gray-700 dark:text-slate-300">Color Sólido</span>
                                                 </label>
                                                 <label class="inline-flex items-center">
                                                     <input type="radio" wire:model.live="navbar_type" value="gradient" class="form-radio text-indigo-600">
-                                                    <span class="ml-2 text-sm text-gray-700">Degradado</span>
+                                                    <span class="ml-2 text-sm text-gray-700 dark:text-slate-300">Degradado</span>
                                                 </label>
                                             </div>
 
@@ -233,14 +289,14 @@
                                             <!-- VISTA PREVIA -->
                                             <div class="mt-2">
                                                 <label class="sys-label block mb-1">Vista Previa:</label>
-                                                <div class="h-12 w-full rounded-lg shadow-sm flex items-center px-4 text-white font-bold" 
+                                                <div class="h-12 w-full rounded-xl shadow-sm flex items-center px-4 text-white font-bold" 
                                                      style="background: {{ $navbar_type === 'solid' ? $state['brand_primary_color'] : 'linear-gradient('.$navbar_gradient_direction.', '.$navbar_gradient_start.', '.$navbar_gradient_end.')' }};">
                                                     SGA Academic+
                                                 </div>
                                             </div>
 
                                             <!-- GESTIÓN DE PRESETS -->
-                                            <div class="mt-4 pt-4 border-t border-gray-200">
+                                            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-slate-800">
                                                 <label class="sys-label mb-2 block">Presets / Temas Guardados</label>
                                                 <div class="flex gap-2 mb-3">
                                                     <input type="text" wire:model="new_preset_name" placeholder="Nombre para guardar actual..." class="sys-input text-sm h-9">
@@ -249,10 +305,10 @@
                                                 
                                                 <div class="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
                                                     @forelse($presets as $index => $preset)
-                                                        <div class="flex items-center bg-gray-100 rounded-lg p-1 pr-2 border border-gray-300">
-                                                            <div class="w-6 h-6 rounded mr-2 border border-white shadow-sm" style="background: {{ $preset['color'] }}"></div>
-                                                            <span class="text-xs font-medium text-gray-700 mr-2">{{ $preset['name'] }}</span>
-                                                            <button type="button" wire:click="loadPreset({{ $index }})" class="text-blue-600 hover:text-blue-800 p-1" title="Cargar">
+                                                        <div class="flex items-center bg-gray-100 dark:bg-slate-800 rounded-lg p-1 pr-2 border border-gray-300 dark:border-slate-700">
+                                                            <div class="w-6 h-6 rounded mr-2 border border-white dark:border-slate-600 shadow-sm" style="background: {{ $preset['color'] }}"></div>
+                                                            <span class="text-xs font-medium text-gray-700 dark:text-slate-200 mr-2">{{ $preset['name'] }}</span>
+                                                            <button type="button" wire:click="loadPreset({{ $index }})" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 p-1" title="Cargar">
                                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                                                             </button>
                                                             <button type="button" wire:click="deletePreset({{ $index }})" wire:confirm="¿Borrar preset?" class="text-red-500 hover:text-red-700 p-1" title="Eliminar">
@@ -260,7 +316,7 @@
                                                             </button>
                                                         </div>
                                                     @empty
-                                                        <span class="text-xs text-gray-400 italic">No hay presets guardados.</span>
+                                                        <span class="text-xs text-gray-400 dark:text-slate-500 italic">No hay presets guardados.</span>
                                                     @endforelse
                                                 </div>
                                             </div>
@@ -268,24 +324,24 @@
                                     </div>
 
                                     <div class="sys-form-group sys-col-full">
-                                        <label class="sys-label">Logotipo</label>
-                                        <div class="flex items-center gap-4 p-4 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
+                                        <label class="sys-label">Logotipo Institucional</label>
+                                        <div class="flex items-center gap-4 p-4 border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-xl bg-gray-50 dark:bg-slate-900/50">
                                             <div class="shrink-0">
                                                 @if ($logo)
-                                                    <img src="{{ $logo->temporaryUrl() }}" class="h-16 w-auto object-contain rounded p-1 shadow-sm">
+                                                    <img src="{{ $logo->temporaryUrl() }}" class="h-16 w-auto object-contain rounded p-1 shadow-sm bg-white/10">
                                                 @elseif (!empty($state['institution_logo']))
-                                                    <img src="{{ $state['institution_logo'] }}" class="h-16 w-auto object-contain rounded p-1 shadow-sm">
+                                                    <img src="{{ $state['institution_logo'] }}" class="h-16 w-auto object-contain rounded p-1 shadow-sm bg-white/10">
                                                 @else
-                                                    <div class="h-16 w-16 bg-gray-200 rounded flex items-center justify-center text-gray-400 font-bold text-xs">Sin Logo</div>
+                                                    <div class="h-16 w-16 bg-gray-200 dark:bg-slate-800 rounded flex items-center justify-center text-gray-400 dark:text-slate-500 font-bold text-xs">Sin Logo</div>
                                                 @endif
                                             </div>
                                             <div class="flex-1">
-                                                <input type="file" wire:model="logo" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                                                <input type="file" wire:model="logo" accept="image/*" class="block w-full text-sm text-gray-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-950 file:text-indigo-700 dark:file:text-indigo-300 hover:file:bg-indigo-100 cursor-pointer">
                                                 <div wire:loading wire:target="logo" class="text-xs text-indigo-500 mt-1 font-semibold">Subiendo imagen...</div>
                                                 <p class="sys-help-text mt-1">Recomendado: PNG Transparente. Máx 2MB.</p>
                                                 
                                                 @if($logo || !empty($state['institution_logo']))
-                                                    <button type="button" wire:click="removeLogo" class="mt-2 inline-flex items-center text-xs font-semibold text-red-600 hover:text-red-800 focus:outline-none">
+                                                    <button type="button" wire:click="removeLogo" class="mt-2 inline-flex items-center text-xs font-semibold text-red-600 dark:text-red-400 hover:text-red-800 focus:outline-none">
                                                         <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                         </svg>
@@ -299,25 +355,25 @@
 
                                     <div class="sys-form-group sys-col-full">
                                         <label class="sys-label">Favicon (Icono del navegador)</label>
-                                        <div class="flex items-center gap-4 p-4 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
+                                        <div class="flex items-center gap-4 p-4 border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-xl bg-gray-50 dark:bg-slate-900/50">
                                             <div class="shrink-0">
                                                 @if ($favicon)
-                                                    <img src="{{ $favicon->temporaryUrl() }}" class="h-12 w-12 object-contain rounded p-1 shadow-sm bg-white border" wire:loading.remove wire:target="favicon">
-                                                    <div wire:loading wire:target="favicon" class="h-12 w-12 bg-purple-100 rounded flex items-center justify-center border border-purple-300">
-                                                        <svg class="animate-spin h-6 w-6 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <img src="{{ $favicon->temporaryUrl() }}" class="h-12 w-12 object-contain rounded p-1 shadow-sm bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700" wire:loading.remove wire:target="favicon">
+                                                    <div wire:loading wire:target="favicon" class="h-12 w-12 bg-purple-100 dark:bg-purple-950/60 rounded flex items-center justify-center border border-purple-300 dark:border-purple-800">
+                                                        <svg class="animate-spin h-6 w-6 text-purple-600 dark:text-purple-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                         </svg>
                                                     </div>
                                                 @elseif (!empty($state['favicon']))
-                                                    <img src="{{ $state['favicon'] }}" class="h-12 w-12 object-contain rounded p-1 shadow-sm bg-white border">
+                                                    <img src="{{ $state['favicon'] }}" class="h-12 w-12 object-contain rounded p-1 shadow-sm bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
                                                 @else
-                                                    <div class="h-12 w-12 bg-gray-200 rounded flex items-center justify-center text-gray-400 font-bold text-xs border">🌐</div>
+                                                    <div class="h-12 w-12 bg-gray-200 dark:bg-slate-800 rounded flex items-center justify-center text-gray-400 dark:text-slate-500 font-bold text-xs border dark:border-slate-700">🌐</div>
                                                 @endif
                                             </div>
                                             <div class="flex-1">
-                                                <input type="file" wire:model="favicon" accept="image/png,image/x-icon,image/webp" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 cursor-pointer">
-                                                <div wire:loading wire:target="favicon" class="text-xs text-purple-600 mt-1 font-bold flex items-center gap-1">
+                                                <input type="file" wire:model="favicon" accept="image/png,image/x-icon,image/webp" class="block w-full text-sm text-gray-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 dark:file:bg-purple-950 file:text-purple-700 dark:file:text-purple-300 hover:file:bg-purple-100 cursor-pointer">
+                                                <div wire:loading wire:target="favicon" class="text-xs text-purple-600 dark:text-purple-400 mt-1 font-bold flex items-center gap-1">
                                                     <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -327,7 +383,7 @@
                                                 <p class="sys-help-text mt-1" wire:loading.remove wire:target="favicon">Formatos: PNG, ICO, WEBP. Recomendado: 32x32px o 64x64px. Máx 1MB.</p>
                                                 
                                                 @if($favicon || !empty($state['favicon']))
-                                                    <button type="button" wire:click="removeFavicon" class="mt-2 inline-flex items-center text-xs font-semibold text-red-600 hover:text-red-800 focus:outline-none">
+                                                    <button type="button" wire:click="removeFavicon" class="mt-2 inline-flex items-center text-xs font-semibold text-red-600 dark:text-red-400 hover:text-red-800 focus:outline-none">
                                                         <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                         </svg>
@@ -341,23 +397,23 @@
 
                                     <div class="sys-form-group sys-col-full">
                                         <label class="sys-label">Icono de App (iPhone/Android)</label>
-                                        <div class="flex items-center gap-4 p-4 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
+                                        <div class="flex items-center gap-4 p-4 border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-xl bg-gray-50 dark:bg-slate-900/50">
                                             <div class="shrink-0">
                                                 @if ($app_icon)
-                                                    <img src="{{ $app_icon->temporaryUrl() }}" class="h-16 w-16 object-cover rounded-lg shadow-sm border">
+                                                    <img src="{{ $app_icon->temporaryUrl() }}" class="h-16 w-16 object-cover rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
                                                 @elseif (!empty($state['app_icon']))
-                                                    <img src="{{ $state['app_icon'] }}" class="h-16 w-16 object-cover rounded-lg shadow-sm border">
+                                                    <img src="{{ $state['app_icon'] }}" class="h-16 w-16 object-cover rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
                                                 @else
                                                     <div class="h-16 w-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-2xl shadow-sm">📱</div>
                                                 @endif
                                             </div>
                                             <div class="flex-1">
-                                                <input type="file" wire:model="app_icon" accept="image/png,image/webp" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                                                <input type="file" wire:model="app_icon" accept="image/png,image/webp" class="block w-full text-sm text-gray-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-950 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 cursor-pointer">
                                                 <div wire:loading wire:target="app_icon" class="text-xs text-blue-500 mt-1 font-semibold">Subiendo icono...</div>
                                                 <p class="sys-help-text mt-1">Formatos: PNG, WEBP. Recomendado: 512x512px o 1024x1024px. Máx 1MB.</p>
                                                 
                                                 @if($app_icon || !empty($state['app_icon']))
-                                                    <button type="button" wire:click="removeAppIcon" class="mt-2 inline-flex items-center text-xs font-semibold text-red-600 hover:text-red-800 focus:outline-none">
+                                                    <button type="button" wire:click="removeAppIcon" class="mt-2 inline-flex items-center text-xs font-semibold text-red-600 dark:text-red-400 hover:text-red-800 focus:outline-none">
                                                         <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                         </svg>
@@ -368,10 +424,42 @@
                                         </div>
                                         @error('app_icon') <p class="sys-error-text">{{ $message }}</p> @enderror
                                     </div>
+
+                                    <div class="sys-form-group sys-col-full">
+                                        <label class="sys-label">Imagen de Portada de Acceso / Login</label>
+                                        <div class="flex items-center gap-4 p-4 border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-xl bg-gray-50 dark:bg-slate-900/50">
+                                            <div class="shrink-0">
+                                                @if ($login_banner)
+                                                    <img src="{{ $login_banner->temporaryUrl() }}" class="h-20 w-32 object-cover rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+                                                @elseif (!empty($state['login_banner']))
+                                                    <img src="{{ $state['login_banner'] }}" class="h-20 w-32 object-cover rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+                                                @else
+                                                    <div class="h-20 w-32 bg-purple-100 dark:bg-purple-950/60 rounded-lg flex items-center justify-center text-purple-700 dark:text-purple-300 font-bold text-xs border border-purple-200 dark:border-purple-800">🖼️ Por Defecto</div>
+                                                @endif
+                                            </div>
+                                            <div class="flex-1">
+                                                <input type="file" wire:model="login_banner" accept="image/*" class="block w-full text-sm text-gray-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 dark:file:bg-purple-950 file:text-purple-700 dark:file:text-purple-300 hover:file:bg-purple-100 cursor-pointer">
+                                                <div wire:loading wire:target="login_banner" class="text-xs text-purple-600 dark:text-purple-400 mt-1 font-semibold">Subiendo imagen de acceso...</div>
+                                                <p class="sys-help-text mt-1">Imagen que se mostrará en el lateral del portal de inicio de sesión con degradado superior. Formatos: PNG, JPG, WEBP. Máx 3MB.</p>
+                                                
+                                                @if($login_banner || !empty($state['login_banner']))
+                                                    <button type="button" wire:click="removeLoginBanner" class="mt-2 inline-flex items-center text-xs font-semibold text-red-600 dark:text-red-400 hover:text-red-800 focus:outline-none">
+                                                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                        Eliminar Portada Personalizada
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        @error('login_banner') <p class="sys-error-text">{{ $message }}</p> @enderror
+                                    </div>
+
                                 </div>
                             </div>
                         </div>
 
+                        <!-- TAB: APIS -->
                         <div x-show="$wire.activeTab === 'apis'" class="sys-fade-in" style="display: none;">
                             <div class="sys-section">
                                 <h3 class="sys-section-title">
@@ -380,24 +468,24 @@
                                 </h3>
                                 <div class="sys-grid">
                                     <!-- Enlace Rápido por Código -->
-                                    <div class="sys-col-full p-4 border rounded-lg bg-indigo-50 border-indigo-100 mb-2 flex flex-col md:flex-row items-center justify-between gap-4">
+                                    <div class="sys-col-full p-4 border rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-100 dark:border-indigo-900/60 mb-2 flex flex-col md:flex-row items-center justify-between gap-4">
                                         <div class="flex-1">
-                                            <h4 class="font-bold text-indigo-900 text-sm mb-1">Enlace Rápido Automático</h4>
-                                            <p class="text-xs text-indigo-700 leading-relaxed">
+                                            <h4 class="font-bold text-indigo-900 dark:text-indigo-200 text-sm mb-1">Enlace Rápido Automático</h4>
+                                            <p class="text-xs text-indigo-700 dark:text-indigo-300 leading-relaxed">
                                                 Genera un código único temporal para vincular este sistema con tu plugin de WordPress automáticamente.
-                                                <br><strong>URL de API a utilizar:</strong> <code class="bg-indigo-100 px-1 py-0.5 rounded text-indigo-900 font-mono"><?php echo url('/api'); ?></code>
+                                                <br><strong>URL de API a utilizar:</strong> <code class="bg-indigo-100 dark:bg-indigo-900/60 px-1 py-0.5 rounded text-indigo-900 dark:text-indigo-200 font-mono"><?php echo url('/api'); ?></code>
                                             </p>
                                         </div>
                                         <div class="shrink-0 flex flex-col items-center gap-2">
                                             @if($pairingCode && now()->timestamp <= $pairingCodeExpiresAt)
                                                 <div class="flex flex-col items-center">
-                                                    <span class="text-2xl font-black tracking-widest text-indigo-900 bg-white border border-indigo-200 px-4 py-2 rounded-lg shadow-sm select-all font-mono">
+                                                    <span class="text-2xl font-black tracking-widest text-indigo-900 dark:text-indigo-100 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 px-4 py-2 rounded-lg shadow-sm select-all font-mono">
                                                         {{ $pairingCode }}
                                                     </span>
-                                                    <span class="text-[10px] text-indigo-600 mt-1 font-semibold">
+                                                    <span class="text-[10px] text-indigo-600 dark:text-indigo-400 mt-1 font-semibold">
                                                         Expira en: {{ max(0, ceil(($pairingCodeExpiresAt - now()->timestamp) / 60)) }} min
                                                     </span>
-                                                    <button type="button" wire:click="generatePairingCode" class="mt-2 text-[11px] text-indigo-600 hover:text-indigo-800 underline font-medium">
+                                                    <button type="button" wire:click="generatePairingCode" class="mt-2 text-[11px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 underline font-medium">
                                                         Renovar Código
                                                     </button>
                                                 </div>
@@ -418,23 +506,23 @@
                                      </div>
 
                                      <!-- Sincronización Manual de Estudiantes -->
-                                     <div class="sys-col-full p-4 border rounded-lg bg-gray-50 border-gray-200 mt-2">
-                                         <h4 class="font-bold text-gray-900 text-sm mb-1 flex items-center gap-1.5">
-                                             <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                                     <div class="sys-col-full p-4 border rounded-xl bg-gray-50 dark:bg-slate-900/60 border-gray-200 dark:border-slate-800 mt-2">
+                                         <h4 class="font-bold text-gray-900 dark:text-slate-100 text-sm mb-1 flex items-center gap-1.5">
+                                             <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                                              Sincronización de Estudiantes desde WordPress
                                          </h4>
-                                         <p class="text-xs text-gray-600 leading-relaxed mb-3">
+                                         <p class="text-xs text-gray-600 dark:text-slate-400 leading-relaxed mb-3">
                                              Importa todos los registros de estudiantes inscritos en el catálogo de WordPress hacia la base de datos local.
-                                             <br><strong class="text-indigo-600 font-bold">&bull; Garantía sin Notificaciones:</strong> Este proceso <strong>NO enviará ningún correo</strong> electrónico (ni contraseñas ni alertas de bienvenida) a los estudiantes importados.
+                                             <br><strong class="text-indigo-600 dark:text-indigo-400 font-bold">&bull; Garantía sin Notificaciones:</strong> Este proceso <strong>NO enviará ningún correo</strong> electrónico (ni contraseñas ni alertas de bienvenida) a los estudiantes importados.
                                          </p>
 
                                          @if (session()->has('wp_sync_success'))
-                                             <div class="p-3 mb-3 bg-green-50 border border-green-200 text-green-800 text-xs rounded-lg font-semibold">
+                                             <div class="p-3 mb-3 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 text-xs rounded-lg font-semibold">
                                                  {{ session('wp_sync_success') }}
                                              </div>
                                          @endif
                                          @if (session()->has('wp_sync_error'))
-                                             <div class="p-3 mb-3 bg-red-50 border border-red-200 text-red-800 text-xs rounded-lg font-semibold">
+                                             <div class="p-3 mb-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 text-xs rounded-lg font-semibold">
                                                  {{ session('wp_sync_error') }}
                                              </div>
                                          @endif
@@ -456,10 +544,10 @@
                                      </div>
                                 </div>
                             </div>
-                            <hr class="sys-divider">
+                            <hr class="sys-divider my-6">
                             <div class="sys-section">
                                 <h3 class="sys-section-title">
-                                    <svg class="sys-section-icon" style="color: #f98012;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.09 14.08h-2.18V11.2h2.18v4.88zm0-6.1h-2.18V7.81h2.18v2.17z"/></svg>
+                                    <svg class="sys-section-icon w-5 h-5 shrink-0" style="color: #f98012;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.09 14.08h-2.18V11.2h2.18v4.88zm0-6.1h-2.18V7.81h2.18v2.17z"/></svg>
                                     Conexión Moodle
                                 </h3>
                                 <div class="sys-grid sys-grid-2">
@@ -473,25 +561,25 @@
                                     </div>
                                 </div>
                             </div>
-                            <hr class="sys-divider">
+                            <hr class="sys-divider my-6">
                             <div class="sys-section">
                                 <h3 class="sys-section-title">
-                                    <svg class="sys-section-icon text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1.5rem; height: 1.5rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    <svg class="sys-section-icon text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1.5rem; height: 1.5rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                     Facturación Gridbase Bills API
                                 </h3>
                                 <div class="sys-grid">
                                     <div class="sys-form-group sys-col-full">
                                         <label class="sys-label">¿Habilitar Facturación Externa (Bills)?</label>
-                                        <div class="flex items-center gap-3 bg-white p-4 border border-gray-200 rounded-lg">
+                                        <div class="flex items-center gap-3 bg-white dark:bg-slate-900/80 p-4 border border-gray-200 dark:border-slate-800 rounded-xl shadow-sm">
                                             <input 
                                                 type="checkbox" 
                                                 id="enable_bills_invoicing_checkbox"
                                                 wire:model.live="state.enable_bills_invoicing" 
-                                                class="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                                class="h-5 w-5 text-indigo-600 border-gray-300 dark:border-slate-700 rounded focus:ring-indigo-500 dark:bg-slate-800"
                                             >
                                             <div>
-                                                <span class="text-sm font-semibold text-gray-900">Activar sincronización de facturas en Bills</span>
-                                                <p class="text-xs text-gray-500 mt-1">Crea automáticamente las facturas en el sistema externo Bills al completar cobros en el SGA.</p>
+                                                <span class="text-sm font-semibold text-gray-900 dark:text-slate-100">Activar sincronización de facturas en Bills</span>
+                                                <p class="text-xs text-gray-500 dark:text-slate-400 mt-1">Crea automáticamente las facturas en el sistema externo Bills al completar cobros en el SGA.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -521,7 +609,7 @@
                         <div x-show="$wire.activeTab === 'smtp'" class="sys-fade-in" style="display: none;">
                             <div class="sys-section">
                                 <h3 class="sys-section-title">
-                                    <svg class="sys-section-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" /></svg>
+                                    <svg class="sys-section-icon w-5 h-5 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" /></svg>
                                     Configuración de Correo Electrónico (SMTP)
                                 </h3>
                                 <p class="sys-help-text mb-4">Configura los detalles del servidor de correo para que el sistema pueda enviar notificaciones a estudiantes y docentes (recuperación de contraseñas, recibos de pago, etc).</p>
@@ -562,6 +650,7 @@
                             </div>
                         </div>
 
+                        <!-- TAB: FINANZAS Y PASARELAS -->
                         <div x-show="$wire.activeTab === 'finance'" class="sys-fade-in" style="display: none;">
                             <div class="sys-section">
                                 <h3 class="sys-section-title">Cardnet</h3>
@@ -581,15 +670,15 @@
                                 <div class="sys-grid">
                                     <div class="sys-form-group sys-col-full">
                                         <label class="sys-label">¿Habilitar Facturación Electrónica?</label>
-                                        <div class="flex items-center gap-3 bg-white p-4 border border-gray-200 rounded-lg">
+                                        <div class="flex items-center gap-3 bg-white dark:bg-slate-900/80 p-4 border border-gray-200 dark:border-slate-800 rounded-xl shadow-sm">
                                             <input 
                                                 type="checkbox" 
                                                 wire:model.live="state.enable_electronic_billing" 
-                                                class="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                                class="h-5 w-5 text-indigo-600 border-gray-300 dark:border-slate-700 rounded focus:ring-indigo-500 dark:bg-slate-800"
                                             >
                                             <div>
-                                                <span class="text-sm font-semibold text-gray-900">Activar módulo de facturación electrónica</span>
-                                                <p class="text-xs text-gray-500 mt-1">Genera NCF automáticamente y habilita reportes DGII (formatos 606 y 607). Desactiva esta opción si no necesitas comprobantes fiscales.</p>
+                                                <span class="text-sm font-semibold text-gray-900 dark:text-slate-100">Activar módulo de facturación electrónica</span>
+                                                <p class="text-xs text-gray-500 dark:text-slate-400 mt-1">Genera NCF automáticamente y habilita reportes DGII (formatos 606 y 607). Desactiva esta opción si no necesitas comprobantes fiscales.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -607,13 +696,13 @@
                     <div class="sys-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                         <div class="flex items-center">
                             @if(!empty($state['wp_api_url']) && !empty($state['wp_api_secret']))
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                                     <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
                                     Academic+ Catalog conectado
                                 </span>
                             @else
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200">
-                                    <span class="h-2 w-2 rounded-full bg-gray-400"></span>
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-700">
+                                    <span class="h-2 w-2 rounded-full bg-gray-400 dark:bg-slate-500"></span>
                                     WordPress desconectado
                                 </span>
                             @endif

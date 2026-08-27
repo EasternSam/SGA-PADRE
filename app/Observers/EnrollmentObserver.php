@@ -152,6 +152,7 @@ class EnrollmentObserver
                 'course_name'     => $courseName,
                 'schedule_string' => $scheduleString,
                 'status'          => $enrollment->status,
+                'student_code'    => $student->student_code,
             ]);
         } catch (\Exception $e) {
             Log::error("Error al sincronizar inscripción a WordPress: " . $e->getMessage());

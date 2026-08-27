@@ -25,6 +25,7 @@ class Index extends Component
     public $logo;
     public $favicon;
     public $app_icon;
+    public $login_banner;
 
     public $state = [];
 
@@ -70,6 +71,7 @@ class Index extends Component
             'institution_logo'    => $settings['institution_logo'] ?? null,
             'favicon'             => $settings['favicon'] ?? null,
             'app_icon'            => $settings['app_icon'] ?? null,
+            'login_banner'        => $settings['login_banner'] ?? null,
             'brand_primary_color' => $settings['brand_primary_color'] ?? '#1e3a8a',
             'support_email'       => $settings['support_email'] ?? 'soporte@institucion.edu',
             'contact_phone'       => $settings['contact_phone'] ?? '',
@@ -122,7 +124,11 @@ class Index extends Component
         }
 
         // Registrar cambios en archivos y marcar correspondientes como sucios
-        if (in_array($propertyName, ['logo', 'favicon', 'app_icon'])) {
+        if (in_array($propertyName, ['logo', 'favicon', 'app_icon', 'login_banner'])) {
+            if ($propertyName === 'login_banner') $this->dirtyKeys['login_banner'] = true;
+            if ($propertyName === 'logo') $this->dirtyKeys['institution_logo'] = true;
+            if ($propertyName === 'favicon') $this->dirtyKeys['favicon'] = true;
+            if ($propertyName === 'app_icon') $this->dirtyKeys['app_icon'] = true;
             $this->dirtyKeys[$propertyName] = true;
         }
 
@@ -227,6 +233,20 @@ class Index extends Component
         }
     }
 
+        public function removeLoginBanner()
+    {
+        $this->state['login_banner'] = null;
+        $this->login_banner = null;
+        
+        try {
+            Setting::set('login_banner', null, 'general', 'image');
+            Cache::flush();
+            session()->flash('message', 'Imagen de portada de acceso eliminada correctamente.');
+        } catch (\Exception $e) {
+            session()->flash('error', 'Error al eliminar la portada de acceso: ' . $e->getMessage());
+        }
+    }
+
     public function removeAppIcon()
     {
         $this->state['app_icon'] = null;
@@ -243,6 +263,10 @@ class Index extends Component
 
     public function save($shouldRedirect = true)
     {
+        if (!empty($this->logo)) $this->dirtyKeys['institution_logo'] = true;
+        if (!empty($this->favicon)) $this->dirtyKeys['favicon'] = true;
+        if (!empty($this->app_icon)) $this->dirtyKeys['app_icon'] = true;
+        if (!empty($this->login_banner)) $this->dirtyKeys['login_banner'] = true;
         // Si no hay nada modificado, omitir proceso y retornar temprano
         if (empty($this->dirtyKeys)) {
             session()->flash('message', 'No hay cambios para guardar.');
@@ -280,6 +304,7 @@ class Index extends Component
             'logo'                      => 'nullable|image|max:2048',
             'favicon'                   => 'nullable|image|mimes:png,ico,webp|max:1024',
             'app_icon'                  => 'nullable|image|mimes:png,webp|max:1024',
+            'login_banner'              => 'nullable|image|max:3072',
             'state.wp_api_url'          => 'nullable|url',
             'state.moodle_url'          => 'nullable|url',
             'state.enable_electronic_billing' => 'boolean',
@@ -336,6 +361,24 @@ class Index extends Component
             }
         }
 
+                if ($this->login_banner) {
+            try {
+                $brandingPath = public_path('branding');
+                if (!file_exists($brandingPath)) {
+                    mkdir($brandingPath, 0755, true);
+                }
+                
+                $filename = 'login_banner_' . time() . '.' . $this->login_banner->getClientOriginalExtension();
+                $this->login_banner->storeAs('branding', $filename, 'hosting_public');
+                $url = "/branding/" . $filename;
+                $this->state['login_banner'] = $url;
+                $this->dirtyKeys['login_banner'] = true;
+            } catch (\Exception $e) {
+                session()->flash('error', 'Error al guardar la portada de acceso: ' . $e->getMessage());
+                return;
+            }
+        }
+
         if ($this->app_icon) {
             try {
                 // Asegurar que el directorio existe
@@ -377,7 +420,7 @@ class Index extends Component
             }
             
             $type = str_contains($key, 'secret') || str_contains($key, 'token') || str_contains($key, 'api_token') ? 'password' : 'string';
-            if (in_array($key, ['institution_logo', 'favicon', 'app_icon'])) $type = 'image';
+            if (in_array($key, ['institution_logo', 'favicon', 'app_icon', 'login_banner'])) $type = 'image';
 
             $group = 'general';
             if (str_starts_with($key, 'wp_') || str_starts_with($key, 'moodle_') || str_starts_with($key, 'bills_') || $key === 'enable_bills_invoicing') $group = 'apis';
@@ -649,21 +692,16 @@ class Index extends Component
                                 $last_name = isset($parts[1]) ? implode(' ', array_slice($parts, 1)) : 'WP';
 
                                 if (!$student) {
-                                     $student = \App\Models\Student::create([
-                                         'user_id' => $user->id,
-                                         'first_name' => $first_name,
-                                         'last_name' => $last_name,
-                                         'cedula' => $cedula,
-                                         'email' => $email,
-                                         'mobile_phone' => $wpStudent['telefono'] ?? null,
-                                         'status' => 'Activa',
-                                         'how_found' => 'Academic+ Catalog',
-                                     ]);
-                                 } else {
-                                     if (empty($student->how_found)) {
-                                         $student->update(['how_found' => 'Academic+ Catalog']);
-                                     }
-                                 }
+                                    $student = \App\Models\Student::create([
+                                        'user_id' => $user->id,
+                                        'first_name' => $first_name,
+                                        'last_name' => $last_name,
+                                        'cedula' => $cedula,
+                                        'email' => $email,
+                                        'mobile_phone' => $wpStudent['telefono'] ?? null,
+                                        'status' => 'Activa',
+                                    ]);
+                                }
 
                                 // 3. Si tiene datos de curso, intentar matricularlo
                                 if (!empty($wpStudent['curso']['nombre'])) {

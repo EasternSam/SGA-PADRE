@@ -17,10 +17,6 @@ use App\Models\Payment;
 use App\Models\ScheduleMapping;
 use App\Models\CourseSchedule;
 use App\Models\PaymentConcept; 
-use App\Models\CallLog;
-use App\Models\Course;
-use App\Notifications\SystemNotification;
-use Illuminate\Support\Facades\Notification;
 
 class WordpressIntegrationController extends Controller
 {
@@ -59,18 +55,6 @@ class WordpressIntegrationController extends Controller
 
         if ($validator->fails()) {
             Log::warning('API WP->Laravel (V1): Validación fallida', $request->all());
-            
-            $errorsText = implode(', ', $validator->errors()->all());
-            $cedula = $request->input('cedula', 'N/D');
-            $studentName = trim($request->input('first_name', '') . ' ' . $request->input('last_name', ''));
-            $studentName = $studentName ?: 'Estudiante Desconocido';
-            $courseName = $request->input('wp_course_id', 'ID Desconocido');
-            
-            $this->notifyAdminsOfError(
-                "Error de Validación en Inscripción WP",
-                "Fallo al validar inscripción para {$studentName} (Cédula: {$cedula}) para el curso WP ID {$courseName}. Errores: {$errorsText}"
-            );
-
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
@@ -85,13 +69,6 @@ class WordpressIntegrationController extends Controller
 
             if (!$mapping) {
                 Log::error("API WP->Laravel (V1): No se encontró mapeo para el wp_course_id: {$data['wp_course_id']}");
-                
-                $studentName = $data['first_name'] . ' ' . $data['last_name'];
-                $this->notifyAdminsOfError(
-                    "Error de Mapeo de Curso WP",
-                    "El estudiante {$studentName} (Cédula: {$data['cedula']}) intentó inscribirse en el curso WordPress ID {$data['wp_course_id']}, pero no está enlazado con ningún curso en Laravel."
-                );
-
                 return response()->json(['success' => false, 'message' => 'Curso de WordPress no enlazado en Laravel.'], 404);
             }
 
@@ -107,14 +84,6 @@ class WordpressIntegrationController extends Controller
                     'wp_course_id' => $data['wp_course_id'],
                     'wp_schedule_string' => $data['wp_schedule_string']
                 ]);
-
-                $studentName = $data['first_name'] . ' ' . $data['last_name'];
-                $courseName = $laravelCourse->name ?? 'Curso Desconocido';
-                $this->notifyAdminsOfError(
-                    "Error de Mapeo de Sección/Horario WP",
-                    "El estudiante {$studentName} (Cédula: {$data['cedula']}) intentó inscribirse en el curso {$courseName}, pero el horario '{$data['wp_schedule_string']}' no tiene un mapeo de sección en Laravel."
-                );
-
                 return response()->json(['success' => false, 'message' => 'Sección (horario) de WordPress no enlazada en Laravel.'], 404);
             }
             
@@ -131,9 +100,6 @@ class WordpressIntegrationController extends Controller
                 if ($student) {
                     // Caso A: El estudiante ya existe por cédula
                     Log::info("API WP->Laravel (V1): Estudiante encontrado por Cédula ({$data['cedula']})");
-                    if (empty($student->how_found)) {
-                        $student->update(['how_found' => 'Academic+ Catalog']);
-                    }
                     
                     // Verificación de consistencia (opcional)
                     if ($user && $student->user_id != $user->id) {
@@ -164,7 +130,7 @@ class WordpressIntegrationController extends Controller
                             'birth_date' => $data['birth_date'] ?? null,
                             'gender' => $data['gender'] ?? null,
                             'nationality' => $data['nationality'] ?? null,
-                            'how_found' => $data['how_found'] ?? 'Academic+ Catalog',
+                            'how_found' => $data['how_found'] ?? null,
                             'is_minor' => $isMinor,
                             'tutor_name' => $data['tutor_name'] ?? null,
                             'tutor_cedula' => $data['tutor_cedula'] ?? null,
@@ -180,9 +146,6 @@ class WordpressIntegrationController extends Controller
                         // El usuario tiene estudiante, pero la cédula no coincidió en la búsqueda inicial
                         if ($student->cedula !== $data['cedula']) {
                              Log::warning("API WP->Laravel (V1): Mismatch de cédula para el usuario {$user->email}. Registrada: {$student->cedula}, Nueva: {$data['cedula']}. Se usará el perfil existente.");
-                        }
-                        if (empty($student->how_found)) {
-                            $student->update(['how_found' => 'Academic+ Catalog']);
                         }
                     }
 
@@ -214,7 +177,7 @@ class WordpressIntegrationController extends Controller
                         'birth_date' => $data['birth_date'] ?? null,
                         'gender' => $data['gender'] ?? null,
                         'nationality' => $data['nationality'] ?? null,
-                        'how_found' => $data['how_found'] ?? 'Academic+ Catalog',
+                        'how_found' => $data['how_found'] ?? null,
                         'is_minor' => $isMinor,
                         'tutor_name' => $data['tutor_name'] ?? null,
                         'tutor_cedula' => $data['tutor_cedula'] ?? null,
@@ -289,372 +252,7 @@ class WordpressIntegrationController extends Controller
                 'error' => $e->getMessage(),
                 'line' => $e->getLine(),
             ]);
-
-            $studentName = $request->input('first_name', '') . ' ' . $request->input('last_name', '');
-            $studentName = trim($studentName) ?: 'Estudiante Desconocido';
-            $this->notifyAdminsOfError(
-                "Error Fatal en Inscripción WP",
-                "Error al procesar inscripción para {$studentName}: {$e->getMessage()}"
-            );
-
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
-    }
-
-    /**
-     * Sincroniza un registro de llamada enviado desde WordPress a Laravel.
-     */
-    public function syncCallLog(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'wp_call_id'   => 'required|integer',
-            'cedula'       => 'required|string',
-            'course_name'  => 'required|string',
-            'agent_email'  => 'nullable|email',
-            'comments'     => 'nullable|string',
-            'status'       => 'required|string',
-            'created_at'   => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
-        $data = $validator->validated();
-
-        try {
-            // Buscar estudiante
-            $student = Student::where('cedula', $data['cedula'])->first();
-            if (!$student) {
-                // Fallback: buscar por cédula normalizada
-                $cleanCedula = preg_replace('/[^0-9]/', '', $data['cedula']);
-                $student = Student::where('cedula', $cleanCedula)->first();
-            }
-
-            if (!$student) {
-                return response()->json(['success' => false, 'message' => 'Estudiante no encontrado en Laravel.'], 404);
-            }
-
-            // Buscar agente
-            $agent = null;
-            if (!empty($data['agent_email'])) {
-                $agent = User::where('email', $data['agent_email'])->first();
-            }
-            $agent_id = $agent ? $agent->id : auth()->id();
-
-            // Buscar inscripción (enrollment) por estudiante y curso
-            $enrollment = Enrollment::where('student_id', $student->id)
-                ->whereHas('course', function ($query) use ($data) {
-                    $query->where('name', 'LIKE', '%' . $data['course_name'] . '%');
-                })
-                ->latest()
-                ->first();
-
-            // Sincronizar (crear o actualizar) el CallLog
-            $callLog = CallLog::updateOrCreate(
-                ['wp_call_id' => $data['wp_call_id']],
-                [
-                    'student_id'    => $student->id,
-                    'enrollment_id' => $enrollment ? $enrollment->id : null,
-                    'agent_id'      => $agent_id ?? 1, // Fallback a user ID 1
-                    'comment'       => $data['comments'] ?? '',
-                    'status'        => $data['status'],
-                    'created_at'    => !empty($data['created_at']) ? Carbon::parse($data['created_at']) : now(),
-                ]
-            );
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Registro de llamada sincronizado correctamente.',
-                'call_log_id' => $callLog->id
-            ], 200);
-
-        } catch (\Exception $e) {
-            Log::error("API WP->Laravel (V1): Error al sincronizar llamada.", ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
-    }
-
-    /**
-     * Obtiene el listado de pagos paginado desde Laravel.
-     */
-    public function getPayments(Request $request)
-    {
-        try {
-            $search = $request->input('search');
-            
-            $query = Payment::with(['student', 'paymentConcept', 'enrollment.course']);
-
-            if (!empty($search)) {
-                $query->where(function ($q) use ($search) {
-                    $q->whereHas('student', function ($sq) use ($search) {
-                        $sq->where('first_name', 'LIKE', "%{$search}%")
-                           ->orWhere('last_name', 'LIKE', "%{$search}%")
-                           ->orWhere('cedula', 'LIKE', "%{$search}%")
-                           ->orWhere('email', 'LIKE', "%{$search}%");
-                    })
-                    ->orWhere('gateway', 'LIKE', "%{$search}%")
-                    ->orWhere('status', 'LIKE', "%{$search}%")
-                    ->orWhereHas('paymentConcept', function ($cq) use ($search) {
-                        $cq->where('name', 'LIKE', "%{$search}%");
-                    });
-                });
-            }
-
-            $payments = $query->orderBy('due_date', 'desc')->paginate(50);
-
-            return response()->json([
-                'success' => true,
-                'data' => $payments->items(),
-                'current_page' => $payments->currentPage(),
-                'last_page' => $payments->lastPage(),
-                'total' => $payments->total(),
-                'per_page' => $payments->perPage(),
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error("API WP->Laravel (V1): Error al obtener pagos.", ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
-    }
-
-    /**
-     * Actualiza el perfil de estudiante en Laravel.
-     */
-    public function updateStudent(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'cedula'             => 'required|string',
-            'first_name'         => 'nullable|string|max:255',
-            'last_name'          => 'nullable|string|max:255',
-            'email'              => 'nullable|email|max:255',
-            'phone'              => 'nullable|string|max:20',
-            'mobile_phone'       => 'nullable|string|max:20',
-            'address'            => 'nullable|string',
-            'city'               => 'nullable|string|max:255',
-            'sector'             => 'nullable|string|max:255',
-            'tutor_name'         => 'nullable|string|max:255',
-            'tutor_cedula'       => 'nullable|string|max:255',
-            'tutor_phone'        => 'nullable|string|max:255',
-            'tutor_relationship' => 'nullable|string|max:255',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
-        $data = $validator->validated();
-
-        try {
-            $student = Student::where('cedula', $data['cedula'])->first();
-            if (!$student) {
-                // Fallback
-                $cleanCedula = preg_replace('/[^0-9]/', '', $data['cedula']);
-                $student = Student::where('cedula', $cleanCedula)->first();
-            }
-
-            if (!$student) {
-                return response()->json(['success' => false, 'message' => 'Estudiante no encontrado en Laravel.'], 404);
-            }
-
-            $updateData = [];
-            if (isset($data['first_name'])) $updateData['first_name'] = $data['first_name'];
-            if (isset($data['last_name'])) $updateData['last_name'] = $data['last_name'];
-            if (isset($data['email'])) $updateData['email'] = $data['email'];
-            if (isset($data['phone'])) $updateData['home_phone'] = $data['phone'];
-            if (isset($data['mobile_phone'])) $updateData['mobile_phone'] = $data['mobile_phone'];
-            if (isset($data['address'])) $updateData['address'] = $data['address'];
-            if (isset($data['city'])) $updateData['city'] = $data['city'];
-            if (isset($data['sector'])) $updateData['sector'] = $data['sector'];
-            if (isset($data['tutor_name'])) $updateData['tutor_name'] = $data['tutor_name'];
-            if (isset($data['tutor_cedula'])) $updateData['tutor_cedula'] = $data['tutor_cedula'];
-            if (isset($data['tutor_phone'])) $updateData['tutor_phone'] = $data['tutor_phone'];
-            if (isset($data['tutor_relationship'])) $updateData['tutor_relationship'] = $data['tutor_relationship'];
-
-            $student->update($updateData);
-
-            $user = $student->user;
-            if ($user) {
-                $userData = [];
-                if (isset($data['first_name']) || isset($data['last_name'])) {
-                    $userData['name'] = ($data['first_name'] ?? $student->first_name) . ' ' . ($data['last_name'] ?? $student->last_name);
-                }
-                if (isset($data['email'])) {
-                    $userData['email'] = $data['email'];
-                }
-                if (!empty($userData)) {
-                    $user->update($userData);
-                }
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Datos del estudiante actualizados en Laravel correctamente.'
-            ], 200);
-
-        } catch (\Exception $e) {
-            Log::error("API WP->Laravel (V1): Error al actualizar estudiante.", ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
-    }
-
-    /**
-     * Obtiene estadísticas unificadas del centro educativo desde Laravel.
-     */
-    public function getDashboardStats()
-    {
-        try {
-            $totalStudents = Student::count();
-            $totalCourses = Course::where('status', 'Activo')->count();
-            if ($totalCourses === 0) {
-                $totalCourses = Course::count();
-            }
-            $pendingEnrollments = Enrollment::where('status', 'Pendiente')->count();
-            $pendingPayments = Payment::whereIn('status', ['Pendiente', 'unpaid', 'Por Pagar'])->count();
-            $paidPaymentsSum = Payment::whereIn('status', ['paid', 'Completado', 'Pagado'])->sum('amount');
-
-            $brandPrimaryColor = \App\Models\Setting::val('brand_primary_color', '#0B484C');
-            $navbarType = \App\Models\Setting::val('navbar_type', 'gradient');
-            $navbarGradientStart = \App\Models\Setting::val('navbar_gradient_start', '#5a1256');
-            $navbarGradientEnd = \App\Models\Setting::val('navbar_gradient_end', '#1a0a53');
-            $navbarGradientDirection = \App\Models\Setting::val('navbar_gradient_direction', 'to bottom right');
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'total_students'      => $totalStudents,
-                    'total_courses'       => $totalCourses,
-                    'pending_enrollments' => $pendingEnrollments,
-                    'pending_payments'    => $pendingPayments,
-                    'total_revenue'       => (float) $paidPaymentsSum,
-                    'branding' => [
-                        'brand_primary_color'       => $brandPrimaryColor,
-                        'navbar_type'               => $navbarType,
-                        'navbar_gradient_start'     => $navbarGradientStart,
-                        'navbar_gradient_end'       => $navbarGradientEnd,
-                        'navbar_gradient_direction' => $navbarGradientDirection,
-                    ]
-                ]
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error("API WP->Laravel (V1): Error al obtener estadísticas del dashboard.", ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
-    }
-
-    /**
-     * Completa el emparejamiento automático por código temporal.
-     */
-    public function pair(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'code'   => 'required|string',
-            'wp_url' => 'required|url',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
-        $data = $validator->validated();
-
-        try {
-            $pairingDataJson = \App\Models\Setting::val('wp_pairing_data');
-            if (empty($pairingDataJson)) {
-                return response()->json(['success' => false, 'message' => 'Código de enlace no generado o ya expirado.'], 400);
-            }
-
-            $pairingData = json_decode($pairingDataJson, true);
-            if (!is_array($pairingData) || !isset($pairingData['code'])) {
-                return response()->json(['success' => false, 'message' => 'Los datos de enlace están dañados.'], 400);
-            }
-
-            // Normalizar comparación
-            $inputCode = strtoupper(trim($data['code']));
-            $savedCode = strtoupper(trim($pairingData['code']));
-
-            if ($inputCode !== $savedCode) {
-                return response()->json(['success' => false, 'message' => 'El código de enlace ingresado es incorrecto.'], 400);
-            }
-
-            if (now()->timestamp > $pairingData['expires_at']) {
-                return response()->json(['success' => false, 'message' => 'El código de enlace ha expirado (límite 15 minutos).'], 400);
-            }
-
-            // Normalizar la URL de WordPress para obtener la base de la API (/wp-json/)
-            $wpApiUrl = $data['wp_url'];
-            if (str_contains($wpApiUrl, '/wp-json/')) {
-                $wpApiUrl = preg_replace('#/wp-json/.*$#', '/wp-json/', $wpApiUrl);
-            }
-
-            // Configurar los settings de WordPress en Laravel
-            \App\Models\Setting::set('wp_api_url', $wpApiUrl, 'apis', 'string');
-            \App\Models\Setting::set('wp_api_secret', $pairingData['wp_api_secret'], 'apis', 'password');
-
-            // Limpiar el código para que no pueda reusarse
-            \App\Models\Setting::set('wp_pairing_data', null, 'apis', 'json');
-
-            // Limpiar caché
-            \Illuminate\Support\Facades\Cache::flush();
-
-            $brandPrimaryColor = \App\Models\Setting::val('brand_primary_color', '#0B484C');
-            $navbarType = \App\Models\Setting::val('navbar_type', 'gradient');
-            $navbarGradientStart = \App\Models\Setting::val('navbar_gradient_start', '#5a1256');
-            $navbarGradientEnd = \App\Models\Setting::val('navbar_gradient_end', '#1a0a53');
-            $navbarGradientDirection = \App\Models\Setting::val('navbar_gradient_direction', 'to bottom right');
-
-            return response()->json([
-                'success'       => true,
-                'message'       => 'Emparejamiento exitoso.',
-                'api_url'       => url('/api/v1'),
-                'api_token'     => $pairingData['api_token'],
-                'wp_api_secret' => $pairingData['wp_api_secret'],
-                'branding' => [
-                    'brand_primary_color'       => $brandPrimaryColor,
-                    'navbar_type'               => $navbarType,
-                    'navbar_gradient_start'     => $navbarGradientStart,
-                    'navbar_gradient_end'       => $navbarGradientEnd,
-                    'navbar_gradient_direction' => $navbarGradientDirection,
-                ]
-            ], 200);
-
-        } catch (\Exception $e) {
-            Log::error("API WordPress Pair Error: " . $e->getMessage());
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
-    }
-
-    /**
-     * Envía una notificación de error a los administradores.
-     *
-     * @param string $title
-     * @param string $message
-     * @return void
-     */
-    private function notifyAdminsOfError($title, $message)
-    {
-        try {
-            $admins = User::role('Admin')->get();
-            if ($admins->isEmpty()) {
-                // Si no hay rol Admin, buscar administrador
-                $admins = User::role('administrator')->get();
-            }
-            if ($admins->isEmpty()) {
-                // Último recurso: primer usuario
-                $firstUser = User::first();
-                if ($firstUser) {
-                    $admins = collect([$firstUser]);
-                }
-            }
-
-            if ($admins->isNotEmpty()) {
-                Notification::send($admins, new SystemNotification(
-                    $title,
-                    $message,
-                    'danger'
-                ));
-            }
-        } catch (\Exception $e) {
-            Log::error("Error al enviar notificación de error a administradores: " . $e->getMessage());
         }
     }
 }

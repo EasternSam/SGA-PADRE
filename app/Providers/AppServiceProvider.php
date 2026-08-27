@@ -82,6 +82,7 @@ class AppServiceProvider extends ServiceProvider
             // 2. Cargar Logo y Colores
             $brandSettings = [
                 'logo_url' => Setting::get('institution_logo'), 
+                'login_banner' => Setting::get('login_banner'),
                 'primary_color' => Setting::get('brand_primary_color', '#1e3a8a'), // Azul default
             ];
 
