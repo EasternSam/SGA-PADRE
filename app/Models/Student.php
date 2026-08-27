@@ -43,19 +43,6 @@ class Student extends Model
         'tutor_cedula',
         'tutor_phone',
         'tutor_relationship',
-
-        // Campos escolares MINERD
-        'grade_level_id',
-        'section_id',
-        'academic_year_id',
-        'enrollment_date',
-        'blood_type',
-        'allergies',
-        'medical_conditions',
-        'emergency_contact_name',
-        'emergency_contact_phone',
-        'previous_school',
-        'documents_status',
     ];
 
     /**
@@ -64,11 +51,9 @@ class Student extends Model
      * @var array
      */
     protected $casts = [
-        'birth_date'       => 'date',
-        'enrollment_date'  => 'date',
-        'is_minor'         => 'boolean',
-        'balance'          => 'decimal:2',
-        'documents_status' => 'array',
+        'birth_date' => 'date',
+        'is_minor' => 'boolean',
+        'balance' => 'decimal:2',
     ];
 
     /**
@@ -119,31 +104,78 @@ class Student extends Model
         return $this->hasMany(StudentRequest::class);
     }
 
-    // ── Relaciones Escolares MINERD ─────────────────────────
-
-    public function gradeLevel()
+    /**
+     * Relación con el Plan de Carrera del estudiante.
+     */
+    public function degreePlan()
     {
-        return $this->belongsTo(GradeLevel::class);
+        return $this->hasOne(DegreePlan::class);
     }
 
-    public function section()
+    /**
+     * Booted method to register model events.
+     */
+    protected static function booted()
     {
-        return $this->belongsTo(Section::class);
-    }
+        static::created(function ($student) {
+            try {
+                $wpApiService = app(\App\Services\WordpressApiService::class);
+                $wpApiService->syncStudent([
+                    'cedula'       => $student->cedula,
+                    'first_name'   => $student->first_name,
+                    'last_name'    => $student->last_name,
+                    'email'        => $student->email,
+                    'phone'        => $student->mobile_phone ?: $student->home_phone,
+                    'address'      => $student->address,
+                    'student_code' => $student->student_code,
+                ]);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Error al sincronizar estudiante creado a WordPress: " . $e->getMessage());
+            }
 
-    public function academicYear()
-    {
-        return $this->belongsTo(AcademicYear::class);
-    }
+            // Enviar correo de bienvenida si es un usuario recién creado (primer inicio de sesión)
+            try {
+                $user = $student->user;
+                if ($user && $user->created_at && $user->created_at->gt(now()->subMinutes(2))) {
+                    $cleanCedula = preg_replace('/[^0-9]/', '', $student->cedula);
+                    $institutionName = \App\Models\Setting::val('institution_name', config('app.name', 'Academic+'));
+                    $subject = '🎓 ¡Bienvenido a ' . $institutionName . '! Tus credenciales de acceso';
+                    $loginUrl = url('/login');
+                    $message = "¡Hola {$student->first_name}!\n\n"
+                             . "Te damos la más cordial bienvenida a nuestra plataforma académica **{$institutionName}**.\n\n"
+                             . "Tu cuenta ya está activa para ingresar a la plataforma y gestionar tus clases, calificaciones y pagos.\n\n"
+                             . "Puedes acceder desde el siguiente enlace:\n"
+                             . "{$loginUrl}\n\n"
+                             . "Tus credenciales de acceso son:\n"
+                             . "• Usuario: {$student->email} (o tu número de cédula: {$student->cedula})\n"
+                             . "• Contraseña temporal: {$cleanCedula} (tu cédula sin guiones)\n\n"
+                             . "Te sugerimos cambiar tu contraseña al ingresar por primera vez por motivos de seguridad.\n\n"
+                             . "¡Mucho éxito en tus estudios!";
 
-    public function studentGrades()
-    {
-        return $this->hasMany(StudentGrade::class);
-    }
+                    \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\CustomSystemMail($subject, $message));
+                    \Illuminate\Support\Facades\Log::info("Correo de bienvenida enviado automáticamente a {$user->email}.");
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Error al enviar correo de bienvenida al estudiante: " . $e->getMessage());
+            }
+        });
 
-    public function reportCards()
-    {
-        return $this->hasMany(ReportCard::class);
+        static::updated(function ($student) {
+            try {
+                $wpApiService = app(\App\Services\WordpressApiService::class);
+                $wpApiService->syncStudent([
+                    'cedula'       => $student->cedula,
+                    'first_name'   => $student->first_name,
+                    'last_name'    => $student->last_name,
+                    'email'        => $student->email,
+                    'phone'        => $student->mobile_phone ?: $student->home_phone,
+                    'address'      => $student->address,
+                    'student_code' => $student->student_code,
+                ]);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Error al sincronizar estudiante actualizado a WordPress: " . $e->getMessage());
+            }
+        });
     }
 
     /**
@@ -152,18 +184,5 @@ class Student extends Model
     public function getFullNameAttribute()
     {
         return "{$this->first_name} {$this->last_name}";
-    }
-
-    /**
-     * Promedio general del estudiante en un período.
-     */
-    public function getAverageForPeriod(int $periodId): ?float
-    {
-        $grades = $this->studentGrades()
-            ->where('evaluation_period_id', $periodId)
-            ->whereNotNull('score')
-            ->get();
-
-        return $grades->isEmpty() ? null : round($grades->avg('score'), 2);
     }
 }

@@ -38,7 +38,13 @@ class Payment extends Model
         // --- Campos NCF Cliente ---
         'rnc_client',   
         'company_name',
-        'ncf_type_requested'
+        'ncf_type_requested',
+
+        // --- Campos de Integración con Bills ---
+        'bills_invoice_id',
+        'bills_invoice_number',
+        'bills_sync_status',
+        'bills_sync_error',
     ];
 
     protected $casts = [
@@ -71,15 +77,23 @@ class Payment extends Model
         // 2. Después de Guardar (Para tener un ID de pago real para el Asiento Contable)
         static::created(function ($payment) {
             self::processPaymentAccounting($payment);
+            self::processPaymentBillsSync($payment);
         });
 
         static::updated(function ($payment) {
             self::processPaymentAccounting($payment);
+            self::processPaymentBillsSync($payment);
         });
     }
 
     protected static function processPaymentFiscal($payment)
     {
+        // Si la facturación externa en Bills está activa, omitimos la generación local de NCF,
+        // ya que Bills se encargará de ello y lo sincronizaremos después.
+        if (\App\Models\Setting::get('enable_bills_invoicing', 'false') === 'true') {
+            return;
+        }
+
         // Verificar si la facturación electrónica está habilitada
         if (!\App\Models\Setting::get('enable_electronic_billing', 'true') === 'true') {
             return; // No procesar NCF si está deshabilitado
@@ -120,6 +134,29 @@ class Payment extends Model
 
             if (!$alreadyExists) {
                 app(\App\Services\AccountingEngine::class)->registerStudentPayment($payment);
+            }
+        }
+    }
+
+    protected static function processPaymentBillsSync($payment)
+    {
+        if (\App\Models\Setting::get('enable_bills_invoicing', 'false') === 'true') {
+            // Caso 1: Aún no tiene factura en Bills (creación)
+            if (empty($payment->bills_invoice_id) 
+                && $payment->bills_sync_status !== 'synced' 
+                && $payment->bills_sync_status !== 'processing') {
+                
+                // Despachar el Job asíncrono para crear la factura en Bills
+                \App\Jobs\SyncPaymentToBillsJob::dispatch($payment);
+            }
+            // Caso 2: Ya tiene factura en Bills, pero localmente se completó el pago
+            // Si el estado es Completado/paid y todavía no tiene NCF (el cual Bills asigna al marcarse como paga)
+            elseif (!empty($payment->bills_invoice_id) 
+                && ($payment->status === 'paid' || $payment->status === 'Completado')
+                && empty($payment->ncf)) {
+                
+                // Despachar el Job asíncrono para actualizar el estado a PAGO y obtener datos e-CF
+                \App\Jobs\SyncPaymentToBillsJob::dispatch($payment);
             }
         }
     }
