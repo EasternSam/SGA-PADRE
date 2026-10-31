@@ -84,9 +84,10 @@ class ReportCenterController extends Controller
                 break;
 
             case 'attendance':
-                $targetScheduleId = $scheduleId ?: CourseSchedule::first()?->id;
                 $attendances = Attendance::with(['enrollment.student', 'courseSchedule'])
-                    ->when($targetScheduleId, fn($q) => $q->where('course_schedule_id', $targetScheduleId))
+                    ->when($scheduleId, fn($q) => $q->where('course_schedule_id', $scheduleId))
+                    ->when(!$scheduleId && $moduleId, fn($q) => $q->whereHas('courseSchedule', fn($sq) => $sq->where('module_id', $moduleId)))
+                    ->when(!$scheduleId && !$moduleId && $courseId, fn($q) => $q->whereHas('courseSchedule.module', fn($mq) => $mq->where('course_id', $courseId)))
                     ->latest('attendance_date')
                     ->take(100)
                     ->get();
@@ -242,6 +243,53 @@ class ReportCenterController extends Controller
                         $p->gateway ?? 'Caja',
                         $p->ncf ?? '',
                         $p->status,
+                    ]);
+                }
+            } elseif ($reportType === 'attendance') {
+                fputcsv($handle, ['ID', 'Fecha', 'Matrícula', 'Estudiante', 'Sección', 'Estado', 'Notas']);
+                $attendances = Attendance::with(['enrollment.student', 'courseSchedule'])->latest('attendance_date')->take(500)->get();
+                foreach ($attendances as $a) {
+                    fputcsv($handle, [
+                        $a->id,
+                        $a->attendance_date ? Carbon::parse($a->attendance_date)->format('d/m/Y') : '',
+                        $a->enrollment?->student?->student_code ?? 'N/A',
+                        $a->enrollment?->student ? ($a->enrollment->student->first_name . ' ' . $a->enrollment->student->last_name) : 'Estudiante',
+                        $a->courseSchedule?->section_name ?? 'Sección A',
+                        $a->status ?? 'present',
+                        $a->notes ?? '-',
+                    ]);
+                }
+            } elseif ($reportType === 'grades') {
+                fputcsv($handle, ['ID', 'Matrícula', 'Estudiante', 'Asignatura', 'Período', 'Calificación', 'Estado']);
+                $grades = StudentGrade::with(['student', 'sectionSubject.subject', 'evaluationPeriod'])->latest()->take(500)->get();
+                foreach ($grades as $g) {
+                    fputcsv($handle, [
+                        $g->id,
+                        $g->student?->student_code ?? 'N/A',
+                        $g->student ? ($g->student->first_name . ' ' . $g->student->last_name) : 'Estudiante',
+                        $g->sectionSubject?->subject?->name ?? 'Materia Académica',
+                        $g->evaluationPeriod?->name ?? 'P1',
+                        (float) $g->score,
+                        $g->score >= 70 ? 'Aprobado' : 'Reprobado',
+                    ]);
+                }
+            } elseif ($reportType === 'debtors') {
+                fputcsv($handle, ['ID', 'Matrícula', 'Estudiante', 'Carrera/Curso', 'Concepto', 'Monto (RD$)', 'Vencimiento', 'Teléfono']);
+                $debtorPayments = Payment::with(['student.course', 'paymentConcept'])
+                    ->whereIn('status', ['Pendiente', 'pending', 'Vencido'])
+                    ->latest()
+                    ->take(500)
+                    ->get();
+                foreach ($debtorPayments as $p) {
+                    fputcsv($handle, [
+                        $p->id,
+                        $p->student?->student_code ?? 'N/A',
+                        $p->student ? ($p->student->first_name . ' ' . $p->student->last_name) : 'Estudiante',
+                        $p->student?->course?->name ?? 'Carrera General',
+                        $p->paymentConcept?->name ?? 'Cuota Mensual',
+                        (float) $p->amount,
+                        $p->due_date?->format('d/m/Y') ?? 'Vencido',
+                        $p->student?->phone ?? 'Sin contacto',
                     ]);
                 }
             } else {

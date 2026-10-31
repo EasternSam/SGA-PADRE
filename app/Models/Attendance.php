@@ -31,4 +31,9 @@ class Attendance extends Model
     {
         return $this->belongsTo(CourseSchedule::class, 'course_schedule_id');
     }
+
+    public function courseSchedule(): BelongsTo
+    {
+        return $this->belongsTo(CourseSchedule::class, 'course_schedule_id');
+    }
 }
