@@ -18,4 +18,21 @@ class ApplicantPortalAndLayoutTest extends TestCase
         $this->assertStringContainsString('href="/portal-aspirante"', $layout);
         $this->assertStringContainsString("->format('Y-m-d')", $controller);
     }
+
+    public function test_applicant_portal_supports_document_uploads_in_controller_and_view(): void
+    {
+        $basePath = dirname(__DIR__, 3);
+        $controller = file_get_contents($basePath . '/app/Http/Controllers/ApplicantPortalController.php');
+        $portalView = file_get_contents($basePath . '/resources/js/Pages/Applicant/Portal.jsx');
+
+        $this->assertStringContainsString('admissions/birth_certificates', $controller);
+        $this->assertStringContainsString('admissions/id_cards', $controller);
+        $this->assertStringContainsString('admissions/records', $controller);
+        $this->assertStringContainsString('admissions/photos', $controller);
+
+        $this->assertStringContainsString('forceFormData: true', $portalView);
+        $this->assertStringContainsString('type="file"', $portalView);
+        $this->assertStringContainsString('birth_certificate', $portalView);
+        $this->assertStringContainsString('high_school_record', $portalView);
+    }
 }

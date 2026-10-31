@@ -57,6 +57,8 @@ class ApplicantPortalController extends Controller
                 'previous_school' => $admission->previous_school,
                 'previous_gpa' => $admission->previous_gpa,
                 'status' => $admission->status,
+                'notes' => $admission->notes,
+                'documents' => $admission->documents ?? [],
                 'document_status' => $admission->document_status ?? [
                     'birth_certificate' => 'pending',
                     'id_card' => 'pending',
@@ -84,24 +86,49 @@ class ApplicantPortalController extends Controller
             'course_id' => 'required|exists:courses,id',
             'previous_school' => 'required|string|max:255',
             'previous_gpa' => 'nullable|numeric|between:0,100',
+            'birth_certificate' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            'id_card' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            'high_school_record' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            'photo' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
         ]);
 
         $user = auth()->user();
+        $existingAdmission = Admission::where('user_id', $user->id)->latest()->first();
+
+        $documents = $existingAdmission?->documents ?? [];
+        $docStatus = $existingAdmission?->document_status ?? [
+            'birth_certificate' => 'pending',
+            'id_card' => 'pending',
+            'high_school_record' => 'pending',
+            'photo' => 'pending',
+        ];
+
+        $storageFolders = [
+            'birth_certificate' => 'admissions/birth_certificates',
+            'id_card' => 'admissions/id_cards',
+            'high_school_record' => 'admissions/records',
+            'photo' => 'admissions/photos',
+        ];
+
+        foreach ($storageFolders as $key => $folder) {
+            if ($request->hasFile($key)) {
+                $documents[$key] = $request->file($key)->store($folder, 'local');
+                $docStatus[$key] = 'pending';
+            }
+        }
+
+        $payload = collect($validated)->except(array_keys($storageFolders))->toArray();
 
         $admission = Admission::updateOrCreate(
             ['user_id' => $user->id],
-            array_merge($validated, [
+            array_merge($payload, [
                 'email' => $user->email,
                 'status' => 'pending',
-                'document_status' => [
-                    'birth_certificate' => 'approved',
-                    'id_card' => 'approved',
-                    'high_school_record' => 'approved',
-                    'photo' => 'approved',
-                ]
+                'documents' => $documents,
+                'document_status' => $docStatus,
             ])
         );
 
-        return back()->with('success', 'Solicitud de admisión registrada exitosamente. Tus documentos están en proceso de validación.');
+        return back()->with('success', 'Solicitud de admisión y documentos registrados exitosamente. Están en proceso de validación.');
     }
 }

@@ -2,6 +2,37 @@ import React, { useState } from 'react';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
+const REQUIRED_DOCUMENTS = [
+    {
+        key: 'birth_certificate',
+        title: 'Acta de Nacimiento',
+        hint: 'PDF, JPG o PNG (Máx. 5MB)',
+        accept: '.pdf,.jpg,.jpeg,.png,.webp',
+        icon: 'fa-solid fa-file-lines',
+    },
+    {
+        key: 'id_card',
+        title: 'Cédula / Identidad',
+        hint: 'PDF, JPG o PNG (Máx. 5MB)',
+        accept: '.pdf,.jpg,.jpeg,.png,.webp',
+        icon: 'fa-solid fa-id-card',
+    },
+    {
+        key: 'high_school_record',
+        title: 'Récord de Bachillerato',
+        hint: 'PDF, JPG o PNG (Máx. 5MB)',
+        accept: '.pdf,.jpg,.jpeg,.png,.webp',
+        icon: 'fa-solid fa-scroll',
+    },
+    {
+        key: 'photo',
+        title: 'Fotografía 2x2',
+        hint: 'JPG o PNG (Máx. 5MB)',
+        accept: '.jpg,.jpeg,.png,.webp,.pdf',
+        icon: 'fa-solid fa-image',
+    },
+];
+
 export default function Portal({ applicant, admission, courses = [] }) {
     const { flash = {} } = usePage().props;
     const [step, setStep] = useState(admission ? 'status' : 'form');
@@ -16,11 +47,16 @@ export default function Portal({ applicant, admission, courses = [] }) {
         course_id: admission?.course?.id || (courses[0]?.id || ''),
         previous_school: admission?.previous_school || '',
         previous_gpa: admission?.previous_gpa || '',
+        birth_certificate: null,
+        id_card: null,
+        high_school_record: null,
+        photo: null,
     });
 
     const handleSubmit = (e) => {
         e.preventDefault();
         post('/portal-aspirante', {
+            forceFormData: true,
             onSuccess: () => setStep('status'),
         });
     };
@@ -126,25 +162,71 @@ export default function Portal({ applicant, admission, courses = [] }) {
 
                             {/* Documents Progress Checklist */}
                             <div className="pt-6">
-                                <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4">
-                                    Documentación Requerida
-                                </h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                                    {[
-                                        { title: 'Acta de Nacimiento', icon: 'fa-solid fa-file-lines' },
-                                        { title: 'Cédula / Identidad', icon: 'fa-solid fa-id-card' },
-                                        { title: 'Récord de Bachillerato', icon: 'fa-solid fa-scroll' },
-                                        { title: 'Fotografía 2x2', icon: 'fa-solid fa-image' },
-                                    ].map((doc, idx) => (
-                                        <div key={idx} className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <i className={`${doc.icon} text-slate-400 text-lg`}></i>
-                                                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{doc.title}</span>
-                                            </div>
-                                            <i className="fa-solid fa-check text-emerald-500 text-sm"></i>
-                                        </div>
-                                    ))}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                                    <h4 className="text-sm font-bold text-slate-800 dark:text-white">
+                                        Documentación Requerida
+                                    </h4>
+                                    <button
+                                        type="button"
+                                        onClick={() => setStep('form')}
+                                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-sga-primary dark:text-blue-400 hover:underline"
+                                    >
+                                        <i className="fa-solid fa-cloud-arrow-up"></i>
+                                        Depositar o actualizar documentos
+                                    </button>
                                 </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                    {REQUIRED_DOCUMENTS.map((doc) => {
+                                        const isUploaded = Boolean(admission.documents?.[doc.key]);
+                                        const rawStatus = admission.document_status?.[doc.key] || 'pending';
+                                        const statusInfo = !isUploaded
+                                            ? { label: 'Sin depositar', icon: 'fa-solid fa-cloud-arrow-up text-amber-500', badge: 'text-amber-600 dark:text-amber-400' }
+                                            : rawStatus === 'approved'
+                                                ? { label: 'Aprobado', icon: 'fa-solid fa-circle-check text-emerald-500', badge: 'text-emerald-600 dark:text-emerald-400' }
+                                                : rawStatus === 'rejected'
+                                                    ? { label: 'Observado', icon: 'fa-solid fa-circle-exclamation text-rose-500', badge: 'text-rose-600 dark:text-rose-400' }
+                                                    : { label: 'En revisión', icon: 'fa-solid fa-clock text-blue-500', badge: 'text-blue-600 dark:text-blue-400' };
+
+                                        return (
+                                            <div key={doc.key} className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 flex flex-col justify-between gap-2">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <i className={`${doc.icon} text-slate-400 text-lg`}></i>
+                                                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{doc.title}</span>
+                                                    </div>
+                                                    <i className={`${statusInfo.icon} text-sm`}></i>
+                                                </div>
+                                                <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-white/5 text-[11px]">
+                                                    <span className={`font-semibold ${statusInfo.badge}`}>{statusInfo.label}</span>
+                                                    {isUploaded ? (
+                                                        <a
+                                                            href={`/admissions/document/${admission.id}/${doc.key}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="font-semibold text-sga-primary dark:text-blue-400 hover:underline"
+                                                        >
+                                                            Ver archivo
+                                                        </a>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setStep('form')}
+                                                            className="font-semibold text-sga-primary dark:text-blue-400 hover:underline"
+                                                        >
+                                                            Subir ahora
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                {admission.notes && (
+                                    <div className="mt-4 rounded-xl bg-amber-500/10 border border-amber-500/20 p-4 text-xs text-amber-700 dark:text-amber-300">
+                                        <span className="font-bold block mb-1">Observaciones de Admisiones:</span>
+                                        {admission.notes}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -303,6 +385,85 @@ export default function Portal({ applicant, admission, courses = [] }) {
                                     placeholder="Ej: 88.5"
                                     className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white focus:outline-none focus:border-sga-primary text-sm"
                                 />
+                            </div>
+                        </div>
+
+                        {/* Depósito de Documentos Requeridos */}
+                        <div className="pt-6 border-t border-slate-100 dark:border-white/5 space-y-4">
+                            <div>
+                                <h4 className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                                    <i className="fa-solid fa-cloud-arrow-up text-sga-primary dark:text-blue-400"></i>
+                                    Depósito de Documentos de Admisión
+                                </h4>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    Adjunta cada documento requerido en formato PDF, JPG o PNG (máximo 5 MB por archivo).
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {REQUIRED_DOCUMENTS.map((doc) => {
+                                    const selectedFile = data[doc.key];
+                                    const alreadyUploaded = Boolean(admission?.documents?.[doc.key]);
+                                    const fieldError = errors?.[doc.key];
+
+                                    return (
+                                        <div
+                                            key={doc.key}
+                                            className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 space-y-3"
+                                        >
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="w-9 h-9 rounded-lg bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-sga-primary dark:text-blue-400">
+                                                        <i className={doc.icon}></i>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs font-bold text-slate-800 dark:text-white">
+                                                            {doc.title}
+                                                        </div>
+                                                        <div className="text-[11px] text-slate-400">
+                                                            {doc.hint}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {alreadyUploaded && !selectedFile && (
+                                                    <a
+                                                        href={`/admissions/document/${admission.id}/${doc.key}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+                                                    >
+                                                        <i className="fa-solid fa-check"></i>
+                                                        Depositado (Ver)
+                                                    </a>
+                                                )}
+                                            </div>
+
+                                            <label className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-slate-300 dark:border-white/15 bg-white dark:bg-[#11111a] px-3.5 py-2.5 cursor-pointer hover:border-sga-primary dark:hover:border-blue-400 transition">
+                                                <span className="text-xs text-slate-600 dark:text-slate-300 truncate">
+                                                    {selectedFile
+                                                        ? selectedFile.name
+                                                        : alreadyUploaded
+                                                            ? 'Reemplazar archivo actual...'
+                                                            : 'Seleccionar archivo...'}
+                                                </span>
+                                                <span className="shrink-0 rounded-lg bg-slate-100 dark:bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200">
+                                                    Examinar
+                                                </span>
+                                                <input
+                                                    type="file"
+                                                    accept={doc.accept}
+                                                    onChange={(e) => setData(doc.key, e.target.files?.[0] || null)}
+                                                    className="hidden"
+                                                />
+                                            </label>
+
+                                            {fieldError && (
+                                                <p className="text-xs font-medium text-rose-500">{fieldError}</p>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
 
