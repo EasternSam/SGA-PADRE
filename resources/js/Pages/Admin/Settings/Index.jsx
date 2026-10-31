@@ -80,6 +80,7 @@ export default function Index({
         brand_accent_color: settings.brand_accent_color || '#f7931e',
         brand_neutral_color: settings.brand_neutral_color || '#64748b',
         institution_logo: settings.institution_logo || '/branding/academic-logo.png',
+        sidebar_logo_height: Number(settings.sidebar_logo_height) || 44,
         favicon: settings.favicon || '/branding/academic-favicon.png',
         app_icon: settings.app_icon || '/branding/academic-favicon.png',
         login_banner: settings.login_banner || '',
@@ -860,6 +861,7 @@ export default function Index({
                                                         ...(preset.isDefault ? {
                                                             institution_name: 'Academic+',
                                                             institution_logo: '/branding/academic-logo.png',
+                                                            sidebar_logo_height: 44,
                                                             favicon: '/branding/academic-favicon.png',
                                                             app_icon: '/branding/academic-favicon.png',
                                                             login_banner: '',
@@ -1127,6 +1129,108 @@ export default function Index({
                                         onChange={e => setData('institution_logo', e.target.value)}
                                         className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white text-sm font-mono text-xs"
                                     />
+                                </div>
+
+                                {/* Control de Tamaño del Logo en el Sidebar */}
+                                <div className="md:col-span-2 p-5 rounded-2xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/10 space-y-4">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wide">
+                                                Tamaño del Logo en el Sidebar (Menú Lateral)
+                                            </label>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                Ajusta la altura visual del logotipo en la cabecera del menú lateral izquierdo (entre 24px y 120px).
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2 self-start sm:self-auto">
+                                            <input
+                                                type="number"
+                                                min={24}
+                                                max={120}
+                                                value={data.sidebar_logo_height}
+                                                onChange={e => {
+                                                    const val = Math.min(120, Math.max(24, Number(e.target.value) || 44));
+                                                    setData('sidebar_logo_height', val);
+                                                    document.documentElement.style.setProperty('--sidebar-logo-height', `${val}px`);
+                                                }}
+                                                className="w-20 px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-xs font-mono font-bold text-center text-slate-800 dark:text-white"
+                                            />
+                                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">px</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+                                        <div className="lg:col-span-7 space-y-3">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-[11px] font-mono text-slate-400">24px</span>
+                                                <input
+                                                    type="range"
+                                                    min={24}
+                                                    max={120}
+                                                    step={2}
+                                                    value={data.sidebar_logo_height}
+                                                    onChange={e => {
+                                                        const val = Number(e.target.value);
+                                                        setData('sidebar_logo_height', val);
+                                                        document.documentElement.style.setProperty('--sidebar-logo-height', `${val}px`);
+                                                    }}
+                                                    className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sga-primary"
+                                                />
+                                                <span className="text-[11px] font-mono text-slate-400">120px</span>
+                                            </div>
+
+                                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                                                {[
+                                                    { label: 'Compacto (36px)', value: 36 },
+                                                    { label: 'Estándar (44px)', value: 44 },
+                                                    { label: 'Mediano (56px)', value: 56 },
+                                                    { label: 'Grande (72px)', value: 72 },
+                                                    { label: 'Extra Grande (88px)', value: 88 },
+                                                ].map(sizePreset => (
+                                                    <button
+                                                        key={sizePreset.value}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setData('sidebar_logo_height', sizePreset.value);
+                                                            document.documentElement.style.setProperty('--sidebar-logo-height', `${sizePreset.value}px`);
+                                                        }}
+                                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+                                                            Number(data.sidebar_logo_height) === sizePreset.value
+                                                                ? 'bg-sga-primary text-white border-sga-primary shadow-2xs'
+                                                                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-sga-primary'
+                                                        }`}
+                                                    >
+                                                        {sizePreset.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Mini Vista Previa en Tiempo Real de la Cabecera del Sidebar */}
+                                        <div className="lg:col-span-5">
+                                            <div
+                                                className="rounded-xl p-4 border border-white/15 flex flex-col items-start justify-center min-h-[110px] shadow-inner overflow-hidden"
+                                                style={{
+                                                    background: data.navbar_type === 'gradient'
+                                                        ? `linear-gradient(${data.navbar_gradient_direction || 'to bottom right'}, ${data.navbar_gradient_start || data.brand_primary_color}, ${data.navbar_gradient_end || '#1a0a53'})`
+                                                        : (data.brand_primary_color || '#211170')
+                                                }}
+                                            >
+                                                <span className="text-[10px] uppercase tracking-wider font-bold text-white/60 mb-2">
+                                                    Vista previa en Sidebar ({data.sidebar_logo_height}px)
+                                                </span>
+                                                <img
+                                                    src={data.institution_logo || '/branding/academic-logo.png'}
+                                                    alt="Vista previa logo sidebar"
+                                                    style={{
+                                                        height: `${data.sidebar_logo_height}px`,
+                                                        maxHeight: `${data.sidebar_logo_height}px`,
+                                                    }}
+                                                    className="w-auto max-w-[215px] object-contain drop-shadow transition-all duration-150"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div>

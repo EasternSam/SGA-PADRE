@@ -274,6 +274,9 @@ function AuthenticatedContent({ title, children }) {
         root.style.setProperty('--color-secondary', hexToRgb(s, '26 10 83'));
         root.style.setProperty('--color-accent', hexToRgb(a, '247 147 30'));
         root.style.setProperty('--color-neutral', hexToRgb(n, '100 116 139'));
+
+        const logoH = Math.min(120, Math.max(24, Number(branding?.sidebar_logo_height) || 44));
+        root.style.setProperty('--sidebar-logo-height', `${logoH}px`);
     }, [branding]);
 
     const handleTabChange = (val) => {
@@ -412,6 +415,7 @@ function AuthenticatedContent({ title, children }) {
         navBg = `linear-gradient(${navGradientDir}, ${navGradientStart}, ${navGradientEnd})`;
     }
     const logoUrl = branding?.logo || '/branding/academic-logo.png';
+    const sidebarLogoHeight = Math.min(120, Math.max(24, Number(branding?.sidebar_logo_height) || 44));
     const faviconUrl = branding?.favicon || '/branding/academic-favicon.png';
     const institutionName = branding?.name || 'Academic+';
     const userName = auth?.user?.name || 'Admin General';
@@ -456,7 +460,11 @@ function AuthenticatedContent({ title, children }) {
                             <img 
                                 src={logoUrl} 
                                 alt={institutionName} 
-                                className="h-10 w-auto max-w-[175px] object-contain drop-shadow transition-all duration-300 group-data-[collapsible=icon]:hidden" 
+                                style={{
+                                    height: `var(--sidebar-logo-height, ${sidebarLogoHeight}px)`,
+                                    maxHeight: `var(--sidebar-logo-height, ${sidebarLogoHeight}px)`,
+                                }}
+                                className="w-auto max-w-[215px] object-contain drop-shadow transition-all duration-200 group-data-[collapsible=icon]:hidden" 
                             />
                             <img 
                                 src={faviconUrl} 

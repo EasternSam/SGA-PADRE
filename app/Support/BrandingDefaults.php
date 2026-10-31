@@ -27,6 +27,28 @@ class BrandingDefaults
     public const NAVBAR_GRADIENT_END = '#1a0a53';
     public const NAVBAR_GRADIENT_DIRECTION = 'to bottom right';
 
+    public const SIDEBAR_LOGO_HEIGHT = 44;
+    public const SIDEBAR_LOGO_MIN_HEIGHT = 24;
+    public const SIDEBAR_LOGO_MAX_HEIGHT = 120;
+
+    /**
+     * Resolve and clamp sidebar logo height in pixels (24px–120px).
+     */
+    public static function resolveLogoHeight(mixed $raw): int
+    {
+        if ($raw === null || $raw === '' || (is_string($raw) && trim($raw) === '')) {
+            return self::SIDEBAR_LOGO_HEIGHT;
+        }
+
+        if (!is_numeric($raw)) {
+            return self::SIDEBAR_LOGO_HEIGHT;
+        }
+
+        $val = (int) round((float) $raw);
+
+        return max(self::SIDEBAR_LOGO_MIN_HEIGHT, min(self::SIDEBAR_LOGO_MAX_HEIGHT, $val));
+    }
+
     /**
      * Return trimmed non-empty setting value or fallback to Academic+ default.
      */
@@ -86,10 +108,12 @@ class BrandingDefaults
         $gradientStart = self::value($raw['navbar_gradient_start'] ?? null, $primary);
         $gradientEnd = self::value($raw['navbar_gradient_end'] ?? null, self::NAVBAR_GRADIENT_END);
         $gradientDirection = self::value($raw['navbar_gradient_direction'] ?? null, self::NAVBAR_GRADIENT_DIRECTION);
+        $sidebarLogoHeight = self::resolveLogoHeight($raw['sidebar_logo_height'] ?? null);
 
         return [
             'name' => self::value($raw['institution_name'] ?? null, self::INSTITUTION_NAME),
             'logo' => $logo,
+            'sidebar_logo_height' => $sidebarLogoHeight,
             'favicon' => $favicon,
             'app_icon' => $appIcon,
             'primary_color' => $primary,
@@ -136,6 +160,7 @@ class BrandingDefaults
                 'navbar_gradient_start' => Setting::get('navbar_gradient_start'),
                 'navbar_gradient_end' => Setting::get('navbar_gradient_end'),
                 'navbar_gradient_direction' => Setting::get('navbar_gradient_direction'),
+                'sidebar_logo_height' => Setting::get('sidebar_logo_height'),
             ]);
         } catch (\Throwable) {
             return self::resolve([]);

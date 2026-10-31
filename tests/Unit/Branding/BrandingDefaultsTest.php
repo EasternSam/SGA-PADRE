@@ -75,6 +75,23 @@ class BrandingDefaultsTest extends TestCase
         $this->assertSame('#6b7280', $resolved['neutral_color']);
     }
 
+    public function test_sidebar_logo_height_resolution_and_clamping(): void
+    {
+        $this->assertSame(44, BrandingDefaults::SIDEBAR_LOGO_HEIGHT);
+
+        $defaultResolved = BrandingDefaults::resolve([]);
+        $this->assertSame(44, $defaultResolved['sidebar_logo_height']);
+
+        $customResolved = BrandingDefaults::resolve(['sidebar_logo_height' => '68']);
+        $this->assertSame(68, $customResolved['sidebar_logo_height']);
+
+        $minClamped = BrandingDefaults::resolve(['sidebar_logo_height' => '10']);
+        $this->assertSame(24, $minClamped['sidebar_logo_height']);
+
+        $maxClamped = BrandingDefaults::resolve(['sidebar_logo_height' => '250']);
+        $this->assertSame(120, $maxClamped['sidebar_logo_height']);
+    }
+
     public function test_default_academic_plus_branding_assets_exist_and_are_tracked_in_git(): void
     {
         $logoPath = $this->basePath . '/public/branding/academic-logo.png';
