@@ -47,7 +47,7 @@ class ApplicantPortalController extends Controller
                 'last_name' => $admission->last_name,
                 'identification_id' => $admission->identification_id,
                 'phone' => $admission->phone,
-                'birth_date' => $admission->birth_date?->format('d/m/Y'),
+                'birth_date' => $admission->birth_date?->format('Y-m-d'),
                 'address' => $admission->address,
                 'course' => $admission->course ? [
                     'id' => $admission->course->id,

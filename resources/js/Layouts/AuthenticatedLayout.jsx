@@ -311,6 +311,7 @@ function resolveSectionTitle(explicitTitle, rawUrl = '', institutionName = 'Acad
         { prefix: '/teacher/attendance', label: 'Pase de Lista Docente' },
         { prefix: '/teacher/payroll', label: 'Mis Volantes de Nómina' },
         { prefix: '/teacher', label: 'Portal del Docente' },
+        { prefix: '/portal-aspirante', label: 'Portal del Aspirante' },
         { prefix: '/applicant', label: 'Portal del Aspirante' },
     ];
 
@@ -324,7 +325,7 @@ function resolveSectionTitle(explicitTitle, rawUrl = '', institutionName = 'Acad
 }
 
 function AuthenticatedContent({ title, children }) {
-    const { auth, branding, admissions_open, notifications: serverNotifications = [] } = usePage().props;
+    const { auth, branding, csrf_token, admissions_open, notifications: serverNotifications = [] } = usePage().props;
     const admissionsOpen = Boolean(admissions_open);
     const url = usePage().url;
         const { isMobile, state, openMobile, setOpenMobile, toggleSidebar } = useSidebar();
@@ -392,13 +393,13 @@ function AuthenticatedContent({ title, children }) {
     }, [serverNotifications]);
 
     useEffect(() => {
-        if (props?.csrf_token && typeof document !== 'undefined') {
+        if (csrf_token && typeof document !== 'undefined') {
             const meta = document.querySelector('meta[name="csrf-token"]');
             if (meta) {
-                meta.setAttribute('content', props.csrf_token);
+                meta.setAttribute('content', csrf_token);
             }
         }
-    }, [props?.csrf_token]);
+    }, [csrf_token]);
 
     const handleNotificationReadChange = (item, nextRead) => {
         setSystemNotifications(prev => prev.map(n => n.id === item.id ? { ...n, read: nextRead } : n));
@@ -529,7 +530,7 @@ function AuthenticatedContent({ title, children }) {
     const hasAnyRole = (roles) => roles.some(r => userRoles.includes(r));
     const isStudent = hasRole('Estudiante') || url.startsWith('/student');
     const isTeacher = hasAnyRole(['Profesor', 'Docente']) || url.startsWith('/teacher');
-    const isApplicant = hasRole('Solicitante') || url.startsWith('/applicant');
+    const isApplicant = hasRole('Solicitante') || url.startsWith('/applicant') || url.startsWith('/portal-aspirante');
 
     const isActive = (href) => {
         if (href === '/admin/dashboard' || href === '/dashboard') {
@@ -544,7 +545,7 @@ function AuthenticatedContent({ title, children }) {
         return url === href || url.startsWith(href + '/');
     };
 
-    const homeUrl = isStudent ? '/student/dashboard' : isTeacher ? '/teacher/dashboard' : isApplicant ? '/applicant/portal' : '/admin/dashboard';
+    const homeUrl = isStudent ? '/student/dashboard' : isTeacher ? '/teacher/dashboard' : isApplicant ? '/portal-aspirante' : '/admin/dashboard';
 
     return (
         <div className="h-screen flex w-full overflow-hidden bg-gray-50 dark:bg-[#0A0A0A] font-sans antialiased text-slate-600 dark:text-neutral-300">
@@ -795,8 +796,8 @@ function AuthenticatedContent({ title, children }) {
                             <SidebarMenu>
                                 <SidebarMenuItem>
                                     <SidebarMenuButton
-                                        href="/applicant/portal"
-                                        isActive={isActive('/applicant/portal')}
+                                        href="/portal-aspirante"
+                                        isActive={isActive('/portal-aspirante') || isActive('/applicant/portal')}
                                         tooltip="Portal del Aspirante"
                                     >
                                         <LayoutDashboard className="h-[18px] w-[18px] shrink-0 text-white/80" />
@@ -1394,7 +1395,7 @@ function AuthenticatedContent({ title, children }) {
                                             <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-bold tracking-widest">Mi Cuenta</p>
                                             <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate mt-0.5">{userName}</p>
                                         </div>
-                                        <Link href={isStudent ? "/student/profile" : isTeacher ? "/teacher/profile" : "/admin/profile"} className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#262626]">
+                                        <Link href={isStudent ? "/student/profile" : isTeacher ? "/teacher/profile" : isApplicant ? "/profile" : "/admin/profile"} className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#262626]">
                                             <svg className="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                                             </svg>
@@ -1465,10 +1466,12 @@ function AuthenticatedContent({ title, children }) {
                                 <LayoutDashboard className="h-5 w-5" />
                                 <span className="text-[10px]">Inicio</span>
                             </Link>
-                            <Link href="/student/selection" className={`flex flex-col items-center gap-1 p-1 text-center ${isActive('/student/selection') ? 'text-brand font-bold' : 'text-gray-500 dark:text-gray-400'}`}>
-                                <BookOpen className="h-5 w-5" />
-                                <span className="text-[10px]">Selección</span>
-                            </Link>
+                            {admissionsOpen && (
+                                <Link href="/student/selection" className={`flex flex-col items-center gap-1 p-1 text-center ${isActive('/student/selection') ? 'text-brand font-bold' : 'text-gray-500 dark:text-gray-400'}`}>
+                                    <BookOpen className="h-5 w-5" />
+                                    <span className="text-[10px]">Selección</span>
+                                </Link>
+                            )}
                             <Link href="/student/payments" className={`flex flex-col items-center gap-1 p-1 text-center ${isActive('/student/payments') ? 'text-brand font-bold' : 'text-gray-500 dark:text-gray-400'}`}>
                                 <CreditCard className="h-5 w-5" />
                                 <span className="text-[10px]">Pagos</span>
@@ -1476,6 +1479,23 @@ function AuthenticatedContent({ title, children }) {
                             <Link href="/student/requests" className={`flex flex-col items-center gap-1 p-1 text-center ${isActive('/student/requests') ? 'text-brand font-bold' : 'text-gray-500 dark:text-gray-400'}`}>
                                 <FileText className="h-5 w-5" />
                                 <span className="text-[10px]">Trámites</span>
+                            </Link>
+                            <button 
+                                type="button" 
+                                onClick={() => setOpenMobile(true)}
+                                className="flex flex-col items-center gap-1 p-1 text-gray-500 dark:text-gray-400 text-center"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"/>
+                                </svg>
+                                <span className="text-[10px] font-medium">Menú</span>
+                            </button>
+                        </>
+                    ) : isApplicant ? (
+                        <>
+                            <Link href="/portal-aspirante" className={`flex flex-col items-center gap-1 p-1 text-center ${isActive('/portal-aspirante') ? 'text-brand font-bold' : 'text-gray-500 dark:text-gray-400'}`}>
+                                <LayoutDashboard className="h-5 w-5" />
+                                <span className="text-[10px]">Mi Solicitud</span>
                             </Link>
                             <button 
                                 type="button" 
@@ -1525,7 +1545,7 @@ function AuthenticatedContent({ title, children }) {
                 </nav>
 
                 {/* ── MENÚ CONTEXTUAL UNIVERSAL DINÁMICO (GodUI TabBar) (oculto en dashboard principal para evitar sobrecarga y obstrucción) ── */}
-                {!url.startsWith('/admin/dashboard') && !url.startsWith('/admin/pos') && (
+                {!url.startsWith('/admin/dashboard') && !url.startsWith('/admin/pos') && !isApplicant && (
                     <aside 
                         aria-label="Acciones contextuales dinámicas"
                         className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-30 pointer-events-auto"
