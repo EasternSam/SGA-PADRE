@@ -35,4 +35,17 @@ class ApplicantPortalAndLayoutTest extends TestCase
         $this->assertStringContainsString('birth_certificate', $portalView);
         $this->assertStringContainsString('high_school_record', $portalView);
     }
+
+    public function test_applicant_portal_marks_uploaded_documents_as_deposited_and_supports_direct_upload(): void
+    {
+        $basePath = dirname(__DIR__, 3);
+        $controller = file_get_contents($basePath . '/app/Http/Controllers/ApplicantPortalController.php');
+        $portalView = file_get_contents($basePath . '/resources/js/Pages/Applicant/Portal.jsx');
+        $routes = file_get_contents($basePath . '/routes/web.php');
+
+        $this->assertStringContainsString('public function uploadDocument', $controller);
+        $this->assertStringContainsString('/portal-aspirante/documento', $routes);
+        $this->assertStringContainsString("label: 'Depositado'", $portalView);
+        $this->assertStringContainsString('handleQuickUpload', $portalView);
+    }
 }

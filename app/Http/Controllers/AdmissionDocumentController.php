@@ -19,8 +19,9 @@ class AdmissionDocumentController extends Controller
         $user = Auth::user();
 
         // 1. SEGURIDAD: Verificar Permisos
-        $isOwner = $user->id === $admission->user_id;
-        $isAdmin = $user->hasAnyRole(['Admin', 'Registro', 'Dirección']);
+        $isOwner = (int) $user->id === (int) $admission->user_id
+            || (!empty($user->email) && $user->email === $admission->email);
+        $isAdmin = $user->hasAnyRole(['Admin', 'SuperAdmin', 'Registro', 'Dirección']);
 
         if (!$isOwner && !$isAdmin) {
             abort(403, 'No tienes permiso para ver este documento.');

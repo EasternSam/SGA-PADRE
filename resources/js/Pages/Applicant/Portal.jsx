@@ -1,34 +1,34 @@
 import React, { useState } from 'react';
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
 const REQUIRED_DOCUMENTS = [
     {
         key: 'birth_certificate',
         title: 'Acta de Nacimiento',
-        hint: 'PDF, JPG o PNG (Máx. 5MB)',
-        accept: '.pdf,.jpg,.jpeg,.png,.webp',
+        hint: 'PDF, JPG o PNG (Máx. 10MB)',
+        accept: '.pdf,.jpg,.jpeg,.png,.webp,.heic',
         icon: 'fa-solid fa-file-lines',
     },
     {
         key: 'id_card',
         title: 'Cédula / Identidad',
-        hint: 'PDF, JPG o PNG (Máx. 5MB)',
-        accept: '.pdf,.jpg,.jpeg,.png,.webp',
+        hint: 'PDF, JPG o PNG (Máx. 10MB)',
+        accept: '.pdf,.jpg,.jpeg,.png,.webp,.heic',
         icon: 'fa-solid fa-id-card',
     },
     {
         key: 'high_school_record',
         title: 'Récord de Bachillerato',
-        hint: 'PDF, JPG o PNG (Máx. 5MB)',
-        accept: '.pdf,.jpg,.jpeg,.png,.webp',
+        hint: 'PDF, JPG o PNG (Máx. 10MB)',
+        accept: '.pdf,.jpg,.jpeg,.png,.webp,.heic',
         icon: 'fa-solid fa-scroll',
     },
     {
         key: 'photo',
         title: 'Fotografía 2x2',
-        hint: 'JPG o PNG (Máx. 5MB)',
-        accept: '.jpg,.jpeg,.png,.webp,.pdf',
+        hint: 'JPG o PNG (Máx. 10MB)',
+        accept: '.jpg,.jpeg,.png,.webp,.pdf,.heic',
         icon: 'fa-solid fa-image',
     },
 ];
@@ -36,6 +36,7 @@ const REQUIRED_DOCUMENTS = [
 export default function Portal({ applicant, admission, courses = [] }) {
     const { flash = {} } = usePage().props;
     const [step, setStep] = useState(admission ? 'status' : 'form');
+    const [uploadingKey, setUploadingKey] = useState(null);
 
     const { data, setData, post, processing, errors } = useForm({
         first_name: admission?.first_name || '',
@@ -57,8 +58,32 @@ export default function Portal({ applicant, admission, courses = [] }) {
         e.preventDefault();
         post('/portal-aspirante', {
             forceFormData: true,
-            onSuccess: () => setStep('status'),
+            preserveScroll: true,
+            onSuccess: () => {
+                setData((prev) => ({
+                    ...prev,
+                    birth_certificate: null,
+                    id_card: null,
+                    high_school_record: null,
+                    photo: null,
+                }));
+                setStep('status');
+            },
         });
+    };
+
+    const handleQuickUpload = (docKey, file) => {
+        if (!file) return;
+        setUploadingKey(docKey);
+        router.post(
+            '/portal-aspirante/documento',
+            { key: docKey, file },
+            {
+                forceFormData: true,
+                preserveScroll: true,
+                onFinish: () => setUploadingKey(null),
+            }
+        );
     };
 
     const getStatusBadge = (status) => {
@@ -92,7 +117,7 @@ export default function Portal({ applicant, admission, courses = [] }) {
 
             <div className="max-w-5xl mx-auto space-y-6">
                 {/* Header Banner */}
-                <div className="bg-white dark:bg-[#161622] rounded-2xl p-6 border border-slate-200 dark:border-white/5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="bg-white dark:bg-[#161622] rounded-2xl p-6 border border-slate-200 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2 text-xs font-semibold text-sga-primary dark:text-blue-400 uppercase tracking-wider">
                             <i className="fa-solid fa-graduation-cap"></i> Proceso de Admisiones
@@ -100,26 +125,27 @@ export default function Portal({ applicant, admission, courses = [] }) {
                         <h1 className="text-2xl font-bold text-slate-800 dark:text-white mt-1">
                             Bienvenido, {applicant?.name}
                         </h1>
-                        
                     </div>
 
                     {admission && (
                         <div className="flex gap-2">
                             <button
+                                type="button"
                                 onClick={() => setStep('status')}
                                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                                     step === 'status'
-                                        ? 'bg-sga-primary text-white shadow-md'
+                                        ? 'bg-sga-primary text-white'
                                         : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:text-white'
                                 }`}
                             >
                                 <i className="fa-solid fa-timeline mr-1.5"></i> Estatus
                             </button>
                             <button
+                                type="button"
                                 onClick={() => setStep('form')}
                                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                                     step === 'form'
-                                        ? 'bg-sga-primary text-white shadow-md'
+                                        ? 'bg-sga-primary text-white'
                                         : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:text-white'
                                 }`}
                             >
@@ -129,11 +155,29 @@ export default function Portal({ applicant, admission, courses = [] }) {
                     )}
                 </div>
 
+                {flash?.success && (
+                    <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-4 py-3 text-xs font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                        <i className="fa-solid fa-circle-check text-emerald-500"></i>
+                        <span>{flash.success}</span>
+                    </div>
+                )}
+
+                {Object.keys(errors || {}).length > 0 && (
+                    <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-3 text-xs font-semibold text-rose-700 dark:text-rose-300 space-y-1">
+                        {Object.values(errors).map((err, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                                <i className="fa-solid fa-circle-exclamation text-rose-500"></i>
+                                <span>{err}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 {/* STATUS VIEW */}
                 {step === 'status' && admission && (
                     <div className="space-y-6">
                         {/* Overall Status Card */}
-                        <div className="bg-white dark:bg-[#161622] rounded-2xl p-6 border border-slate-200 dark:border-white/5 shadow-sm">
+                        <div className="bg-white dark:bg-[#161622] rounded-2xl p-6 border border-slate-200 dark:border-white/5">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-white/5">
                                 <div className="flex items-center gap-4">
                                     <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-2xl">
@@ -179,13 +223,31 @@ export default function Portal({ applicant, admission, courses = [] }) {
                                     {REQUIRED_DOCUMENTS.map((doc) => {
                                         const isUploaded = Boolean(admission.documents?.[doc.key]);
                                         const rawStatus = admission.document_status?.[doc.key] || 'pending';
+                                        const isUploadingThis = uploadingKey === doc.key;
+
                                         const statusInfo = !isUploaded
-                                            ? { label: 'Sin depositar', icon: 'fa-solid fa-cloud-arrow-up text-amber-500', badge: 'text-amber-600 dark:text-amber-400' }
+                                            ? {
+                                                  label: 'Sin depositar',
+                                                  icon: 'fa-solid fa-cloud-arrow-up text-amber-500',
+                                                  badge: 'text-amber-600 dark:text-amber-400',
+                                              }
                                             : rawStatus === 'approved'
-                                                ? { label: 'Aprobado', icon: 'fa-solid fa-circle-check text-emerald-500', badge: 'text-emerald-600 dark:text-emerald-400' }
+                                                ? {
+                                                      label: 'Aprobado',
+                                                      icon: 'fa-solid fa-circle-check text-emerald-500',
+                                                      badge: 'text-emerald-600 dark:text-emerald-400',
+                                                  }
                                                 : rawStatus === 'rejected'
-                                                    ? { label: 'Observado', icon: 'fa-solid fa-circle-exclamation text-rose-500', badge: 'text-rose-600 dark:text-rose-400' }
-                                                    : { label: 'En revisión', icon: 'fa-solid fa-clock text-blue-500', badge: 'text-blue-600 dark:text-blue-400' };
+                                                    ? {
+                                                          label: 'Observado',
+                                                          icon: 'fa-solid fa-circle-exclamation text-rose-500',
+                                                          badge: 'text-rose-600 dark:text-rose-400',
+                                                      }
+                                                    : {
+                                                          label: 'Depositado',
+                                                          icon: 'fa-solid fa-circle-check text-emerald-500',
+                                                          badge: 'text-emerald-600 dark:text-emerald-400',
+                                                      };
 
                                         return (
                                             <div key={doc.key} className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 flex flex-col justify-between gap-2">
@@ -197,25 +259,43 @@ export default function Portal({ applicant, admission, courses = [] }) {
                                                     <i className={`${statusInfo.icon} text-sm`}></i>
                                                 </div>
                                                 <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-white/5 text-[11px]">
-                                                    <span className={`font-semibold ${statusInfo.badge}`}>{statusInfo.label}</span>
-                                                    {isUploaded ? (
-                                                        <a
-                                                            href={`/admissions/document/${admission.id}/${doc.key}`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="font-semibold text-sga-primary dark:text-blue-400 hover:underline"
-                                                        >
-                                                            Ver archivo
-                                                        </a>
-                                                    ) : (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setStep('form')}
-                                                            className="font-semibold text-sga-primary dark:text-blue-400 hover:underline"
-                                                        >
-                                                            Subir ahora
-                                                        </button>
-                                                    )}
+                                                    <span className={`font-semibold ${statusInfo.badge}`}>
+                                                        {isUploadingThis ? 'Subiendo...' : statusInfo.label}
+                                                    </span>
+                                                    <div className="flex items-center gap-2">
+                                                        {isUploaded && (
+                                                            <a
+                                                                href={`/admissions/document/${admission.id}/${doc.key}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="font-semibold text-sga-primary dark:text-blue-400 hover:underline"
+                                                            >
+                                                                Ver archivo
+                                                            </a>
+                                                        )}
+                                                        <label className="cursor-pointer font-semibold text-sga-primary dark:text-blue-400 hover:underline">
+                                                            {isUploadingThis ? (
+                                                                <i className="fa-solid fa-circle-notch fa-spin"></i>
+                                                            ) : isUploaded ? (
+                                                                'Cambiar'
+                                                            ) : (
+                                                                'Subir ahora'
+                                                            )}
+                                                            <input
+                                                                type="file"
+                                                                accept={doc.accept}
+                                                                disabled={isUploadingThis}
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files?.[0];
+                                                                    if (file) {
+                                                                        handleQuickUpload(doc.key, file);
+                                                                        e.target.value = '';
+                                                                    }
+                                                                }}
+                                                                className="hidden"
+                                                            />
+                                                        </label>
+                                                    </div>
                                                 </div>
                                             </div>
                                         );
@@ -231,7 +311,7 @@ export default function Portal({ applicant, admission, courses = [] }) {
                         </div>
 
                         {/* Personal info summary */}
-                        <div className="bg-white dark:bg-[#161622] rounded-2xl p-6 border border-slate-200 dark:border-white/5 shadow-sm grid grid-cols-1 sm:grid-cols-3 gap-6">
+                        <div className="bg-white dark:bg-[#161622] rounded-2xl p-6 border border-slate-200 dark:border-white/5 grid grid-cols-1 sm:grid-cols-3 gap-6">
                             <div>
                                 <div className="text-xs text-slate-400 uppercase font-semibold">Postulante</div>
                                 <div className="text-base font-bold text-slate-800 dark:text-white mt-1">
@@ -255,7 +335,7 @@ export default function Portal({ applicant, admission, courses = [] }) {
 
                 {/* APPLICATION FORM VIEW */}
                 {(step === 'form' || !admission) && (
-                    <form onSubmit={handleSubmit} className="bg-white dark:bg-[#161622] rounded-2xl p-8 border border-slate-200 dark:border-white/5 shadow-sm space-y-6">
+                    <form onSubmit={handleSubmit} className="bg-white dark:bg-[#161622] rounded-2xl p-8 border border-slate-200 dark:border-white/5 space-y-6">
                         <div className="border-b border-slate-100 dark:border-white/5 pb-4">
                             <h3 className="text-xl font-bold text-slate-800 dark:text-white">
                                 {admission ? 'Actualizar Información de Solicitud' : 'Formulario de Admisión e Ingreso'}
@@ -396,7 +476,7 @@ export default function Portal({ applicant, admission, courses = [] }) {
                                     Depósito de Documentos de Admisión
                                 </h4>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                    Adjunta cada documento requerido en formato PDF, JPG o PNG (máximo 5 MB por archivo).
+                                    Adjunta cada documento requerido en formato PDF, JPG o PNG (máximo 10 MB por archivo).
                                 </p>
                             </div>
 
@@ -480,7 +560,7 @@ export default function Portal({ applicant, admission, courses = [] }) {
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="px-8 py-3 rounded-xl bg-sga-primary hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-900/30 transition-all flex items-center gap-2"
+                                className="px-8 py-3 rounded-xl bg-sga-primary hover:bg-blue-700 text-white font-bold text-sm transition-all flex items-center gap-2"
                             >
                                 {processing ? (
                                     <>

@@ -310,6 +310,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['feature:academic_careers'])->group(function () {
         Route::get('/portal-aspirante', [\App\Http\Controllers\ApplicantPortalController::class, 'index'])->name('applicant.portal');
         Route::post('/portal-aspirante', [\App\Http\Controllers\ApplicantPortalController::class, 'submit'])->name('applicant.portal.submit');
+        Route::post('/portal-aspirante/documento', [\App\Http\Controllers\ApplicantPortalController::class, 'uploadDocument'])->name('applicant.portal.upload-document');
         Route::get('/portal-aspirante/solicitud', [\App\Http\Controllers\ApplicantPortalController::class, 'index'])->name('applicant.admission-form');
     });
 
