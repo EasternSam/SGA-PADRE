@@ -195,9 +195,6 @@ export default function Login({ status, canResetPassword }) {
                                     placeholder="2024-0001 o usuario@correo.com"
                                     className={`w-full px-4 py-3.5 border ${loginError ? 'border-red-400 dark:border-red-500/80' : 'border-slate-200 dark:border-slate-700'} bg-white dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-all text-sm shadow-sm rounded-xl`}
                                 />
-                                {loginError && (
-                                    <p className="text-xs text-red-600 dark:text-red-400 mt-1.5 font-medium">{loginError}</p>
-                                )}
                             </div>
 
                             {/* Contraseña */}
@@ -234,9 +231,6 @@ export default function Login({ status, canResetPassword }) {
                                         )}
                                     </button>
                                 </div>
-                                {passwordError && (
-                                    <p className="text-xs text-red-600 dark:text-red-400 mt-1.5 font-medium">{passwordError}</p>
-                                )}
 
                                 {/* Nota de nuevo ingreso */}
                                 <div className="mt-2 flex items-center gap-2 px-1 text-xs text-slate-500 dark:text-slate-400">

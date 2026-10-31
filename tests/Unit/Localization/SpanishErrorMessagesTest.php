@@ -73,4 +73,19 @@ class SpanishErrorMessagesTest extends TestCase
         $seeder = file_get_contents($this->projectPath('database/seeders/RolesAndPermissionsSeeder.php'));
         $this->assertStringContainsString('soporte@gridbase.com.do', $seeder);
     }
+
+    public function test_login_page_displays_error_message_only_once(): void
+    {
+        $loginJsx = file_get_contents($this->projectPath('resources/js/Pages/Auth/Login.jsx'));
+        $this->assertStringNotContainsString(
+            '<p className="text-xs text-red-600 dark:text-red-400 mt-1.5 font-medium">{loginError}</p>',
+            $loginJsx,
+            'Login.jsx must not duplicate loginError below the input when the alert banner is already rendered.'
+        );
+        $this->assertStringNotContainsString(
+            '<p className="text-xs text-red-600 dark:text-red-400 mt-1.5 font-medium">{passwordError}</p>',
+            $loginJsx,
+            'Login.jsx must not duplicate passwordError below the input when the alert banner is already rendered.'
+        );
+    }
 }
