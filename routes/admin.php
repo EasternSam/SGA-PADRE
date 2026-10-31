@@ -269,6 +269,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     Route::get('/pos', [\App\Http\Controllers\PosController::class, 'index'])->name('admin.pos');
     Route::get('/pos/search-student', [\App\Http\Controllers\PosController::class, 'searchStudents'])->name('admin.pos.search');
     Route::post('/pos/process', [\App\Http\Controllers\PosController::class, 'process'])->name('admin.pos.process');
+    Route::get('/pos/receipt/{payment}/pdf', [\App\Http\Controllers\PosController::class, 'receiptPdf'])->name('admin.pos.receipt.pdf');
 
     // --- CENTRO DE NOTIFICACIONES (UI Arc) ---
     Route::prefix('notifications')->name('admin.notifications.')->group(function () {

@@ -390,6 +390,15 @@ function AuthenticatedContent({ title, children }) {
         }
     }, [serverNotifications]);
 
+    useEffect(() => {
+        if (props?.csrf_token && typeof document !== 'undefined') {
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            if (meta) {
+                meta.setAttribute('content', props.csrf_token);
+            }
+        }
+    }, [props?.csrf_token]);
+
     const handleNotificationReadChange = (item, nextRead) => {
         setSystemNotifications(prev => prev.map(n => n.id === item.id ? { ...n, read: nextRead } : n));
         const url = `/notifications/${item.id}/read`;

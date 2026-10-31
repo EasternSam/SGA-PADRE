@@ -12,7 +12,7 @@ export default function ReceiptModal({
     if (!isOpen || !receipt) return null;
 
     const handlePrint = () => {
-        window.print();
+        window.open(`/admin/pos/receipt/${receipt.id}/pdf`, '_blank');
     };
 
     const isPendingNcf = receipt.ncf_status === 'pending' || !receipt.ncf;

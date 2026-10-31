@@ -8,12 +8,14 @@ use App\Models\PaymentConcept;
 use App\Models\Student;
 use App\Services\Pos\PosCheckoutService;
 use App\Services\Pos\PosReceiptPresenter;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class PosController extends Controller
 {
@@ -114,6 +116,21 @@ class PosController extends Controller
             'message' => "Cobro #{$payment->id} registrado.",
             'receipt' => $this->presenter->present($payment),
         ], 201);
+    }
+
+    /**
+     * Genera el comprobante térmico de 80mm en PDF vía DomPDF.
+     */
+    public function receiptPdf(Payment $payment): HttpResponse
+    {
+        $payment->load(['student', 'paymentConcept', 'user']);
+
+        $pdf = Pdf::loadView('reports.pos-receipt-pdf', [
+            'receipt' => $this->presenter->present($payment),
+            'issuer' => $this->presenter->issuer(),
+        ])->setPaper([0, 0, 226.77, 560], 'portrait');
+
+        return $pdf->stream('recibo_pos_' . str_pad((string) $payment->id, 6, '0', STR_PAD_LEFT) . '.pdf');
     }
 
     private function studentOption(Student $s): array

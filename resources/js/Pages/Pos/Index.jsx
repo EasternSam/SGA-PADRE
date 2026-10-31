@@ -7,7 +7,7 @@ import ConceptCatalog from '@/components/pos/ConceptCatalog';
 import TicketPanel from '@/components/pos/TicketPanel';
 import ReceiptModal from '@/components/pos/ReceiptModal';
 import ShiftDrawer from '@/components/pos/ShiftDrawer';
-import { formatMoney, getCsrfToken } from '@/components/pos/utils';
+import { formatMoney, getCsrfHeaders } from '@/components/pos/utils';
 
 export default function PosIndex({
     concepts = [],
@@ -19,6 +19,7 @@ export default function PosIndex({
     gateways = ['Efectivo', 'Tarjeta', 'Transferencia'],
     maxQuantity = 99,
 }) {
+    const { props } = usePage();
     // ─── ESTADO DEL CLIENTE ──────────────────────────────────────────
     const [selectedStudent, setSelectedStudent] = useState(initialStudent);
     const [isWalkIn, setIsWalkIn] = useState(false);
@@ -163,10 +164,12 @@ export default function PosIndex({
         try {
             const res = await fetch('/admin/pos/process', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...getCsrfHeaders(props?.csrf_token),
                 },
                 body: JSON.stringify(payload),
             });
