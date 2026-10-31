@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 // Modelos y Observadores
 use App\Models\Setting;
+use App\Support\BrandingDefaults;
 use App\Models\Enrollment;
 use App\Observers\EnrollmentObserver;
 use App\Models\Payment;
@@ -72,22 +73,18 @@ class AppServiceProvider extends ServiceProvider
     private function bootSystemCustomization()
     {
         try {
-            // 1. Cargar Nombre de la Institución (Desde la tabla settings)
-            $appName = Setting::get('institution_name');
-            
-            if ($appName) {
-                Config::set('app.name', $appName);
-            }
+            $resolved = BrandingDefaults::fromDatabase();
+
+            // 1. Cargar Nombre de la Institución (Desde la tabla settings o Academic+ default)
+            Config::set('app.name', $resolved['name']);
 
             // 2. Cargar Logo y Colores
             $brandSettings = [
-                'logo_url' => Setting::get('institution_logo'), 
-                'login_banner' => Setting::get('login_banner'),
-                'primary_color' => Setting::get('brand_primary_color', '#1e3a8a'), // Azul default
+                'logo_url' => $resolved['logo'],
+                'login_banner' => $resolved['login_banner'],
+                'primary_color' => $resolved['primary_color'],
+                'primary_rgb' => $resolved['primary_rgb'],
             ];
-
-            // 3. Convertir Hex a RGB
-            $brandSettings['primary_rgb'] = $this->hex2rgb($brandSettings['primary_color']);
 
             // Compartir globalmente
             View::share('branding', (object) $brandSettings);
@@ -128,9 +125,9 @@ class AppServiceProvider extends ServiceProvider
     private function shareDefaultBranding()
     {
         View::share('branding', (object) [
-            'logo_url' => null,
-            'primary_color' => '#1e3a8a',
-            'primary_rgb' => '30 58 138'
+            'logo_url' => BrandingDefaults::LOGO,
+            'primary_color' => BrandingDefaults::PRIMARY_COLOR,
+            'primary_rgb' => BrandingDefaults::PRIMARY_RGB,
         ]);
     }
 

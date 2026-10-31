@@ -1,4 +1,6 @@
-# Ignorar todos los archivos de branding personalizados
+# Ignorar todos los archivos de branding personalizados excepto los valores por defecto de Academic+
 *
 !.gitignore
 !.gitkeep
+!academic-logo.png
+!academic-favicon.png

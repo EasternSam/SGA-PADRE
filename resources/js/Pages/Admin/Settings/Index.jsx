@@ -75,16 +75,16 @@ export default function Index({
         enable_careers: settings.enable_careers ?? true,
 
         // Marca & Apariencia (Paleta Institucional de 4 Colores)
-        brand_primary_color: settings.brand_primary_color || '#bb3902',
-        brand_secondary_color: settings.brand_secondary_color || '#1c1917',
-        brand_accent_color: settings.brand_accent_color || '#ea580c',
-        brand_neutral_color: settings.brand_neutral_color || '#78716c',
-        institution_logo: settings.institution_logo || '',
-        favicon: settings.favicon || '',
-        app_icon: settings.app_icon || '',
+        brand_primary_color: settings.brand_primary_color || '#211170',
+        brand_secondary_color: settings.brand_secondary_color || '#1a0a53',
+        brand_accent_color: settings.brand_accent_color || '#f7931e',
+        brand_neutral_color: settings.brand_neutral_color || '#64748b',
+        institution_logo: settings.institution_logo || '/branding/academic-logo.png',
+        favicon: settings.favicon || '/branding/academic-favicon.png',
+        app_icon: settings.app_icon || '/branding/academic-favicon.png',
         login_banner: settings.login_banner || '',
-        navbar_type: settings.navbar_type || 'solid',
-        navbar_gradient_start: settings.navbar_gradient_start || '#bb3902',
+        navbar_type: settings.navbar_type || 'gradient',
+        navbar_gradient_start: settings.navbar_gradient_start || '#211170',
         navbar_gradient_end: settings.navbar_gradient_end || '#1a0a53',
         navbar_gradient_direction: settings.navbar_gradient_direction || 'to bottom right',
 
@@ -806,12 +806,13 @@ export default function Index({
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
                                         {[
                                             {
-                                                name: 'Escuela Chavón',
-                                                tag: 'Editorial / Terracota',
-                                                p: '#bb3902',
-                                                s: '#1c1917',
-                                                a: '#ea580c',
-                                                n: '#78716c'
+                                                name: 'Academic+ (Default)',
+                                                tag: 'Índigo / Naranja Oficial',
+                                                p: '#211170',
+                                                s: '#1a0a53',
+                                                a: '#f7931e',
+                                                n: '#64748b',
+                                                isDefault: true
                                             },
                                             {
                                                 name: 'Universidad Azul',
@@ -856,7 +857,18 @@ export default function Index({
                                                         brand_secondary_color: preset.s,
                                                         brand_accent_color: preset.a,
                                                         brand_neutral_color: preset.n,
-                                                        ...(prev.navbar_type === 'solid' || prev.navbar_gradient_start === prev.brand_primary_color ? { navbar_gradient_start: preset.p } : {})
+                                                        ...(preset.isDefault ? {
+                                                            institution_name: 'Academic+',
+                                                            institution_logo: '/branding/academic-logo.png',
+                                                            favicon: '/branding/academic-favicon.png',
+                                                            app_icon: '/branding/academic-favicon.png',
+                                                            login_banner: '',
+                                                            navbar_type: 'gradient',
+                                                            navbar_gradient_start: '#211170',
+                                                            navbar_gradient_end: '#1a0a53',
+                                                            navbar_gradient_direction: 'to bottom right',
+                                                        } : {}),
+                                                        ...(!preset.isDefault && (prev.navbar_type === 'solid' || prev.navbar_gradient_start === prev.brand_primary_color) ? { navbar_gradient_start: preset.p } : {})
                                                     }));
                                                 }}
                                                 className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 hover:border-sga-primary dark:hover:border-blue-400 text-left transition-all group cursor-pointer shadow-2xs"

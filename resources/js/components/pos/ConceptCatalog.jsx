@@ -63,7 +63,7 @@ export default function ConceptCatalog({
                         value={searchFilter}
                         onChange={(e) => setSearchFilter(e.target.value)}
                         placeholder="Buscar concepto o servicio..."
-                        className="w-full rounded-xl border border-neutral-200 dark:border-[#262626] bg-white dark:bg-[#171717] pl-9 pr-4 py-2 text-sm text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#bb3902] transition-shadow"
+                        className="w-full rounded-xl border border-neutral-200 dark:border-[#262626] bg-white dark:bg-[#171717] pl-9 pr-4 py-2 text-sm text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-brand-primary transition-shadow"
                     />
                 </div>
 
@@ -78,7 +78,7 @@ export default function ConceptCatalog({
                                 onClick={() => setActiveCategory(cat)}
                                 className={`shrink-0 rounded-full px-3 py-1.5 transition-colors ${
                                     isActive
-                                        ? 'bg-[#bb3902] text-white shadow-sm'
+                                        ? 'bg-brand-primary text-white shadow-sm'
                                         : 'bg-neutral-100 dark:bg-[#1f1f1f] text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-[#262626] hover:text-neutral-900 dark:hover:text-neutral-100'
                                 }`}
                             >
@@ -102,7 +102,7 @@ export default function ConceptCatalog({
                             onClick={() => onSelectConcept(concept)}
                             className={`group relative flex flex-col justify-between rounded-xl border p-4 text-left transition-all ${
                                 isSelected
-                                    ? 'border-[#bb3902] bg-[#bb3902]/5 dark:bg-[#bb3902]/10 ring-2 ring-[#bb3902]/20'
+                                    ? 'border-brand-primary bg-brand-primary/5 dark:bg-brand-primary/10 ring-2 ring-brand-primary/20'
                                     : 'border-neutral-200 dark:border-[#262626] bg-white dark:bg-[#171717] hover:border-neutral-300 dark:hover:border-[#333333] hover:shadow-sm'
                             }`}
                         >
@@ -112,13 +112,13 @@ export default function ConceptCatalog({
                                         {getConceptCategory(concept.name)}
                                     </span>
                                     {isSelected && (
-                                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#bb3902] text-white">
+                                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-primary text-white">
                                             <Check className="h-3 w-3 stroke-[3]" />
                                         </span>
                                     )}
                                 </div>
 
-                                <div className="mt-2 font-semibold text-neutral-900 dark:text-neutral-100 text-sm group-hover:text-[#bb3902] transition-colors line-clamp-2">
+                                <div className="mt-2 font-semibold text-neutral-900 dark:text-neutral-100 text-sm group-hover:text-brand-primary transition-colors line-clamp-2">
                                     {concept.name}
                                 </div>
 
@@ -164,7 +164,7 @@ export default function ConceptCatalog({
                                 value={customName}
                                 onChange={(e) => onChangeCustomName(e.target.value)}
                                 placeholder="Ej: Venta de materiales, Fotocopias..."
-                                className="w-full rounded-lg border border-neutral-300 dark:border-[#333333] bg-white dark:bg-[#171717] px-3 py-1.5 text-xs text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#bb3902]"
+                                className="w-full rounded-lg border border-neutral-300 dark:border-[#333333] bg-white dark:bg-[#171717] px-3 py-1.5 text-xs text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-brand-primary"
                             />
                         </div>
                         <div>
@@ -178,7 +178,7 @@ export default function ConceptCatalog({
                                 value={customAmount || ''}
                                 onChange={(e) => onChangeCustomAmount(e.target.value)}
                                 placeholder="0.00"
-                                className="w-full rounded-lg border border-neutral-300 dark:border-[#333333] bg-white dark:bg-[#171717] px-3 py-1.5 text-xs text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#bb3902]"
+                                className="w-full rounded-lg border border-neutral-300 dark:border-[#333333] bg-white dark:bg-[#171717] px-3 py-1.5 text-xs text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-brand-primary"
                             />
                         </div>
                     </div>

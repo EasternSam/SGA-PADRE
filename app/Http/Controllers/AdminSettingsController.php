@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Setting;
 use App\Models\ActivityLog;
+use App\Support\BrandingDefaults;
 use App\Services\WordpressApiService;
 use App\Services\MoodleApiService;
 use App\Services\BillsApiService;
@@ -42,10 +43,12 @@ class AdminSettingsController extends Controller
         $moodleUrl = $allSettings['moodle_url'] ?? config('services.moodle.url', env('MOODLE_URL', ''));
         $moodleToken = $allSettings['moodle_token'] ?? config('services.moodle.token', env('MOODLE_TOKEN', ''));
 
+        $branding = BrandingDefaults::resolve($allSettings);
+
         $settings = [
             // Identidad & Contacto
-            'institution_name' => $allSettings['institution_name'] ?? 'Instituto Tecnológico de Las Américas',
-            'support_email' => $allSettings['support_email'] ?? 'soporte@institucion.edu',
+            'institution_name' => $branding['name'],
+            'support_email' => !empty($allSettings['support_email']) ? $allSettings['support_email'] : 'soporte@institucion.edu',
             'contact_phone' => $allSettings['contact_phone'] ?? '',
             'contact_address' => $allSettings['contact_address'] ?? '',
             'website_url' => $allSettings['website_url'] ?? '',
@@ -54,18 +57,18 @@ class AdminSettingsController extends Controller
             'enable_careers' => ($allSettings['enable_careers'] ?? 'true') === 'true',
 
             // Marca & Apariencia (Paleta Institucional de 4 Colores)
-            'brand_primary_color' => $allSettings['brand_primary_color'] ?? '#bb3902',
-            'brand_secondary_color' => $allSettings['brand_secondary_color'] ?? '#1c1917',
-            'brand_accent_color' => $allSettings['brand_accent_color'] ?? '#ea580c',
-            'brand_neutral_color' => $allSettings['brand_neutral_color'] ?? '#78716c',
-            'institution_logo' => $allSettings['institution_logo'] ?? '/branding/logo_1787814439.png',
-            'favicon' => $allSettings['favicon'] ?? '/branding/favicon_1777868576.webp',
-            'app_icon' => $allSettings['app_icon'] ?? '/branding/app_icon_1777868576.webp',
-            'login_banner' => $allSettings['login_banner'] ?? '/branding/login_banner_1787811955.jpg',
-            'navbar_type' => $allSettings['navbar_type'] ?? 'solid',
-            'navbar_gradient_start' => $allSettings['navbar_gradient_start'] ?? '#bb3902',
-            'navbar_gradient_end' => $allSettings['navbar_gradient_end'] ?? '#1a0a53',
-            'navbar_gradient_direction' => $allSettings['navbar_gradient_direction'] ?? 'to bottom right',
+            'brand_primary_color' => $branding['primary_color'],
+            'brand_secondary_color' => $branding['secondary_color'],
+            'brand_accent_color' => $branding['accent_color'],
+            'brand_neutral_color' => $branding['neutral_color'],
+            'institution_logo' => $branding['logo'],
+            'favicon' => $branding['favicon'],
+            'app_icon' => $branding['app_icon'],
+            'login_banner' => $branding['login_banner'],
+            'navbar_type' => $branding['navbar_type'],
+            'navbar_gradient_start' => $branding['navbar_gradient_start'],
+            'navbar_gradient_end' => $branding['navbar_gradient_end'],
+            'navbar_gradient_direction' => $branding['navbar_gradient_direction'],
 
             // WordPress / Academic+ Catalog
             'wp_api_url' => $wpApiUrl,
@@ -164,7 +167,7 @@ class AdminSettingsController extends Controller
         ]);
 
         if (isset($validated['brand_primary_color'])) {
-            if (empty($validated['navbar_gradient_start']) || $validated['navbar_gradient_start'] === '#0b2c79') {
+            if (empty($validated['navbar_gradient_start']) || $validated['navbar_gradient_start'] === BrandingDefaults::PRIMARY_COLOR) {
                 $validated['navbar_gradient_start'] = $validated['brand_primary_color'];
             }
         }
@@ -205,11 +208,11 @@ class AdminSettingsController extends Controller
                     'Content-Type' => 'application/json',
                 ])->timeout(4)->post($endpoint, [
                     'branding' => [
-                        'brand_primary_color' => $validated['brand_primary_color'] ?? '#0b2c79',
-                        'navbar_type' => $validated['navbar_type'] ?? 'solid',
-                        'navbar_gradient_start' => $validated['navbar_gradient_start'] ?? '#0b2c79',
-                        'navbar_gradient_end' => $validated['navbar_gradient_end'] ?? '#1a0a53',
-                        'navbar_gradient_direction' => $validated['navbar_gradient_direction'] ?? 'to bottom right',
+                        'brand_primary_color' => $validated['brand_primary_color'] ?? BrandingDefaults::PRIMARY_COLOR,
+                        'navbar_type' => $validated['navbar_type'] ?? BrandingDefaults::NAVBAR_TYPE,
+                        'navbar_gradient_start' => $validated['navbar_gradient_start'] ?? BrandingDefaults::NAVBAR_GRADIENT_START,
+                        'navbar_gradient_end' => $validated['navbar_gradient_end'] ?? BrandingDefaults::NAVBAR_GRADIENT_END,
+                        'navbar_gradient_direction' => $validated['navbar_gradient_direction'] ?? BrandingDefaults::NAVBAR_GRADIENT_DIRECTION,
                     ]
                 ]);
             } catch (\Exception $e) {

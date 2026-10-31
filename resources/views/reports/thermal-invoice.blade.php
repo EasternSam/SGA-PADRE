@@ -64,7 +64,7 @@
     <!-- ENCABEZADO FISCAL -->
     <div class="header">
         @php
-            $logoPath = public_path($branding->logo_url ?? 'centuu.png');
+            $logoPath = public_path($branding->logo_url ?? 'branding/academic-logo.png');
             $logoData = '';
             if (file_exists($logoPath) && is_file($logoPath)) {
                 $type = pathinfo($logoPath, PATHINFO_EXTENSION);

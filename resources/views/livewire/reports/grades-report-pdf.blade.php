@@ -109,7 +109,7 @@
 <body>
     <div class="header-container">
         {{-- Logo: Usamos public_path para asegurar que DOMPDF encuentre el archivo localmente --}}
-        <img src="{{ public_path('centuu.png') }}" class="logo" alt="Logo">
+        <img src="{{ public_path('branding/academic-logo.png') }}" class="logo" alt="Logo">
         
         <div class="header">
             <h1>Reporte de Calificaciones</h1>

@@ -10,8 +10,8 @@ export default function ResetPassword({ token, email }) {
         password_confirmation: '',
     });
 
-    const primaryColor = branding?.primary_color || '#bb3902';
-    const appName = branding?.name || 'Escuela Chavón';
+    const primaryColor = branding?.primary_color || '#211170';
+    const appName = branding?.name || 'Academic+';
 
     const submit = (e) => {
         e.preventDefault();

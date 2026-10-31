@@ -115,7 +115,7 @@
         <tr>
             <td class="header-logo">
                 @php
-                    $logoPath = public_path('centuu.png');
+                    $logoPath = public_path('branding/academic-logo.png');
                     if ($schoolConfig?->logo_path && file_exists(public_path('storage/' . $schoolConfig->logo_path))) {
                         $logoPath = public_path('storage/' . $schoolConfig->logo_path);
                     }

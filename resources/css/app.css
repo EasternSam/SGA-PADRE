@@ -5,27 +5,27 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definimos los valores por defecto de la paleta institucional (4 colores) */
+/* Definimos los valores por defecto de la paleta institucional Academic+ (4 colores) */
 :root {
-    --brand-primary: #bb3902;
-    --brand-secondary: #1c1917;
-    --brand-accent: #ea580c;
-    --brand-neutral: #78716c;
+    --brand-primary: #211170;
+    --brand-secondary: #1a0a53;
+    --brand-accent: #f7931e;
+    --brand-neutral: #64748b;
 
-    --palette-primary: #bb3902;
-    --palette-secondary: #1c1917;
-    --palette-accent: #ea580c;
-    --palette-neutral: #78716c;
+    --palette-primary: #211170;
+    --palette-secondary: #1a0a53;
+    --palette-accent: #f7931e;
+    --palette-neutral: #64748b;
 
-    --color-primary: 187 57 2;
-    --color-secondary: 28 25 23;
-    --color-accent: 234 88 12;
-    --color-neutral: 120 113 108;
+    --color-primary: 33 17 112;
+    --color-secondary: 26 10 83;
+    --color-accent: 247 147 30;
+    --color-neutral: 100 116 139;
 
-    --brand-primary-rgb: 187 57 2;
-    --brand-secondary-rgb: 28 25 23;
-    --brand-accent-rgb: 234 88 12;
-    --brand-neutral-rgb: 120 113 108;
+    --brand-primary-rgb: 33 17 112;
+    --brand-secondary-rgb: 26 10 83;
+    --brand-accent-rgb: 247 147 30;
+    --brand-neutral-rgb: 100 116 139;
 
     /* Gridbase Design System Variables - Light Mode */
     --bg-app: #F4F5F7;
@@ -104,7 +104,7 @@
     }
 
     .btn-primary {
-        background-color: var(--brand-primary, #bb3902);
+        background-color: var(--brand-primary, #211170);
         color: #ffffff;
     }
     .btn-primary:hover {
@@ -528,14 +528,14 @@ div[class*="fixed inset-0"][class*="z-50"] > div::-webkit-scrollbar-thumb:hover 
     pointer-events: none;
 }
 #nprogress .bar {
-    background: #bb3902 !important;
+    background: var(--brand-primary, #211170) !important;
     position: fixed !important;
     z-index: 999999 !important;
     top: 0 !important;
     left: 0 !important;
     width: 100% !important;
     height: 2.5px !important;
-    box-shadow: 0 0 10px rgba(187, 57, 2, 0.7), 0 0 5px rgba(187, 57, 2, 0.5) !important;
+    box-shadow: 0 0 10px rgb(var(--color-primary, 33 17 112) / 0.7), 0 0 5px rgb(var(--color-primary, 33 17 112) / 0.5) !important;
     transition: width 0.15s ease-out !important;
 }
 #nprogress .peg {
@@ -544,7 +544,7 @@ div[class*="fixed inset-0"][class*="z-50"] > div::-webkit-scrollbar-thumb:hover 
     right: 0px !important;
     width: 100px !important;
     height: 100% !important;
-    box-shadow: 0 0 12px #bb3902, 0 0 6px #bb3902 !important;
+    box-shadow: 0 0 12px var(--brand-primary, #211170), 0 0 6px var(--brand-primary, #211170) !important;
     opacity: 1.0 !important;
     transform: rotate(3deg) translate(0px, -4px) !important;
 }
@@ -630,32 +630,32 @@ html.theme-transitioning *::after {
    Universal 4-Color Institutional Palette Tokens
    Native CSS tokens matching Tailwind brand configuration
    ========================================================================== */
-.bg-palette-primary { background-color: var(--palette-primary, #bb3902); }
-.text-palette-primary { color: var(--palette-primary, #bb3902); }
-.border-palette-primary { border-color: var(--palette-primary, #bb3902); }
+.bg-palette-primary { background-color: var(--palette-primary, #211170); }
+.text-palette-primary { color: var(--palette-primary, #211170); }
+.border-palette-primary { border-color: var(--palette-primary, #211170); }
 
-.bg-palette-secondary { background-color: var(--palette-secondary, #1c1917); }
-.text-palette-secondary { color: var(--palette-secondary, #1c1917); }
-.border-palette-secondary { border-color: var(--palette-secondary, #1c1917); }
+.bg-palette-secondary { background-color: var(--palette-secondary, #1a0a53); }
+.text-palette-secondary { color: var(--palette-secondary, #1a0a53); }
+.border-palette-secondary { border-color: var(--palette-secondary, #1a0a53); }
 
-.bg-palette-accent { background-color: var(--palette-accent, #ea580c); }
-.text-palette-accent { color: var(--palette-accent, #ea580c); }
-.border-palette-accent { border-color: var(--palette-accent, #ea580c); }
+.bg-palette-accent { background-color: var(--palette-accent, #f7931e); }
+.text-palette-accent { color: var(--palette-accent, #f7931e); }
+.border-palette-accent { border-color: var(--palette-accent, #f7931e); }
 
-.bg-palette-neutral { background-color: var(--palette-neutral, #78716c); }
-.text-palette-neutral { color: var(--palette-neutral, #78716c); }
-.border-palette-neutral { border-color: var(--palette-neutral, #78716c); }
+.bg-palette-neutral { background-color: var(--palette-neutral, #64748b); }
+.text-palette-neutral { color: var(--palette-neutral, #64748b); }
+.border-palette-neutral { border-color: var(--palette-neutral, #64748b); }
 
 /* Input focus defaults */
 html:not(.dark) input:focus:not([type="checkbox"]):not([type="radio"]),
 html:not(.dark) select:focus,
 html:not(.dark) textarea:focus {
-    --tw-ring-color: var(--brand-primary, #bb3902);
-    border-color: var(--brand-primary, #bb3902);
+    --tw-ring-color: var(--brand-primary, #211170);
+    border-color: var(--brand-primary, #211170);
 }
 html:not(.dark) input[type="checkbox"]:checked,
 html:not(.dark) input[type="radio"]:checked {
-    background-color: var(--brand-primary, #bb3902);
-    border-color: var(--brand-primary, #bb3902);
+    background-color: var(--brand-primary, #211170);
+    border-color: var(--brand-primary, #211170);
 }
 

@@ -40,7 +40,7 @@ export default function StudentDashboard({
 }) {
     const page = usePage();
     const branding = page.props?.branding || {};
-    const primaryColor = branding?.primary_color || '#bb3902';
+    const primaryColor = branding?.primary_color || '#211170';
     const accentColor = branding?.accent_color || '#ea580c';
 
     // Determinar día actual para activar la pestaña del horario por defecto

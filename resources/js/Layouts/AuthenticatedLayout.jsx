@@ -244,10 +244,10 @@ function AuthenticatedContent({ title, children }) {
     // Dynamic Synchronization of the 4-Color Institutional Palette
     useEffect(() => {
         const palette = branding?.palette || {};
-        const p = palette.primary || branding?.primary_color || '#bb3902';
-        const s = palette.secondary || branding?.secondary_color || '#1c1917';
-        const a = palette.accent || branding?.accent_color || '#ea580c';
-        const n = palette.neutral || branding?.neutral_color || '#78716c';
+        const p = palette.primary || branding?.primary_color || '#211170';
+        const s = palette.secondary || branding?.secondary_color || '#1a0a53';
+        const a = palette.accent || branding?.accent_color || '#f7931e';
+        const n = palette.neutral || branding?.neutral_color || '#64748b';
 
         const hexToRgb = (hex, def) => {
             if (!hex) return def;
@@ -270,10 +270,10 @@ function AuthenticatedContent({ title, children }) {
         root.style.setProperty('--palette-accent', a);
         root.style.setProperty('--palette-neutral', n);
 
-        root.style.setProperty('--color-primary', hexToRgb(p, '187 57 2'));
-        root.style.setProperty('--color-secondary', hexToRgb(s, '28 25 23'));
-        root.style.setProperty('--color-accent', hexToRgb(a, '234 88 12'));
-        root.style.setProperty('--color-neutral', hexToRgb(n, '120 113 108'));
+        root.style.setProperty('--color-primary', hexToRgb(p, '33 17 112'));
+        root.style.setProperty('--color-secondary', hexToRgb(s, '26 10 83'));
+        root.style.setProperty('--color-accent', hexToRgb(a, '247 147 30'));
+        root.style.setProperty('--color-neutral', hexToRgb(n, '100 116 139'));
     }, [branding]);
 
     const handleTabChange = (val) => {
@@ -395,12 +395,12 @@ function AuthenticatedContent({ title, children }) {
         });
     };
 
-    const primaryColor = branding?.primary_color || '#bb3902';
-    const navbarType = branding?.navbar_type || 'solid';
-    const navGradientStart = (branding?.navbar_gradient_start && branding?.navbar_gradient_start !== '#bb3902')
+    const primaryColor = branding?.primary_color || '#211170';
+    const navbarType = branding?.navbar_type || 'gradient';
+    const navGradientStart = (branding?.navbar_gradient_start && branding?.navbar_gradient_start !== '#211170')
         ? branding.navbar_gradient_start
         : primaryColor;
-    const navGradientEnd = branding?.navbar_gradient_end || '#802600';
+    const navGradientEnd = branding?.navbar_gradient_end || '#1a0a53';
     const navGradientDir = branding?.navbar_gradient_direction || 'to bottom right';
 
     let navBg;
@@ -411,8 +411,9 @@ function AuthenticatedContent({ title, children }) {
     } else {
         navBg = `linear-gradient(${navGradientDir}, ${navGradientStart}, ${navGradientEnd})`;
     }
-    const logoUrl = branding?.logo || '/branding/logo_1787814439.png';
-    const institutionName = branding?.name || 'Instituto Tecnológico de Las Américas';
+    const logoUrl = branding?.logo || '/branding/academic-logo.png';
+    const faviconUrl = branding?.favicon || '/branding/academic-favicon.png';
+    const institutionName = branding?.name || 'Academic+';
     const userName = auth?.user?.name || 'Admin General';
     const userEmail = auth?.user?.email || 'admin@admin.com';
     const userRoles = auth?.user?.roles || ['Admin'];
@@ -455,7 +456,12 @@ function AuthenticatedContent({ title, children }) {
                             <img 
                                 src={logoUrl} 
                                 alt={institutionName} 
-                                className="h-10 w-auto max-w-[170px] object-contain drop-shadow transition-all duration-300 group-data-[collapsible=icon]:max-w-[34px] group-data-[collapsible=icon]:h-8" 
+                                className="h-10 w-auto max-w-[175px] object-contain drop-shadow transition-all duration-300 group-data-[collapsible=icon]:hidden" 
+                            />
+                            <img 
+                                src={faviconUrl} 
+                                alt={institutionName} 
+                                className="hidden h-9 w-9 rounded-lg object-contain drop-shadow transition-all duration-300 group-data-[collapsible=icon]:block" 
                             />
                         </Link>
                         {isMobile && (

@@ -68,7 +68,7 @@ export default function TicketPanel({
             {/* Header del Ticket */}
             <div className="shrink-0 flex items-center justify-between border-b border-neutral-200 dark:border-[#262626] px-4 py-3 bg-neutral-50/50 dark:bg-[#1f1f1f]/40">
                 <div className="flex items-center gap-2">
-                    <Receipt className="h-4 w-4 text-[#bb3902]" />
+                    <Receipt className="h-4 w-4 text-brand-primary" />
                     <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 text-sm">
                         Ticket de Cobro
                     </h3>
@@ -142,7 +142,7 @@ export default function TicketPanel({
                         value={discount || ''}
                         onChange={(e) => onChangeDiscount(Math.min(subtotal, Math.max(0, Number(e.target.value) || 0)))}
                         placeholder="0.00"
-                        className="w-28 rounded-lg border border-neutral-200 dark:border-[#262626] bg-neutral-50 dark:bg-[#1f1f1f] px-2.5 py-1.5 text-right font-semibold text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-[#bb3902]"
+                        className="w-28 rounded-lg border border-neutral-200 dark:border-[#262626] bg-neutral-50 dark:bg-[#1f1f1f] px-2.5 py-1.5 text-right font-semibold text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-brand-primary"
                     />
                 </div>
 
@@ -161,7 +161,7 @@ export default function TicketPanel({
                                     onClick={() => onChangePaymentMethod(g)}
                                     className={`flex flex-col items-center justify-center gap-1 rounded-xl border p-2 text-xs font-medium transition-all ${
                                         isSelected
-                                            ? 'border-[#bb3902] bg-[#bb3902]/10 text-[#bb3902] font-semibold'
+                                            ? 'border-brand-primary bg-brand-primary/10 text-brand-primary font-semibold'
                                             : 'border-neutral-200 dark:border-[#262626] bg-white dark:bg-[#1f1f1f] text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-[#262626]'
                                     }`}
                                 >
@@ -189,7 +189,7 @@ export default function TicketPanel({
                                 value={receivedCash}
                                 onChange={(e) => onChangeReceivedCash(e.target.value)}
                                 placeholder="0.00"
-                                className="w-28 rounded-lg border border-neutral-300 dark:border-[#333333] bg-white dark:bg-[#171717] px-2.5 py-1 text-right text-xs font-bold text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-[#bb3902]"
+                                className="w-28 rounded-lg border border-neutral-300 dark:border-[#333333] bg-white dark:bg-[#171717] px-2.5 py-1 text-right text-xs font-bold text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-brand-primary"
                             />
                         </div>
 
@@ -226,7 +226,7 @@ export default function TicketPanel({
                             <button
                                 type="button"
                                 onClick={handleExactCash}
-                                className="rounded-md bg-[#bb3902]/15 text-[#bb3902] font-semibold px-2 py-1 hover:bg-[#bb3902]/25"
+                                className="rounded-md bg-brand-primary/15 text-brand-primary font-semibold px-2 py-1 hover:bg-brand-primary/25"
                             >
                                 Exacto
                             </button>
@@ -285,7 +285,7 @@ export default function TicketPanel({
                                     value={rnc}
                                     onChange={(e) => onChangeRnc(e.target.value.replace(/\D/g, ''))}
                                     placeholder="9 u 11 dígitos sin guiones"
-                                    className="w-full rounded-lg border border-neutral-300 dark:border-[#333333] bg-white dark:bg-[#171717] px-2.5 py-1 text-xs text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-[#bb3902]"
+                                    className="w-full rounded-lg border border-neutral-300 dark:border-[#333333] bg-white dark:bg-[#171717] px-2.5 py-1 text-xs text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-brand-primary"
                                 />
                             </div>
                             <div>
@@ -297,7 +297,7 @@ export default function TicketPanel({
                                     value={companyName}
                                     onChange={(e) => onChangeCompanyName(e.target.value)}
                                     placeholder="Nombre fiscal o comercial"
-                                    className="w-full rounded-lg border border-neutral-300 dark:border-[#333333] bg-white dark:bg-[#171717] px-2.5 py-1 text-xs text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-[#bb3902]"
+                                    className="w-full rounded-lg border border-neutral-300 dark:border-[#333333] bg-white dark:bg-[#171717] px-2.5 py-1 text-xs text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-brand-primary"
                                 />
                             </div>
                         </div>
@@ -311,7 +311,7 @@ export default function TicketPanel({
                         value={notes}
                         onChange={(e) => onChangeNotes(e.target.value)}
                         placeholder="Nota o referencia opcional..."
-                        className="w-full rounded-lg border border-neutral-200 dark:border-[#262626] bg-neutral-50 dark:bg-[#1f1f1f] px-3 py-1.5 text-xs text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-[#bb3902]"
+                        className="w-full rounded-lg border border-neutral-200 dark:border-[#262626] bg-neutral-50 dark:bg-[#1f1f1f] px-3 py-1.5 text-xs text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-brand-primary"
                     />
                 </div>
 
@@ -339,7 +339,7 @@ export default function TicketPanel({
                     )}
                     <div className="flex items-center justify-between text-base font-extrabold text-neutral-900 dark:text-neutral-100 pt-1 border-t border-neutral-100 dark:border-[#262626]">
                         <span>Total a Cobrar:</span>
-                        <span className="text-[#bb3902] text-lg">{formatMoney(total)}</span>
+                        <span className="text-brand-primary text-lg">{formatMoney(total)}</span>
                     </div>
                 </div>
 
@@ -347,7 +347,7 @@ export default function TicketPanel({
                     type="button"
                     onClick={onProcessPayment}
                     disabled={!canCheckout}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#bb3902] hover:bg-[#9c3002] text-white py-3 text-sm font-bold shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-primary hover:bg-brand-dark text-white py-3 text-sm font-bold shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                     {processing ? (
                         <>

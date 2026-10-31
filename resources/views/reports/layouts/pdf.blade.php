@@ -141,7 +141,7 @@
             <td class="header-logo-cell">
                 @php
                     $logo = \App\Models\Setting::get('institution_logo');
-                    $logoPath = public_path('centuu.png'); // Fallback por defecto
+                    $logoPath = public_path('branding/academic-logo.png'); // Fallback por defecto
                     
                     if ($logo) {
                         if (\Illuminate\Support\Str::startsWith($logo, 'http')) {

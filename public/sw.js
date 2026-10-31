@@ -6,7 +6,7 @@ const OFFLINE_URL = '/offline.html';
 
 // Assets que siempre se cachean (app shell)
 const PRECACHE_ASSETS = [
-    '/centuu.png',
+    '/branding/academic-favicon.png',
     '/offline.html',
 ];
 

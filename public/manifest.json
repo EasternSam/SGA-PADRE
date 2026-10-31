@@ -1,25 +1,25 @@
 {
-    "name": "SGA Academic+",
-    "short_name": "SGA",
-    "description": "Sistema de Gestión Académica - Plataforma integral de administración educativa",
+    "name": "Academic+",
+    "short_name": "Academic+",
+    "description": "Academic+ — Sistema de Gestión Académica Integral",
     "start_url": "/dashboard",
     "scope": "/",
     "display": "standalone",
     "orientation": "portrait-primary",
-    "background_color": "#1e3a8a",
-    "theme_color": "#1e3a8a",
+    "background_color": "#211170",
+    "theme_color": "#211170",
     "categories": ["education", "productivity"],
     "lang": "es",
     "dir": "ltr",
     "icons": [
         {
-            "src": "/centuu.png",
+            "src": "/branding/academic-favicon.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "any"
         },
         {
-            "src": "/centuu.png",
+            "src": "/branding/academic-favicon.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
@@ -31,13 +31,13 @@
             "name": "Estudiantes",
             "short_name": "Estudiantes",
             "url": "/admin/students",
-            "icons": [{"src": "/centuu.png", "sizes": "512x512"}]
+            "icons": [{"src": "/branding/academic-favicon.png", "sizes": "512x512"}]
         },
         {
             "name": "Finanzas",
             "short_name": "Finanzas",
             "url": "/admin/finance",
-            "icons": [{"src": "/centuu.png", "sizes": "512x512"}]
+            "icons": [{"src": "/branding/academic-favicon.png", "sizes": "512x512"}]
         }
     ]
 }

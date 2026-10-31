@@ -67,12 +67,12 @@ class Index extends Component
         }
 
         $this->state = [
-            'institution_name'    => $settings['institution_name'] ?? config('app.name'),
-            'institution_logo'    => $settings['institution_logo'] ?? null,
-            'favicon'             => $settings['favicon'] ?? null,
-            'app_icon'            => $settings['app_icon'] ?? null,
+            'institution_name'    => $settings['institution_name'] ?? \App\Support\BrandingDefaults::INSTITUTION_NAME,
+            'institution_logo'    => $settings['institution_logo'] ?? \App\Support\BrandingDefaults::LOGO,
+            'favicon'             => $settings['favicon'] ?? \App\Support\BrandingDefaults::FAVICON,
+            'app_icon'            => $settings['app_icon'] ?? \App\Support\BrandingDefaults::APP_ICON,
             'login_banner'        => $settings['login_banner'] ?? null,
-            'brand_primary_color' => $settings['brand_primary_color'] ?? '#1e3a8a',
+            'brand_primary_color' => $settings['brand_primary_color'] ?? \App\Support\BrandingDefaults::PRIMARY_COLOR,
             'support_email'       => $settings['support_email'] ?? 'soporte@institucion.edu',
             'contact_phone'       => $settings['contact_phone'] ?? '',
             'contact_address'     => $settings['contact_address'] ?? '',
@@ -101,10 +101,10 @@ class Index extends Component
         ];
 
         // Cargar configuraciones de degradado guardadas
-        $this->navbar_type = $settings['navbar_type'] ?? 'solid';
-        $this->navbar_gradient_start = $settings['navbar_gradient_start'] ?? '#1e3a8a';
-        $this->navbar_gradient_end = $settings['navbar_gradient_end'] ?? '#000000';
-        $this->navbar_gradient_direction = $settings['navbar_gradient_direction'] ?? 'to right';
+        $this->navbar_type = $settings['navbar_type'] ?? \App\Support\BrandingDefaults::NAVBAR_TYPE;
+        $this->navbar_gradient_start = $settings['navbar_gradient_start'] ?? \App\Support\BrandingDefaults::NAVBAR_GRADIENT_START;
+        $this->navbar_gradient_end = $settings['navbar_gradient_end'] ?? \App\Support\BrandingDefaults::NAVBAR_GRADIENT_END;
+        $this->navbar_gradient_direction = $settings['navbar_gradient_direction'] ?? \App\Support\BrandingDefaults::NAVBAR_GRADIENT_DIRECTION;
 
         // Cargar Presets
         $this->presets = json_decode($settings['theme_presets'] ?? '[]', true) ?? [];
@@ -161,11 +161,11 @@ class Index extends Component
     // --- NUEVA FUNCIÓN: RESTAURAR VALORES POR DEFECTO ---
     public function restoreDefaults()
     {
-        $this->state['institution_name'] = 'SGA Academic+';
-        $this->state['brand_primary_color'] = '#1e3a8a'; // Azul Original
-        $this->state['institution_logo'] = null;
-        $this->state['favicon'] = null;
-        $this->state['app_icon'] = null;
+        $this->state['institution_name'] = \App\Support\BrandingDefaults::INSTITUTION_NAME;
+        $this->state['brand_primary_color'] = \App\Support\BrandingDefaults::PRIMARY_COLOR;
+        $this->state['institution_logo'] = \App\Support\BrandingDefaults::LOGO;
+        $this->state['favicon'] = \App\Support\BrandingDefaults::FAVICON;
+        $this->state['app_icon'] = \App\Support\BrandingDefaults::APP_ICON;
         $this->state['support_email'] = 'soporte@institucion.edu';
         $this->state['contact_phone'] = '';
         $this->state['contact_address'] = '';
@@ -188,10 +188,10 @@ class Index extends Component
         $this->app_icon = null;
 
         // Restaurar valores de degradado
-        $this->navbar_type = 'solid';
-        $this->navbar_gradient_start = '#1e3a8a';
-        $this->navbar_gradient_end = '#000000';
-        $this->navbar_gradient_direction = 'to right';
+        $this->navbar_type = \App\Support\BrandingDefaults::NAVBAR_TYPE;
+        $this->navbar_gradient_start = \App\Support\BrandingDefaults::NAVBAR_GRADIENT_START;
+        $this->navbar_gradient_end = \App\Support\BrandingDefaults::NAVBAR_GRADIENT_END;
+        $this->navbar_gradient_direction = \App\Support\BrandingDefaults::NAVBAR_GRADIENT_DIRECTION;
 
         // Marcar todas las claves como modificadas (sucias)
         foreach ($this->state as $key => $val) {

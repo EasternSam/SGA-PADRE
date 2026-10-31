@@ -207,7 +207,7 @@ export default function PosIndex({
                             <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
                                 Terminal de Caja
                             </h1>
-                            <span className="rounded-md bg-[#bb3902]/10 text-[#bb3902] px-2 py-0.5 text-xs font-semibold">
+                            <span className="rounded-md bg-brand-primary/10 text-brand-primary px-2 py-0.5 text-xs font-semibold">
                                 POS
                             </span>
                         </div>
@@ -222,7 +222,7 @@ export default function PosIndex({
                             onClick={() => setIsShiftOpen(true)}
                             className="flex items-center gap-2 rounded-xl border border-neutral-200 dark:border-[#262626] bg-white dark:bg-[#171717] hover:bg-neutral-50 dark:hover:bg-[#1f1f1f] px-3.5 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-300 transition-colors shadow-xs"
                         >
-                            <History className="h-4 w-4 text-[#bb3902]" />
+                            <History className="h-4 w-4 text-brand-primary" />
                             <span>Turno ({shiftPayments.length})</span>
                             <span className="font-bold text-neutral-900 dark:text-neutral-100">
                                 {formatMoney(shiftTotal)}

@@ -53,20 +53,20 @@ export default {
                     foreground: "hsl(var(--card-foreground))",
                 },
 
-                // Escuela Chavón Semantic Brand Tokens
+                // Academic+ Semantic Brand Tokens
                 brand: {
-                    DEFAULT: 'rgb(var(--color-primary, 187 57 2) / <alpha-value>)',
-                    primary: 'rgb(var(--color-primary, 187 57 2) / <alpha-value>)',
-                    secondary: 'rgb(var(--color-secondary, 28 25 23) / <alpha-value>)',
-                    accent: 'rgb(var(--color-accent, 234 88 12) / <alpha-value>)',
-                    neutral: 'rgb(var(--color-neutral, 120 113 108) / <alpha-value>)',
-                    dark: 'color-mix(in srgb, var(--brand-primary, #bb3902) 85%, black)',
+                    DEFAULT: 'rgb(var(--color-primary, 33 17 112) / <alpha-value>)',
+                    primary: 'rgb(var(--color-primary, 33 17 112) / <alpha-value>)',
+                    secondary: 'rgb(var(--color-secondary, 26 10 83) / <alpha-value>)',
+                    accent: 'rgb(var(--color-accent, 247 147 30) / <alpha-value>)',
+                    neutral: 'rgb(var(--color-neutral, 100 116 139) / <alpha-value>)',
+                    dark: 'color-mix(in srgb, var(--brand-primary, #211170) 85%, black)',
                 },
-                'brand-primary': 'rgb(var(--color-primary, 187 57 2) / <alpha-value>)',
-                'brand-secondary': 'rgb(var(--color-secondary, 28 25 23) / <alpha-value>)',
-                'brand-accent': 'rgb(var(--color-accent, 234 88 12) / <alpha-value>)',
-                'brand-neutral': 'rgb(var(--color-neutral, 120 113 108) / <alpha-value>)',
-                'brand-dark': 'color-mix(in srgb, var(--brand-primary, #bb3902) 85%, black)',
+                'brand-primary': 'rgb(var(--color-primary, 33 17 112) / <alpha-value>)',
+                'brand-secondary': 'rgb(var(--color-secondary, 26 10 83) / <alpha-value>)',
+                'brand-accent': 'rgb(var(--color-accent, 247 147 30) / <alpha-value>)',
+                'brand-neutral': 'rgb(var(--color-neutral, 100 116 139) / <alpha-value>)',
+                'brand-dark': 'color-mix(in srgb, var(--brand-primary, #211170) 85%, black)',
 
                 // Bills Charcoal Semantic Surface Tokens
                 surface: {

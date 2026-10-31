@@ -19,7 +19,7 @@ export default function ShiftDrawer({
                     {/* Encabezado del Drawer */}
                     <div className="flex items-center justify-between border-b border-neutral-200 dark:border-[#262626] px-5 py-4">
                         <div className="flex items-center gap-2.5">
-                            <History className="h-5 w-5 text-[#bb3902]" />
+                            <History className="h-5 w-5 text-brand-primary" />
                             <div>
                                 <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
                                     Cierre y Movimientos del Turno
@@ -46,7 +46,7 @@ export default function ShiftDrawer({
                                 <span className="text-xs text-neutral-500 dark:text-neutral-400">
                                     Total Recaudado
                                 </span>
-                                <div className="text-base font-extrabold text-[#bb3902] mt-0.5">
+                                <div className="text-base font-extrabold text-brand-primary mt-0.5">
                                     {formatMoney(todayTotal)}
                                 </div>
                             </div>

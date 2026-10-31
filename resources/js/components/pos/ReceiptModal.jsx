@@ -40,7 +40,7 @@ export default function ReceiptModal({
                     {/* Encabezado Institucional */}
                     <div className="text-center space-y-1">
                         <h2 className="text-sm font-extrabold tracking-wide text-neutral-900 dark:text-neutral-100 uppercase">
-                            {issuer.name || 'Escuela Chavón'}
+                            {issuer.name || 'Academic+'}
                         </h2>
                         {issuer.rnc && (
                             <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
@@ -207,7 +207,7 @@ export default function ReceiptModal({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="flex items-center gap-1.5 rounded-xl bg-[#bb3902] hover:bg-[#9c3002] px-4 py-2 text-xs font-bold text-white transition-colors"
+                        className="flex items-center gap-1.5 rounded-xl bg-brand-primary hover:bg-brand-dark px-4 py-2 text-xs font-bold text-white transition-colors"
                     >
                         <span>Nuevo Cobro</span>
                         <ArrowRight className="h-4 w-4" />

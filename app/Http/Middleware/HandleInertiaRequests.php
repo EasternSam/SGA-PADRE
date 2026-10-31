@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use App\Models\Setting;
+use App\Support\BrandingDefaults;
 use Tighten\Ziggy\Ziggy;
 
 class HandleInertiaRequests extends Middleware
@@ -50,25 +51,7 @@ class HandleInertiaRequests extends Middleware
                     'permissions' => method_exists($user, 'getAllPermissions') ? $user->getAllPermissions()->pluck('name') : [],
                 ] : null,
             ],
-            'branding' => [
-                'name' => Setting::get('institution_name') ?? config('app.name', 'SGA'),
-                'logo' => Setting::get('institution_logo') ?? '/branding/logo_1787814439.png',
-                'primary_color' => Setting::get('brand_primary_color') ?? '#bb3902',
-                'secondary_color' => Setting::get('brand_secondary_color') ?? '#1c1917',
-                'accent_color' => Setting::get('brand_accent_color') ?? '#ea580c',
-                'neutral_color' => Setting::get('brand_neutral_color') ?? '#78716c',
-                'palette' => [
-                    'primary' => Setting::get('brand_primary_color') ?? '#bb3902',
-                    'secondary' => Setting::get('brand_secondary_color') ?? '#1c1917',
-                    'accent' => Setting::get('brand_accent_color') ?? '#ea580c',
-                    'neutral' => Setting::get('brand_neutral_color') ?? '#78716c',
-                ],
-                'navbar_type' => Setting::get('navbar_type') ?? 'solid',
-                'navbar_gradient_start' => Setting::get('navbar_gradient_start') ?? '#bb3902',
-                'navbar_gradient_end' => Setting::get('navbar_gradient_end') ?? '#1a0a53',
-                'navbar_gradient_direction' => Setting::get('navbar_gradient_direction') ?? 'to bottom right',
-                'login_banner' => Setting::get('login_banner') ?? '/branding/login_banner_1787811955.jpg',
-            ],
+            'branding' => BrandingDefaults::fromDatabase(),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

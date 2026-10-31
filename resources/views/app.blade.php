@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title inertia>{{ config('app.name', 'SGA-PADRE') }}</title>
+        <title inertia>{{ config('app.name', 'Academic+') }}</title>
 
         {{-- Dark mode script to avoid flash --}}
         <script>
@@ -21,30 +21,18 @@
 
         <!-- Dynamic Institutional Palette & Brand Settings -->
         @php
-            $primaryColor = \App\Models\Setting::get('brand_primary_color') ?? '#bb3902';
-            $secondaryColor = \App\Models\Setting::get('brand_secondary_color') ?? '#1c1917';
-            $accentColor = \App\Models\Setting::get('brand_accent_color') ?? '#ea580c';
-            $neutralColor = \App\Models\Setting::get('brand_neutral_color') ?? '#78716c';
-            $favicon = \App\Models\Setting::get('favicon') ?? '/centuu.png';
-            $appIcon = \App\Models\Setting::get('app_icon') ?? '/centuu.png';
+            $resolvedBrand = \App\Support\BrandingDefaults::fromDatabase();
+            $primaryColor = $resolvedBrand['primary_color'];
+            $secondaryColor = $resolvedBrand['secondary_color'];
+            $accentColor = $resolvedBrand['accent_color'];
+            $neutralColor = $resolvedBrand['neutral_color'];
+            $favicon = $resolvedBrand['favicon'];
+            $appIcon = $resolvedBrand['app_icon'];
 
-            if (!function_exists('hex2rgb')) {
-                function hex2rgb($hex, $default = '187 57 2') {
-                    $clean = ltrim(trim($hex), '#');
-                    if (strlen($clean) === 3) {
-                        $clean = $clean[0].$clean[0].$clean[1].$clean[1].$clean[2].$clean[2];
-                    }
-                    if (strlen($clean) !== 6 || !ctype_xdigit($clean)) {
-                        return $default;
-                    }
-                    return hexdec(substr($clean, 0, 2)) . ' ' . hexdec(substr($clean, 2, 2)) . ' ' . hexdec(substr($clean, 4, 2));
-                }
-            }
-
-            $primaryRgb = hex2rgb($primaryColor, '187 57 2');
-            $secondaryRgb = hex2rgb($secondaryColor, '28 25 23');
-            $accentRgb = hex2rgb($accentColor, '234 88 12');
-            $neutralRgb = hex2rgb($neutralColor, '120 113 108');
+            $primaryRgb = $resolvedBrand['primary_rgb'];
+            $secondaryRgb = $resolvedBrand['secondary_rgb'];
+            $accentRgb = $resolvedBrand['accent_rgb'];
+            $neutralRgb = $resolvedBrand['neutral_rgb'];
         @endphp
         <link rel="icon" type="image/png" href="{{ $favicon }}">
         <link rel="apple-touch-icon" sizes="180x180" href="{{ $appIcon }}">

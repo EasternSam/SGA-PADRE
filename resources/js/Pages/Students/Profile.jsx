@@ -35,7 +35,7 @@ export default function StudentProfile({
 }) {
     const { branding } = usePage().props;
     const palette = useMemo(() => ({
-        primary: branding?.palette?.primary || 'var(--brand-primary, #bb3902)',
+        primary: branding?.palette?.primary || 'var(--brand-primary, #211170)',
         secondary: branding?.palette?.secondary || 'var(--brand-secondary, #1c1917)',
         accent: branding?.palette?.accent || 'var(--brand-accent, #ea580c)',
         neutral: branding?.palette?.neutral || 'var(--brand-neutral, #78716c)',

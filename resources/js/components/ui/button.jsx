@@ -40,7 +40,7 @@ const Button = React.forwardRef(({ className, variant, size, asChild = false, st
     <Comp
       className={cn(buttonVariants({ variant, size, className }))}
       ref={ref}
-      style={variant === 'brand' ? { background: 'var(--brand-primary, #bb3902)', ...style } : style}
+      style={variant === 'brand' ? { background: 'var(--brand-primary, #211170)', ...style } : style}
       {...props}
     />
   )

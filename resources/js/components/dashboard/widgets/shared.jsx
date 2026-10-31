@@ -66,14 +66,14 @@ export function usePalette() {
     const dark = useIsDark();
 
     return useMemo(() => {
-        const secondary = branding?.palette?.secondary || '#1c1917';
+        const secondary = branding?.palette?.secondary || '#1a0a53';
 
         return {
-            primary: branding?.palette?.primary || '#bb3902',
+            primary: branding?.palette?.primary || '#211170',
             secondary,
             ink: visibleOn(secondary, dark),
-            accent: branding?.palette?.accent || '#ea580c',
-            neutral: branding?.palette?.neutral || '#78716c',
+            accent: branding?.palette?.accent || '#f7931e',
+            neutral: branding?.palette?.neutral || '#64748b',
             muted: '#a8a29e',
         };
     }, [branding, dark]);

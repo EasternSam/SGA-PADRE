@@ -34,7 +34,7 @@
         if (!$logo && class_exists('\App\Models\SystemOption')) {
             $logo = \App\Models\SystemOption::getOption('logo');
         }
-        $logoUrl = $logo ? (\Illuminate\Support\Str::startsWith($logo, 'http') ? $logo : asset($logo)) : asset('centuu.png');
+        $logoUrl = $logo ? (\Illuminate\Support\Str::startsWith($logo, 'http') ? $logo : asset($logo)) : asset('branding/academic-logo.png');
     @endphp
 
     <center class="wrapper">

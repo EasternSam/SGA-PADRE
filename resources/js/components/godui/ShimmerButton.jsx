@@ -2,7 +2,7 @@ import * as React from "react";
 
 const variantDefaults = {
   primary: {
-    background: "var(--brand-primary, #bb3902)",
+    background: "var(--brand-primary, #211170)",
     shimmerColor: "rgba(255, 255, 255, 0.4)",
     shimmerSpread: "65deg",
     textClass: "text-white font-medium",
@@ -17,7 +17,7 @@ const variantDefaults = {
   },
   outline: {
     background: "transparent",
-    shimmerColor: "var(--brand-primary, #bb3902)",
+    shimmerColor: "var(--brand-primary, #211170)",
     shimmerSpread: "90deg",
     textClass: "text-gray-800 dark:text-gray-200 font-medium",
     borderClass: "border-gray-300 dark:border-gray-700",

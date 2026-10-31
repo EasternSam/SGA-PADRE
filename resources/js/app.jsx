@@ -5,7 +5,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import ModalStandardizer from './components/layout/ModalStandardizer';
 
-const appName = 'SGA';
+const appName = 'Academic+';
 
 const el = document.getElementById('app');
 let initialPage;
@@ -35,7 +35,7 @@ createInertiaApp({
         );
     },
     progress: {
-        color: initialPage?.props?.branding?.primary_color || '#bb3902',
+        color: initialPage?.props?.branding?.primary_color || '#211170',
         showSpinner: false,
         delay: 50,
     },

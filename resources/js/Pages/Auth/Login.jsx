@@ -12,10 +12,17 @@ export default function Login({ status, canResetPassword }) {
         website: '', // Honeypot
     });
 
-    const primaryColor = branding?.primary_color || '#bb3902';
-    const logoUrl = branding?.logo || '/branding/logo_1787814439.png';
-    const bannerSrc = branding?.login_banner || '/branding/login_banner_1787811955.jpg';
-    const appName = branding?.name || 'Escuela Chavón';
+    const primaryColor = branding?.primary_color || '#211170';
+    const navbarType = branding?.navbar_type || 'gradient';
+    const navGradientStart = branding?.navbar_gradient_start || primaryColor;
+    const navGradientEnd = branding?.navbar_gradient_end || '#1a0a53';
+    const navGradientDir = branding?.navbar_gradient_direction || 'to bottom right';
+    const showcaseBg = navbarType === 'gradient'
+        ? `linear-gradient(${navGradientDir}, ${navGradientStart}, ${navGradientEnd})`
+        : primaryColor;
+    const logoUrl = branding?.logo || '/branding/academic-logo.png';
+    const bannerSrc = branding?.login_banner || '';
+    const appName = branding?.name || 'Academic+';
 
     const submit = (e) => {
         e.preventDefault();
@@ -29,10 +36,12 @@ export default function Login({ status, canResetPassword }) {
             <Head title={`Iniciar Sesión - ${appName}`} />
 
             {/* Fondo con Degradado y Resplandor Ambiental */}
-            <div 
-                className="absolute inset-0 bg-cover bg-center pointer-events-none opacity-20 filter blur-sm"
-                style={{ backgroundImage: `url(${bannerSrc})` }}
-            />
+            {bannerSrc && (
+                <div 
+                    className="absolute inset-0 bg-cover bg-center pointer-events-none opacity-20 filter blur-sm"
+                    style={{ backgroundImage: `url(${bannerSrc})` }}
+                />
+            )}
             <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-600/25 rounded-full blur-3xl pointer-events-none" />
 
@@ -44,19 +53,21 @@ export default function Login({ status, canResetPassword }) {
                 {/* ── Columna Izquierda: Showcase con Logo y Banner ── */}
                 <div 
                     className="hidden lg:flex lg:w-1/2 relative flex-col justify-between select-none border-r border-white/10"
-                    style={{ background: primaryColor }}
+                    style={{ background: showcaseBg }}
                 >
                     {/* Atmospheric Image Backdrop inside lateral column */}
-                    <div 
-                        className="absolute inset-0 w-full h-full pointer-events-none z-0"
-                        style={{
-                            backgroundImage: `url(${bannerSrc})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            mixBlendMode: 'multiply',
-                            opacity: 0.15,
-                        }}
-                    />
+                    {bannerSrc && (
+                        <div 
+                            className="absolute inset-0 w-full h-full pointer-events-none z-0"
+                            style={{
+                                backgroundImage: `url(${bannerSrc})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                mixBlendMode: 'multiply',
+                                opacity: 0.15,
+                            }}
+                        />
+                    )}
 
                     {/* Ambient Glows */}
                     <div className="absolute -right-24 -top-24 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl pointer-events-none" />
@@ -77,17 +88,19 @@ export default function Login({ status, canResetPassword }) {
                     </div>
 
                     {/* Bottom Banner Image con máscara de degradado suave */}
-                    <div className="relative w-full mt-auto overflow-hidden pointer-events-none select-none z-10 flex items-end">
-                        <img 
-                            src={bannerSrc}
-                            alt="Portal Académico" 
-                            className="w-full h-72 sm:h-80 lg:h-96 object-cover object-top"
-                            style={{
-                                maskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.5) 20%, black 60%, black 100%)',
-                                WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.5) 20%, black 60%, black 100%)',
-                            }}
-                        />
-                    </div>
+                    {bannerSrc && (
+                        <div className="relative w-full mt-auto overflow-hidden pointer-events-none select-none z-10 flex items-end">
+                            <img 
+                                src={bannerSrc}
+                                alt="Portal Académico" 
+                                className="w-full h-72 sm:h-80 lg:h-96 object-cover object-top"
+                                style={{
+                                    maskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.5) 20%, black 60%, black 100%)',
+                                    WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.5) 20%, black 60%, black 100%)',
+                                }}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* ── Columna Derecha: Formulario de Autenticación ── */}
@@ -98,7 +111,7 @@ export default function Login({ status, canResetPassword }) {
                             <div className="lg:hidden mb-6 flex justify-start">
                                 <div 
                                     className="p-2.5 px-3.5 shadow-md inline-block" 
-                                    style={{ background: primaryColor, borderRadius: '16px' }}
+                                    style={{ background: showcaseBg, borderRadius: '16px' }}
                                 >
                                     <img 
                                         src={logoUrl} 
@@ -262,9 +275,9 @@ export default function Login({ status, canResetPassword }) {
                 <span className="text-xs sm:text-sm font-medium drop-shadow-md hidden sm:inline text-white">¿Aún no eres estudiante?</span>
                 <a 
                     href="/register" 
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-900 font-bold text-xs sm:text-sm shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:shadow-[0_15px_35px_rgba(0,0,0,0.45)] transition-all transform hover:scale-105 active:scale-95 rounded-xl"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-900 dark:text-white font-bold text-xs sm:text-sm shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:shadow-[0_15px_35px_rgba(0,0,0,0.45)] transition-all transform hover:scale-105 active:scale-95 rounded-xl"
                 >
-                    <span className="text-slate-950">Solicitar Admisión</span>
+                    <span className="text-slate-950 dark:text-white">Solicitar Admisión</span>
                     <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
                     </svg>

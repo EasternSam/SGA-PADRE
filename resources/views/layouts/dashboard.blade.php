@@ -27,8 +27,8 @@
     @php
         $favicon = \App\Models\Setting::get('favicon');
         $appIcon = \App\Models\Setting::get('app_icon');
-        $faviconUrl = $favicon ? $favicon : '/centuu.png';
-        $appIconUrl = $appIcon ? $appIcon : '/centuu.png';
+        $faviconUrl = $favicon ? $favicon : '/branding/academic-favicon.png';
+        $appIconUrl = $appIcon ? $appIcon : '/branding/academic-favicon.png';
     @endphp
     <link rel="apple-touch-icon" sizes="180x180" href="{{ $appIconUrl }}">
     <link rel="icon" type="image/png" href="{{ $faviconUrl }}">

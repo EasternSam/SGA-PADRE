@@ -68,7 +68,7 @@ export default function StudentPicker({
             {isWalkIn ? (
                 <div className="flex items-center justify-between rounded-xl border border-neutral-200 dark:border-[#262626] bg-neutral-50 dark:bg-[#171717] p-3 text-sm">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#bb3902]/10 text-[#bb3902]">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-primary/10 text-brand-primary">
                             <Users className="h-5 w-5" />
                         </div>
                         <div>
@@ -130,7 +130,7 @@ export default function StudentPicker({
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onFocus={() => { if (searchResults.length > 0) setIsOpen(true); }}
                             placeholder="Buscar estudiante por nombre, matrícula o cédula..."
-                            className="w-full rounded-xl border border-neutral-200 dark:border-[#262626] bg-white dark:bg-[#171717] pl-9 pr-9 py-2.5 text-sm text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#bb3902] transition-shadow"
+                            className="w-full rounded-xl border border-neutral-200 dark:border-[#262626] bg-white dark:bg-[#171717] pl-9 pr-9 py-2.5 text-sm text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-brand-primary transition-shadow"
                         />
                         {searching && (
                             <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-neutral-400" />
@@ -150,7 +150,7 @@ export default function StudentPicker({
                         <button
                             type="button"
                             onClick={() => onToggleWalkIn(true)}
-                            className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-dashed border-neutral-300 dark:border-[#333333] hover:border-[#bb3902] dark:hover:border-[#bb3902] bg-neutral-50 dark:bg-[#171717] px-3 py-2.5 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:text-[#bb3902] dark:hover:text-[#bb3902] transition-colors"
+                            className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-dashed border-neutral-300 dark:border-[#333333] hover:border-brand-primary dark:hover:border-brand-primary bg-neutral-50 dark:bg-[#171717] px-3 py-2.5 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:text-brand-primary dark:hover:text-brand-primary transition-colors"
                         >
                             <Users className="h-3.5 w-3.5" />
                             <span>Público General</span>
@@ -177,7 +177,7 @@ export default function StudentPicker({
                                     Matrícula: {student.code || 'Sin Matrícula'} {student.cedula ? `• Céd: ${student.cedula}` : ''}
                                 </div>
                             </div>
-                            <span className="text-xs text-[#bb3902] font-medium">Seleccionar</span>
+                            <span className="text-xs text-brand-primary font-medium">Seleccionar</span>
                         </button>
                     ))}
                 </div>

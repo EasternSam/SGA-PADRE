@@ -26,7 +26,7 @@ export default function TeacherDashboard({
 }) {
     const page = usePage();
     const branding = page.props?.branding || {};
-    const primaryColor = branding?.primary_color || '#bb3902';
+    const primaryColor = branding?.primary_color || '#211170';
     const accentColor = branding?.accent_color || '#ea580c';
 
     return (

@@ -190,7 +190,7 @@
     <table class="header-table">
         <tr>
             <td width="50%" valign="middle" align="left">
-                <img src="{{ public_path($branding->logo_url ?? 'centuu.png') }}" class="logo" alt="Logo">
+                <img src="{{ public_path($branding->logo_url ?? 'branding/academic-logo.png') }}" class="logo" alt="Logo">
             </td>
             <td width="50%" valign="middle" align="right">
                 <h1 class="header-title">Reporte Académico</h1>
