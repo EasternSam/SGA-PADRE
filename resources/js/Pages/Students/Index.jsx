@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Modal from '@/components/ui/Modal';
@@ -130,6 +130,16 @@ export default function StudentsIndex({
         });
         setIsFormModalOpen(true);
     };
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('create') === '1' || params.get('action') === 'create') {
+            openCreateModal();
+        }
+        const handleOpenCreate = () => openCreateModal();
+        window.addEventListener('sga:open-create-student', handleOpenCreate);
+        return () => window.removeEventListener('sga:open-create-student', handleOpenCreate);
+    }, []);
 
     // Abrir Modal de Edición
     const openEditModal = (student) => {

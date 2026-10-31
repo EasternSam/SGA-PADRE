@@ -77,7 +77,7 @@ Route::get('/manifest.json', function () {
             [
                 'name' => 'Finanzas',
                 'short_name' => 'Finanzas',
-                'url' => '/admin/finance',
+                'url' => '/admin/finance/dashboard',
                 'icons' => [['src' => $iconUrl, 'sizes' => '512x512']]
             ]
         ]

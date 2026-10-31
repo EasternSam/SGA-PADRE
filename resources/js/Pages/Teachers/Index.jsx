@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import Modal from '@/components/ui/Modal';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -46,6 +46,16 @@ export default function TeachersIndex({
         teacherForm.clearErrors();
         setIsFormModalOpen(true);
     };
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('create') === '1' || params.get('action') === 'create') {
+            openCreateModal();
+        }
+        const handleOpenCreate = () => openCreateModal();
+        window.addEventListener('sga:open-create-teacher', handleOpenCreate);
+        return () => window.removeEventListener('sga:open-create-teacher', handleOpenCreate);
+    }, []);
 
     const openEditModal = (teacher) => {
         setEditingTeacher(teacher);

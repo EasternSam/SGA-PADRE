@@ -61,9 +61,10 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     // --- MODULO: GESTIÓN ACADÉMICA ---
     Route::middleware(['feature:academic', 'role:Admin|Registro'])->group(function () {
         Route::get('/students', [\App\Http\Controllers\StudentController::class, 'index'])->name('admin.students.index');
+        Route::get('/students/create', fn () => redirect('/admin/students?create=1'))->name('admin.students.create');
         Route::post('/students', [\App\Http\Controllers\StudentController::class, 'store'])->name('admin.students.store');
-        Route::put('/students/{student}', [\App\Http\Controllers\StudentController::class, 'update'])->name('admin.students.update');
-        Route::delete('/students/{student}', [\App\Http\Controllers\StudentController::class, 'destroy'])->name('admin.students.destroy');
+        Route::put('/students/{student}', [\App\Http\Controllers\StudentController::class, 'update'])->whereNumber('student')->name('admin.students.update');
+        Route::delete('/students/{student}', [\App\Http\Controllers\StudentController::class, 'destroy'])->whereNumber('student')->name('admin.students.destroy');
         Route::post('/students/{student}/reset-kiosk-pin', [\App\Http\Controllers\StudentController::class, 'resetKioskPin'])->name('admin.students.reset-kiosk-pin');
         Route::get('/students/lookup-cedula', [\App\Http\Controllers\StudentController::class, 'lookupCedula'])->name('admin.students.lookup-cedula');
         Route::get('/students/profile/{student}', [\App\Http\Controllers\StudentController::class, 'profile'])->name('admin.students.profile');
@@ -126,9 +127,10 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
 
 
         Route::get('/teachers', [\App\Http\Controllers\TeacherController::class, 'index'])->name('admin.teachers.index');
+        Route::get('/teachers/create', fn () => redirect('/admin/teachers?create=1'))->name('admin.teachers.create');
         Route::post('/teachers', [\App\Http\Controllers\TeacherController::class, 'store'])->name('admin.teachers.store');
-        Route::put('/teachers/{teacher}', [\App\Http\Controllers\TeacherController::class, 'update'])->name('admin.teachers.update');
-        Route::delete('/teachers/{teacher}', [\App\Http\Controllers\TeacherController::class, 'destroy'])->name('admin.teachers.destroy');
+        Route::put('/teachers/{teacher}', [\App\Http\Controllers\TeacherController::class, 'update'])->whereNumber('teacher')->name('admin.teachers.update');
+        Route::delete('/teachers/{teacher}', [\App\Http\Controllers\TeacherController::class, 'destroy'])->whereNumber('teacher')->name('admin.teachers.destroy');
         Route::get('/teachers/course-modules/{course}', [\App\Http\Controllers\TeacherController::class, 'courseModules'])->name('admin.teachers.course-modules');
         Route::get('/teachers/profile/{teacher}', [\App\Http\Controllers\TeacherController::class, 'profile'])->name('admin.teachers.profile');
         Route::post('/teachers/{teacher}/assign-schedule', [\App\Http\Controllers\TeacherController::class, 'assignSchedule'])->name('admin.teachers.assign-schedule');
@@ -171,6 +173,8 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     // --- MODULO: FINANZAS ---
     Route::middleware(['feature:finance'])->group(function () {
         Route::middleware(['role:Admin|Contabilidad|Caja'])->group(function () {
+            Route::redirect('/finance', '/admin/finance/dashboard');
+            Route::redirect('/accounting', '/admin/finance/chart-of-accounts');
             Route::get('/finance/dashboard', [FinanceDashboardController::class, 'index'])->name('admin.finance.dashboard');
         });
 
@@ -200,6 +204,8 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
 
     // --- MODULO: RECURSOS HUMANOS (Fase 15) ---
     Route::middleware(['role:Admin|Contabilidad'])->group(function () {
+        Route::redirect('/hr', '/admin/hr/employees');
+        Route::redirect('/payroll', '/admin/hr/payroll');
         Route::get('/hr/employees', [EmployeeController::class, 'index'])->name('admin.hr.employees');
         Route::post('/hr/employees', [EmployeeController::class, 'store'])->name('admin.hr.employees.store');
         Route::put('/hr/employees/{employee}', [EmployeeController::class, 'update'])->name('admin.hr.employees.update');

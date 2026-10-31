@@ -72,10 +72,21 @@ function getDynamicContextualTabs(rawUrl = '') {
     // 2. Estudiantes
     if (cleanUrl.startsWith('/admin/students')) {
         return {
-            active: cleanUrl.includes('/create') ? 'new' : 'students',
+            active: 'students',
             tabs: [
                 { value: 'students', label: 'Alumnos', icon: <Users className="size-4" />, action: () => cleanUrl === '/admin/students' ? window.scrollTo({ top: 0, behavior: 'smooth' }) : router.visit('/admin/students') },
-                { value: 'new', label: 'Nuevo Alumno', icon: <UserPlus className="size-4" />, action: () => router.visit('/admin/students/create') },
+                {
+                    value: 'new',
+                    label: 'Nuevo Alumno',
+                    icon: <UserPlus className="size-4" />,
+                    action: () => {
+                        if (cleanUrl === '/admin/students') {
+                            window.dispatchEvent(new CustomEvent('sga:open-create-student'));
+                        } else {
+                            router.visit('/admin/students?create=1');
+                        }
+                    },
+                },
                 { value: 'pos', label: 'Caja POS', icon: <DollarSign className="size-4" />, action: () => router.visit('/admin/pos') },
                 { value: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="size-4" />, action: () => router.visit('/admin/dashboard') },
             ]
@@ -85,10 +96,21 @@ function getDynamicContextualTabs(rawUrl = '') {
     // 3. Docentes / Claustro
     if (cleanUrl.startsWith('/admin/teachers')) {
         return {
-            active: cleanUrl.includes('/create') ? 'new' : 'teachers',
+            active: 'teachers',
             tabs: [
                 { value: 'teachers', label: 'Docentes', icon: <UserCheck className="size-4" />, action: () => cleanUrl === '/admin/teachers' ? window.scrollTo({ top: 0, behavior: 'smooth' }) : router.visit('/admin/teachers') },
-                { value: 'new', label: 'Nuevo Docente', icon: <UserPlus className="size-4" />, action: () => router.visit('/admin/teachers/create') },
+                {
+                    value: 'new',
+                    label: 'Nuevo Docente',
+                    icon: <UserPlus className="size-4" />,
+                    action: () => {
+                        if (cleanUrl === '/admin/teachers') {
+                            window.dispatchEvent(new CustomEvent('sga:open-create-teacher'));
+                        } else {
+                            router.visit('/admin/teachers?create=1');
+                        }
+                    },
+                },
                 { value: 'courses', label: 'Cursos', icon: <BookOpen className="size-4" />, action: () => router.visit('/admin/courses') },
                 { value: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="size-4" />, action: () => router.visit('/admin/dashboard') },
             ]
@@ -115,7 +137,7 @@ function getDynamicContextualTabs(rawUrl = '') {
             tabs: [
                 { value: 'pos', label: 'Caja POS', icon: <DollarSign className="size-4" />, action: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
                 { value: 'students', label: 'Alumnos', icon: <Users className="size-4" />, action: () => router.visit('/admin/students') },
-                { value: 'finance', label: 'Finanzas', icon: <Receipt className="size-4" />, action: () => router.visit('/admin/finance') },
+                { value: 'finance', label: 'Finanzas', icon: <Receipt className="size-4" />, action: () => router.visit('/admin/finance/dashboard') },
                 { value: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="size-4" />, action: () => router.visit('/admin/dashboard') },
             ]
         };
@@ -136,11 +158,16 @@ function getDynamicContextualTabs(rawUrl = '') {
 
     // 7. Finanzas & Contabilidad
     if (cleanUrl.startsWith('/admin/finance') || cleanUrl.startsWith('/admin/accounting') || cleanUrl.startsWith('/admin/invoices')) {
+        const isAccountingSubroute = cleanUrl.startsWith('/admin/finance/chart-of-accounts')
+            || cleanUrl.startsWith('/admin/finance/manual-entry')
+            || cleanUrl.startsWith('/admin/finance/ledger')
+            || cleanUrl.startsWith('/admin/finance/statements')
+            || cleanUrl.startsWith('/admin/finance/period-closing');
         return {
-            active: cleanUrl.startsWith('/admin/accounting') ? 'accounting' : 'finance',
+            active: isAccountingSubroute ? 'accounting' : 'finance',
             tabs: [
-                { value: 'finance', label: 'Finanzas', icon: <DollarSign className="size-4" />, action: () => router.visit('/admin/finance') },
-                { value: 'accounting', label: 'Contabilidad', icon: <Receipt className="size-4" />, action: () => router.visit('/admin/accounting') },
+                { value: 'finance', label: 'Finanzas', icon: <DollarSign className="size-4" />, action: () => router.visit('/admin/finance/dashboard') },
+                { value: 'accounting', label: 'Contabilidad', icon: <Receipt className="size-4" />, action: () => router.visit('/admin/finance/chart-of-accounts') },
                 { value: 'pos', label: 'Caja POS', icon: <CreditCard className="size-4" />, action: () => router.visit('/admin/pos') },
                 { value: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="size-4" />, action: () => router.visit('/admin/dashboard') },
             ]
@@ -150,10 +177,10 @@ function getDynamicContextualTabs(rawUrl = '') {
     // 8. Recursos Humanos / Nómina
     if (cleanUrl.startsWith('/admin/hr') || cleanUrl.startsWith('/admin/payroll') || cleanUrl.startsWith('/admin/employees')) {
         return {
-            active: cleanUrl.startsWith('/admin/payroll') ? 'payroll' : 'hr',
+            active: cleanUrl.startsWith('/admin/hr/payroll') ? 'payroll' : 'hr',
             tabs: [
-                { value: 'hr', label: 'Personal', icon: <Briefcase className="size-4" />, action: () => router.visit('/admin/hr') },
-                { value: 'payroll', label: 'Nómina', icon: <DollarSign className="size-4" />, action: () => router.visit('/admin/payroll') },
+                { value: 'hr', label: 'Personal', icon: <Briefcase className="size-4" />, action: () => router.visit('/admin/hr/employees') },
+                { value: 'payroll', label: 'Nómina', icon: <DollarSign className="size-4" />, action: () => router.visit('/admin/hr/payroll') },
                 { value: 'teachers', label: 'Docentes', icon: <UserCheck className="size-4" />, action: () => router.visit('/admin/teachers') },
                 { value: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="size-4" />, action: () => router.visit('/admin/dashboard') },
             ]
@@ -163,9 +190,8 @@ function getDynamicContextualTabs(rawUrl = '') {
     // 9. Calificaciones / Evaluaciones / Asistencia
     if (cleanUrl.startsWith('/admin/grades') || cleanUrl.startsWith('/admin/evaluations') || cleanUrl.startsWith('/admin/attendance')) {
         return {
-            active: 'grades',
+            active: 'courses',
             tabs: [
-                { value: 'grades', label: 'Notas', icon: <Award className="size-4" />, action: () => router.visit('/admin/grades') },
                 { value: 'courses', label: 'Cursos', icon: <BookOpen className="size-4" />, action: () => router.visit('/admin/courses') },
                 { value: 'students', label: 'Alumnos', icon: <Users className="size-4" />, action: () => router.visit('/admin/students') },
                 { value: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="size-4" />, action: () => router.visit('/admin/dashboard') },
@@ -208,10 +234,10 @@ function getDynamicContextualTabs(rawUrl = '') {
     // 12. Portal Docente
     if (cleanUrl.startsWith('/teacher')) {
         return {
-            active: cleanUrl.includes('/grades') ? 'teacher_grades' : cleanUrl.includes('/sections') ? 'teacher_classes' : 'teacher_dash',
+            active: cleanUrl.includes('/grades') ? 'teacher_grades' : cleanUrl.includes('/attendance') ? 'teacher_classes' : 'teacher_dash',
             tabs: [
                 { value: 'teacher_dash', label: 'Claustro', icon: <UserCheck className="size-4" />, action: () => router.visit('/teacher/dashboard') },
-                { value: 'teacher_classes', label: 'Clases', icon: <BookOpen className="size-4" />, action: () => router.visit('/teacher/sections') },
+                { value: 'teacher_classes', label: 'Asistencia', icon: <BookOpen className="size-4" />, action: () => router.visit('/teacher/attendance') },
                 { value: 'teacher_grades', label: 'Calificar', icon: <Award className="size-4" />, action: () => router.visit('/teacher/grades') },
             ]
         };
