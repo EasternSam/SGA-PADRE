@@ -48,13 +48,20 @@ export default function FinancialStatements({ reportType, dateFrom, dateTo, repo
                         <div className="flex items-center gap-3">
                             <button
                                 type="button"
-                                onClick={() => window.print()}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl font-semibold text-xs shadow-xs transition"
+                                onClick={() => {
+                                    const params = new URLSearchParams({
+                                        report_type: type,
+                                        date_from: from || '',
+                                        date_to: to || '',
+                                    }).toString();
+                                    window.open(`/admin/finance/statements/pdf?${params}`, '_blank');
+                                }}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-semibold text-xs shadow-sm transition"
                             >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
-                                Imprimir / Exportar PDF
+                                Exportar PDF Oficial
                             </button>
                         </div>
                     </div>

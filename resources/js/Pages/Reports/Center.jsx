@@ -45,6 +45,11 @@ export default function Center({
         router.get('/admin/reports', localFilters, { preserveState: true, preserveScroll: true });
     };
 
+    const handleExportPdf = () => {
+        const params = new URLSearchParams(localFilters).toString();
+        window.open(`/admin/reports/export-pdf?${params}`, '_blank');
+    };
+
     const handleExportCsv = () => {
         const params = new URLSearchParams(localFilters).toString();
         window.location.href = `/admin/reports/export-csv?${params}`;
@@ -69,13 +74,15 @@ export default function Center({
 
                     <div className="flex items-center gap-3">
                         <button
-                            onClick={() => window.print()}
-                            className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300 font-semibold text-sm hover:bg-slate-200 dark:hover:bg-white/10 transition-all flex items-center gap-2"
+                            type="button"
+                            onClick={handleExportPdf}
+                            className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-sm shadow-lg shadow-rose-600/25 transition-all flex items-center gap-2"
                         >
-                            <i className="fa-solid fa-print"></i>
-                            <span className="hidden sm:inline">Imprimir</span>
+                            <i className="fa-solid fa-file-pdf"></i>
+                            <span>Exportar PDF Oficial</span>
                         </button>
                         <button
+                            type="button"
                             onClick={handleExportCsv}
                             className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/30 transition-all flex items-center gap-2"
                         >

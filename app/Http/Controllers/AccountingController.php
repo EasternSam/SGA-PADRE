@@ -8,12 +8,14 @@ use App\Models\AccountingEntryLine;
 use App\Models\AccountingJournal;
 use App\Models\Setting;
 use App\Services\AccountingEngine;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class AccountingController extends Controller
 {
@@ -270,7 +272,7 @@ class AccountingController extends Controller
     }
 
     // ── 4. ESTADOS FINANCIEROS ──
-    public function statements(Request $request): Response
+    protected function buildStatementsPayload(Request $request): array
     {
         $reportType = $request->input('report_type', 'balance_sheet');
         $dateFrom = $request->input('date_from', Carbon::now()->startOfMonth()->format('Y-m-d'));
@@ -315,12 +317,34 @@ class AccountingController extends Controller
             ];
         }
 
-        return Inertia::render('Accounting/Statements', [
+        return [
             'reportType' => $reportType,
             'dateFrom' => $dateFrom,
             'dateTo' => $dateTo,
             'report' => $reportData,
-        ]);
+        ];
+    }
+
+    public function statements(Request $request): Response
+    {
+        return Inertia::render('Accounting/Statements', $this->buildStatementsPayload($request));
+    }
+
+    public function exportStatementsPdf(Request $request): HttpResponse
+    {
+        $payload = $this->buildStatementsPayload($request);
+        $reportType = $payload['reportType'];
+
+        $pdf = Pdf::loadView('reports.statements-pdf', $payload)
+            ->setPaper('a4', 'portrait');
+
+        $fileName = "estado_financiero_{$reportType}_" . now()->format('Ymd_His') . '.pdf';
+
+        if ($request->boolean('download')) {
+            return $pdf->download($fileName);
+        }
+
+        return $pdf->stream($fileName);
     }
 
     private function getAccountBalancesByType(string $type, ?string $dateFrom, ?string $dateTo, bool $filterRange)

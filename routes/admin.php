@@ -198,6 +198,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
             Route::get('/finance/dgii-reports/download-606', [DgiiReportController::class, 'download606'])->name('admin.finance.dgii-reports.download-606');
             Route::get('/finance/dgii-reports/download-607', [DgiiReportController::class, 'download607'])->name('admin.finance.dgii-reports.download-607');
             Route::get('/finance/statements', [AccountingController::class, 'statements'])->name('admin.finance.statements');
+            Route::get('/finance/statements/pdf', [AccountingController::class, 'exportStatementsPdf'])->name('admin.finance.statements.pdf');
             Route::get('/finance/ledger', [AccountingController::class, 'ledger'])->name('admin.finance.ledger');
         });
     });
@@ -240,6 +241,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
     // --- REPORTES BÁSICOS ---
     Route::middleware(['feature:reports_basic', 'role:Admin|Registro|Contabilidad'])->group(function () {
         Route::get('/reports', [\App\Http\Controllers\ReportCenterController::class, 'index'])->name('reports.index');
+        Route::get('/reports/export-pdf', [\App\Http\Controllers\ReportCenterController::class, 'exportPdf'])->name('reports.export-pdf');
         Route::get('/reports/export-csv', [\App\Http\Controllers\ReportCenterController::class, 'exportCsv'])->name('reports.export-csv');
     });
 

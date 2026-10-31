@@ -5,25 +5,24 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\Course;
 use App\Models\CourseSchedule;
-use App\Models\Enrollment;
 use App\Models\Module;
 use App\Models\Payment;
 use App\Models\Student;
 use App\Models\StudentGrade;
-use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportCenterController extends Controller
 {
     /**
-     * Display the reporting dashboard & data grid.
+     * Build the report dataset, KPI summary, and metadata for UI, PDF, and CSV exports.
      */
-    public function index(Request $request): Response
+    protected function buildReportPayload(Request $request, int $limit = 100): array
     {
         $reportType = $request->query('report_type', 'payments');
         $courseId = $request->query('course_id');
@@ -33,11 +32,22 @@ class ReportCenterController extends Controller
         $dateTo = $request->query('date_to', now()->endOfMonth()->toDateString());
         $status = $request->query('status', 'all');
 
-        $courses = Course::select('id', 'name', 'code')->orderBy('name')->get();
-        $modules = $courseId ? Module::where('course_id', $courseId)->select('id', 'name', 'code')->orderBy('name')->get() : [];
-        $schedules = $moduleId ? CourseSchedule::where('module_id', $moduleId)->select('id', 'section_name', 'start_time', 'end_time')->get() : [];
+        $reportTitles = [
+            'payments' => 'Reporte Oficial de Cobros y Recaudación',
+            'attendance' => 'Reporte Oficial de Control de Asistencia',
+            'grades' => 'Reporte Oficial de Calificaciones y Rendimiento',
+            'students' => 'Padrón Oficial Estudiantil',
+            'debtors' => 'Reporte de Cuentas por Cobrar y Morosidad',
+        ];
 
-        $reportData = [];
+        $periodLabel = sprintf(
+            'Período: %s al %s · Estado: %s',
+            Carbon::parse($dateFrom)->format('d/m/Y'),
+            Carbon::parse($dateTo)->format('d/m/Y'),
+            $status === 'all' ? 'Todos' : $status
+        );
+
+        $reportData = collect();
         $summary = [
             'total_records' => 0,
             'primary_metric' => '0',
@@ -51,24 +61,24 @@ class ReportCenterController extends Controller
                 $query = Payment::with(['student', 'paymentConcept'])
                     ->whereBetween('created_at', [
                         Carbon::parse($dateFrom)->startOfDay(),
-                        Carbon::parse($dateTo)->endOfDay()
+                        Carbon::parse($dateTo)->endOfDay(),
                     ]);
 
-                if ($status !== 'all') {
+                if ($status && $status !== 'all') {
                     $query->where('status', $status);
                 }
 
-                $payments = $query->latest('created_at')->take(100)->get();
+                $payments = $query->latest('created_at')->take($limit)->get();
                 $totalAmount = $payments->where('status', 'Pagado')->sum('amount');
                 $pendingAmount = $payments->whereIn('status', ['Pendiente', 'pending', 'Vencido'])->sum('amount');
 
-                $reportData = $payments->map(fn($p) => [
+                $reportData = $payments->map(fn ($p) => [
                     'id' => $p->id,
                     'date' => $p->created_at?->format('d/m/Y H:i'),
                     'student_code' => $p->student?->student_code ?? sprintf('EST-%04d', $p->student_id),
                     'student_name' => $p->student ? ($p->student->first_name . ' ' . $p->student->last_name) : 'Estudiante General',
                     'concept' => $p->paymentConcept?->name ?? 'Cuota Mensual',
-                    'amount' => (float)$p->amount,
+                    'amount' => (float) $p->amount,
                     'gateway' => $p->gateway ?? 'Caja Central',
                     'ncf' => $p->ncf ?? 'B0200000001',
                     'status' => $p->status,
@@ -85,18 +95,18 @@ class ReportCenterController extends Controller
 
             case 'attendance':
                 $attendances = Attendance::with(['enrollment.student', 'courseSchedule'])
-                    ->when($scheduleId, fn($q) => $q->where('course_schedule_id', $scheduleId))
-                    ->when(!$scheduleId && $moduleId, fn($q) => $q->whereHas('courseSchedule', fn($sq) => $sq->where('module_id', $moduleId)))
-                    ->when(!$scheduleId && !$moduleId && $courseId, fn($q) => $q->whereHas('courseSchedule.module', fn($mq) => $mq->where('course_id', $courseId)))
+                    ->when($scheduleId, fn ($q) => $q->where('course_schedule_id', $scheduleId))
+                    ->when(!$scheduleId && $moduleId, fn ($q) => $q->whereHas('courseSchedule', fn ($sq) => $sq->where('module_id', $moduleId)))
+                    ->when(!$scheduleId && !$moduleId && $courseId, fn ($q) => $q->whereHas('courseSchedule.module', fn ($mq) => $mq->where('course_id', $courseId)))
                     ->latest('attendance_date')
-                    ->take(100)
+                    ->take($limit)
                     ->get();
 
-                $presentCount = $attendances->where('status', 'present')->count();
+                $presentCount = $attendances->whereIn('status', ['present', 'Presente'])->count();
                 $totalAtt = $attendances->count();
                 $rate = $totalAtt > 0 ? round(($presentCount / $totalAtt) * 100, 1) : 100;
 
-                $reportData = $attendances->map(fn($a) => [
+                $reportData = $attendances->map(fn ($a) => [
                     'id' => $a->id,
                     'date' => $a->attendance_date ? Carbon::parse($a->attendance_date)->format('d/m/Y') : now()->format('d/m/Y'),
                     'student_name' => $a->enrollment?->student ? ($a->enrollment->student->first_name . ' ' . $a->enrollment->student->last_name) : 'Estudiante',
@@ -118,19 +128,19 @@ class ReportCenterController extends Controller
             case 'grades':
                 $grades = StudentGrade::with(['student', 'sectionSubject.subject', 'evaluationPeriod'])
                     ->latest()
-                    ->take(100)
+                    ->take($limit)
                     ->get();
 
                 $avg = $grades->count() > 0 ? round($grades->avg('score'), 1) : 0;
                 $approved = $grades->where('score', '>=', 70)->count();
 
-                $reportData = $grades->map(fn($g) => [
+                $reportData = $grades->map(fn ($g) => [
                     'id' => $g->id,
                     'student_name' => $g->student ? ($g->student->first_name . ' ' . $g->student->last_name) : 'Estudiante',
                     'student_code' => $g->student?->student_code ?? 'N/A',
                     'subject' => $g->sectionSubject?->subject?->name ?? 'Materia Académica',
                     'period' => $g->evaluationPeriod?->name ?? 'P1',
-                    'score' => (float)$g->score,
+                    'score' => (float) $g->score,
                     'status' => $g->score >= 70 ? 'Aprobado' : 'Reprobado',
                 ]);
 
@@ -145,25 +155,26 @@ class ReportCenterController extends Controller
 
             case 'students':
                 $students = Student::with('course')
+                    ->when($courseId, fn ($q) => $q->where('course_id', $courseId))
                     ->latest()
-                    ->take(100)
+                    ->take($limit)
                     ->get();
 
-                $reportData = $students->map(fn($s) => [
+                $reportData = $students->map(fn ($s) => [
                     'id' => $s->id,
                     'student_code' => $s->student_code ?? sprintf('EST-%04d', $s->id),
                     'student_name' => $s->first_name . ' ' . $s->last_name,
                     'email' => $s->email ?? 'contacto@instituto.edu.do',
-                    'phone' => $s->phone ?? '-',
+                    'phone' => $s->mobile_phone ?? $s->home_phone ?? $s->phone ?? '-',
                     'career' => $s->course?->name ?? 'Carrera General',
                     'status' => $s->status ?? 'Activo',
                 ]);
 
                 $summary = [
                     'total_records' => $students->count(),
-                    'primary_metric' => (string)$students->where('status', 'Activo')->count(),
+                    'primary_metric' => (string) $students->where('status', 'Activo')->count(),
                     'primary_label' => 'Estudiantes Activos',
-                    'secondary_metric' => (string)$students->count(),
+                    'secondary_metric' => (string) $students->count(),
                     'secondary_label' => 'Padrón Total',
                 ];
                 break;
@@ -172,34 +183,36 @@ class ReportCenterController extends Controller
                 $debtorPayments = Payment::with(['student.course', 'paymentConcept'])
                     ->whereIn('status', ['Pendiente', 'pending', 'Vencido'])
                     ->latest()
-                    ->take(100)
+                    ->take($limit)
                     ->get();
 
                 $totalDebt = $debtorPayments->sum('amount');
 
-                $reportData = $debtorPayments->map(fn($p) => [
+                $reportData = $debtorPayments->map(fn ($p) => [
                     'id' => $p->id,
                     'student_code' => $p->student?->student_code ?? 'N/A',
                     'student_name' => $p->student ? ($p->student->first_name . ' ' . $p->student->last_name) : 'Estudiante',
                     'career' => $p->student?->course?->name ?? 'Carrera General',
                     'concept' => $p->paymentConcept?->name ?? 'Cuota Mensual',
-                    'amount' => (float)$p->amount,
+                    'amount' => (float) $p->amount,
                     'due_date' => $p->due_date?->format('d/m/Y') ?? 'Vencido',
-                    'phone' => $p->student?->phone ?? 'Sin contacto',
+                    'phone' => $p->student?->mobile_phone ?? $p->student?->phone ?? 'Sin contacto',
                 ]);
 
                 $summary = [
                     'total_records' => $debtorPayments->count(),
                     'primary_metric' => 'RD$ ' . number_format($totalDebt, 2),
                     'primary_label' => 'Monto Total Vencido',
-                    'secondary_metric' => (string)$debtorPayments->unique('student_id')->count(),
+                    'secondary_metric' => (string) $debtorPayments->unique('student_id')->count(),
                     'secondary_label' => 'Estudiantes con Balance',
                 ];
                 break;
         }
 
-        return Inertia::render('Reports/Center', [
+        return [
             'reportType' => $reportType,
+            'reportTitle' => $reportTitles[$reportType] ?? 'Reporte Institucional',
+            'reportSubtitle' => $periodLabel,
             'filters' => [
                 'course_id' => $courseId,
                 'module_id' => $moduleId,
@@ -208,12 +221,51 @@ class ReportCenterController extends Controller
                 'date_to' => $dateTo,
                 'status' => $status,
             ],
+            'reportData' => $reportData,
+            'summary' => $summary,
+        ];
+    }
+
+    /**
+     * Display the reporting dashboard & data grid.
+     */
+    public function index(Request $request): Response
+    {
+        $payload = $this->buildReportPayload($request, 100);
+        $courseId = $payload['filters']['course_id'];
+        $moduleId = $payload['filters']['module_id'];
+
+        $courses = Course::select('id', 'name', 'code')->orderBy('name')->get();
+        $modules = $courseId ? Module::where('course_id', $courseId)->select('id', 'name', 'code')->orderBy('name')->get() : [];
+        $schedules = $moduleId ? CourseSchedule::where('module_id', $moduleId)->select('id', 'section_name', 'start_time', 'end_time')->get() : [];
+
+        return Inertia::render('Reports/Center', array_merge($payload, [
             'courses' => $courses,
             'modules' => $modules,
             'schedules' => $schedules,
-            'reportData' => $reportData,
-            'summary' => $summary,
-        ]);
+        ]));
+    }
+
+    /**
+     * Generate an official institutional PDF report using DomPDF.
+     */
+    public function exportPdf(Request $request): HttpResponse
+    {
+        $payload = $this->buildReportPayload($request, 500);
+        $reportType = $payload['reportType'];
+
+        $orientation = in_array($reportType, ['payments', 'students', 'debtors'], true) ? 'landscape' : 'portrait';
+
+        $pdf = Pdf::loadView('reports.center-pdf', $payload)
+            ->setPaper('a4', $orientation);
+
+        $fileName = "reporte_oficial_{$reportType}_" . now()->format('Ymd_His') . '.pdf';
+
+        if ($request->boolean('download')) {
+            return $pdf->download($fileName);
+        }
+
+        return $pdf->stream($fileName);
     }
 
     /**
@@ -221,88 +273,82 @@ class ReportCenterController extends Controller
      */
     public function exportCsv(Request $request): StreamedResponse
     {
-        $reportType = $request->query('report_type', 'payments');
-        $fileName = "reporte_{$reportType}_" . now()->format('Ymd_His') . ".csv";
+        $payload = $this->buildReportPayload($request, 500);
+        $reportType = $payload['reportType'];
+        $reportData = $payload['reportData'];
+        $fileName = "reporte_{$reportType}_" . now()->format('Ymd_His') . '.csv';
 
-        return response()->streamDownload(function () use ($reportType) {
+        return response()->streamDownload(function () use ($reportType, $reportData) {
             $handle = fopen('php://output', 'w');
             // Add UTF-8 BOM for Excel compatibility
             fputs($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
             if ($reportType === 'payments') {
                 fputcsv($handle, ['ID', 'Fecha', 'Matrícula', 'Estudiante', 'Concepto', 'Monto (RD$)', 'Método', 'NCF', 'Estado']);
-                $payments = Payment::with(['student', 'paymentConcept'])->latest()->take(500)->get();
-                foreach ($payments as $p) {
+                foreach ($reportData as $row) {
                     fputcsv($handle, [
-                        $p->id,
-                        $p->created_at?->format('d/m/Y H:i'),
-                        $p->student?->student_code ?? '',
-                        $p->student ? ($p->student->first_name . ' ' . $p->student->last_name) : '',
-                        $p->paymentConcept?->name ?? '',
-                        $p->amount,
-                        $p->gateway ?? 'Caja',
-                        $p->ncf ?? '',
-                        $p->status,
+                        $row['id'],
+                        $row['date'],
+                        $row['student_code'],
+                        $row['student_name'],
+                        $row['concept'],
+                        $row['amount'],
+                        $row['gateway'],
+                        $row['ncf'],
+                        $row['status'],
                     ]);
                 }
             } elseif ($reportType === 'attendance') {
                 fputcsv($handle, ['ID', 'Fecha', 'Matrícula', 'Estudiante', 'Sección', 'Estado', 'Notas']);
-                $attendances = Attendance::with(['enrollment.student', 'courseSchedule'])->latest('attendance_date')->take(500)->get();
-                foreach ($attendances as $a) {
+                foreach ($reportData as $row) {
                     fputcsv($handle, [
-                        $a->id,
-                        $a->attendance_date ? Carbon::parse($a->attendance_date)->format('d/m/Y') : '',
-                        $a->enrollment?->student?->student_code ?? 'N/A',
-                        $a->enrollment?->student ? ($a->enrollment->student->first_name . ' ' . $a->enrollment->student->last_name) : 'Estudiante',
-                        $a->courseSchedule?->section_name ?? 'Sección A',
-                        $a->status ?? 'present',
-                        $a->notes ?? '-',
+                        $row['id'],
+                        $row['date'],
+                        $row['student_code'],
+                        $row['student_name'],
+                        $row['section'],
+                        $row['status'],
+                        $row['notes'],
                     ]);
                 }
             } elseif ($reportType === 'grades') {
                 fputcsv($handle, ['ID', 'Matrícula', 'Estudiante', 'Asignatura', 'Período', 'Calificación', 'Estado']);
-                $grades = StudentGrade::with(['student', 'sectionSubject.subject', 'evaluationPeriod'])->latest()->take(500)->get();
-                foreach ($grades as $g) {
+                foreach ($reportData as $row) {
                     fputcsv($handle, [
-                        $g->id,
-                        $g->student?->student_code ?? 'N/A',
-                        $g->student ? ($g->student->first_name . ' ' . $g->student->last_name) : 'Estudiante',
-                        $g->sectionSubject?->subject?->name ?? 'Materia Académica',
-                        $g->evaluationPeriod?->name ?? 'P1',
-                        (float) $g->score,
-                        $g->score >= 70 ? 'Aprobado' : 'Reprobado',
+                        $row['id'],
+                        $row['student_code'],
+                        $row['student_name'],
+                        $row['subject'],
+                        $row['period'],
+                        $row['score'],
+                        $row['status'],
                     ]);
                 }
             } elseif ($reportType === 'debtors') {
                 fputcsv($handle, ['ID', 'Matrícula', 'Estudiante', 'Carrera/Curso', 'Concepto', 'Monto (RD$)', 'Vencimiento', 'Teléfono']);
-                $debtorPayments = Payment::with(['student.course', 'paymentConcept'])
-                    ->whereIn('status', ['Pendiente', 'pending', 'Vencido'])
-                    ->latest()
-                    ->take(500)
-                    ->get();
-                foreach ($debtorPayments as $p) {
+                foreach ($reportData as $row) {
                     fputcsv($handle, [
-                        $p->id,
-                        $p->student?->student_code ?? 'N/A',
-                        $p->student ? ($p->student->first_name . ' ' . $p->student->last_name) : 'Estudiante',
-                        $p->student?->course?->name ?? 'Carrera General',
-                        $p->paymentConcept?->name ?? 'Cuota Mensual',
-                        (float) $p->amount,
-                        $p->due_date?->format('d/m/Y') ?? 'Vencido',
-                        $p->student?->phone ?? 'Sin contacto',
+                        $row['id'],
+                        $row['student_code'],
+                        $row['student_name'],
+                        $row['career'],
+                        $row['concept'],
+                        $row['amount'],
+                        $row['due_date'],
+                        $row['phone'],
                     ]);
                 }
             } else {
-                fputcsv($handle, ['ID', 'Matrícula', 'Estudiante', 'Email', 'Teléfono', 'Estado']);
-                $students = Student::latest()->take(500)->get();
-                foreach ($students as $s) {
+                fputcsv($handle, ['ID', 'Matrícula', 'Estudiante', 'Email', 'Teléfono', 'Carrera/Curso', 'Estado']);
+                foreach ($reportData as $row) {
                     fputcsv($handle, [
-                        $s->id,
-                        $s->student_code ?? '',
-                        $s->first_name . ' ' . $s->last_name,
-                        $s->email ?? '',
-                        $s->phone ?? '',
-                        $s->status ?? 'Activo',
+                        $row['id'],
+                        $row['student_code'],
+                        $row['student_name'],
+                        $row['email'],
+                        $row['phone'],
+                        $row['career'],
+                        $row['status'],
                     ]);
                 }
             }
