@@ -107,6 +107,31 @@ class RolesAndPermissionsSeeder extends Seeder
             ]
         );
 
+        // --- USUARIOS DE PRUEBA POR ROL (Gridbase QA) ---
+        $defaultPassword = bcrypt(env('GRIDBASE_SUPPORT_PASSWORD', 'SamDP_9903'));
+
+        $qaAccounts = [
+            ['email' => 'registro@gridbase.com.do', 'name' => 'Encargado de Registro', 'role' => $roleRegistro],
+            ['email' => 'contabilidad@gridbase.com.do', 'name' => 'Encargado de Contabilidad', 'role' => $roleContabilidad],
+            ['email' => 'caja@gridbase.com.do', 'name' => 'Cajero Principal', 'role' => $roleCaja],
+            ['email' => 'profesor@gridbase.com.do', 'name' => 'Docente de Prueba', 'role' => $roleProfesor],
+            ['email' => 'estudiante@gridbase.com.do', 'name' => 'Estudiante de Prueba', 'role' => $roleEstudiante],
+            ['email' => 'aspirante@gridbase.com.do', 'name' => 'Aspirante de Prueba', 'role' => $roleSolicitante],
+        ];
+
+        foreach ($qaAccounts as $qa) {
+            $u = User::updateOrCreate(
+                ['email' => $qa['email']],
+                [
+                    'name' => $qa['name'],
+                    'password' => $defaultPassword,
+                    'failed_login_count' => 0,
+                    'locked_until' => null,
+                ]
+            );
+            $u->syncRoles([$qa['role']]);
+        }
+
         // --- USUARIOS DE PRUEBA PARA NUEVOS ROLES ---
         
         $registroUser = User::firstOrCreate(

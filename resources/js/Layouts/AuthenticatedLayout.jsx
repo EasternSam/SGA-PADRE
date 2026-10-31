@@ -518,7 +518,8 @@ function AuthenticatedContent({ title, children }) {
     const hasRole = (role) => userRoles.includes(role);
     const hasAnyRole = (roles) => roles.some(r => userRoles.includes(r));
     const isStudent = hasRole('Estudiante') || url.startsWith('/student');
-    const isTeacher = hasRole('Docente') || url.startsWith('/teacher');
+    const isTeacher = hasAnyRole(['Profesor', 'Docente']) || url.startsWith('/teacher');
+    const isApplicant = hasRole('Solicitante') || url.startsWith('/applicant');
 
     const isActive = (href) => {
         if (href === '/admin/dashboard' || href === '/dashboard') {
@@ -527,10 +528,13 @@ function AuthenticatedContent({ title, children }) {
         if (href === '/student/dashboard') {
             return url === '/student/dashboard' || url === '/student';
         }
+        if (href === '/teacher/dashboard') {
+            return url === '/teacher/dashboard' || url === '/teacher';
+        }
         return url === href || url.startsWith(href + '/');
     };
 
-    const homeUrl = isStudent ? '/student/dashboard' : isTeacher ? '/teacher/dashboard' : '/admin/dashboard';
+    const homeUrl = isStudent ? '/student/dashboard' : isTeacher ? '/teacher/dashboard' : isApplicant ? '/applicant/portal' : '/admin/dashboard';
 
     return (
         <div className="h-screen flex w-full overflow-hidden bg-gray-50 dark:bg-[#0A0A0A] font-sans antialiased text-slate-600 dark:text-neutral-300">
@@ -706,6 +710,88 @@ function AuthenticatedContent({ title, children }) {
                                     </SidebarMenuItem>
                                 </SidebarMenu>
                             </SidebarGroup>
+                        </>
+                    ) : isTeacher && !hasAnyRole(['Admin', 'Registro', 'Contabilidad', 'Caja']) ? (
+                        <>
+                            <SidebarMenu>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton
+                                        href="/teacher/dashboard"
+                                        isActive={isActive('/teacher/dashboard')}
+                                        tooltip="Portal del Docente"
+                                    >
+                                        <LayoutDashboard className="h-[18px] w-[18px] shrink-0 text-white/80" />
+                                        <span>Mi Portal Docente</span>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            </SidebarMenu>
+
+                            <SidebarGroup>
+                                <SidebarGroupLabel>Docencia</SidebarGroupLabel>
+                                <SidebarMenu>
+                                    <SidebarMenuItem>
+                                        <SidebarMenuButton
+                                            href="/teacher/attendance"
+                                            isActive={isActive('/teacher/attendance')}
+                                            tooltip="Pase de Lista"
+                                        >
+                                            <Calendar className="h-[18px] w-[18px] shrink-0 text-white/80" />
+                                            <span>Pase de Lista</span>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                    <SidebarMenuItem>
+                                        <SidebarMenuButton
+                                            href="/teacher/grades"
+                                            isActive={isActive('/teacher/grades')}
+                                            tooltip="Libro de Calificaciones"
+                                        >
+                                            <Award className="h-[18px] w-[18px] shrink-0 text-white/80" />
+                                            <span>Calificaciones</span>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                    <SidebarMenuItem>
+                                        <SidebarMenuButton
+                                            href="/teacher/payroll"
+                                            isActive={isActive('/teacher/payroll')}
+                                            tooltip="Mis Volantes de Nómina"
+                                        >
+                                            <Receipt className="h-[18px] w-[18px] shrink-0 text-white/80" />
+                                            <span>Mis Volantes de Nómina</span>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                </SidebarMenu>
+                            </SidebarGroup>
+
+                            <SidebarGroup>
+                                <SidebarGroupLabel>Mi Cuenta</SidebarGroupLabel>
+                                <SidebarMenu>
+                                    <SidebarMenuItem>
+                                        <SidebarMenuButton
+                                            href="/teacher/profile"
+                                            isActive={isActive('/teacher/profile')}
+                                            tooltip="Mi Perfil"
+                                        >
+                                            <UserCheck className="h-[18px] w-[18px] shrink-0 text-white/80" />
+                                            <span>Mi Perfil</span>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                </SidebarMenu>
+                            </SidebarGroup>
+                        </>
+                    ) : isApplicant && !hasAnyRole(['Admin', 'Registro', 'Contabilidad', 'Caja']) ? (
+                        <>
+                            <SidebarMenu>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton
+                                        href="/applicant/portal"
+                                        isActive={isActive('/applicant/portal')}
+                                        tooltip="Portal del Aspirante"
+                                    >
+                                        <LayoutDashboard className="h-[18px] w-[18px] shrink-0 text-white/80" />
+                                        <span>Mi Solicitud de Admisión</span>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            </SidebarMenu>
                         </>
                     ) : (
                         <>
@@ -1208,7 +1294,7 @@ function AuthenticatedContent({ title, children }) {
                             {/* Status Caja Operativa / Estudiante */}
                             <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                {isStudent ? 'Estudiante Activo' : 'Caja Operativa'}
+                                {isStudent ? 'Estudiante Activo' : isTeacher ? 'Docente Activo' : isApplicant ? 'Admisión en Proceso' : 'Caja Operativa'}
                             </span>
 
                             {/* Notification Center (UI Arc / Motion System) */}
@@ -1309,7 +1395,7 @@ function AuthenticatedContent({ title, children }) {
                                             <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-bold tracking-widest">Mi Cuenta</p>
                                             <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate mt-0.5">{userName}</p>
                                         </div>
-                                        <Link href={isStudent ? "/student/profile" : "/admin/profile"} className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#262626]">
+                                        <Link href={isStudent ? "/student/profile" : isTeacher ? "/teacher/profile" : "/admin/profile"} className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#262626]">
                                             <svg className="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                                             </svg>
