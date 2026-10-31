@@ -184,7 +184,7 @@ export default function RequestsIndex({
     const currentSelectedType = requestTypes.find(t => t.id.toString() === manualForm.data.request_type_id?.toString());
 
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout title="Trámites y Solicitudes">
             <Head title="Trámites y Solicitudes Estudiantiles - SGA" />
 
             <div className="space-y-6">

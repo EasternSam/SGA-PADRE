@@ -130,7 +130,7 @@ export default function ScheduleBuilder({
     const selectedSection = sections.find(s => s.id === selectedSectionId);
 
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout title="Constructor de Horarios">
             <Head title="Constructor de Horarios Escolares - SGA" />
 
             <div className="space-y-6">

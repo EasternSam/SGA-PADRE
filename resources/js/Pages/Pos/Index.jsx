@@ -196,7 +196,7 @@ export default function PosIndex({
     };
 
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout title="Terminal de Caja">
             <Head title="Terminal de Caja" />
 
             <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 pb-20 lg:pb-8 space-y-4">

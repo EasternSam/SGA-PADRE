@@ -91,7 +91,7 @@ export default function PayrollIndex({
     };
 
     return (
-        <AuthenticatedLayout auth={auth}>
+        <AuthenticatedLayout auth={auth} title="Nómina de Pago">
             <Head title="Gestión de Nómina & Dispersión" />
 
             <div className="space-y-6 pb-20">

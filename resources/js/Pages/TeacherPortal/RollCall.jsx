@@ -80,7 +80,7 @@ export default function RollCall({
     };
 
     return (
-        <AuthenticatedLayout auth={auth}>
+        <AuthenticatedLayout auth={auth} title="Pase de Lista Docente">
             <Head title="Pase de Lista | Docente" />
 
             <div className="space-y-6 pb-20">

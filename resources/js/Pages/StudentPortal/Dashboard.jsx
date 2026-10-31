@@ -65,7 +65,7 @@ export default function StudentDashboard({
     const dayClasses = weeklySchedule[selectedDay] || [];
 
     return (
-        <AuthenticatedLayout auth={auth}>
+        <AuthenticatedLayout auth={auth} title="Portal del Estudiante">
             <Head title="Portal del Estudiante | SGA" />
 
             <div className="space-y-6 pb-20">

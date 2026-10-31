@@ -84,7 +84,7 @@ export default function AttendanceRegister({
     ];
 
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout title="Pase de Lista y Asistencia">
             <Head title="Pase de Lista & Asistencia Escolar - SGA" />
 
             <div className="space-y-6">

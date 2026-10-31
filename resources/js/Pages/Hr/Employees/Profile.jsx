@@ -128,7 +128,7 @@ export default function EmployeeProfile({
     const totalPaidHistorical = payrollHistory.reduce((acc, curr) => acc + (curr.net_amount || 0), 0);
 
     return (
-        <AuthenticatedLayout auth={auth}>
+        <AuthenticatedLayout auth={auth} title={`Expediente: ${employee.name}`}>
             <Head title={`Expediente: ${employee.name}`} />
 
             <div className="space-y-6 pb-20">

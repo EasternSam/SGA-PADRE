@@ -23,7 +23,7 @@ export default function MyPayroll({
     };
 
     return (
-        <AuthenticatedLayout auth={auth}>
+        <AuthenticatedLayout auth={auth} title="Mis Volantes de Nómina">
             <Head title="Mis Recibos de Nómina | Docente" />
 
             <div className="space-y-6 pb-20">

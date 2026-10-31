@@ -30,7 +30,7 @@ export default function TeacherDashboard({
     const accentColor = branding?.accent_color || '#ea580c';
 
     return (
-        <AuthenticatedLayout auth={auth}>
+        <AuthenticatedLayout auth={auth} title="Portal del Docente">
             <Head title="Portal del Docente | SGA" />
 
             <div className="space-y-6 pb-20">

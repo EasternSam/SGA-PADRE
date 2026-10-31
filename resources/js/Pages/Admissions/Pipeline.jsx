@@ -103,7 +103,7 @@ export default function AdmissionsPipeline({
     ];
 
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout title="Admisiones y Nuevo Ingreso">
             <Head title="Admisiones & Nuevo Ingreso - SGA" />
 
             <div className="space-y-6">

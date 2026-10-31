@@ -111,7 +111,7 @@ export default function JustificationsIndex({
     ];
 
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout title="Excusas y Justificaciones">
             <Head title="Excusas & Justificaciones de Asistencia - SGA" />
 
             <div className="space-y-6">

@@ -63,7 +63,7 @@ export default function MyPayments({
     };
 
     return (
-        <AuthenticatedLayout auth={auth}>
+        <AuthenticatedLayout auth={auth} title="Mis Pagos y Facturas">
             <Head title="Mis Pagos & Finanzas" />
 
             <div className="space-y-6 pb-20">

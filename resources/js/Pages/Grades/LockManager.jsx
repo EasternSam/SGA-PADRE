@@ -67,7 +67,7 @@ export default function LockManager({ auth, activeYear, periods = [] }) {
     };
 
     return (
-        <AuthenticatedLayout auth={auth}>
+        <AuthenticatedLayout auth={auth} title="Cierre de Actas">
             <Head title="Cierre de Actas & Bloqueo de Calificaciones" />
 
             <div className="space-y-6 pb-20">

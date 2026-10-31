@@ -77,7 +77,7 @@ export default function SubjectSelection({
     };
 
     return (
-        <AuthenticatedLayout auth={auth}>
+        <AuthenticatedLayout auth={auth} title="Selección de Asignaturas">
             <Head title="Selección de Asignaturas" />
 
             <div className="space-y-6 pb-20">

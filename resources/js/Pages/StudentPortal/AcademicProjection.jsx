@@ -23,7 +23,7 @@ export default function AcademicProjection({
     progress = {}
 }) {
     return (
-        <AuthenticatedLayout auth={auth}>
+        <AuthenticatedLayout auth={auth} title="Pensum y Avance Académico">
             <Head title="Proyección Académica & Pensum" />
 
             <div className="space-y-6 pb-20">

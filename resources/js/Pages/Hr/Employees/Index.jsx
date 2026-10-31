@@ -153,7 +153,7 @@ export default function EmployeesIndex({
     };
 
     return (
-        <AuthenticatedLayout auth={auth}>
+        <AuthenticatedLayout auth={auth} title="Directorio de Empleados">
             <Head title="Directorio de Recursos Humanos" />
 
             <div className="space-y-6 pb-20">

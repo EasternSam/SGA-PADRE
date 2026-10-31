@@ -229,6 +229,74 @@ function getDynamicContextualTabs(rawUrl = '') {
     };
 }
 
+function resolveSectionTitle(explicitTitle, rawUrl = '', institutionName = 'Academic+') {
+    if (explicitTitle && String(explicitTitle).trim() !== '' && String(explicitTitle).trim() !== 'SGA') {
+        return explicitTitle;
+    }
+
+    const cleanUrl = rawUrl ? rawUrl.split('?')[0].split('#')[0] : '';
+
+    const routeMatchers = [
+        { prefix: '/admin/dashboard', label: 'Panel de Control' },
+        { prefix: '/admin/students/profile', label: 'Expediente del Estudiante' },
+        { prefix: '/admin/students', label: 'Gestión de Estudiantes' },
+        { prefix: '/admin/teachers/profile', label: 'Ficha del Docente' },
+        { prefix: '/admin/teachers', label: 'Directorio de Docentes' },
+        { prefix: '/admin/courses', label: 'Cursos Técnicos' },
+        { prefix: '/admin/careers', label: 'Carreras Universitarias' },
+        { prefix: '/admin/sections', label: 'Secciones Escolares' },
+        { prefix: '/admin/schedules', label: 'Constructor de Horarios' },
+        { prefix: '/admin/calendar', label: 'Calendario Académico' },
+        { prefix: '/admin/requests', label: 'Trámites y Solicitudes' },
+        { prefix: '/admin/admissions', label: 'Admisiones y Nuevo Ingreso' },
+        { prefix: '/admin/classrooms', label: 'Aulas y Espacios Físicos' },
+        { prefix: '/admin/grades/locks', label: 'Cierre de Actas' },
+        { prefix: '/admin/grades', label: 'Sábana de Calificaciones' },
+        { prefix: '/admin/attendance/justifications', label: 'Excusas y Justificaciones' },
+        { prefix: '/admin/attendance', label: 'Pase de Lista y Asistencia' },
+        { prefix: '/admin/pos', label: 'Terminal de Caja' },
+        { prefix: '/admin/finance/dashboard', label: 'Panel Financiero' },
+        { prefix: '/admin/finance/payment-concepts', label: 'Conceptos de Pago' },
+        { prefix: '/admin/finance/chart-of-accounts', label: 'Catálogo de Cuentas' },
+        { prefix: '/admin/finance/manual-entry', label: 'Asiento Contable Manual' },
+        { prefix: '/admin/finance/ledger', label: 'Libro Mayor' },
+        { prefix: '/admin/finance/statements', label: 'Estados Financieros' },
+        { prefix: '/admin/finance/period-closing', label: 'Cierre de Período' },
+        { prefix: '/admin/finance/expenses', label: 'Cuentas por Pagar y Gastos' },
+        { prefix: '/admin/finance/dgii-reports', label: 'Reportes Fiscales DGII' },
+        { prefix: '/admin/hr/employees', label: 'Directorio de Empleados' },
+        { prefix: '/admin/hr/attendances', label: 'Control de Asistencia (Reloj)' },
+        { prefix: '/admin/hr/payroll', label: 'Nómina de Pago' },
+        { prefix: '/admin/reports', label: 'Centro de Reportes' },
+        { prefix: '/admin/certificate-editor', label: 'Diseñador de Certificados' },
+        { prefix: '/admin/certificates', label: 'Plantillas de Certificados' },
+        { prefix: '/admin/certificate-templates', label: 'Plantillas de Certificados' },
+        { prefix: '/admin/users', label: 'Gestión de Usuarios' },
+        { prefix: '/admin/activity-logs', label: 'Registro de Auditoría' },
+        { prefix: '/admin/settings', label: 'Configuración Global' },
+        { prefix: '/admin/profile', label: 'Mi Perfil' },
+        { prefix: '/student/selection', label: 'Selección de Asignaturas' },
+        { prefix: '/student/projection', label: 'Pensum y Avance Académico' },
+        { prefix: '/student/payments', label: 'Mis Pagos y Facturas' },
+        { prefix: '/student/requests', label: 'Solicitudes y Récords' },
+        { prefix: '/student/profile', label: 'Mi Perfil' },
+        { prefix: '/student', label: 'Portal del Estudiante' },
+        { prefix: '/teacher/grades', label: 'Libro de Calificaciones' },
+        { prefix: '/teacher/attendance', label: 'Pase de Lista Docente' },
+        { prefix: '/teacher/payroll', label: 'Mis Volantes de Nómina' },
+        { prefix: '/teacher', label: 'Portal del Docente' },
+        { prefix: '/applicant', label: 'Portal del Aspirante' },
+    ];
+
+    for (const matcher of routeMatchers) {
+        if (cleanUrl === matcher.prefix || cleanUrl.startsWith(matcher.prefix + '/')) {
+            return matcher.label;
+        }
+    }
+
+    return institutionName || 'Academic+';
+}
+
 function AuthenticatedContent({ title, children }) {
     const { auth, branding, notifications: serverNotifications = [] } = usePage().props;
     const url = usePage().url;
@@ -1085,7 +1153,7 @@ function AuthenticatedContent({ title, children }) {
                             <SidebarTrigger className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200" />
                             <div className="min-w-0">
                                 <h1 className="text-base lg:text-lg font-bold text-gray-800 dark:text-gray-100 truncate tracking-tight leading-tight">
-                                    {title || 'SGA'}
+                                    {resolveSectionTitle(title, url, institutionName)}
                                 </h1>
                             </div>
                         </div>

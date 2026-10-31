@@ -125,7 +125,7 @@ export default function CalendarIndex({
     };
 
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout title="Calendario Académico">
             <Head title={meta.title || 'Calendario Académico'} />
 
             <div className="space-y-5 p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto animate-in fade-in duration-300">

@@ -82,7 +82,7 @@ export default function GradeBook({
     };
 
     return (
-        <AuthenticatedLayout auth={auth}>
+        <AuthenticatedLayout auth={auth} title="Libro de Calificaciones">
             <Head title="Libro de Calificaciones | Docente" />
 
             <div className="space-y-6 pb-20">

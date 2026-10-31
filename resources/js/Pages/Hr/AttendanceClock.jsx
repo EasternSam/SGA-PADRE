@@ -52,7 +52,7 @@ export default function AttendanceClock({
     };
 
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout title="Control de Asistencia (Reloj)">
             <Head title="Control Biométrico & Reloj RH - SGA" />
 
             <div className="space-y-6">

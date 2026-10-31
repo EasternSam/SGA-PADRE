@@ -169,7 +169,7 @@ export default function ClassroomsIndex({ buildings = [], rawBuildings = [], sta
         : buildings.filter(b => b.id.toString() === selectedBuildingFilter);
 
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout title="Aulas y Espacios Físicos">
             <Head title="Aulas y Espacios Físicos - SGA" />
 
             <div className="space-y-6">

@@ -205,7 +205,7 @@ export default function MatrixEntry({
     const currentSection = sections.find(s => s.id === selectedSectionId);
 
     return (
-        <AuthenticatedLayout auth={auth}>
+        <AuthenticatedLayout auth={auth} title="Sábana de Calificaciones">
             <Head title="Sábana de Calificaciones & Registro" />
 
             <div className="space-y-6 pb-20">

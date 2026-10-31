@@ -105,7 +105,7 @@ export default function SectionsIndex({
     });
 
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout title="Secciones Escolares">
             <Head title="Secciones Escolares - SGA" />
 
             <div className="space-y-6">
