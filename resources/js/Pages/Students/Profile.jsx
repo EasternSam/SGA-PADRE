@@ -895,9 +895,6 @@ export default function StudentProfile({
                                 <h4 className="text-base font-bold text-gray-900 dark:text-white">
                                     Reporte Académico Oficial
                                 </h4>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    Historial consolidado con materias cursadas, calificaciones oficiales y récord institucional.
-                                </p>
                             </div>
                             <a
                                 href={`/reports/student-report/${student.id}`}
@@ -920,9 +917,6 @@ export default function StudentProfile({
                                 <h4 className="text-base font-bold text-gray-900 dark:text-white">
                                     Carnet & PIN de Kiosco
                                 </h4>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    Hoja de credenciales con código de barras, PIN personal y ficha de asistencia biométrica.
-                                </p>
                             </div>
                             <a
                                 href={`/admin/students/${student.id}/kiosk-pin-pdf`}
@@ -945,9 +939,6 @@ export default function StudentProfile({
                                 <h4 className="text-base font-bold text-gray-900 dark:text-white">
                                     Estado de Cuenta Financiero
                                 </h4>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    Comprobante fiscal con balance pendiente, recibos emitidos y detalle de becas.
-                                </p>
                             </div>
                             <a
                                 href={`/reports/financial/${student.id}`}

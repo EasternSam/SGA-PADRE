@@ -279,9 +279,6 @@ export default function StudentDashboard({
                                         <h2 className="text-base font-bold text-slate-900 dark:text-white">
                                             Horario & Agenda Semanal
                                         </h2>
-                                        <p className="text-xs text-slate-500 dark:text-neutral-400">
-                                            Organización de clases de Lunes a Sábado
-                                        </p>
                                     </div>
                                 </div>
 

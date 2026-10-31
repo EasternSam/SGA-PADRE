@@ -181,9 +181,6 @@ export default function Index({
                         <h1 className="text-2xl font-bold text-slate-800 dark:text-white mt-1">
                             Configuración General del SGA
                         </h1>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
-                            Administra la conectividad con WordPress (Academic+ Catalog), Aula Virtual Moodle, Facturación Bills, Correo y Marca.
-                        </p>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -311,9 +308,6 @@ export default function Index({
                                             <h2 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
                                                 Conexión WordPress (Academic+ Catalog)
                                             </h2>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                                                Sincroniza la oferta formativa, estudiantes y reservas online con el plugin de WordPress.
-                                            </p>
                                         </div>
                                     </div>
 
@@ -339,9 +333,6 @@ export default function Index({
                                             <Sparkles className="w-4 h-4 text-indigo-600" />
                                             Enlace Rápido Automático con Academic+ Catalog
                                         </h3>
-                                        <p className="text-xs text-indigo-800/80 dark:text-indigo-300 leading-relaxed">
-                                            Genera un código temporal único para vincular este sistema con tu plugin de WordPress automáticamente sin configurar tokens a mano.
-                                        </p>
                                         <div className="text-xs text-indigo-900 dark:text-indigo-200 font-mono pt-1">
                                             URL de API: <span className="bg-indigo-100 dark:bg-indigo-900/60 px-2 py-0.5 rounded text-indigo-950 dark:text-indigo-200 font-bold">{apiBaseUrl || '/api'}</span>
                                         </div>
@@ -484,9 +475,6 @@ export default function Index({
                                             <h2 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
                                                 Conexión Aula Virtual Moodle
                                             </h2>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                                                Matriculación automatizada de alumnos en aulas virtuales y Single Sign-On (SSO) directo para estudiantes.
-                                            </p>
                                         </div>
                                     </div>
 
@@ -583,9 +571,6 @@ export default function Index({
                                             <h2 className="text-lg font-bold text-slate-800 dark:text-white">
                                                 Facturación Externa Gridbase Bills API
                                             </h2>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                                                Emisión de facturas fiscales y sincronización con el sistema externo Bills.
-                                            </p>
                                         </div>
                                     </div>
 
@@ -790,9 +775,6 @@ export default function Index({
                                             <Palette className="w-4 h-4 text-sga-primary dark:text-blue-400" />
                                             Paleta de Identidad Institucional (Armonía Global)
                                         </h3>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                            Define una paleta armónica de 4 colores que sustituye los colores genéricos del dashboard, gráficos y módulos para cualquier institución.
-                                        </p>
                                     </div>
                                     <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 px-2.5 py-1 rounded-lg self-start sm:self-auto">
                                         4 Colores Coordinados
@@ -1007,9 +989,6 @@ export default function Index({
                                         <span className="text-xs font-bold text-slate-800 dark:text-white block">
                                             Vista Previa de la Paleta Institucional
                                         </span>
-                                        <span className="text-[11px] text-slate-500">
-                                            Esta composición cromática sustituye los colores de plantilla genéricos en todo el panel.
-                                        </span>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-2">
                                         <div 
@@ -1138,9 +1117,6 @@ export default function Index({
                                             <label className="block text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wide">
                                                 Tamaño del Logo en el Sidebar (Menú Lateral)
                                             </label>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                Ajusta la altura visual del logotipo en la cabecera del menú lateral izquierdo (entre 24px y 120px).
-                                            </p>
                                         </div>
                                         <div className="flex items-center gap-2 self-start sm:self-auto">
                                             <input
@@ -1300,7 +1276,6 @@ export default function Index({
                                     <div className="flex items-center justify-between mb-4">
                                         <div>
                                             <span className="text-sm font-bold text-slate-800 dark:text-white">Facturación Electrónica DGII (e-CF)</span>
-                                            <p className="text-xs text-slate-500">Emisión de NCF tipo B01, B02, B14 y reportes de formato 606 y 607.</p>
                                         </div>
                                         <label className="relative inline-flex items-center cursor-pointer">
                                             <input

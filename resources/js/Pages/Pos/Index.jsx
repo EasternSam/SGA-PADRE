@@ -211,9 +211,6 @@ export default function PosIndex({
                                 POS
                             </span>
                         </div>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                            Cobro de servicios, emisión de recibos y facturación electrónica institucional
-                        </p>
                     </div>
 
                     <div className="flex items-center gap-2">

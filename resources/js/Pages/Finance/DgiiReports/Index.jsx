@@ -88,7 +88,6 @@ export default function DgiiReportsIndex({
                                     </div>
                                     <div>
                                         <h3 className="text-base font-bold text-gray-900 dark:text-white">Formato 606</h3>
-                                        <p className="text-xs text-gray-400">Compras de Bienes y Servicios</p>
                                     </div>
                                 </div>
                                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-orange-50 dark:bg-orange-950/60 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-800/40">
@@ -97,10 +96,6 @@ export default function DgiiReportsIndex({
                             </div>
 
                             <div className="p-6 space-y-4">
-                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-                                    Facturas de gastos con proveedores locales, desglose de ITBIS facturado, ITBIS retenido y retenciones de ISR del período seleccionado.
-                                </p>
-
                                 <div className="grid grid-cols-2 gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 text-xs">
                                     <div>
                                         <span className="text-gray-400">Facturas con NCF:</span>
@@ -147,7 +142,6 @@ export default function DgiiReportsIndex({
                                     </div>
                                     <div>
                                         <h3 className="text-base font-bold text-gray-900 dark:text-white">Formato 607</h3>
-                                        <p className="text-xs text-gray-400">Ventas e Ingresos por Servicios</p>
                                     </div>
                                 </div>
                                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
@@ -156,10 +150,6 @@ export default function DgiiReportsIndex({
                             </div>
 
                             <div className="p-6 space-y-4">
-                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-                                    Recibos de estudiantes, matrículas, aranceles y facturas con comprobantes fiscales (Consumo / Crédito Fiscal) emitidos durante el período.
-                                </p>
-
                                 <div className="grid grid-cols-2 gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 text-xs">
                                     <div>
                                         <span className="text-gray-400">Transacciones con NCF:</span>

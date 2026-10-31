@@ -632,9 +632,6 @@ export default function MatrixEntry({
                                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                                     Sábana Consolidada de la Sección {currentSection?.full_label}
                                 </h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">
-                                    Promedios acumulados por asignatura para todos los estudiantes matriculados.
-                                </p>
                             </div>
                             <button
                                 type="button"

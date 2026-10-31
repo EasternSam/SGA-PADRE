@@ -24,9 +24,6 @@ export default function ShiftDrawer({
                                 <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
                                     Cierre y Movimientos del Turno
                                 </h3>
-                                <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                                    Cobros registrados en la fecha de hoy
-                                </p>
                             </div>
                         </div>
                         <button

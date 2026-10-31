@@ -140,9 +140,6 @@ export default function FinanceDashboard({ kpis, chartData, payments, concepts, 
                             <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white tracking-tight">
                                 Flujo de Caja (Últimos 6 Meses)
                             </h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                Comparativa mensual de ingresos cobrados vs montos en espera
-                            </p>
                         </div>
 
                         <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-900/60 p-1.5 rounded-xl border border-gray-200/60 dark:border-gray-800 text-xs font-semibold">

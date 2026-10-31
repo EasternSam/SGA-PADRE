@@ -178,9 +178,6 @@ export default function Portal({ applicant, admission, courses = [] }) {
                             <h3 className="text-xl font-bold text-slate-800 dark:text-white">
                                 {admission ? 'Actualizar Información de Solicitud' : 'Formulario de Admisión e Ingreso'}
                             </h3>
-                            <p className="text-slate-500 text-xs mt-1">
-                                Completa todos los campos con exactitud de acuerdo con tus documentos de identidad oficial.
-                            </p>
                         </div>
 
                         {/* Grid Form */}

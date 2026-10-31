@@ -87,9 +87,6 @@ export default function PeriodClosing({ lockDate }) {
                         <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
                             Configuración de Bloqueo
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            Selecciona la fecha límite de corte contable que deseas proteger.
-                        </p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">

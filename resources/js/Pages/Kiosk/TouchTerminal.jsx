@@ -67,9 +67,6 @@ export default function TouchTerminal({ student, currentTime, currentDate }) {
                     <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight">
                         ¿Qué deseas realizar hoy?
                     </h1>
-                    <p className="text-slate-400 text-base md:text-lg mt-2 max-w-xl mx-auto">
-                        Toca cualquiera de las opciones para acceder a tus servicios académicos y financieros.
-                    </p>
                 </div>
 
                 {/* Touch Module Grid */}

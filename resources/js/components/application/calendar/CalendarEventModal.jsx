@@ -88,9 +88,6 @@ export default function CalendarEventModal({
                         <h3 className="text-base font-bold text-gray-900 dark:text-white">
                             {editEvent ? 'Editar Actividad Académica' : 'Nueva Actividad o Hito'}
                         </h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            Se registrará en el cronograma institucional del sistema.
-                        </p>
                     </div>
                     <button
                         type="button"

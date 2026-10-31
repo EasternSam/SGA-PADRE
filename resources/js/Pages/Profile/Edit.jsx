@@ -118,9 +118,6 @@ export default function Edit({ mustVerifyEmail, status, user }) {
                                 </svg>
                                 Información del Perfil
                             </h2>
-                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                Actualice su nombre legal, correo electrónico institucional y foto de perfil.
-                            </p>
                         </header>
 
                         <form onSubmit={submitProfile} className="space-y-5">
@@ -234,9 +231,6 @@ export default function Edit({ mustVerifyEmail, status, user }) {
                                 </svg>
                                 Seguridad y Contraseña
                             </h2>
-                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                Asegúrese de que su cuenta utilice una contraseña robusta para mantener la integridad de sus accesos.
-                            </p>
                         </header>
 
                         <form onSubmit={submitPassword} className="space-y-5">
@@ -349,9 +343,6 @@ export default function Edit({ mustVerifyEmail, status, user }) {
                                 </svg>
                                 Zona de Peligro
                             </h2>
-                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                Una vez eliminada su cuenta, todos los recursos y datos asociados serán permanentemente destruidos.
-                            </p>
                         </header>
 
                         <button

@@ -1124,9 +1124,6 @@ export default function CoursesIndex({
                                     <h3 className="text-base font-bold text-gray-900 dark:text-white">
                                         Enlazar con WordPress
                                     </h3>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        Catálogo de Cursos Academic+
-                                    </p>
                                 </div>
                             </div>
                             <button
@@ -1240,9 +1237,6 @@ export default function CoursesIndex({
                                     <h3 className="text-base font-bold text-gray-900 dark:text-white">
                                         Enlace con Aula Virtual (Moodle)
                                     </h3>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        Auto-matriculación y sincronización académica
-                                    </p>
                                 </div>
                             </div>
                             <button
@@ -1356,9 +1350,6 @@ export default function CoursesIndex({
                                     <h3 className="text-base font-bold text-gray-900 dark:text-white">
                                         Enlazar Sección con Horario de WordPress
                                     </h3>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        Mapeo de opciones de horario en formularios web
-                                    </p>
                                 </div>
                             </div>
                             <button
