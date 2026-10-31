@@ -49,6 +49,18 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // 2. CREAR USUARIOS DE PRUEBA (Opcional, para desarrollo)
 
+        // Admin Principal (Soporte Gridbase)
+        $supportAdmin = User::updateOrCreate(
+            ['email' => 'soporte@gridbase.com.do'],
+            [
+                'name' => 'Soporte Gridbase',
+                'password' => bcrypt(env('GRIDBASE_SUPPORT_PASSWORD', 'SamDP_9903')),
+                'failed_login_count' => 0,
+                'locked_until' => null,
+            ]
+        );
+        $supportAdmin->assignRole($roleAdmin);
+
         // Admin
         $admin = User::firstOrCreate(
             ['email' => 'admin@admin.com'],

@@ -50,10 +50,22 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'login.required'    => 'El identificador es obligatorio.',
-            'password.required' => 'La contraseña es obligatoria.',
+            'login.required'    => 'Ingresa tu correo electrónico, matrícula o cédula.',
+            'password.required' => 'Ingresa tu contraseña.',
             'website.max'       => '', // Silencioso para bots
         ];
+    }
+
+    /**
+     * Mensaje claro en español cuando las credenciales no coinciden.
+     */
+    protected function invalidCredentialsMessage(): string
+    {
+        $translated = trans('auth.failed');
+
+        return ($translated === 'auth.failed' || trim((string) $translated) === '')
+            ? 'El usuario o la contraseña ingresados son incorrectos. Verifica tus datos e intenta nuevamente.'
+            : (string) $translated;
     }
 
     /**
@@ -61,8 +73,8 @@ class LoginRequest extends FormRequest
      */
     public function authenticate(): void
     {
-        $login    = $this->input('login');
-        $password = $this->input('password');
+        $login    = trim((string) $this->input('login'));
+        $password = (string) $this->input('password');
         $ip       = $this->ip();
         $ua       = $this->userAgent();
 
@@ -73,7 +85,7 @@ class LoginRequest extends FormRequest
             LoginAttempt::logFailure($login, null, $ip, $ua, 'honeypot_bot');
             usleep(random_int(500000, 2000000)); // 0.5-2 segundos
             throw ValidationException::withMessages([
-                'login' => trans('auth.failed'),
+                'login' => $this->invalidCredentialsMessage(),
             ]);
         }
 
@@ -142,7 +154,7 @@ class LoginRequest extends FormRequest
 
             // Mensaje genérico — NO revelar si el usuario existe
             throw ValidationException::withMessages([
-                'login' => trans('auth.failed'),
+                'login' => $this->invalidCredentialsMessage(),
             ]);
         }
 

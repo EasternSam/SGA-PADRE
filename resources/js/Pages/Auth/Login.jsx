@@ -24,6 +24,25 @@ export default function Login({ status, canResetPassword }) {
     const bannerSrc = branding?.login_banner || '';
     const appName = branding?.name || 'Academic+';
 
+    const formatErrorMessage = (msg) => {
+        if (!msg) return '';
+        const fallbacks = {
+            'auth.failed': 'El usuario o la contraseña ingresados son incorrectos. Verifica tus datos e intenta nuevamente.',
+            'auth.password': 'La contraseña ingresada es incorrecta.',
+            'auth.throttle': 'Demasiados intentos de inicio de sesión. Por favor intenta nuevamente en unos momentos.',
+            'passwords.user': 'No encontramos ninguna cuenta registrada con ese correo electrónico.',
+            'passwords.sent': 'Te hemos enviado por correo electrónico el enlace para restablecer tu contraseña.',
+            'passwords.throttled': 'Por favor espera unos momentos antes de volver a intentarlo.',
+            'passwords.token': 'Este enlace de recuperación de contraseña no es válido o ya expiró.',
+            'passwords.reset': 'Tu contraseña ha sido restablecida correctamente.',
+        };
+        return fallbacks[msg] || msg;
+    };
+
+    const loginError = formatErrorMessage(form.errors.login);
+    const passwordError = formatErrorMessage(form.errors.password);
+    const statusText = formatErrorMessage(status);
+
     const submit = (e) => {
         e.preventDefault();
         form.post('/login', {
@@ -131,9 +150,19 @@ export default function Login({ status, canResetPassword }) {
                         </div>
 
                         {/* Status message */}
-                        {status && (
+                        {statusText && (
                             <div className="mb-4 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800">
-                                {status}
+                                {statusText}
+                            </div>
+                        )}
+
+                        {/* Error banner */}
+                        {(loginError || passwordError) && (
+                            <div role="alert" className="mb-4 flex items-start gap-2.5 text-xs sm:text-sm font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/40 p-3.5 rounded-xl border border-red-200 dark:border-red-800/70">
+                                <svg className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                </svg>
+                                <span>{loginError || passwordError}</span>
                             </div>
                         )}
 
@@ -164,10 +193,10 @@ export default function Login({ status, canResetPassword }) {
                                     autoFocus 
                                     autoComplete="username" 
                                     placeholder="2024-0001 o usuario@correo.com"
-                                    className="w-full px-4 py-3.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-all text-sm shadow-sm rounded-xl"
+                                    className={`w-full px-4 py-3.5 border ${loginError ? 'border-red-400 dark:border-red-500/80' : 'border-slate-200 dark:border-slate-700'} bg-white dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-all text-sm shadow-sm rounded-xl`}
                                 />
-                                {form.errors.login && (
-                                    <p className="text-xs text-red-500 mt-1.5">{form.errors.login}</p>
+                                {loginError && (
+                                    <p className="text-xs text-red-600 dark:text-red-400 mt-1.5 font-medium">{loginError}</p>
                                 )}
                             </div>
 
@@ -185,7 +214,7 @@ export default function Login({ status, canResetPassword }) {
                                         required 
                                         autoComplete="current-password" 
                                         placeholder="••••••••"
-                                        className="w-full px-4 py-3.5 pr-11 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-all text-sm shadow-sm rounded-xl"
+                                        className={`w-full px-4 py-3.5 pr-11 border ${passwordError ? 'border-red-400 dark:border-red-500/80' : 'border-slate-200 dark:border-slate-700'} bg-white dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-all text-sm shadow-sm rounded-xl`}
                                     />
                                     <button 
                                         type="button" 
@@ -205,8 +234,8 @@ export default function Login({ status, canResetPassword }) {
                                         )}
                                     </button>
                                 </div>
-                                {form.errors.password && (
-                                    <p className="text-xs text-red-500 mt-1.5">{form.errors.password}</p>
+                                {passwordError && (
+                                    <p className="text-xs text-red-600 dark:text-red-400 mt-1.5 font-medium">{passwordError}</p>
                                 )}
 
                                 {/* Nota de nuevo ingreso */}
