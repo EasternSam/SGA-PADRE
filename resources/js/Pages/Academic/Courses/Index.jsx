@@ -996,6 +996,11 @@ export default function CoursesIndex({
                             {editingSchedule ? 'Editar Sección' : `Nueva Sección para ${selectedModule?.name}`}
                         </h3>
                         <form onSubmit={handleSaveSchedule} className="mt-4 space-y-4">
+                            {Object.keys(scheduleForm.errors).length > 0 && (
+                                <div className="rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 px-3.5 py-2.5 text-xs text-rose-700 dark:text-rose-300">
+                                    {Object.values(scheduleForm.errors)[0]}
+                                </div>
+                            )}
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Nombre Sección *</label>

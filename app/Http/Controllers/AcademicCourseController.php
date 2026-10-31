@@ -308,6 +308,13 @@ class AcademicCourseController extends Controller
      */
     public function storeSchedule(Request $request, Module $module)
     {
+        $request->merge([
+            'teacher_id' => $request->input('teacher_id') ?: null,
+            'classroom_id' => $request->input('classroom_id') ?: null,
+            'start_time' => substr((string) $request->input('start_time'), 0, 5),
+            'end_time' => substr((string) $request->input('end_time'), 0, 5),
+        ]);
+
         $validated = $request->validate([
             'section_name' => 'required|string|max:100',
             'teacher_id' => 'nullable|exists:users,id',
@@ -315,10 +322,11 @@ class AcademicCourseController extends Controller
             'days_of_week' => 'required|array|min:1',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
             'capacity' => 'nullable|integer|min:1',
             'modality' => 'nullable|string|max:50',
+            'status' => 'nullable|string|max:50',
         ]);
 
         CourseSchedule::create([
@@ -329,11 +337,11 @@ class AcademicCourseController extends Controller
             'days_of_week' => $validated['days_of_week'],
             'start_time' => $validated['start_time'],
             'end_time' => $validated['end_time'],
-            'start_date' => $validated['start_date'],
-            'end_date' => $validated['end_date'],
+            'start_date' => $validated['start_date'] ?? now()->toDateString(),
+            'end_date' => $validated['end_date'] ?? now()->addMonths(2)->toDateString(),
             'capacity' => $validated['capacity'] ?? 30,
             'modality' => $validated['modality'] ?? 'Presencial',
-            'status' => 'Activo',
+            'status' => $validated['status'] ?? 'Activo',
         ]);
 
         return redirect()->back()->with('success', 'Sección académica creada exitosamente.');
@@ -344,6 +352,13 @@ class AcademicCourseController extends Controller
      */
     public function updateSchedule(Request $request, CourseSchedule $schedule)
     {
+        $request->merge([
+            'teacher_id' => $request->input('teacher_id') ?: null,
+            'classroom_id' => $request->input('classroom_id') ?: null,
+            'start_time' => substr((string) $request->input('start_time'), 0, 5),
+            'end_time' => substr((string) $request->input('end_time'), 0, 5),
+        ]);
+
         $validated = $request->validate([
             'section_name' => 'required|string|max:100',
             'teacher_id' => 'nullable|exists:users,id',
@@ -351,14 +366,26 @@ class AcademicCourseController extends Controller
             'days_of_week' => 'required|array|min:1',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
             'capacity' => 'nullable|integer|min:1',
             'modality' => 'nullable|string|max:50',
-            'status' => 'nullable|string|in:Activo,Inactivo',
+            'status' => 'nullable|string|max:50',
         ]);
 
-        $schedule->update($validated);
+        $schedule->update([
+            'section_name' => $validated['section_name'],
+            'teacher_id' => $validated['teacher_id'] ?? null,
+            'classroom_id' => $validated['classroom_id'] ?? null,
+            'days_of_week' => $validated['days_of_week'],
+            'start_time' => $validated['start_time'],
+            'end_time' => $validated['end_time'],
+            'start_date' => $validated['start_date'] ?: ($schedule->start_date ?? now()->toDateString()),
+            'end_date' => $validated['end_date'] ?: ($schedule->end_date ?? now()->addMonths(2)->toDateString()),
+            'capacity' => $validated['capacity'] ?? $schedule->capacity ?? 30,
+            'modality' => $validated['modality'] ?? $schedule->modality ?? 'Presencial',
+            'status' => $validated['status'] ?: ($schedule->status ?? 'Activo'),
+        ]);
 
         return redirect()->back()->with('success', 'Sección actualizada correctamente.');
     }
