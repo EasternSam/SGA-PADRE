@@ -45,12 +45,21 @@ class Payment extends Model
         'bills_invoice_number',
         'bills_sync_status',
         'bills_sync_error',
+
+        // --- Campos de Caja (POS) ---
+        'quantity',
+        'concept_label',
+        'cash_received',
+        'change_amount',
     ];
 
     protected $casts = [
         'due_date' => 'date',
         'ncf_expiration' => 'date',
         'amount' => 'decimal:2',
+        'quantity' => 'integer',
+        'cash_received' => 'decimal:2',
+        'change_amount' => 'decimal:2',
     ];
 
     /**

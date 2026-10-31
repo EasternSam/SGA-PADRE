@@ -30,7 +30,7 @@ class MoodleCredentialsMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '🎓 Tus Credenciales del Aula Virtual - ' . config('app.name'),
+            subject: 'Tus Credenciales del Aula Virtual - ' . config('app.name'),
         );
     }
 

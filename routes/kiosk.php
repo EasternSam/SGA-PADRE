@@ -1,24 +1,26 @@
 <?php
 
+use App\Http\Controllers\KioskController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Kiosk / Self-Service Touchscreen Routes
+| Kiosk / Self-Service Touchscreen Routes (React 18 + Inertia)
 |--------------------------------------------------------------------------
 */
 
 Route::prefix('kiosk')->group(function () {
-    // Auth
-    Route::get('/login', \App\Livewire\Kiosk\Auth\Login::class)->name('kiosk.login');
-    Route::get('/signup', \App\Livewire\Kiosk\Auth\Signup::class)->name('kiosk.signup');
+    // Touchscreen Auth
+    Route::get('/login', [KioskController::class, 'login'])->name('kiosk.login');
+    Route::post('/login', [KioskController::class, 'authenticate'])->name('kiosk.authenticate');
 
-    // HR Web Kiosk (No requiere autenticación de estudiante)
-    Route::get('/hr-punch', \App\Livewire\Kiosk\HrPunch::class)->name('kiosk.hr-punch');
+    // HR Touch Punch (Accessible without student login)
+    Route::get('/hr-punch', [KioskController::class, 'hrPunch'])->name('kiosk.hr-punch');
+    Route::post('/hr-punch', [KioskController::class, 'processPunch'])->name('kiosk.process-punch');
 
-    // Protected Kiosk Routes
+    // Protected Student Kiosk Routes
     Route::middleware(['auth.kiosk'])->group(function () {
         Route::post('/logout', function (Request $request) {
             Auth::guard('web')->logout();
@@ -27,10 +29,10 @@ Route::prefix('kiosk')->group(function () {
             return redirect()->route('kiosk.login');
         })->name('kiosk.logout');
 
-        Route::get('/dashboard', \App\Livewire\Kiosk\Dashboard::class)->name('kiosk.dashboard');
-        Route::get('/finances', \App\Livewire\Kiosk\Finances::class)->name('kiosk.finances');
-        Route::get('/schedule', \App\Livewire\Kiosk\Schedule::class)->name('kiosk.schedule');
-        Route::get('/grades', \App\Livewire\Kiosk\Grades::class)->name('kiosk.grades');
-        Route::get('/academic-offer', \App\Livewire\Kiosk\AcademicOffer::class)->name('kiosk.academic-offer');
+        Route::get('/dashboard', [KioskController::class, 'dashboard'])->name('kiosk.dashboard');
+        Route::get('/finances', [KioskController::class, 'finances'])->name('kiosk.finances');
+        Route::get('/schedule', [KioskController::class, 'schedule'])->name('kiosk.schedule');
+        Route::get('/grades', [KioskController::class, 'grades'])->name('kiosk.grades');
+        Route::get('/academic-offer', [KioskController::class, 'academicOffer'])->name('kiosk.academic-offer');
     });
 });

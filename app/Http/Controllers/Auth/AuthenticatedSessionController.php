@@ -9,6 +9,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+use Inertia\Response;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -16,31 +19,27 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): View
+    public function create(): Response|View
     {
-        return view('auth.login');
+        return Inertia::render('Auth/Login', [
+            'canResetPassword' => Route::has('password.request'),
+            'status' => session('status'),
+        ]);
     }
 
     /**
      * Handle an incoming authentication request.
-     * 
-     * Seguridad:
-     * - El LoginRequest maneja rate limiting, honeypot, auditoría, etc.
-     * - Este controlador se encarga de la sesión y redirección segura.
-     * - Se incrementa el throttle de IP global en cada intento.
      */
     public function store(LoginRequest $request): RedirectResponse
     {
         $ip = $request->ip();
 
-        // Registrar intento en el throttle GLOBAL de IP (previo a autenticación)
         $ipKey = 'login_ip_global:' . $ip;
-        RateLimiter::hit($ipKey, 3600); // 1 hora de ventana
+        RateLimiter::hit($ipKey, 3600);
 
         try {
             $request->authenticate();
 
-            // Éxito — limpiar throttle de IP
             RateLimiter::clear($ipKey);
 
             $request->session()->regenerate();
@@ -49,7 +48,6 @@ class AuthenticatedSessionController extends Controller
 
             Log::info("[LOGIN OK] User #{$user->id} ({$user->email}) desde IP: {$ip}");
 
-            // --- REDIRECCIÓN POR ROL ---
             if ($user->hasRole('Admin') || $user->hasAnyRole(['Registro', 'Contabilidad', 'Caja'])) {
                 return redirect()->route('admin.dashboard');
             }
@@ -69,8 +67,6 @@ class AuthenticatedSessionController extends Controller
             return redirect()->intended(route('dashboard'));
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // Error de validación (auth fallida o rate limited)
-            // El throttle de IP ya se contabilizó arriba
             throw $e;
         } catch (\Exception $e) {
             Log::error("[LOGIN ERROR] " . $e->getMessage() . " | IP: {$ip}");
@@ -81,7 +77,7 @@ class AuthenticatedSessionController extends Controller
     /**
      * Destroy an authenticated session.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request)
     {
         $userId = Auth::id();
         Log::info("[LOGOUT] User #{$userId} cerró sesión");
@@ -90,6 +86,6 @@ class AuthenticatedSessionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        return Inertia::location('/login');
     }
 }

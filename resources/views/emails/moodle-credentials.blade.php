@@ -56,7 +56,7 @@
                             </tr>
                             <tr>
                                 <td class="content">
-                                    <p>Hola, <strong>{{ $user->name }}</strong> 👋</p>
+                                    <p>Hola, <strong>{{ $user->name }}</strong> </p>
                                     <p>Tu cuenta en el Aula Virtual ha sido creada. Aquí tienes tus credenciales:</p>
                                     
                                     <div class="box">

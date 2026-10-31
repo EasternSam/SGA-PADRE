@@ -22,6 +22,7 @@ class Module extends Model
     protected $fillable = [
         'course_id',
         'name',
+        'moodle_course_id',
         'code',
         'description',
         'price',

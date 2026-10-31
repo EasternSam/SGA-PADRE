@@ -48,7 +48,7 @@
         </div>
 
         <div class="mt-6 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4">
-            <h4 class="text-sm font-bold text-blue-800 dark:text-blue-400 mb-2">ℹ️ ¿Cómo funciona el bloqueo?</h4>
+            <h4 class="text-sm font-bold text-blue-800 dark:text-blue-400 mb-2">¿Cómo funciona el bloqueo?</h4>
             <ul class="text-xs text-blue-700 dark:text-blue-300 space-y-1">
                 <li>• <strong>Fecha de bloqueo:</strong> Las notas se bloquean automáticamente al pasar esta fecha.</li>
                 <li>• <strong>Bloqueo manual:</strong> Bloquea inmediatamente sin importar la fecha.</li>

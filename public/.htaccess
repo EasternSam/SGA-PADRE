@@ -28,7 +28,7 @@
 # Obliga a que los headers se completen en 10s (+1s por cada 500 bytes)
 # y el body en 30s (+1s por cada 1000 bytes). Conexiones lentas = KILL.
 <IfModule mod_reqtimeout.c>
-    RequestReadTimeout header=10-20,MinRate=500 body=30,MinRate=1000
+    # RequestReadTimeout header=10-20,MinRate=500 body=30,MinRate=1000
 </IfModule>
 
 # --- 2. Timeouts generales ---
@@ -85,8 +85,8 @@ Options -Indexes
 # --- 9. Protección contra hotlinking de recursos ---
 <IfModule mod_rewrite.c>
     RewriteCond %{HTTP_REFERER} !^$ [NC]
-    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?sga\.90s\.agency [NC]
-    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?localhost [NC]
+    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?%{HTTP_HOST} [NC]
+    RewriteCond %{HTTP_REFERER} !^https?://([a-zA-Z0-9.-]+\.)?(gridbase\.com\.do|90s\.agency|localhost)(:[0-9]+)?(/|$) [NC]
     RewriteRule \.(jpg|jpeg|png|gif|svg|css|js)$ - [F,NC]
 </IfModule>
 

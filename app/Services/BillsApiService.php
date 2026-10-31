@@ -61,7 +61,9 @@ class BillsApiService
         }
 
         // 1. Resolver los datos del cliente para Bills
-        $clientTaxId = (string) trim($payment->rnc_client ?: ($student->rnc ?: ($student->cedula ?: '00000000000')));
+        // La ficha interna de "cliente general" del POS factura como consumidor final.
+        $studentTaxId = $student->isWalkIn() ? null : ($student->rnc ?: $student->cedula);
+        $clientTaxId = (string) trim($payment->rnc_client ?: ($studentTaxId ?: '00000000000'));
         $clientName = (string) trim($payment->company_name ?: ($student->full_name ?: trim($student->first_name . ' ' . $student->last_name)));
         if (empty($clientName)) {
             $clientName = 'Cliente General';
@@ -83,12 +85,17 @@ class BillsApiService
         ];
 
         // 2. Resolver concepto e items
-        $conceptName = $payment->paymentConcept ? $payment->paymentConcept->name : 'Pago de Matrícula / Servicios';
+        // `amount` es el neto; Bills aplica `discount_value` sobre el bruto, así que el
+        // precio unitario debe ser el bruto (original_amount) para no descontar dos veces.
+        $conceptName = $payment->concept_label
+            ?: ($payment->paymentConcept ? $payment->paymentConcept->name : 'Pago de Matrícula / Servicios');
+        $quantity = max(1, (int) ($payment->quantity ?? 1));
+        $grossAmount = (float) ($payment->original_amount ?: ((float) $payment->amount + (float) ($payment->discount_amount ?: 0)));
         $items = [
             [
                 'description' => $conceptName . " - Ref: SGA-{$payment->id}",
-                'quantity' => 1,
-                'unit_price' => (float) $payment->amount,
+                'quantity' => $quantity,
+                'unit_price' => round($grossAmount / $quantity, 2),
             ]
         ];
 

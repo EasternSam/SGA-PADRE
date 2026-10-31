@@ -23,6 +23,7 @@ class CourseSchedule extends Model
         'teacher_id', 
         'days_of_week', 
         'section_name',
+        'moodle_course_id',
         'modality', 
         'capacity',
         'status', // <-- Agregado status que faltaba y es vital

@@ -44,7 +44,7 @@ class AcademicProjection extends Component
         $this->career = $this->student->course;
 
         if (!$this->career) {
-            $this->errorMessage = '⚠️ No se pudo determinar tu carrera/curso. Por favor contacta a Registro.';
+            $this->errorMessage = 'No se pudo determinar tu carrera/curso. Por favor contacta a Registro.';
             return;
         }
 

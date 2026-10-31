@@ -27,12 +27,12 @@
     @endphp
 
     <!-- ── Contenedor Principal Centrado en Pantalla ── -->
-    <div class="w-full max-w-6xl xl:max-w-7xl bg-white dark:bg-slate-900 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.4)] border border-white/20 flex flex-col lg:flex-row min-h-[680px] my-auto backdrop-blur-xl"
+    <div class="w-full max-w-6xl xl:max-w-7xl bg-white dark:bg-slate-900 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.4)] border border-white/20 flex flex-col lg:flex-row min-h-0 lg:min-h-[680px] my-auto mb-16 sm:mb-auto backdrop-blur-xl"
          style="border-radius: 32px !important; overflow: hidden !important;">
         
         <!-- ── Columna Izquierda: Showcase con Logo Centrado y Banner de Ancho Completo ── -->
         <div class="hidden lg:flex lg:w-1/2 relative flex-col justify-between select-none border-r border-white/10"
-             style="background: {{ $primaryColor }}; width: 119%; overflow: hidden !important;">
+             style="background: {{ $primaryColor }}; overflow: hidden !important;">
             
             <!-- Atmospheric Image Backdrop inside lateral column -->
             <div class="absolute inset-0 w-full h-full pointer-events-none -z-0"
@@ -66,7 +66,7 @@
         </div>
 
         <!-- ── Columna Derecha: Formulario de Autenticación ── -->
-        <div class="w-full lg:flex-1 p-8 sm:p-12 lg:p-14 xl:p-16 flex flex-col justify-center bg-white dark:bg-slate-900 relative">
+        <div class="w-full lg:flex-1 p-6 sm:p-10 lg:p-14 xl:p-16 flex flex-col justify-center bg-white dark:bg-slate-900 relative">
             
             <!-- Formulario Central -->
             <div class="w-full max-w-sm sm:max-w-md mx-auto my-auto py-6">
@@ -174,7 +174,7 @@
                     </div>
 
                     <!-- Remember Me & Forgot Password -->
-                    <div class="flex items-center justify-between pt-1">
+                    <div class="flex flex-wrap items-center justify-between gap-y-2 pt-1">
                         <label for="remember_me" class="inline-flex items-center cursor-pointer">
                             <input 
                                 id="remember_me" 

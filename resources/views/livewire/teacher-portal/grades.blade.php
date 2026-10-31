@@ -43,17 +43,17 @@
                     <div class="flex flex-col gap-2 items-end">
                         @if($isLocked)
                             <div class="rounded-md bg-red-50 p-2 text-red-700 border border-red-200 text-sm font-bold max-w-sm">
-                                🔒 {{ $lockReason }}
+                                {{ $lockReason }}
                             </div>
                         @else
                             <div class="rounded-md bg-green-50 p-2 text-green-700 border border-green-200 text-sm font-bold">
-                                🔓 Notas Abiertas (Edición Disponible)
+                                Notas Abiertas (Edición Disponible)
                             </div>
                         @endif
 
                         @hasanyrole('Admin|Registro')
                             <button type="button" wire:click="toggleLock" class="rounded bg-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-800 shadow hover:bg-gray-300">
-                                {{ $section->is_locked ? '🔓 Forzar Apertura Excepcional' : '🔒 Sellar Notas Definitivamente' }}
+                                {{ $section->is_locked ? 'Forzar Apertura Excepcional' : 'Sellar Notas Definitivamente' }}
                             </button>
                         @endhasanyrole
                     </div>

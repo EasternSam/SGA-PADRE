@@ -2,44 +2,35 @@
 
 use App\Http\Controllers\MoodleController;
 use App\Http\Controllers\ProfileController;
-use App\Livewire\StudentPortal\Dashboard as StudentPortalDashboard;
+use App\Http\Controllers\StudentPortalController;
 use App\Livewire\StudentPortal\CourseDetail as StudentPortalCourseDetail;
-use App\Livewire\StudentPortal\MyPayments as StudentPortalPayments;
 use App\Livewire\StudentPortal\Requests as StudentPortalRequests;
-use App\Livewire\StudentPortal\SubjectSelection as StudentPortalSelection;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Student Portal Routes
+| Student Portal Routes (Fase 16: React + Inertia)
 |--------------------------------------------------------------------------
-|
-| Middleware: auth, role:Estudiante
-| Prefix: /student
-| Name prefix: student.
-|
 */
 
-Route::middleware(['auth', 'role:Estudiante'])->prefix('student')->name('student.')->group(function () {
+Route::middleware(['auth', 'role:Estudiante|Admin'])->prefix('student')->name('student.')->group(function () {
 
-    Route::middleware(['feature:academic'])->group(function () {
-        Route::get('/dashboard', StudentPortalDashboard::class)->name('dashboard');
-        Route::get('/course/{enrollmentId}', StudentPortalCourseDetail::class)->name('course.detail');
-        Route::get('/requests', StudentPortalRequests::class)->name('requests');
-        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('/dashboard', [StudentPortalController::class, 'dashboard'])->name('dashboard');
+    Route::get('/selection', [StudentPortalController::class, 'selection'])->name('selection');
+    Route::post('/selection', [StudentPortalController::class, 'storeSelection'])->name('selection.store');
+    Route::get('/payments', [StudentPortalController::class, 'payments'])->name('payments');
+    Route::post('/payments/pay', [StudentPortalController::class, 'processPayment'])->name('payments.pay');
+    Route::get('/projection', [StudentPortalController::class, 'projection'])->name('projection');
 
-        Route::middleware(['feature:academic_careers'])->group(function () {
-            Route::get('/selection', StudentPortalSelection::class)->name('selection');
-            Route::get('/projection', \App\Livewire\StudentPortal\AcademicProjection::class)->name('projection');
-            Route::get('/documents', \App\Livewire\StudentPortal\DocumentRepository::class)->name('documents');
-        });
-    });
+    Route::get('/course/{enrollmentId}', StudentPortalCourseDetail::class)->name('course.detail');
+    Route::get('/requests', StudentPortalRequests::class)->name('requests');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
 
-    Route::middleware(['feature:finance'])->group(function () {
-        Route::get('/payments', StudentPortalPayments::class)->name('payments');
-    });
+    if (class_exists(\App\Livewire\StudentPortal\DocumentRepository::class)) {
+        Route::get('/documents', \App\Livewire\StudentPortal\DocumentRepository::class)->name('documents');
+    }
 
-    Route::middleware(['feature:virtual_classroom'])->group(function () {
+    if (class_exists(MoodleController::class)) {
         Route::get('/moodle-auth', [MoodleController::class, 'sso'])->name('moodle.auth');
-    });
+    }
 });

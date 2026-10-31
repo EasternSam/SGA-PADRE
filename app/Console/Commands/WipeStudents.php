@@ -70,9 +70,9 @@ class WipeStudents extends Command
 
                 $bar->finish();
                 $this->newLine();
-                $this->info("✔ Estudiantes eliminados.");
+                $this->info("Estudiantes eliminados.");
             } else {
-                $this->info("✔ No se encontraron perfiles de estudiantes.");
+                $this->info("No se encontraron perfiles de estudiantes.");
             }
 
             // ==============================================================
@@ -114,12 +114,12 @@ class WipeStudents extends Command
 
                     $barUsers->finish();
                     $this->newLine();
-                    $this->info("✔ Usuarios eliminados.");
+                    $this->info("Usuarios eliminados.");
                 } else {
-                    $this->info("✔ No se encontraron usuarios con rol Estudiante.");
+                    $this->info("No se encontraron usuarios con rol Estudiante.");
                 }
             } else {
-                $this->warn('⚠ No se encontró el rol "Estudiante" en la base de datos.');
+                $this->warn('No se encontró el rol "Estudiante" en la base de datos.');
             }
 
             // ==============================================================
@@ -140,7 +140,7 @@ class WipeStudents extends Command
                 DB::table('student_requests')->truncate();
             }
 
-            $this->info("✔ Tablas financieras y académicas vaciadas.");
+            $this->info("Tablas financieras y académicas vaciadas.");
 
             $duration = round(microtime(true) - $startTime, 2);
             $this->newLine();

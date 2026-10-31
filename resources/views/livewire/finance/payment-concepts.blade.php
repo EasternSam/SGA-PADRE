@@ -196,7 +196,7 @@
     <x-modal name="confirm-mass-deletion" focusable>
         <div class="p-6">
             <h2 class="text-lg font-bold text-red-600 mb-4">
-                ⚠️ Limpieza de Conceptos
+                Limpieza de Conceptos
             </h2>
             <p class="text-gray-700 mb-4">
                 Esta acción eliminará <strong>SOLO los conceptos que no tienen historial de pagos</strong>. Los conceptos que ya han sido utilizados se conservarán por seguridad.

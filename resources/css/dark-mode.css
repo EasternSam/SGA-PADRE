@@ -5,118 +5,212 @@
  * and a sophisticated color palette inspired by Linear/Arc.
  * ═══════════════════════════════════════════════════════════ */
 
-/* ─── PALETTE ────────────────────────────────────────────── */
-html.dark {
-    --dm-base:     #050507;
-    --dm-surface:  #0a0c10;
-    --dm-card:     #111318;
-    --dm-elevated: #1a1d24;
-    --dm-border:   rgba(255,255,255,0.06);
-    --dm-border-h: rgba(255,255,255,0.10);
-    --dm-text:     #edf0f7;
-    --dm-muted:    #7a8599;
-    --dm-accent:   #a5b4fc;
+/* ─── PALETTE (BILLS NEUTRAL / CHARCOAL STANDARD) ────────── */
+html.dark, [data-theme="dark"] {
+    --dm-base:     #0A0A0A;
+    --dm-surface:  #121212;
+    --dm-card:     #171717;
+    --dm-elevated: #262626;
+    --dm-border:   #262626;
+    --dm-border-h: #404040;
+    --dm-text:     #FAFAFA;
+    --dm-text-sec: #D4D4D4;
+    --dm-muted:    #737373;
+    --dm-accent:   #FFFFFF;
+
+    --bg-app:      #0A0A0A;
+    --bg-sidebar:  #171717;
+    --bg-card:     #171717;
+    --bg-hover:    #262626;
+    --bg-active:   #262626;
+    --color-bg-primary: #171717;
+    --color-bg-secondary: #0A0A0A;
+
+    --color-text-primary: #FAFAFA;
+    --color-text-secondary: #D4D4D4;
+    --color-text-muted: #737373;
+
+    --color-border: #262626;
+    --color-border-hover: #404040;
+
+    --dm-primary: #FFFFFF;
+    --dm-primary-hover: #F5F5F5;
+    --dm-primary-light: #262626;
+
+    --color-success-bg: rgba(16, 185, 129, 0.15);
+    --color-success-text: #34D399;
+    --color-success-icon: #34D399;
+
+    --color-danger-bg: rgba(239, 68, 68, 0.15);
+    --color-danger-text: #F87171;
+    --color-danger-icon: #F87171;
+
+    --color-warning-bg: rgba(245, 158, 11, 0.15);
+    --color-warning-text: #FBBF24;
+
     color-scheme: dark;
 }
 
 /* ─── 1. BODY ────────────────────────────────────────────── */
 html.dark body {
-    background-color: var(--dm-base) !important;
-    color: var(--dm-text) !important;
+    background-color: #0A0A0A !important;
+    color: #FAFAFA !important;
 }
 
-/* ─── 2. BACKGROUNDS ────────────────────────────────────── */
+/* ─── 2. BACKGROUNDS (BILLS CHARCOAL STANDARD) ──────────── */
 html.dark .bg-gray-50,
 html.dark .bg-gray-100,
 html.dark .bg-gray-50\/50,
 html.dark .bg-gray-100\/50,
-html.dark .bg-sga-background {
-    background-color: var(--dm-base) !important;
+html.dark .bg-sga-background,
+html.dark .dark\:bg-\[\#0f0f17\],
+html.dark .dark\:bg-\[\#050507\],
+html.dark .dark\:bg-\[\#0a0c10\],
+html.dark .dark\:bg-\[\#0b0f19\],
+html.dark .dark\:bg-\[\#0a0a0f\],
+html.dark .dark\:bg-\[\#0A0A0A\] {
+    background-color: #0A0A0A !important;
 }
 
-html.dark .bg-white {
-    background-color: var(--dm-card) !important;
+html.dark .bg-white,
+html.dark .dark\:bg-\[\#161622\],
+html.dark .dark\:bg-\[\#161D30\],
+html.dark .dark\:bg-\[\#111318\],
+html.dark .dark\:bg-\[\#171717\] {
+    background-color: #171717 !important;
 }
 
 html.dark .bg-white\/90,
 html.dark .bg-white\/95,
 html.dark .bg-white\/80 {
-    background-color: rgba(17,19,24,0.94) !important;
+    background-color: rgba(23, 23, 23, 0.95) !important;
 }
 
 html.dark .bg-gray-50\/80 {
-    background-color: rgba(10,12,16,0.85) !important;
+    background-color: rgba(10, 10, 10, 0.85) !important;
 }
 
-/* ─── 3. TEXT ────────────────────────────────────────────── */
+/* Bills Subtle Inner Highlights */
+html.dark .bg-white\/5,
+html.dark .bg-white\/\[0\.02\],
+html.dark .bg-white\/\[0\.05\],
+html.dark .dark\:bg-white\/\[0\.02\],
+html.dark .dark\:bg-white\/5 {
+    background-color: #121212 !important;
+}
+
+html.dark .bg-white\/10,
+html.dark .bg-white\/\[0\.07\],
+html.dark .dark\:bg-white\/10 {
+    background-color: #212121 !important;
+}
+
+html.dark .hover\:bg-gray-50:hover,
+html.dark .hover\:bg-gray-100:hover,
+html.dark .hover\:bg-gray-200\/70:hover,
+html.dark .dark\:hover\:bg-\[\#262626\]:hover,
+html.dark .dark\:hover\:bg-white\/\[0\.06\]:hover,
+html.dark .dark\:hover\:bg-white\/\[0\.09\]:hover {
+    background-color: #262626 !important;
+}
+
+/* ─── 3. TEXT (BILLS CRISP CONTRAST) ─────────────────────── */
 html.dark .text-gray-900,
-html.dark .text-gray-800 { color: #f8fafc !important; }
-html.dark .text-gray-700 { color: #e2e8f0 !important; }
-html.dark .text-gray-600 { color: #cbd5e1 !important; }
-html.dark .text-gray-500 { color: #94a3b8 !important; }
-html.dark .text-gray-400 { color: #64748b !important; }
-html.dark .text-slate-600 { color: #e2e8f0 !important; }
-html.dark h1, html.dark h2, html.dark h3 { color: #f8fafc !important; }
+html.dark .text-gray-800,
+html.dark .text-slate-900,
+html.dark .text-slate-800 { color: #FAFAFA !important; }
+
+html.dark .text-gray-700,
+html.dark .text-slate-700 { color: #D4D4D4 !important; }
+
+html.dark .text-gray-600,
+html.dark .text-slate-600 { color: #A3A3A3 !important; }
+
+html.dark .text-gray-500,
+html.dark .text-slate-500 { color: #737373 !important; }
+
+html.dark .text-gray-400,
+html.dark .text-slate-400 { color: #525252 !important; }
+
+html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5 { color: #FAFAFA !important; }
 
 /* ─── ICON CONTRAST BOOST ────────────────────────────────── */
-html.dark .text-indigo-600, html.dark .text-indigo-500 { color: #a5b4fc !important; }
-html.dark .text-emerald-600, html.dark .text-emerald-500 { color: #6ee7b7 !important; }
-html.dark .text-blue-600, html.dark .text-blue-500 { color: #93c5fd !important; }
-html.dark .text-purple-600, html.dark .text-purple-500 { color: #c4b5fd !important; }
-html.dark .text-red-600, html.dark .text-red-500 { color: #fca5a5 !important; }
-html.dark .text-amber-600, html.dark .text-amber-500 { color: #fcd34d !important; }
-html.dark .text-green-600, html.dark .text-green-500 { color: #86efac !important; }
-html.dark .text-yellow-600, html.dark .text-yellow-500 { color: #fde68a !important; }
-html.dark .text-cyan-600, html.dark .text-cyan-500 { color: #67e8f9 !important; }
-html.dark .text-green-400 { color: #4ade80 !important; }
+html.dark .text-indigo-600, html.dark .text-indigo-500 { color: #818cf8 !important; }
+html.dark .text-emerald-600, html.dark .text-emerald-500 { color: #34d399 !important; }
+html.dark .text-blue-600, html.dark .text-blue-500 { color: #60a5fa !important; }
+html.dark .text-purple-600, html.dark .text-purple-500 { color: #c084fc !important; }
+html.dark .text-red-600, html.dark .text-red-500 { color: #f87171 !important; }
+html.dark .text-amber-600, html.dark .text-amber-500 { color: #fbbf24 !important; }
+html.dark .text-green-600, html.dark .text-green-500 { color: #34d399 !important; }
+html.dark .text-yellow-600, html.dark .text-yellow-500 { color: #fbbf24 !important; }
+html.dark .text-cyan-600, html.dark .text-cyan-500 { color: #38bdf8 !important; }
+html.dark .text-green-400 { color: #34d399 !important; }
 html.dark .text-red-400 { color: #f87171 !important; }
-html.dark .text-sga-primary { color: #a5b4fc !important; }
+html.dark .text-sga-primary { color: #FAFAFA !important; }
 
 /* SVG icons inside cards — boost visibility */
-html.dark svg[class*="text-gray"] { color: #94a3b8 !important; }
+html.dark svg[class*="text-gray"] { color: #737373 !important; }
 html.dark .bg-white svg, html.dark div[class*="bg-white"] svg { opacity: 1 !important; }
 
-/* ─── 4. BORDERS ─────────────────────────────────────────── */
+/* ─── 4. BORDERS (BILLS #262626 STANDARD) ───────────────── */
 html.dark .border-gray-200,
 html.dark .border-gray-100,
 html.dark .border-gray-300,
-html.dark .border-gray-200\/60 {
-    border-color: var(--dm-border) !important;
+html.dark .border-slate-200,
+html.dark .border-slate-100,
+html.dark .border-gray-200\/60,
+html.dark [class*="border-gray-100"],
+html.dark [class*="border-gray-200"],
+html.dark [class*="border-slate-200"],
+html.dark .dark\:border-white\/\[0\.06\],
+html.dark .dark\:border-white\/\[0\.05\],
+html.dark .dark\:border-white\/5,
+html.dark .dark\:border-white\/10,
+html.dark .dark\:border-gray-800,
+html.dark .dark\:border-gray-700 {
+    border-color: #262626 !important;
 }
 
 html.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
-html.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]) {
-    border-color: var(--dm-border) !important;
+html.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+html.dark [class*="divide-gray"] > :not([hidden]) ~ :not([hidden]) {
+    border-color: #262626 !important;
 }
 
 html.dark .ring-gray-900\/5,
-html.dark .ring-1.ring-gray-100 {
-    --tw-ring-color: var(--dm-border) !important;
+html.dark .ring-1.ring-gray-100,
+html.dark .ring-gray-200 {
+    --tw-ring-color: #262626 !important;
 }
 
-/* ─── 5. CARDS — Layered depth ───────────────────────────── */
+/* ─── 5. CARDS — Bills Solid Charcoal (#171717) ─────────── */
 html.dark .shadow-sm {
-    box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px var(--dm-border) !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.6) !important;
 }
+html.dark .shadow-md,
 html.dark .shadow-lg {
-    box-shadow: 0 8px 30px rgba(0,0,0,0.5), 0 0 0 1px var(--dm-border) !important;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.7), 0 2px 4px -1px rgba(0,0,0,0.5) !important;
 }
 
-html.dark div[class*="rounded"][class*="bg-white"] {
-    background-color: var(--dm-card) !important;
-    border: 1px solid var(--dm-border) !important;
+html.dark div[class*="rounded"][class*="bg-white"],
+html.dark div[class*="rounded-2xl"],
+html.dark div[class*="rounded-3xl"] {
+    border-color: #262626 !important;
 }
 
-/* ─── 6. HEADER ──────────────────────────────────────────── */
-html.dark header {
-    background-color: rgba(5,5,7,0.92) !important;
-    backdrop-filter: blur(24px) saturate(200%) !important;
-    -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
-    border-bottom-color: var(--dm-border) !important;
-    box-shadow: 0 1px 0 var(--dm-border), 0 4px 24px rgba(0,0,0,0.5) !important;
+/* ─── 6. HEADER (BILLS GLASSMORPHIC TOPBAR) ──────────────── */
+html.dark header,
+html.dark .dark\:bg-\[\#0a0a0f\]\/80,
+html.dark .dark\:bg-\[\#0a0a0f\] {
+    background-color: rgba(10, 10, 10, 0.85) !important;
+    backdrop-filter: blur(16px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+    border-bottom: 1px solid #262626 !important;
+    box-shadow: 0 1px 0 #262626, 0 4px 20px rgba(0,0,0,0.5) !important;
 }
 
-/* ─── 7. FORMS ───────────────────────────────────────────── */
+/* ─── 7. FORMS (BILLS CLEAN #121212 / #262626) ─────────── */
 html.dark input[type="text"],
 html.dark input[type="email"],
 html.dark input[type="password"],
@@ -126,108 +220,181 @@ html.dark input[type="date"],
 html.dark input[type="search"],
 html.dark input[type="time"],
 html.dark select,
-html.dark textarea {
-    background-color: var(--dm-surface) !important;
-    border-color: var(--dm-border-h) !important;
-    color: var(--dm-text) !important;
+html.dark textarea,
+html.dark .dark\:bg-\[\#1a1a2e\],
+html.dark .dark\:bg-\[\#121212\] {
+    background-color: #121212 !important;
+    border-color: #262626 !important;
+    color: #FAFAFA !important;
 }
 
 html.dark input::placeholder,
 html.dark textarea::placeholder {
-    color: #4a5568 !important;
+    color: #737373 !important;
 }
 
 html.dark input:focus,
 html.dark select:focus,
 html.dark textarea:focus {
-    border-color: var(--dm-accent) !important;
-    box-shadow: 0 0 0 3px rgba(129,140,248,0.15), 0 0 20px rgba(129,140,248,0.08) !important;
+    border-color: #525252 !important;
+    box-shadow: 0 0 0 1px #525252 !important;
 }
 
-html.dark label { color: #94a3b8 !important; }
+html.dark label { color: #D4D4D4 !important; }
 
-/* ─── 8. BUTTONS ─────────────────────────────────────────── */
+/* ─── 8. BUTTONS (BILLS INTERACTIVE TOKENS) ──────────────── */
 html.dark button.bg-white,
 html.dark .bg-white[class*="border"] {
-    background-color: var(--dm-elevated) !important;
-    border-color: var(--dm-border-h) !important;
-    color: var(--dm-text) !important;
+    background-color: #171717 !important;
+    border-color: #262626 !important;
+    color: #FAFAFA !important;
 }
 
-html.dark .hover\:bg-gray-50:hover { background-color: var(--dm-elevated) !important; }
-html.dark .hover\:bg-gray-100:hover { background-color: rgba(255,255,255,0.08) !important; }
+html.dark .hover\:bg-gray-50:hover,
+html.dark .hover\:bg-gray-100:hover,
+html.dark .hover\:bg-slate-50:hover {
+    background-color: #262626 !important;
+}
 
-/* Primary buttons get subtle glow */
+/* Primary buttons in dark mode — Clean high-contrast */
 html.dark .bg-indigo-600 {
-    box-shadow: 0 0 20px rgba(99,102,241,0.25), 0 2px 4px rgba(0,0,0,0.3) !important;
+    background-color: #FFFFFF !important;
+    color: #0A0A0A !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.6) !important;
 }
 html.dark .bg-indigo-600:hover {
-    box-shadow: 0 0 30px rgba(99,102,241,0.35), 0 4px 8px rgba(0,0,0,0.3) !important;
+    background-color: #F5F5F5 !important;
+    color: #0A0A0A !important;
 }
 
-/* ─── 9. TABLES ──────────────────────────────────────────── */
-html.dark table { color: #cbd5e1 !important; }
-html.dark thead, html.dark .bg-gray-50\/50 { background-color: var(--dm-surface) !important; }
-html.dark tbody tr { background-color: var(--dm-card) !important; }
-html.dark tbody tr:hover { background-color: var(--dm-elevated) !important; }
-html.dark td, html.dark th { border-color: var(--dm-border) !important; }
+/* ─── 9. TABLES (BILLS SOLID CONTRAST) ───────────────────── */
+html.dark table { color: #D4D4D4 !important; }
+html.dark thead,
+html.dark .bg-gray-50\/50 {
+    background-color: #171717 !important;
+    border-bottom: 1px solid #262626 !important;
+}
+html.dark th {
+    color: #737373 !important;
+    border-bottom: 1px solid #262626 !important;
+}
+html.dark tbody tr {
+    background-color: #171717 !important;
+    border-bottom: 1px solid #262626 !important;
+}
+html.dark tbody tr:hover {
+    background-color: #212121 !important;
+}
+html.dark td {
+    border-color: #262626 !important;
+    color: #D4D4D4 !important;
+}
 
 /* Mobile card-mode tables */
 @media (max-width: 768px) {
     html.dark main table tbody tr {
-        background: var(--dm-card) !important;
-        border-color: var(--dm-border) !important;
+        background: #171717 !important;
+        border-color: #262626 !important;
     }
     html.dark main table tbody tr td {
-        border-bottom-color: rgba(255,255,255,0.04) !important;
+        border-bottom-color: #262626 !important;
     }
 }
 
-/* ─── 10. BADGES — Vivid translucent on true black ───────── */
-html.dark .bg-green-50  { background-color: rgba(34,197,94,0.15) !important; }
-html.dark .bg-green-100 { background-color: rgba(34,197,94,0.22) !important; }
-html.dark .bg-yellow-50 { background-color: rgba(234,179,8,0.15) !important; }
-html.dark .bg-red-50    { background-color: rgba(239,68,68,0.15) !important; }
-html.dark .bg-red-100   { background-color: rgba(239,68,68,0.22) !important; }
-html.dark .bg-blue-50   { background-color: rgba(59,130,246,0.15) !important; }
-html.dark .bg-blue-100  { background-color: rgba(59,130,246,0.22) !important; }
-html.dark .bg-indigo-50 { background-color: rgba(99,102,241,0.15) !important; }
-html.dark .bg-indigo-100{ background-color: rgba(99,102,241,0.22) !important; }
-html.dark .bg-purple-50 { background-color: rgba(139,92,246,0.15) !important; }
-html.dark .bg-purple-100{ background-color: rgba(139,92,246,0.22) !important; }
-html.dark .bg-emerald-50 { background-color: rgba(16,185,129,0.15) !important; }
-html.dark .bg-emerald-100{ background-color: rgba(16,185,129,0.22) !important; }
-html.dark .bg-amber-50  { background-color: rgba(245,158,11,0.15) !important; }
-html.dark .bg-amber-100 { background-color: rgba(245,158,11,0.22) !important; }
-html.dark .bg-gray-100  { background-color: rgba(148,163,184,0.10) !important; }
+/* ─── 10. BADGES & STATUS PILLS (BILLS BeUI TOKENS) ───────── */
+html.dark .bg-green-50,
+html.dark .bg-green-100,
+html.dark .bg-emerald-50,
+html.dark .bg-emerald-100,
+html.dark [class*="dark:bg-emerald-950"] {
+    background-color: rgba(16, 185, 129, 0.15) !important;
+    color: #34D399 !important;
+}
 
-/* Colored borders — brighter */
-html.dark .border-emerald-100 { border-color: rgba(16,185,129,0.20) !important; }
-html.dark .border-amber-100   { border-color: rgba(245,158,11,0.20) !important; }
-html.dark .border-blue-100    { border-color: rgba(59,130,246,0.20) !important; }
-html.dark .border-indigo-100  { border-color: rgba(99,102,241,0.20) !important; }
+html.dark .border-emerald-100,
+html.dark .border-green-200,
+html.dark [class*="dark:border-emerald-800"] {
+    border-color: rgba(16, 185, 129, 0.25) !important;
+}
 
-/* ─── 11. MODALS ─────────────────────────────────────────── */
-html.dark .bg-gray-900\/50 { background-color: rgba(0,0,0,0.75) !important; }
+html.dark .bg-yellow-50,
+html.dark .bg-yellow-100,
+html.dark .bg-amber-50,
+html.dark .bg-amber-100,
+html.dark [class*="dark:bg-amber-950"] {
+    background-color: rgba(245, 158, 11, 0.15) !important;
+    color: #FBBF24 !important;
+}
+
+html.dark .border-amber-100,
+html.dark [class*="dark:border-amber-800"] {
+    border-color: rgba(245, 158, 11, 0.25) !important;
+}
+
+html.dark .bg-red-50,
+html.dark .bg-red-100,
+html.dark [class*="dark:bg-red-950"] {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    color: #F87171 !important;
+}
+
+html.dark .border-red-200,
+html.dark .border-red-100,
+html.dark [class*="dark:border-red-950"] {
+    border-color: rgba(239, 68, 68, 0.25) !important;
+}
+
+html.dark .bg-blue-50,
+html.dark .bg-blue-100,
+html.dark .bg-indigo-50,
+html.dark .bg-indigo-100,
+html.dark .bg-purple-50,
+html.dark .bg-purple-100,
+html.dark [class*="dark:bg-blue-950"],
+html.dark [class*="dark:bg-indigo-950"],
+html.dark [class*="dark:bg-purple-950"] {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    color: #FAFAFA !important;
+}
+
+html.dark .bg-gray-100,
+html.dark .bg-gray-200 {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    color: #D4D4D4 !important;
+}
+
+html.dark .border-blue-100,
+html.dark .border-indigo-100,
+html.dark .border-purple-100 {
+    border-color: #262626 !important;
+}
+
+/* ─── 11. MODALS (BILLS CHARCOAL #171717 & CRISP #262626) ─ */
+html.dark .bg-gray-900\/50,
+html.dark div[class*="fixed inset-0"][class*="z-50"] {
+    background-color: rgba(0, 0, 0, 0.75) !important;
+}
 
 html.dark [x-show] .bg-white.rounded-2xl,
 html.dark [x-show] div[class*="sm:max-w"],
-html.dark .modal-content {
-    background-color: var(--dm-card) !important;
-    border: 1px solid var(--dm-border) !important;
+html.dark .modal-content,
+html.dark div[class*="fixed inset-0"][class*="z-50"] > div[class*="max-w-"],
+html.dark div[class*="fixed inset-0"][class*="z-50"] > div[class*="rounded-2xl"],
+html.dark div[class*="fixed inset-0"][class*="z-50"] > div[class*="rounded-3xl"] {
+    background-color: #171717 !important;
+    border: 1px solid #262626 !important;
+    box-shadow: 0 24px 50px -12px rgba(0, 0, 0, 0.85) !important;
 }
 
-/* ─── 12. BOTTOM NAV ────────────────────────────────────── */
+/* ─── 12. BOTTOM NAV (MOBILE) ───────────────────────────── */
 html.dark nav.fixed.bottom-0 {
-    background: rgba(5,5,7,0.92) !important;
-    backdrop-filter: blur(24px) saturate(200%) !important;
-    -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
-    border-top-color: var(--dm-border) !important;
-    box-shadow: 0 -2px 24px rgba(0,0,0,0.6) !important;
+    background: rgba(10, 10, 10, 0.88) !important;
+    backdrop-filter: blur(16px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+    border-top: 1px solid #262626 !important;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.6) !important;
 }
-/* Inactive tabs: brighter so they're visible on black */
-html.dark nav.fixed.bottom-0 .text-gray-400 { color: #6b7280 !important; }
-/* Active tab colors stay vibrant — indigo/emerald already set via utility */
+html.dark nav.fixed.bottom-0 .text-gray-400 { color: #737373 !important; }
 
 /* "More" panel */
 html.dark nav.fixed.bottom-0 .absolute.bottom-full {
@@ -796,5 +963,54 @@ html.dark h3.text-lg {
 /* File input button area */
 html.dark input[type="file"] {
     color: #94a3b8 !important;
+}
+
+
+
+/* ─── SIDEBAR MODO OSCURO (ESTILO BILLS CHARCOAL #171717) ─── */
+html.dark [data-sidebar="sidebar"],
+html.dark aside[data-sidebar="sidebar"],
+html.dark .sidebar {
+    background-color: #171717 !important;
+    background: #171717 !important;
+    border-right: 1px solid #262626 !important;
+    color: #FAFAFA !important;
+}
+
+html.dark [data-sidebar="header"] {
+    background: transparent !important;
+    border-bottom: 1px solid #262626 !important;
+}
+
+html.dark [data-sidebar="content"] {
+    background: transparent !important;
+    border: none !important;
+}
+
+html.dark [data-sidebar="footer"] {
+    background: transparent !important;
+    border-top: 1px solid #262626 !important;
+}
+
+html.dark [data-sidebar="group-label"] {
+    color: #737373 !important;
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+}
+
+html.dark [data-sidebar="menu-button"] {
+    color: #D4D4D4 !important;
+}
+
+html.dark [data-sidebar="menu-button"]:hover {
+    background-color: #262626 !important;
+    color: #FAFAFA !important;
+}
+
+html.dark [data-sidebar="menu-button"][data-active="true"] {
+    background-color: #262626 !important;
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
 }
 

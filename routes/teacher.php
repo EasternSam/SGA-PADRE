@@ -1,25 +1,26 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TeacherPortalController;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Teacher Portal Routes
+| Teacher Portal Routes (Fase 17: React + Inertia)
 |--------------------------------------------------------------------------
-|
-| Middleware: auth, role:Profesor|Admin
-| Prefix: /teacher
-|
 */
 
-Route::middleware(['auth', 'role:Profesor|Admin'])->prefix('teacher')->group(function () {
-    Route::middleware(['feature:academic'])->group(function () {
-        Route::get('/dashboard', \App\Livewire\TeacherPortal\Dashboard::class)->name('teacher.dashboard');
-        Route::get('/grades/{section}', \App\Livewire\TeacherPortal\Grades::class)->name('teacher.grades');
-        Route::get('/attendance/{section}', \App\Livewire\TeacherPortal\Attendance::class)->name('teacher.attendance');
-        Route::get('/documents', \App\Livewire\TeacherPortal\TeacherDocuments::class)->name('teacher.documents');
-        Route::get('/payroll', \App\Livewire\TeacherPortal\MyPayroll::class)->name('teacher.payroll');
-        Route::get('/profile', [ProfileController::class, 'edit'])->name('teacher.profile.edit');
-    });
+Route::middleware(['auth', 'role:Profesor|Admin'])->prefix('teacher')->name('teacher.')->group(function () {
+    Route::get('/dashboard', [TeacherPortalController::class, 'dashboard'])->name('dashboard');
+    Route::get('/grades/{section?}', [TeacherPortalController::class, 'grades'])->name('grades');
+    Route::post('/grades/{section}', [TeacherPortalController::class, 'saveGrades'])->name('grades.save');
+    Route::get('/attendance/{section?}', [TeacherPortalController::class, 'attendance'])->name('attendance');
+    Route::post('/attendance/{section}', [TeacherPortalController::class, 'saveAttendance'])->name('attendance.save');
+    Route::get('/payroll', [TeacherPortalController::class, 'payroll'])->name('payroll');
+
+    if (class_exists(\App\Livewire\TeacherPortal\TeacherDocuments::class)) {
+        Route::get('/documents', \App\Livewire\TeacherPortal\TeacherDocuments::class)->name('documents');
+    }
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
 });

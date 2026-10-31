@@ -1,0 +1,62 @@
+/* Each transition uses the same library Button, which owns the press scale; this file only animates the icon in place. */
+.themeSwitch {
+  position: relative;
+  width: auto;
+  padding-inline: 0.75rem;
+}
+.iconOnly { 
+  width: 38px; 
+  min-width: 38px; 
+  height: 38px; 
+  min-height: 38px; 
+  border-radius: 12px; 
+  padding: 0; 
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .themeSwitch:hover:not(:disabled) { border-color: rgba(120, 113, 108, 0.4); }
+  .iconOnly:hover:not(:disabled) { background-color: rgba(0, 0, 0, 0.05); box-shadow: none; }
+}
+:global(.dark) .iconOnly:hover:not(:disabled) {
+  background-color: #262626;
+}
+.iconOnly:active {
+  transform: scale(0.92);
+}
+.iconWrap {
+  position: relative;
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  place-items: center;
+}
+/* The nudge only eases once the switch has settled, so a theme that arrives during hydration lands without motion. */
+.settled .iconWrap { transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1); }
+.icon { 
+  position: absolute; 
+  display: grid; 
+  width: 18px; 
+  height: 18px; 
+  place-items: center;
+  color: #4b5563;
+}
+:global(.dark) .icon,
+[data-theme="dark"] .icon {
+  color: #fbbf24;
+}
+.label { white-space: nowrap; }
+/* Each variant nudges the icon the way its page transition travels, and eases back when the theme returns. */
+.themeSwitch.reveal[data-theme="dark"] .iconWrap { transform: scale(1.08); }
+.themeSwitch.eclipse[data-theme="dark"] .iconWrap { transform: translateX(-2px); }
+.themeSwitch.split[data-theme="dark"] .iconWrap { transform: translateX(1px); }
+.themeSwitch.rise[data-theme="dark"] .iconWrap { transform: translateY(-2px); }
+@media (prefers-reduced-motion: reduce) {
+  .settled .iconWrap { transition: none; }
+}

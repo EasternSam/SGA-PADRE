@@ -368,7 +368,7 @@
                                                 @elseif (!empty($state['favicon']))
                                                     <img src="{{ $state['favicon'] }}" class="h-12 w-12 object-contain rounded p-1 shadow-sm bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
                                                 @else
-                                                    <div class="h-12 w-12 bg-gray-200 dark:bg-slate-800 rounded flex items-center justify-center text-gray-400 dark:text-slate-500 font-bold text-xs border dark:border-slate-700">🌐</div>
+                                                    <div class="h-12 w-12 bg-gray-200 dark:bg-slate-800 rounded flex items-center justify-center text-gray-400 dark:text-slate-500 border dark:border-slate-700"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"/><line x1="2" y1="12" x2="22" y2="12" stroke-width="2"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke-width="2"/></svg></div>
                                                 @endif
                                             </div>
                                             <div class="flex-1">
@@ -404,7 +404,7 @@
                                                 @elseif (!empty($state['app_icon']))
                                                     <img src="{{ $state['app_icon'] }}" class="h-16 w-16 object-cover rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
                                                 @else
-                                                    <div class="h-16 w-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-2xl shadow-sm">📱</div>
+                                                    <div class="h-16 w-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white shadow-sm"><svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="5" y="2" width="14" height="20" rx="2" stroke-width="2"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="2"/></svg></div>
                                                 @endif
                                             </div>
                                             <div class="flex-1">
@@ -434,7 +434,7 @@
                                                 @elseif (!empty($state['login_banner']))
                                                     <img src="{{ $state['login_banner'] }}" class="h-20 w-32 object-cover rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
                                                 @else
-                                                    <div class="h-20 w-32 bg-purple-100 dark:bg-purple-950/60 rounded-lg flex items-center justify-center text-purple-700 dark:text-purple-300 font-bold text-xs border border-purple-200 dark:border-purple-800">🖼️ Por Defecto</div>
+                                                    <div class="h-20 w-32 bg-purple-100 dark:bg-purple-950/60 rounded-lg flex items-center justify-center text-purple-700 dark:text-purple-300 font-bold text-xs border border-purple-200 dark:border-purple-800">Por Defecto</div>
                                                 @endif
                                             </div>
                                             <div class="flex-1">

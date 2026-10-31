@@ -17,6 +17,7 @@ class Course extends Model
      */
     protected $fillable = [
         'name',
+        'moodle_course_id',
         'description',
         'code',
         'is_sequential',
@@ -54,6 +55,13 @@ class Course extends Model
     {
         return $this->hasMany(Module::class)->orderBy('period_number')->orderBy('order');
     }
+
+    public function schedules(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(\App\Models\CourseSchedule::class, \App\Models\Module::class);
+    }
+
+
 
     // ====================================================================
     // RELACIÓN PARA ENLACE CON WP

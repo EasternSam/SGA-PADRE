@@ -1,6 +1,6 @@
 <x-guest-layout>
     <div class="mb-4 text-sm text-gray-600">
-        <div class="font-bold text-red-600 mb-2">⚠️ Acción Requerida</div>
+        <div class="font-bold text-red-600 mb-2">Acción Requerida</div>
         {{ __('Por seguridad, debes cambiar tu contraseña temporal antes de continuar en el sistema.') }}
     </div>
 

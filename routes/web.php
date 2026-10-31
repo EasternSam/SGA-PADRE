@@ -155,7 +155,7 @@ Route::post('/api/log-click', function (Request $request) {
     $user = auth()->user() ? "ID:".auth()->id() : 'Guest';
     $data = json_decode($request->getContent(), true) ?? [];
 
-    Log::channel('audit')->info("🖱️ CLIC DETECTADO ($user)", [
+    Log::channel('audit')->info("CLIC DETECTADO ($user)", [
         'Elemento' => $data['tag'] ?? '?',
         'Texto' => $data['text'] ?? '',
         'Wire:Click' => $data['wire_click'] ?? '',
@@ -168,7 +168,10 @@ Route::post('/api/log-click', function (Request $request) {
 
 // --- RUTA RAÍZ ---
 Route::get('/', function () {
-    return view('auth.login');
+    if (Auth::check()) {
+        return redirect()->route('dashboard');
+    }
+    return redirect()->route('login');
 });
 
 // --- LINK DE REGISTRO PARA ESTUDIANTES ---
@@ -305,8 +308,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 
     Route::middleware(['feature:academic_careers'])->group(function () {
-        Route::get('/portal-aspirante', ApplicantDashboard::class)->name('applicant.portal');
-        Route::get('/portal-aspirante/solicitud', AdmissionsRegister::class)->name('applicant.admission-form');
+        Route::get('/portal-aspirante', [\App\Http\Controllers\ApplicantPortalController::class, 'index'])->name('applicant.portal');
+        Route::post('/portal-aspirante', [\App\Http\Controllers\ApplicantPortalController::class, 'submit'])->name('applicant.portal.submit');
+        Route::get('/portal-aspirante/solicitud', [\App\Http\Controllers\ApplicantPortalController::class, 'index'])->name('applicant.admission-form');
     });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -324,6 +328,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // --- RUTAS PARA CAMBIO DE CONTRASEÑA OBLIGATORIO ---
 Route::middleware(['auth'])->group(function () {
+    // --- CENTRO DE NOTIFICACIONES GLOBAL (UI Arc) ---
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::post('/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('read');
+        Route::post('/mark-all-read', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+        Route::delete('/{id}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('destroy');
+        Route::post('/clear-read', [\App\Http\Controllers\NotificationController::class, 'clearRead'])->name('clear-read');
+    });
+
     Route::get('/force-password-change', [\App\Http\Controllers\Auth\ForcePasswordChangeController::class, 'show'])
         ->name('password.force_change');
     Route::post('/force-password-change', [\App\Http\Controllers\Auth\ForcePasswordChangeController::class, 'update'])

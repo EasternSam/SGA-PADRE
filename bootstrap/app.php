@@ -59,6 +59,7 @@ return Application::configure(basePath: dirname(__DIR__))
             AuditLogMiddleware::class,
             VerifyLicense::class,
             SecurityHeaders::class,
+            \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
 
         $middleware->api(append: [

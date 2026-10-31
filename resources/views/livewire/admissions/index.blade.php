@@ -194,11 +194,11 @@
                                 <div class="flex gap-2 mt-auto">
                                     <button type="button" wire:click="setDocStatus('{{ $key }}', 'approved')" 
                                         class="flex-1 text-xs font-semibold py-2 rounded transition-colors {{ ($tempDocStatus[$key] ?? '') == 'approved' ? 'bg-green-600 text-white shadow-inner' : 'bg-white text-gray-600 border hover:bg-green-50 hover:text-green-700 hover:border-green-300' }}">
-                                        @if(($tempDocStatus[$key] ?? '') == 'approved') ✓ Aceptado @else Aceptar @endif
+                                        @if(($tempDocStatus[$key] ?? '') == 'approved') Aceptado @else Aceptar @endif
                                     </button>
                                     <button type="button" wire:click="setDocStatus('{{ $key }}', 'rejected')" 
                                         class="flex-1 text-xs font-semibold py-2 rounded transition-colors {{ ($tempDocStatus[$key] ?? '') == 'rejected' ? 'bg-red-600 text-white shadow-inner' : 'bg-white text-gray-600 border hover:bg-red-50 hover:text-red-700 hover:border-red-300' }}">
-                                        @if(($tempDocStatus[$key] ?? '') == 'rejected') ✕ Rechazado @else Rechazar @endif
+                                        @if(($tempDocStatus[$key] ?? '') == 'rejected') Rechazado @else Rechazar @endif
                                     </button>
                                 </div>
                             </div>

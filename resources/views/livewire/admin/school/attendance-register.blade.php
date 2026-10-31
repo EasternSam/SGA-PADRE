@@ -71,7 +71,7 @@
 
             @if($hasExisting)
                 <div class="mb-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                    ℹ️ Ya existe un registro de asistencia para esta fecha. Los cambios actualizarán el existente.
+                    Ya existe un registro de asistencia para esta fecha. Los cambios actualizarán el existente.
                 </div>
             @endif
 

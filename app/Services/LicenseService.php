@@ -76,6 +76,10 @@ class LicenseService
 
     public function check(): bool
     {
+        if (env('SAAS_MODE_ENABLED', true) === false) {
+            return true;
+        }
+
         if (empty($this->licenseKey)) {
             $this->errorMessage = 'Clave de licencia no configurada (APP_LICENSE_KEY no encontrada).';
             return false;

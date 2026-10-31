@@ -107,6 +107,11 @@ class Student extends Model
     /**
      * Relación con el Plan de Carrera del estudiante.
      */
+        public function section()
+    {
+        return $this->belongsTo(\App\Models\Section::class);
+    }
+
     public function degreePlan()
     {
         return $this->hasOne(DegreePlan::class);
@@ -139,7 +144,7 @@ class Student extends Model
                 if ($user && $user->created_at && $user->created_at->gt(now()->subMinutes(2))) {
                     $cleanCedula = preg_replace('/[^0-9]/', '', $student->cedula);
                     $institutionName = \App\Models\Setting::val('institution_name', config('app.name', 'Academic+'));
-                    $subject = '🎓 ¡Bienvenido a ' . $institutionName . '! Tus credenciales de acceso';
+                    $subject = '¡Bienvenido a ' . $institutionName . '! Tus credenciales de acceso';
                     $loginUrl = url('/login');
                     $message = "¡Hola {$student->first_name}!\n\n"
                              . "Te damos la más cordial bienvenida a nuestra plataforma académica **{$institutionName}**.\n\n"
@@ -184,5 +189,22 @@ class Student extends Model
     public function getFullNameAttribute()
     {
         return "{$this->first_name} {$this->last_name}";
+    }
+
+    /**
+     * Ficha interna del POS para ventas a público general (ver config/pos.php).
+     */
+    public function isWalkIn(): bool
+    {
+        return $this->student_code !== null
+            && $this->student_code === config('pos.walk_in_student_code');
+    }
+
+    public function scopeExcludingWalkIn($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('student_code')
+              ->orWhere('student_code', '!=', config('pos.walk_in_student_code'));
+        });
     }
 }

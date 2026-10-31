@@ -16,7 +16,7 @@
 
 ---
 
-## 📋 Tabla de Contenidos
+##  Tabla de Contenidos
 
 - [Descripción](#-descripción)
 - [Stack Tecnológico](#-stack-tecnológico)
@@ -34,7 +34,7 @@
 
 ---
 
-## 🏫 Descripción
+##  Descripción
 
 **Academic+ by GridBase Digital Solutions** es un sistema de gestión académica diseñado para centros educativos en **República Dominicana**. Permite administrar todo el ciclo de vida académico y financiero de los estudiantes: desde la admisión hasta la emisión de certificados, pasando por matrícula, pagos, asistencia, calificaciones y facturación electrónica (e-CF DGII).
 
@@ -50,7 +50,7 @@
 
 ---
 
-## 🛠 Stack Tecnológico
+##  Stack Tecnológico
 
 ### Backend
 | Componente | Tecnología | Versión |
@@ -81,9 +81,9 @@
 
 ---
 
-## 📦 Módulos del Sistema
+##  Módulos del Sistema
 
-### 📚 Gestión Académica
+###  Gestión Académica
 - **Estudiantes** — Registro completo, cédula, datos de contacto, tutor (menores)
 - **Cursos y Carreras** — Creación de cursos, módulos, malla curricular
 - **Secciones/Horarios** — Programación por módulo con aula, profesor, horario
@@ -93,7 +93,7 @@
 - **Calificaciones** — Entrada por profesor, consulta por estudiante
 - **Calendario Académico** — Eventos institucionales
 
-### 💰 Finanzas y Contabilidad
+###  Finanzas y Contabilidad
 - **Pagos** — Efectivo, tarjeta Cardnet, con generación automática de NCF (DGII)
 - **Plan de cuentas** — Catálogo contable con tipos: Activo, Pasivo, Capital, Ingreso, Gasto, Costo
 - **Asientos contables** — Generación automática al registrar pagos
@@ -103,7 +103,7 @@
 - **Reportes DGII** — Exportación para formatos 606, 607
 - **Estados financieros** — Balance general, estado de resultados, mayor general
 
-### 🖥️ Kiosco de Autoservicio
+###  Kiosco de Autoservicio
 - Login por PIN de 4 dígitos
 - Consulta de estado financiero
 - Pago online con Cardnet
@@ -111,20 +111,20 @@
 - Oferta académica
 - Registro de nuevos aspirantes
 
-### 🎓 Certificados
+###  Certificados
 - Editor de plantillas con variables dinámicas
 - Generación individual o masiva
 - Código QR de verificación pública
 - Verificación online: `/certificates/verify/{code}`
 
-### 📊 Reportes PDF
+###  Reportes PDF
 - Recibo de pago (formato térmico)
 - Reporte de asistencia
 - Calificaciones por sección
 - Estados financieros
 - Exportación DGII
 
-### 👥 Portales
+###  Portales
 | Portal | Funcionalidades |
 |--------|----------------|
 | **Administrador** | Acceso completo, dashboard con métricas |
@@ -137,7 +137,7 @@
 
 ---
 
-## 🏗 Arquitectura
+##  Arquitectura
 
 ```
 app/
@@ -172,7 +172,7 @@ routes/
 
 ---
 
-## 📋 Requisitos
+##  Requisitos
 
 | Requisito | Versión mínima |
 |-----------|---------------|
@@ -187,7 +187,7 @@ routes/
 
 ---
 
-## 🚀 Instalación
+##  Instalación
 
 ### Instalación rápida (recomendada)
 
@@ -231,7 +231,7 @@ Se recomienda usar **[Laragon](https://laragon.org)** en lugar de XAMPP:
 
 ---
 
-## ⚙️ Configuración
+##  Configuración
 
 ### Variables de entorno principales
 
@@ -272,7 +272,7 @@ APP_LICENSE_KEY=TU-LICENCIA
 
 ---
 
-## 🔐 Roles y Permisos
+##  Roles y Permisos
 
 El sistema usa [Spatie Laravel Permission](https://spatie.be/docs/laravel-permission) con los siguientes roles:
 
@@ -296,7 +296,7 @@ El sistema usa [Spatie Laravel Permission](https://spatie.be/docs/laravel-permis
 
 ---
 
-## 🗂 Estructura de Rutas
+##  Estructura de Rutas
 
 | Archivo | Prefijo | Middleware | Descripción |
 |---------|---------|------------|-------------|
@@ -312,7 +312,7 @@ El sistema usa [Spatie Laravel Permission](https://spatie.be/docs/laravel-permis
 
 ---
 
-## 🔌 Integraciones Externas
+##  Integraciones Externas
 
 ### Cardnet (Pagos con tarjeta)
 - Método: **Redirección POST** (el usuario paga en la página de Cardnet)
@@ -338,7 +338,7 @@ El sistema usa [Spatie Laravel Permission](https://spatie.be/docs/laravel-permis
 
 ---
 
-## 🧪 Tests
+##  Tests
 
 ```bash
 # Ejecutar todos los tests
@@ -365,7 +365,7 @@ php artisan test --filter=DashboardRedirectTest
 
 ---
 
-## 🚢 Despliegue en Producción
+##  Despliegue en Producción
 
 ### cPanel (con `.cpanel.yml`)
 
@@ -404,7 +404,7 @@ SESSION_SAME_SITE=none
 
 ---
 
-## 📁 Archivos importantes
+##  Archivos importantes
 
 | Archivo | Propósito |
 |---------|-----------|
@@ -418,7 +418,7 @@ SESSION_SAME_SITE=none
 
 ---
 
-## 📄 Licencia
+##  Licencia
 
 Software propietario — © [GridBase](https://90s.agency) / Samuel Díaz Pilier
 

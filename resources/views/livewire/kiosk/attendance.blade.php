@@ -55,7 +55,13 @@
                                 {{ $record['status'] === 'late' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : '' }}
                                 {{ $record['status'] === 'excused' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : '' }}
                             ">
-                                @if($record['status'] === 'absent') ✗ @elseif($record['status'] === 'late') ⏰ @else ✓ @endif
+                                @if($record['status'] === 'absent')
+                                    <svg class="w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                @elseif($record['status'] === 'late')
+                                    <svg class="w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2.5"/><polyline points="12 6 12 12 16 14" stroke-width="2.5"/></svg>
+                                @else
+                                    <svg class="w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" stroke-width="2.5"/></svg>
+                                @endif
                             </div>
                             <div>
                                 <div class="text-xl font-bold text-white">{{ $record['date'] }}</div>
@@ -72,7 +78,7 @@
             </div>
         @else
             <div class="p-16 text-center">
-                <div class="text-6xl mb-4">🎉</div>
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center"><svg class="w-8 h-8 stroke-current" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
                 <p class="text-2xl text-emerald-300 font-bold">¡Excelente! No tienes ausencias registradas.</p>
                 <p class="text-white/50 text-lg mt-2">Sigue así, tu asistencia es perfecta.</p>
             </div>

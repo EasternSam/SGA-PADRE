@@ -64,7 +64,7 @@ class SubjectSelection extends Component
         if ($this->career) {
             $this->loadAvailableOfferings();
         } else {
-            $this->debugMessage = "⚠️ No se pudo determinar tu carrera/curso. Por favor contacta a Registro.";
+            $this->debugMessage = "No se pudo determinar tu carrera/curso. Por favor contacta a Registro.";
         }
     }
 

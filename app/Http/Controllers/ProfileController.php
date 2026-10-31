@@ -7,7 +7,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Storage; // <-- Importante: Importar Storage
+use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
+use Inertia\Response;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -15,10 +17,19 @@ class ProfileController extends Controller
     /**
      * Display the user's profile form.
      */
-    public function edit(Request $request): View
+    public function edit(Request $request): Response|View
     {
-        return view('profile.edit', [
-            'user' => $request->user(),
+        $user = $request->user();
+        return Inertia::render('Profile/Edit', [
+            'mustVerifyEmail' => $user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail,
+            'status' => session('status'),
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'profile_photo_url' => $user->profile_photo_url ?? null,
+                'hasVerifiedEmail' => $user->hasVerifiedEmail(),
+            ],
         ]);
     }
 
@@ -28,34 +39,25 @@ class ProfileController extends Controller
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $user = $request->user();
-        // Obtenemos los datos validados del request
         $data = $request->validated();
 
-        // 1. Manejo de subida de imagen
         if ($request->hasFile('photo')) {
-            // Eliminar foto anterior si existe
             if ($user->profile_photo_path) {
                 Storage::disk('public')->delete($user->profile_photo_path);
             }
-
-            // Guardar nueva foto en disco 'public' dentro de la carpeta 'profile-photos'
             $path = $request->file('photo')->store('profile-photos', 'public');
-            
-            // Agregar la ruta a los datos a actualizar
             $data['profile_photo_path'] = $path;
         }
 
-        // 2. Llenar el modelo con los datos (incluyendo la foto si se subió)
         $user->fill($data);
 
-        // 3. Verificar cambios en el email
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
         }
 
         $user->save();
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        return Redirect::back()->with('status', 'profile-updated');
     }
 
     /**

@@ -57,3 +57,7 @@ storage/fonts/
 Academic+/
 __pycache__/
 *.pyc
+
+# Symlinks de servidor
+/branding
+/build
