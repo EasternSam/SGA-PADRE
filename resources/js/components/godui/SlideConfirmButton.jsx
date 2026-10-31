@@ -200,7 +200,7 @@ export const SlideConfirmButton = React.forwardRef(
           dragMomentum={false}
           onDragEnd={handleDragEnd}
           style={{ x, width: dims.thumb, height: dims.thumb, margin: dims.pad }}
-          className={`relative z-20 inline-flex shrink-0 cursor-grab items-center justify-center rounded-full shadow-md active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-brand ${thumbClasses}`}
+          className={`relative z-20 inline-flex shrink-0 cursor-grab items-center justify-center rounded-full active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-brand ${thumbClasses}`}
         >
           {loading ? (
             <svg

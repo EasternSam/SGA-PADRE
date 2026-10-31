@@ -170,7 +170,7 @@
     .segment-item.active {
         background-color: var(--bg-card);
         color: var(--color-text-primary);
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        box-shadow: none;
     }
 
     /* Badges de estado */
@@ -658,4 +658,101 @@ html:not(.dark) input[type="radio"]:checked {
     background-color: var(--brand-primary, #211170);
     border-color: var(--brand-primary, #211170);
 }
+
+/* ==========================================================================
+   Global Button No-Shadow Rule
+   Enforces zero shadows on all buttons, button variants, and button-styled
+   links across both light and dark modes.
+   ========================================================================== */
+button,
+button:hover,
+button:focus,
+button:active,
+[type="button"],
+[type="button"]:hover,
+[type="button"]:focus,
+[type="button"]:active,
+[type="submit"],
+[type="submit"]:hover,
+[type="submit"]:focus,
+[type="submit"]:active,
+[type="reset"],
+[type="reset"]:hover,
+[type="reset"]:focus,
+[type="reset"]:active,
+[role="button"],
+[role="button"]:hover,
+[role="button"]:focus,
+[role="button"]:active,
+.btn,
+.btn:hover,
+.gb-btn,
+.gb-btn:hover,
+.btn-primary,
+.btn-primary:hover,
+.gb-btn-primary,
+.gb-btn-primary:hover,
+.btn-secondary,
+.btn-secondary:hover,
+.gb-btn-secondary,
+.gb-btn-secondary:hover,
+.btn-icon,
+.btn-icon:hover,
+.gb-btn-icon,
+.gb-btn-icon:hover,
+.segment-item,
+.segment-item.active,
+.gb-segment,
+.gb-segment.active,
+[data-slot="progress-fold-front"],
+a[class*="btn"],
+a[class*="inline-flex"][class*="items-center"][class*="rounded-"],
+a[class*="flex"][class*="items-center"][class*="justify-center"][class*="rounded-"][class*="px-"],
+html.dark body :is(
+    button,
+    [type="button"],
+    [type="submit"],
+    [type="reset"],
+    [role="button"],
+    .btn,
+    .gb-btn,
+    .btn-primary,
+    .gb-btn-primary,
+    .btn-secondary,
+    .gb-btn-secondary,
+    .btn-icon,
+    .gb-btn-icon,
+    .segment-item,
+    .gb-segment,
+    [data-slot="progress-fold-front"],
+    a[class*="btn"],
+    a[class*="inline-flex"][class*="items-center"][class*="rounded-"],
+    a[class*="flex"][class*="items-center"][class*="justify-center"][class*="rounded-"][class*="px-"]
+),
+html.dark body :is(
+    button,
+    [type="button"],
+    [type="submit"],
+    [type="reset"],
+    [role="button"],
+    .btn,
+    .gb-btn,
+    .btn-primary,
+    .gb-btn-primary,
+    .btn-secondary,
+    .gb-btn-secondary,
+    .btn-icon,
+    .gb-btn-icon,
+    .segment-item,
+    .gb-segment,
+    [data-slot="progress-fold-front"],
+    a[class*="btn"],
+    a[class*="inline-flex"][class*="items-center"][class*="rounded-"],
+    a[class*="flex"][class*="items-center"][class*="justify-center"][class*="rounded-"][class*="px-"]
+):is(:hover, :focus, :active, .shadow, .shadow-xs, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl) {
+    box-shadow: none !important;
+    --tw-shadow: 0 0 #0000 !important;
+    --tw-shadow-colored: 0 0 #0000 !important;
+}
+
 

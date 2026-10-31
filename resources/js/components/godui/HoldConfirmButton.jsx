@@ -86,8 +86,8 @@ export const HoldConfirmButton = React.forwardRef(
     };
 
     const variantStyles = {
-      destructive: "bg-red-600 hover:bg-red-700 text-white shadow-sm",
-      default: "bg-brand hover:bg-brand-dark text-white shadow-sm",
+      destructive: "bg-red-600 hover:bg-red-700 text-white",
+      default: "bg-brand hover:bg-brand-dark text-white",
     };
 
     const sizeStyles = {

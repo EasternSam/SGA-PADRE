@@ -260,7 +260,7 @@ html.dark .hover\:bg-slate-50:hover {
 html.dark .bg-indigo-600 {
     background-color: #FFFFFF !important;
     color: #0A0A0A !important;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.6) !important;
+    box-shadow: none !important;
 }
 html.dark .bg-indigo-600:hover {
     background-color: #F5F5F5 !important;

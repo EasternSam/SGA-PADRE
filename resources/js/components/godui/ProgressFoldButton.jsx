@@ -3,12 +3,12 @@
 import * as React from "react";
 
 const BUTTON_BASE =
-  "group relative inline-flex cursor-pointer select-none whitespace-nowrap border-none p-0 bg-border font-medium [perspective:800px] [transform-style:preserve-3d] [-webkit-tap-highlight-color:transparent] focus-visible:[outline:2px_solid_var(--ring)] focus-visible:[outline-offset:4px] disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none transition-shadow";
+  "group relative inline-flex cursor-pointer select-none whitespace-nowrap border-none p-0 bg-border font-medium [perspective:800px] [transform-style:preserve-3d] [-webkit-tap-highlight-color:transparent] focus-visible:[outline:2px_solid_var(--ring)] focus-visible:[outline-offset:4px] disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none";
 
 const LAYERS_BASE = "absolute inset-0 -z-[1] overflow-hidden";
 
 const FRONT_BASE =
-  "relative grid w-full place-items-center rounded-[inherit] [transform:rotateX(0deg)] [transform-origin:top_center] [transition:transform_0.2s_ease,background-color_0.15s_ease] group-hover:[transform:rotateX(32deg)] group-focus-visible:[transform:rotateX(32deg)] group-data-[status=loading]:[transform:rotateX(32deg)] motion-reduce:[transition:none] shadow-sm";
+  "relative grid w-full place-items-center rounded-[inherit] [transform:rotateX(0deg)] [transform-origin:top_center] [transition:transform_0.2s_ease,background-color_0.15s_ease] group-hover:[transform:rotateX(32deg)] group-focus-visible:[transform:rotateX(32deg)] group-data-[status=loading]:[transform:rotateX(32deg)] motion-reduce:[transition:none]";
 
 const BAR_BASE =
   "absolute top-0 left-0 h-full w-full origin-left [transform:scaleX(0)] group-data-[determinate=true]:[transform:scaleX(var(--progress-fold-fill,0))] group-[&[data-determinate=true][data-armed=true]]:[transition:transform_0.25s_ease] group-[&[data-status=loading]:not([data-determinate=true])]:w-[40%] group-[&[data-status=loading]:not([data-determinate=true])]:animate-progress-fold-indeterminate motion-reduce:group-[&[data-determinate=true][data-armed=true]]:[transition:none] motion-reduce:group-[&[data-status=loading]:not([data-determinate=true])]:animate-none";
@@ -26,10 +26,10 @@ const frontSizeClasses = {
 };
 
 const frontClasses = {
-  primary: "bg-brand-primary hover:bg-[#082260] dark:bg-blue-600 dark:hover:bg-blue-500 text-white shadow-md shadow-blue-950/20",
-  secondary: "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-700/60 shadow-xs",
-  destructive: "bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-950/20",
-  success: "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-950/20",
+  primary: "bg-brand-primary hover:bg-[#082260] dark:bg-blue-600 dark:hover:bg-blue-500 text-white",
+  secondary: "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-700/60",
+  destructive: "bg-red-600 hover:bg-red-700 text-white",
+  success: "bg-emerald-600 hover:bg-emerald-700 text-white",
   outline: "bg-transparent text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800",
 };
 
