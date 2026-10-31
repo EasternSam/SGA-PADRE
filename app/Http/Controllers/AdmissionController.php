@@ -6,6 +6,7 @@ use App\Models\Admission;
 use App\Models\Course;
 use App\Models\Payment;
 use App\Models\PaymentConcept;
+use App\Models\Setting;
 use App\Models\Student;
 use App\Models\User;
 use App\Notifications\SystemNotification;
@@ -51,16 +52,38 @@ class AdmissionController extends Controller
         ];
 
         $courses = Course::orderBy('name')->get(['id', 'name', 'code', 'registration_fee']);
+        $admissionsOpen = in_array((string) Setting::get('admissions_open', '0'), ['1', 'true'], true);
 
         return Inertia::render('Admissions/Pipeline', [
             'admissions' => $admissions,
             'courses' => $courses,
+            'admissionsOpen' => $admissionsOpen,
             'filters' => [
                 'search' => $search,
                 'status' => $status,
             ],
             'stats' => $stats,
         ]);
+    }
+
+    /**
+     * Activa o desactiva el modo de Admisiones Abiertas (controla la visibilidad de Selección de Materias en portal estudiantil).
+     */
+    public function toggleAdmissionsMode(Request $request)
+    {
+        $current = in_array((string) Setting::get('admissions_open', '0'), ['1', 'true'], true);
+        $nextState = $request->has('open')
+            ? filter_var($request->input('open'), FILTER_VALIDATE_BOOLEAN)
+            : !$current;
+
+        Setting::set('admissions_open', $nextState ? '1' : '0', 'academic', 'boolean');
+
+        return redirect()->back()->with(
+            'success',
+            $nextState
+                ? 'Modo de Admisiones Abiertas activado: Selección de Materias visible para los estudiantes.'
+                : 'Modo de Admisiones Abiertas cerrado: Selección de Materias oculta para los estudiantes.'
+        );
     }
 
     /**

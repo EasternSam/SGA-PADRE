@@ -121,6 +121,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
 
         // Admisiones & Aspirantes (Fase 12)
         Route::get('/admissions', [AdmissionController::class, 'index'])->name('admin.admissions.index');
+        Route::post('/admissions/toggle-mode', [AdmissionController::class, 'toggleAdmissionsMode'])->name('admin.admissions.toggle-mode');
         Route::post('/admissions/{admission}/review', [AdmissionController::class, 'saveReview'])->name('admin.admissions.review');
         Route::post('/admissions/{admission}/approve', [AdmissionController::class, 'approve'])->name('admin.admissions.approve');
         Route::post('/admissions/{admission}/reject', [AdmissionController::class, 'reject'])->name('admin.admissions.reject');

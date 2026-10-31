@@ -7,6 +7,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 export default function AdmissionsPipeline({
     admissions,
     courses = [],
+    admissionsOpen = false,
     filters = {},
     stats = {},
 }) {
@@ -14,6 +15,17 @@ export default function AdmissionsPipeline({
     const [selectedAdmission, setSelectedAdmission] = useState(null);
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const [statusFilter, setStatusFilter] = useState(filters.status || 'all');
+    const [togglingMode, setTogglingMode] = useState(false);
+
+    const handleToggleAdmissionsMode = () => {
+        setTogglingMode(true);
+        router.post('/admin/admissions/toggle-mode', {
+            open: !admissionsOpen,
+        }, {
+            preserveScroll: true,
+            onFinish: () => setTogglingMode(false),
+        });
+    };
 
     // Document review local state
     const [tempDocStatus, setTempDocStatus] = useState({});
@@ -121,7 +133,30 @@ export default function AdmissionsPipeline({
                         
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={handleToggleAdmissionsMode}
+                            disabled={togglingMode}
+                            title="Habilita o deshabilita la vista de Selección de Materias en el Portal del Estudiante"
+                            className={`inline-flex items-center gap-2.5 rounded-xl border px-4 py-2.5 text-sm font-semibold shadow-sm transition active:scale-[0.98] disabled:opacity-60 ${
+                                admissionsOpen
+                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-[#161622] dark:text-gray-200 dark:hover:bg-gray-800'
+                            }`}
+                        >
+                            <span
+                                className={`h-2.5 w-2.5 rounded-full transition ${
+                                    admissionsOpen
+                                        ? 'bg-emerald-500 ring-4 ring-emerald-500/20'
+                                        : 'bg-gray-400 dark:bg-gray-500'
+                                }`}
+                            />
+                            <span>
+                                {admissionsOpen ? 'Admisiones Abiertas: Activo' : 'Admisiones Abiertas: Cerrado'}
+                            </span>
+                        </button>
+
                         <Link
                             href="/admin/students"
                             className="inline-flex items-center gap-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#161622] px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition active:scale-[0.98]"

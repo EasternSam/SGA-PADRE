@@ -43,6 +43,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'csrf_token' => fn () => csrf_token(),
+            'admissions_open' => fn () => in_array((string) Setting::get('admissions_open', '0'), ['1', 'true'], true),
             'auth' => [
                 'user' => $user ? [
                     'id' => $user->id,

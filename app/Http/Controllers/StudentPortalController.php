@@ -9,9 +9,11 @@ use App\Models\Enrollment;
 use App\Models\Module;
 use App\Models\Payment;
 use App\Models\PaymentConcept;
+use App\Models\Setting;
 use App\Models\Student;
 use App\Models\StudentGrade;
 use App\Services\Student\StudentDashboardService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -186,8 +188,14 @@ class StudentPortalController extends Controller
     /**
      * Display Subject Selection for current term.
      */
-    public function selection(StudentDashboardService $dashboardService): Response
+    public function selection(StudentDashboardService $dashboardService): Response|RedirectResponse
     {
+        $admissionsOpen = in_array((string) Setting::get('admissions_open', '0'), ['1', 'true'], true);
+        if (!$admissionsOpen) {
+            return redirect()->route('student.dashboard')
+                ->with('error', 'La vista de Selección de Materias no está habilitada porque el período de Admisiones Abiertas se encuentra cerrado.');
+        }
+
         $student = $this->getActiveStudent();
         $firstEnrollmentCourse = Enrollment::with('courseSchedule.module.course')
             ->where('student_id', $student?->id)
@@ -196,7 +204,7 @@ class StudentPortalController extends Controller
 
         // Available Course Schedules open for enrollment
         $availableSchedules = CourseSchedule::with(['module.course', 'teacher', 'classroom'])
-            ->where('status', 'active')
+            ->whereIn('status', ['Activo', 'active', 'Programada'])
             ->get()
             ->map(fn($cs) => [
                 'id' => $cs->id,
@@ -240,6 +248,12 @@ class StudentPortalController extends Controller
      */
     public function storeSelection(Request $request)
     {
+        $admissionsOpen = in_array((string) Setting::get('admissions_open', '0'), ['1', 'true'], true);
+        if (!$admissionsOpen) {
+            return redirect()->route('student.dashboard')
+                ->with('error', 'El período de Admisiones Abiertas y Selección de Materias se encuentra cerrado.');
+        }
+
         $validated = $request->validate([
             'schedule_ids' => 'required|array|min:1',
             'schedule_ids.*' => 'exists:course_schedules,id',

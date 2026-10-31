@@ -40,6 +40,7 @@ export default function StudentDashboard({
 }) {
     const page = usePage();
     const branding = page.props?.branding || {};
+    const admissionsOpen = Boolean(page.props?.admissions_open);
     const primaryColor = branding?.primary_color || '#211170';
     const accentColor = branding?.accent_color || '#ea580c';
 
@@ -126,13 +127,15 @@ export default function StudentDashboard({
                                 <ExternalLink className="h-3 w-3 opacity-70" />
                             </a>
 
-                            <Link
-                                href={route('student.selection')}
-                                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition shadow-sm active:scale-95 bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md dark:bg-[#262626] dark:hover:bg-[#303030] dark:border-[#383838]"
-                            >
-                                <BookOpen className="h-4 w-4 text-white" />
-                                Selección
-                            </Link>
+                            {admissionsOpen && (
+                                <Link
+                                    href={route('student.selection')}
+                                    className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition shadow-sm active:scale-95 bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-md dark:bg-[#262626] dark:hover:bg-[#303030] dark:border-[#383838]"
+                                >
+                                    <BookOpen className="h-4 w-4 text-white" />
+                                    Selección
+                                </Link>
+                            )}
 
                             <Link
                                 href={route('student.payments')}
@@ -642,8 +645,7 @@ export default function StudentDashboard({
                                     En línea
                                 </span>
                             </div>
-                            <div className="mt-4 flex items-center justify-between pt-3 border-t border-white/20 dark:border-[#262626]">
-                                <span className="text-[11px] text-orange-100 dark:text-neutral-400">Acceso directo SSO</span>
+                            <div className="mt-4 flex items-center justify-end pt-3 border-t border-white/20 dark:border-[#262626]">
                                 <a
                                     href={route('student.moodle.auth')}
                                     target="_blank"
@@ -663,16 +665,18 @@ export default function StudentDashboard({
                             </h3>
 
                             <div className="space-y-1.5">
-                                <Link
-                                    href={route('student.selection')}
-                                    className="flex items-center justify-between rounded-lg p-2.5 hover:bg-slate-50 dark:hover:bg-[#222222] transition text-xs font-semibold text-slate-700 dark:text-neutral-200 group"
-                                >
-                                    <div className="flex items-center gap-2.5">
-                                        <BookOpen className="h-4 w-4 text-orange-500 group-hover:scale-110 transition-transform" />
-                                        <span>Selección de Asignaturas</span>
-                                    </div>
-                                    <ChevronRight className="h-3.5 w-3.5 text-slate-400 dark:text-neutral-500" />
-                                </Link>
+                                {admissionsOpen && (
+                                    <Link
+                                        href={route('student.selection')}
+                                        className="flex items-center justify-between rounded-lg p-2.5 hover:bg-slate-50 dark:hover:bg-[#222222] transition text-xs font-semibold text-slate-700 dark:text-neutral-200 group"
+                                    >
+                                        <div className="flex items-center gap-2.5">
+                                            <BookOpen className="h-4 w-4 text-orange-500 group-hover:scale-110 transition-transform" />
+                                            <span>Selección de Asignaturas</span>
+                                        </div>
+                                        <ChevronRight className="h-3.5 w-3.5 text-slate-400 dark:text-neutral-500" />
+                                    </Link>
+                                )}
 
                                 <Link
                                     href={route('student.projection')}

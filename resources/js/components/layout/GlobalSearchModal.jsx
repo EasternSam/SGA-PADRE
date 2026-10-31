@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import {
     LayoutDashboard,
     CreditCard,
@@ -57,7 +57,7 @@ const STUDENT_MODULES = [
     { title: 'Mi Horario y Asignaturas', category: 'Académico', href: '/student/dashboard', keywords: 'inicio portal clases', icon: LayoutDashboard },
     { title: 'Selección de Asignaturas', category: 'Académico', href: '/student/selection', keywords: 'inscripcion materias prematricula', icon: BookOpen },
     { title: 'Pensum y Avance de Carrera', category: 'Académico', href: '/student/projection', keywords: 'malla kardex notas', icon: GraduationCap },
-    { title: 'Aula Virtual (Moodle SSO)', category: 'Académico', href: '/student/moodle-auth', keywords: 'moodle tareas virtual', icon: BookOpen },
+    { title: 'Aula Virtual (Moodle)', category: 'Académico', href: '/student/moodle-auth', keywords: 'moodle tareas virtual', icon: BookOpen },
     { title: 'Mis Pagos y Facturas', category: 'Finanzas', href: '/student/payments', keywords: 'cuotas balance tarjeta', icon: CreditCard },
     { title: 'Solicitudes y Récords', category: 'Trámites', href: '/student/requests', keywords: 'cartas constancias', icon: FileText },
     { title: 'Mi Perfil de Estudiante', category: 'Cuenta', href: '/student/profile', keywords: 'clave datos', icon: Users },
@@ -113,7 +113,11 @@ export default function GlobalSearchModal({ isOpen, onClose, isStudent = false }
 
     if (!isOpen) return null;
 
-    const modulePool = isStudent ? STUDENT_MODULES : SYSTEM_MODULES;
+    const admissionsOpen = Boolean(usePage().props?.admissions_open);
+    const activeStudentModules = admissionsOpen
+        ? STUDENT_MODULES
+        : STUDENT_MODULES.filter((m) => m.href !== '/student/selection');
+    const modulePool = isStudent ? activeStudentModules : SYSTEM_MODULES;
     const normalizedQuery = normalizeSearchText(query);
     const searchTokens = normalizedQuery ? normalizedQuery.split(/\s+/).filter(Boolean) : [];
 

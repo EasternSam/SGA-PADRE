@@ -45,7 +45,7 @@ import { TabBar } from '@/components/godui';
 import ThemeSwitch from '@/components/ui/ThemeSwitch';
 
 
-function getDynamicContextualTabs(rawUrl = '') {
+function getDynamicContextualTabs(rawUrl = '', admissionsOpen = false) {
     const cleanUrl = rawUrl ? rawUrl.split('?')[0] : '';
 
     // 1. Dashboard principal
@@ -223,7 +223,7 @@ function getDynamicContextualTabs(rawUrl = '') {
                 : 'student_dash',
             tabs: [
                 { value: 'student_dash', label: 'Mi Portal', icon: <GraduationCap className="size-4" />, action: () => router.visit('/student/dashboard') },
-                { value: 'student_selection', label: 'Selección', icon: <BookOpen className="size-4" />, action: () => router.visit('/student/selection') },
+                ...(admissionsOpen ? [{ value: 'student_selection', label: 'Selección', icon: <BookOpen className="size-4" />, action: () => router.visit('/student/selection') }] : []),
                 { value: 'student_projection', label: 'Pensum', icon: <Award className="size-4" />, action: () => router.visit('/student/projection') },
                 { value: 'student_payments', label: 'Mis Pagos', icon: <DollarSign className="size-4" />, action: () => router.visit('/student/payments') },
                 { value: 'student_requests', label: 'Trámites', icon: <FileText className="size-4" />, action: () => router.visit('/student/requests') },
@@ -324,11 +324,12 @@ function resolveSectionTitle(explicitTitle, rawUrl = '', institutionName = 'Acad
 }
 
 function AuthenticatedContent({ title, children }) {
-    const { auth, branding, notifications: serverNotifications = [] } = usePage().props;
+    const { auth, branding, admissions_open, notifications: serverNotifications = [] } = usePage().props;
+    const admissionsOpen = Boolean(admissions_open);
     const url = usePage().url;
         const { isMobile, state, openMobile, setOpenMobile, toggleSidebar } = useSidebar();
 
-    const contextualNav = React.useMemo(() => getDynamicContextualTabs(url), [url]);
+    const contextualNav = React.useMemo(() => getDynamicContextualTabs(url, admissionsOpen), [url, admissionsOpen]);
     const [activeTab, setActiveTab] = useState(contextualNav.active);
 
     useEffect(() => {
@@ -628,16 +629,18 @@ function AuthenticatedContent({ title, children }) {
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
 
-                                    <SidebarMenuItem>
-                                        <SidebarMenuButton 
-                                            href="/student/selection" 
-                                            isActive={isActive('/student/selection')}
-                                            tooltip="Selección de Materias"
-                                        >
-                                            <Calendar className="h-[18px] w-[18px] shrink-0 text-white/80" />
-                                            <span>Selección de Materias</span>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
+                                    {admissionsOpen && (
+                                        <SidebarMenuItem>
+                                            <SidebarMenuButton 
+                                                href="/student/selection" 
+                                                isActive={isActive('/student/selection')}
+                                                tooltip="Selección de Materias"
+                                            >
+                                                <Calendar className="h-[18px] w-[18px] shrink-0 text-white/80" />
+                                                <span>Selección de Materias</span>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    )}
 
                                     <SidebarMenuItem>
                                         <SidebarMenuButton 
