@@ -42,4 +42,24 @@ class ContextualDockRoutesTest extends TestCase
         $this->assertStringContainsString("Route::get('/students/create'", $adminRoutes);
         $this->assertStringContainsString("Route::get('/teachers/create'", $adminRoutes);
     }
+
+    public function test_registro_academic_sidebar_group_does_not_expose_inventory(): void
+    {
+        $basePath = dirname(__DIR__, 3);
+        $layout = file_get_contents($basePath . '/resources/js/Layouts/AuthenticatedLayout.jsx');
+
+        $academicStart = strpos($layout, "hasAnyRole(['Admin', 'Registro'])");
+        $financeStart = strpos($layout, "hasAnyRole(['Admin', 'Contabilidad', 'Caja'])");
+
+        $this->assertNotFalse($academicStart);
+        $this->assertNotFalse($financeStart);
+
+        $academicBlock = substr($layout, $academicStart, $financeStart - $academicStart);
+
+        $this->assertStringNotContainsString(
+            '/admin/inventory',
+            $academicBlock,
+            'El grupo Gestión Académica (visible para Registro) no debe incluir Inventario.'
+        );
+    }
 }
