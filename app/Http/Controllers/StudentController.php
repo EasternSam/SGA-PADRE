@@ -41,13 +41,18 @@ class StudentController extends Controller
             ]);
 
         if (!empty($search)) {
-            $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%")
-                  ->orWhere('cedula', 'like', "%{$search}%")
-                  ->orWhere('student_code', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('mobile_phone', 'like', "%{$search}%");
+            $tokens = preg_split('/\s+/u', $search, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            $query->where(function ($q) use ($tokens) {
+                foreach ($tokens as $token) {
+                    $q->where(function ($sub) use ($token) {
+                        $sub->where('first_name', 'like', "%{$token}%")
+                            ->orWhere('last_name', 'like', "%{$token}%")
+                            ->orWhere('cedula', 'like', "%{$token}%")
+                            ->orWhere('student_code', 'like', "%{$token}%")
+                            ->orWhere('email', 'like', "%{$token}%")
+                            ->orWhere('mobile_phone', 'like', "%{$token}%");
+                    });
+                }
             });
         }
 

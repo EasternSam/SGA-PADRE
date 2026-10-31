@@ -71,14 +71,20 @@ class PosController extends Controller
             return response()->json([]);
         }
 
+        $tokens = preg_split('/\s+/u', $query, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
         $students = Student::excludingWalkIn()
             ->where('status', '!=', 'Inactivo')
-            ->where(function ($q) use ($query) {
-                $q->where('first_name', 'like', "%{$query}%")
-                  ->orWhere('last_name', 'like', "%{$query}%")
-                  ->orWhere('student_code', 'like', "%{$query}%")
-                  ->orWhere('cedula', 'like', "%{$query}%")
-                  ->orWhere('email', 'like', "%{$query}%");
+            ->where(function ($q) use ($tokens) {
+                foreach ($tokens as $token) {
+                    $q->where(function ($sub) use ($token) {
+                        $sub->where('first_name', 'like', "%{$token}%")
+                            ->orWhere('last_name', 'like', "%{$token}%")
+                            ->orWhere('student_code', 'like', "%{$token}%")
+                            ->orWhere('cedula', 'like', "%{$token}%")
+                            ->orWhere('email', 'like', "%{$token}%");
+                    });
+                }
             })
             ->limit(15)
             ->get()

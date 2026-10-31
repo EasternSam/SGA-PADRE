@@ -16,36 +16,60 @@ import {
     FileText,
     ShieldCheck,
     Settings,
+    Calendar,
+    Award,
+    Building2,
+    UserPlus,
 } from 'lucide-react';
 
 const SYSTEM_MODULES = [
-    { title: 'Dashboard General', category: 'General', href: '/admin/dashboard', icon: LayoutDashboard },
-    { title: 'Terminal de Caja (Punto de Venta)', category: 'Finanzas', href: '/admin/pos', icon: CreditCard },
-    { title: 'Estudiantes & Expedientes', category: 'Académico', href: '/admin/students', icon: GraduationCap },
-    { title: 'Docentes & Carga Horaria', category: 'Académico', href: '/admin/teachers', icon: UserCheck },
-    { title: 'Cursos & Talleres', category: 'Académico', href: '/admin/courses', icon: BookOpen },
-    { title: 'Carreras Universitarias', category: 'Académico', href: '/admin/careers', icon: Landmark },
-    { title: 'Panel Financiero & Ingresos', category: 'Finanzas', href: '/admin/finance/dashboard', icon: TrendingUp },
-    { title: 'Conceptos de Pago & Aranceles', category: 'Finanzas', href: '/admin/finance/payment-concepts', icon: Tag },
-    { title: 'Cuentas por Pagar & Gastos', category: 'Finanzas', href: '/admin/finance/expenses', icon: Receipt },
-    { title: 'Reportes DGII (606 / 607 / 608)', category: 'Finanzas', href: '/admin/finance/dgii-reports', icon: Landmark },
-    { title: 'Asistencias & Reloj', category: 'RRHH', href: '/admin/hr/attendances', icon: Clock },
-    { title: 'Nómina de Personal', category: 'RRHH', href: '/admin/hr/payroll', icon: Banknote },
-    { title: 'Empleados & Expedientes', category: 'RRHH', href: '/admin/hr/employees', icon: Users },
-    { title: 'Centro de Reportes', category: 'Reportes', href: '/admin/reports', icon: FileText },
-    { title: 'Gestión de Usuarios & Roles', category: 'Sistema', href: '/admin/users', icon: ShieldCheck },
-    { title: 'Ajustes del Sistema & Branding', category: 'Sistema', href: '/admin/settings', icon: Settings },
+    { title: 'Panel de Control (Dashboard)', category: 'General', href: '/admin/dashboard', keywords: 'inicio home kpi resumen', icon: LayoutDashboard },
+    { title: 'Terminal de Caja (Punto de Venta)', category: 'Finanzas', href: '/admin/pos', keywords: 'caja pos cobro facturacion pagos recibo', icon: CreditCard },
+    { title: 'Estudiantes y Expedientes', category: 'Académico', href: '/admin/students', keywords: 'alumnos matriculas directorio kardex', icon: GraduationCap },
+    { title: 'Docentes y Carga Horaria', category: 'Académico', href: '/admin/teachers', keywords: 'profesores maestros claustro', icon: UserCheck },
+    { title: 'Cursos Técnicos y Secciones', category: 'Académico', href: '/admin/courses', keywords: 'talleres modulos oferta academica moodle', icon: BookOpen },
+    { title: 'Carreras Universitarias y Pensum', category: 'Académico', href: '/admin/careers', keywords: 'grado malla curricular asignaturas materias', icon: Landmark },
+    { title: 'Calendario Académico', category: 'Académico', href: '/admin/calendar', keywords: 'agenda eventos fechas feriados horario', icon: Calendar },
+    { title: 'Trámites y Solicitudes', category: 'Académico', href: '/admin/requests', keywords: 'cartas records constancias retiros', icon: FileText },
+    { title: 'Admisiones y Nuevo Ingreso', category: 'Académico', href: '/admin/admissions', keywords: 'aspirantes prospectos inscripciones pipeline', icon: UserPlus },
+    { title: 'Aulas y Espacios Físicos', category: 'Académico', href: '/admin/classrooms', keywords: 'edificios laboratorios reservas salones', icon: Building2 },
+    { title: 'Panel Financiero e Ingresos', category: 'Finanzas', href: '/admin/finance/dashboard', keywords: 'cuentas por cobrar morosidad becas aranceles', icon: TrendingUp },
+    { title: 'Conceptos de Pago y Aranceles', category: 'Finanzas', href: '/admin/finance/payment-concepts', keywords: 'tarifas precios mensualidad inscripcion', icon: Tag },
+    { title: 'Catálogo de Cuentas Contables', category: 'Contabilidad', href: '/admin/finance/chart-of-accounts', keywords: 'activos pasivos capital ingresos gastos contabilidad', icon: Landmark },
+    { title: 'Asiento Contable Manual', category: 'Contabilidad', href: '/admin/finance/manual-entry', keywords: 'diario partida doble debito credito', icon: FileText },
+    { title: 'Libro Mayor General', category: 'Contabilidad', href: '/admin/finance/ledger', keywords: 'movimientos contables saldos', icon: BookOpen },
+    { title: 'Estados Financieros', category: 'Contabilidad', href: '/admin/finance/statements', keywords: 'balance general estado de resultados comprobacion', icon: TrendingUp },
+    { title: 'Cierre de Período Contable', category: 'Contabilidad', href: '/admin/finance/period-closing', keywords: 'bloqueo contable cierre mensual anual', icon: ShieldCheck },
+    { title: 'Cuentas por Pagar y Gastos', category: 'Finanzas', href: '/admin/finance/expenses', keywords: 'suplidores proveedores compras facturas caja chica', icon: Receipt },
+    { title: 'Reportes Fiscales DGII (606 / 607)', category: 'Finanzas', href: '/admin/finance/dgii-reports', keywords: 'impuestos ncf comprobantes fiscales', icon: Landmark },
+    { title: 'Empleados y Expedientes', category: 'RRHH', href: '/admin/hr/employees', keywords: 'personal recursos humanos contratacion', icon: Users },
+    { title: 'Control de Asistencia (Reloj)', category: 'RRHH', href: '/admin/hr/attendances', keywords: 'ponche biometrico entradas salidas tardanzas', icon: Clock },
+    { title: 'Nómina de Pago y TSS', category: 'RRHH', href: '/admin/hr/payroll', keywords: 'salarios sueldos afp sfs isr dispersion', icon: Banknote },
+    { title: 'Centro de Reportes', category: 'Reportes', href: '/admin/reports', keywords: 'estadisticas exportar csv pdf', icon: FileText },
+    { title: 'Plantillas de Certificados y Diplomas', category: 'Sistema', href: '/admin/certificates', keywords: 'diplomas certificados editor diseno', icon: Award },
+    { title: 'Gestión de Usuarios y Roles', category: 'Sistema', href: '/admin/users', keywords: 'administradores permisos accesos cuentas', icon: ShieldCheck },
+    { title: 'Registro de Auditoría y Logs', category: 'Sistema', href: '/admin/activity-logs', keywords: 'historial bitacora seguridad cambios', icon: FileText },
+    { title: 'Configuración Global', category: 'Sistema', href: '/admin/settings', keywords: 'ajustes marca colores logo moodle wordpress smtp', icon: Settings },
+    { title: 'Mi Perfil y Seguridad', category: 'Cuenta', href: '/admin/profile', keywords: 'contrasena clave cuenta usuario', icon: Users },
 ];
 
 const STUDENT_MODULES = [
-    { title: 'Mi Horario y Asignaturas', category: 'Académico', href: '/student/dashboard', icon: LayoutDashboard },
-    { title: 'Selección de Asignaturas', category: 'Académico', href: '/student/selection', icon: BookOpen },
-    { title: 'Pensum & Avance de Carrera', category: 'Académico', href: '/student/projection', icon: GraduationCap },
-    { title: 'Aula Virtual (Moodle SSO)', category: 'Académico', href: '/student/moodle-auth', icon: BookOpen },
-    { title: 'Mis Pagos & Facturas', category: 'Finanzas', href: '/student/payments', icon: CreditCard },
-    { title: 'Solicitudes & Récords', category: 'Trámites', href: '/student/requests', icon: FileText },
-    { title: 'Mi Perfil de Estudiante', category: 'Cuenta', href: '/student/profile', icon: Users },
+    { title: 'Mi Horario y Asignaturas', category: 'Académico', href: '/student/dashboard', keywords: 'inicio portal clases', icon: LayoutDashboard },
+    { title: 'Selección de Asignaturas', category: 'Académico', href: '/student/selection', keywords: 'inscripcion materias prematricula', icon: BookOpen },
+    { title: 'Pensum y Avance de Carrera', category: 'Académico', href: '/student/projection', keywords: 'malla kardex notas', icon: GraduationCap },
+    { title: 'Aula Virtual (Moodle SSO)', category: 'Académico', href: '/student/moodle-auth', keywords: 'moodle tareas virtual', icon: BookOpen },
+    { title: 'Mis Pagos y Facturas', category: 'Finanzas', href: '/student/payments', keywords: 'cuotas balance tarjeta', icon: CreditCard },
+    { title: 'Solicitudes y Récords', category: 'Trámites', href: '/student/requests', keywords: 'cartas constancias', icon: FileText },
+    { title: 'Mi Perfil de Estudiante', category: 'Cuenta', href: '/student/profile', keywords: 'clave datos', icon: Users },
 ];
+
+function normalizeSearchText(value = '') {
+    return String(value)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+}
 
 export default function GlobalSearchModal({ isOpen, onClose, isStudent = false }) {
     const [query, setQuery] = useState('');
@@ -76,7 +100,7 @@ export default function GlobalSearchModal({ isOpen, onClose, isStudent = false }
             try {
                 const res = await fetch(`/admin/pos/search-student?q=${encodeURIComponent(trimmed)}`);
                 const data = await res.json();
-                setStudentResults(data || []);
+                setStudentResults(Array.isArray(data) ? data : []);
             } catch (err) {
                 console.error('Error buscando estudiantes:', err);
             } finally {
@@ -90,19 +114,37 @@ export default function GlobalSearchModal({ isOpen, onClose, isStudent = false }
     if (!isOpen) return null;
 
     const modulePool = isStudent ? STUDENT_MODULES : SYSTEM_MODULES;
-    const filteredModules = query.trim() 
-        ? modulePool.filter(m => 
-            m.title.toLowerCase().includes(query.toLowerCase()) || 
-            m.category.toLowerCase().includes(query.toLowerCase())
-          )
-        : modulePool.slice(0, 6);
+    const normalizedQuery = normalizeSearchText(query);
+    const searchTokens = normalizedQuery ? normalizedQuery.split(/\s+/).filter(Boolean) : [];
+
+    const filteredModules = searchTokens.length > 0
+        ? modulePool.filter((m) => {
+            const haystack = normalizeSearchText(`${m.title} ${m.category} ${m.keywords || ''}`);
+            return searchTokens.every((token) => haystack.includes(token));
+        })
+        : modulePool.slice(0, 7);
 
     const handleSelect = (href) => {
         onClose();
-        if (href.startsWith('/admin/pos') || href.startsWith('/student/')) {
-            router.visit(href);
-        } else {
-            window.location.href = href;
+        if (href === '/student/moodle-auth') {
+            window.open(href, '_blank');
+            return;
+        }
+        router.visit(href);
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            onClose();
+        } else if (e.key === 'Enter') {
+            if (studentResults.length > 0) {
+                e.preventDefault();
+                handleSelect(`/admin/students/profile/${studentResults[0].id}`);
+            } else if (filteredModules.length > 0) {
+                e.preventDefault();
+                handleSelect(filteredModules[0].href);
+            }
         }
     };
 
@@ -125,7 +167,8 @@ export default function GlobalSearchModal({ isOpen, onClose, isStudent = false }
                         type="text"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder={isStudent ? "Buscar en mi portal, asignaturas, trámites, pagos... (Esc para salir)" : "Buscar módulos, estudiantes, finanzas... (Esc para salir)"}
+                        onKeyDown={handleKeyDown}
+                        placeholder={isStudent ? "Buscar en mi portal, asignaturas, trámites, pagos... (Esc para salir)" : "Buscar módulos, estudiantes, matrículas, finanzas... (Esc para salir)"}
                         className="w-full text-sm bg-transparent border-0 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-0"
                     />
                     <kbd className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold text-gray-400 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-[#262626]">
@@ -150,11 +193,11 @@ export default function GlobalSearchModal({ isOpen, onClose, isStudent = false }
                                     >
                                         <div className="flex items-center gap-3 min-w-0">
                                             <div className="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center font-bold text-xs shrink-0">
-                                                {s.name.charAt(0)}
+                                                {s.name?.charAt(0) || 'E'}
                                             </div>
                                             <div className="truncate">
                                                 <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{s.name}</p>
-                                                <p className="text-[11px] text-gray-400">{s.cedula} • {s.code}</p>
+                                                <p className="text-[11px] text-gray-400">{s.cedula || 'Sin cédula'} • {s.code}</p>
                                             </div>
                                         </div>
                                         <span className="text-[11px] font-semibold text-brand dark:text-brand-accent opacity-0 group-hover:opacity-100 transition-opacity">
@@ -167,37 +210,47 @@ export default function GlobalSearchModal({ isOpen, onClose, isStudent = false }
                     )}
 
                     {/* Módulos del Sistema */}
-                    <div className="py-2 px-2">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5 px-2">
-                            {query ? 'Módulos coincidentes' : 'Acceso Rápido'}
-                        </p>
-                        <div className="space-y-1">
-                            {filteredModules.map((m) => {
-                                const IconComponent = m.icon;
-                                return (
-                                    <button
-                                        key={m.href}
-                                        onClick={() => handleSelect(m.href)}
-                                        className="w-full flex items-center justify-between p-2 rounded-xl text-left hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-                                    >
-                                        <div className="flex items-center gap-2.5">
-                                            {IconComponent && <IconComponent className="w-4 h-4 text-gray-500 dark:text-gray-400 shrink-0" />}
-                                            <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{m.title}</span>
-                                        </div>
-                                        <span className="text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-800/80 px-2 py-0.5 rounded">
-                                            {m.category}
-                                        </span>
-                                    </button>
-                                );
-                            })}
+                    {filteredModules.length > 0 && (
+                        <div className="py-2 px-2">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5 px-2">
+                                {searchTokens.length > 0 ? 'Módulos coincidentes' : 'Acceso Rápido'}
+                            </p>
+                            <div className="space-y-1">
+                                {filteredModules.map((m) => {
+                                    const IconComponent = m.icon;
+                                    return (
+                                        <button
+                                            key={m.href}
+                                            onClick={() => handleSelect(m.href)}
+                                            className="w-full flex items-center justify-between p-2 rounded-xl text-left hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+                                        >
+                                            <div className="flex items-center gap-2.5">
+                                                {IconComponent && <IconComponent className="w-4 h-4 text-gray-500 dark:text-gray-400 shrink-0" />}
+                                                <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{m.title}</span>
+                                            </div>
+                                            <span className="text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-800/80 px-2 py-0.5 rounded">
+                                                {m.category}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
+                    )}
+
+                    {/* Estado sin resultados */}
+                    {searchTokens.length > 0 && !searchingStudents && studentResults.length === 0 && filteredModules.length === 0 && (
+                        <div className="py-8 px-4 text-center">
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                No se encontraron módulos ni estudiantes para «{query.trim()}».
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer hints */}
                 <div className="p-2.5 bg-gray-50 dark:bg-[#121212] border-t border-gray-100 dark:border-[#262626] flex items-center justify-between text-[11px] text-gray-400 px-4">
-                    <span>Navega con flechas y selecciona con Enter</span>
-                    <span className="font-semibold text-gray-500 dark:text-gray-400">SGA Search Engine</span>
+                    <span>Presiona Enter para ir al primer resultado o Esc para cerrar</span>
                 </div>
             </div>
         </div>
