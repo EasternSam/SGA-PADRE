@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, usePage, Head, Link } from '@inertiajs/react';
 
 export default function Login({ status, canResetPassword }) {
@@ -11,6 +11,34 @@ export default function Login({ status, canResetPassword }) {
         remember: false,
         website: '', // Honeypot
     });
+
+    // Mantener fresco el cookie XSRF-TOKEN cuando la pestaña vuelve a foco o permanece abierta
+    useEffect(() => {
+        const refreshCsrfCookie = () => {
+            if (typeof window === 'undefined') return;
+            fetch('/login', {
+                method: 'HEAD',
+                credentials: 'same-origin',
+                cache: 'no-store',
+            }).catch(() => {});
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                refreshCsrfCookie();
+            }
+        };
+
+        window.addEventListener('focus', refreshCsrfCookie);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        const intervalId = window.setInterval(refreshCsrfCookie, 30 * 60 * 1000);
+
+        return () => {
+            window.removeEventListener('focus', refreshCsrfCookie);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.clearInterval(intervalId);
+        };
+    }, []);
 
     const primaryColor = branding?.primary_color || '#211170';
     const navbarType = branding?.navbar_type || 'gradient';
@@ -269,7 +297,7 @@ export default function Login({ status, canResetPassword }) {
                                 <button 
                                     type="submit" 
                                     disabled={form.processing}
-                                    className="w-full py-4 px-4 text-white font-bold text-sm tracking-wide shadow-lg hover:shadow-xl transition-all transform active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 hover:brightness-110 rounded-xl disabled:opacity-50"
+                                    className="w-full py-4 px-4 text-white font-bold text-sm tracking-wide transition-all transform active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 hover:brightness-110 rounded-xl disabled:opacity-50"
                                     style={{ background: primaryColor }}
                                 >
                                     {form.processing && (
@@ -298,7 +326,7 @@ export default function Login({ status, canResetPassword }) {
                 <span className="text-xs sm:text-sm font-medium drop-shadow-md hidden sm:inline text-white">¿Aún no eres estudiante?</span>
                 <a 
                     href="/register" 
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-900 dark:text-white font-bold text-xs sm:text-sm shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:shadow-[0_15px_35px_rgba(0,0,0,0.45)] transition-all transform hover:scale-105 active:scale-95 rounded-xl"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-900 dark:text-white font-bold text-xs sm:text-sm transition-all transform hover:scale-105 active:scale-95 rounded-xl"
                 >
                     <span className="text-slate-950 dark:text-white">Solicitar Admisión</span>
                     <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

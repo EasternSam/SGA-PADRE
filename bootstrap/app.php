@@ -74,5 +74,25 @@ return Application::configure(basePath: dirname(__DIR__))
 
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response, \Throwable $exception, Request $request) {
+            if ($response->getStatusCode() === 419) {
+                if ($request->is('logout')) {
+                    return redirect('/login');
+                }
+
+                if ($request->is('login') && auth()->check()) {
+                    return redirect('/');
+                }
+
+                if ($request->hasSession()) {
+                    $request->session()->regenerateToken();
+                }
+
+                return back()
+                    ->withInput($request->except(['password', 'password_confirmation']))
+                    ->with('status', 'La sesión de seguridad se actualizó automáticamente. Por favor presiona Ingresar nuevamente.');
+            }
+
+            return $response;
+        });
     })->create();
