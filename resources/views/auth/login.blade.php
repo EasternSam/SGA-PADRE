@@ -221,7 +221,7 @@
     </div>
 
     <!-- ── Esquina Inferior Derecha de la Vista Completa (Pantalla/Viewport) ── -->
-    @if(\App\Helpers\SaaS::showCareers())
+    @if(\App\Helpers\SaaS::showCareers() && in_array((string) \App\Models\Setting::get('admissions_open', '0'), ['1', 'true'], true))
         <div class="fixed bottom-6 right-6 lg:bottom-8 lg:right-8 z-40 flex items-center gap-3 select-none" style="position: fixed !important; bottom: 24px !important; right: 24px !important;">
             <span class="text-xs sm:text-sm font-medium drop-shadow-md hidden sm:inline" style="color: #ffffff !important;">¿Aún no eres estudiante?</span>
             <a href="{{ route('student.register.link') }}" 

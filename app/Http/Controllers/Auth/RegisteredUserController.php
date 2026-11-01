@@ -3,27 +3,40 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\Setting;
 use App\Models\Student;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
-use Illuminate\View\View;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB; // Importante para la transacción
-use Carbon\Carbon;
+use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
 {
     /**
+     * Determina si el modo de Admisiones Abiertas está activo.
+     */
+    private function isAdmissionsOpen(): bool
+    {
+        return in_array((string) Setting::get('admissions_open', '0'), ['1', 'true'], true);
+    }
+
+    /**
      * Display the registration view.
      */
-    public function create(): View
+    public function create(): View|RedirectResponse
     {
-        return view('auth.student-register'); 
+        if (!$this->isAdmissionsOpen()) {
+            return redirect()->route('login')
+                ->with('status', 'El período de admisiones se encuentra cerrado actualmente.');
+        }
+
+        return view('auth.student-register');
     }
 
     /**
@@ -33,8 +46,13 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        if (!$this->isAdmissionsOpen()) {
+            return redirect()->route('login')
+                ->with('status', 'El período de admisiones se encuentra cerrado actualmente.');
+        }
+
         Log::info('--- INTENTO DE REGISTRO NUEVO INGRESO (SOLICITANTE) ---');
-        
+
         $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
@@ -45,7 +63,7 @@ class RegisteredUserController extends Controller
         try {
             // Usamos DB::transaction para asegurar atomicidad: O se crea todo, o no se crea nada.
             $user = DB::transaction(function () use ($request) {
-                
+
                 // 1. Crear el Usuario
                 $user = User::create([
                     'name' => $request->first_name . ' ' . $request->last_name,
@@ -64,7 +82,7 @@ class RegisteredUserController extends Controller
                     'first_name' => $request->first_name,
                     'last_name' => $request->last_name,
                     'email' => $request->email,
-                    'cedula' => $request->cedula, 
+                    'cedula' => $request->cedula,
                     'status' => 'Prospecto',
                 ]);
 
@@ -80,9 +98,6 @@ class RegisteredUserController extends Controller
             return redirect()->route('applicant.portal');
 
         } catch (\Exception $e) {
-            // Si algo falla dentro de la transacción, Laravel hace rollback automático.
-            // No quedan usuarios "basura" en la BD.
-            
             Log::error('ERROR CRÍTICO EN TRANSACCIÓN DE REGISTRO: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
 

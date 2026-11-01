@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useForm, usePage, Head, Link } from '@inertiajs/react';
 
 export default function Login({ status, canResetPassword }) {
-    const { branding } = usePage().props;
+    const { branding, admissions_open } = usePage().props;
+    const admissionsOpen = Boolean(admissions_open);
     const [showPassword, setShowPassword] = useState(false);
 
     const form = useForm({
@@ -322,18 +323,20 @@ export default function Login({ status, canResetPassword }) {
             </div>
 
             {/* ── Esquina Inferior Derecha: Solicitar Admisión ── */}
-            <div className="fixed bottom-6 right-6 lg:bottom-8 lg:right-8 z-40 flex items-center gap-3 select-none">
-                <span className="text-xs sm:text-sm font-medium drop-shadow-md hidden sm:inline text-white">¿Aún no eres estudiante?</span>
-                <a 
-                    href="/register" 
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-900 dark:text-white font-bold text-xs sm:text-sm transition-all transform hover:scale-105 active:scale-95 rounded-xl"
-                >
-                    <span className="text-slate-950 dark:text-white">Solicitar Admisión</span>
-                    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
-                    </svg>
-                </a>
-            </div>
+            {admissionsOpen && (
+                <div className="fixed bottom-6 right-6 lg:bottom-8 lg:right-8 z-40 flex items-center gap-3 select-none">
+                    <span className="text-xs sm:text-sm font-medium drop-shadow-md hidden sm:inline text-white">¿Aún no eres estudiante?</span>
+                    <a 
+                        href="/register" 
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-900 dark:text-white font-bold text-xs sm:text-sm transition-all transform hover:scale-105 active:scale-95 rounded-xl"
+                    >
+                        <span className="text-slate-950 dark:text-white">Solicitar Admisión</span>
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </a>
+                </div>
+            )}
         </div>
     );
 }
