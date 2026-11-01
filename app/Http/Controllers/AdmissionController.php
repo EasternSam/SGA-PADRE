@@ -122,7 +122,7 @@ class AdmissionController extends Controller
 
             if ($admission->user) {
                 try {
-                    $admission->user->notify(new SystemNotification('Acción Requerida: Admisión', $msg, 'danger', '/portal'));
+                    $admission->user->notify(new SystemNotification('Acción Requerida: Admisión', $msg, 'danger', '/portal-aspirante'));
                 } catch (\Exception $e) {
                     Log::warning('No se pudo enviar notificación de rechazo: ' . $e->getMessage());
                 }
@@ -258,7 +258,7 @@ class AdmissionController extends Controller
                         '¡Admisión Aprobada!',
                         'Tu solicitud de admisión ha sido aprobada. Se ha habilitado tu acceso al SGA institucional.',
                         'success',
-                        '/portal'
+                        '/student/dashboard'
                     ));
                 } catch (\Exception $e) {
                     Log::warning('No se pudo enviar notificación de aprobación: ' . $e->getMessage());
@@ -294,7 +294,7 @@ class AdmissionController extends Controller
                     'Solicitud de Admisión No Aprobada',
                     'Tu solicitud ha sido revisada con observaciones: ' . $validated['notes'],
                     'danger',
-                    '/portal'
+                    '/portal-aspirante'
                 ));
             } catch (\Exception $e) {}
         }

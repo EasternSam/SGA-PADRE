@@ -359,6 +359,16 @@ export function NotificationCenter({
   >
                           <p>{item.description ?? (item.actor ? `${item.actor.name} comparti\xF3 una actualizaci\xF3n.` : "Actualizaci\xF3n disponible para revisi\xF3n.")}</p>
                           <div className={styles.itemActions}>
+                            {item.url && <button
+    type="button"
+    onClick={() => {
+      if (!item.read) toggleRead(item);
+      setOpen(false);
+      window.location.href = item.url;
+    }}
+  >
+                              <span>Abrir</span>
+                            </button>}
                             <button type="button" onClick={() => toggleRead(item)}>
                               <MorphWidth reduce={reduce} morphKey={item.read ? "read" : "unread"}>
                                 <span className={styles.actionIcon}>

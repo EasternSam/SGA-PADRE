@@ -3,11 +3,10 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class SystemNotification extends Notification implements ShouldQueue
+class SystemNotification extends Notification
 {
     use Queueable;
 
@@ -16,16 +15,20 @@ class SystemNotification extends Notification implements ShouldQueue
     public $type; // 'info', 'success', 'warning', 'danger'
     public $icon; // Icono FontAwesome sin prefijo (ej: 'check-circle')
     public $actionUrl;
+    public array $extra;
+    public bool $sendMail;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct($title, $message, $type = 'info', $actionUrl = null)
+    public function __construct($title, $message, $type = 'info', $actionUrl = null, array $extra = [], bool $sendMail = false)
     {
         $this->title = $title;
         $this->message = $message;
         $this->type = $type;
         $this->actionUrl = $actionUrl;
+        $this->extra = $extra;
+        $this->sendMail = $sendMail;
         
         // Asignar icono visual según tipo
         $this->icon = match($type) {
@@ -41,8 +44,12 @@ class SystemNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        // Enviar siempre a base de datos (campanita) Y correo
-        return ['database', 'mail'];
+        if ($this->sendMail) {
+            return ['database', 'mail'];
+        }
+
+        // Registrar de inmediato en base de datos (campanita de notificaciones)
+        return ['database'];
     }
 
     /**
@@ -68,12 +75,12 @@ class SystemNotification extends Notification implements ShouldQueue
      */
     public function toArray(object $notifiable): array
     {
-        return [
+        return array_merge([
             'title' => $this->title,
             'message' => $this->message,
             'type' => $this->type,
             'icon' => $this->icon,
             'url' => $this->actionUrl,
-        ];
+        ], $this->extra);
     }
 }

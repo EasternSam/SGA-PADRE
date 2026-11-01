@@ -141,7 +141,11 @@ export default function Portal({ applicant, admission, courses = [] }) {
                     setDocStatuses(parsed.document_status);
                 }
                 setUploadSuccess(parsed.message || 'Documento depositado correctamente.');
-                router.reload({ only: ['admission'], preserveScroll: true, preserveState: true });
+                router.reload({
+                    only: ['admission', 'notifications', 'unreadNotificationsCount'],
+                    preserveScroll: true,
+                    preserveState: true,
+                });
             } else {
                 const firstValidationError =
                     parsed?.errors && Object.values(parsed.errors).flat()[0];

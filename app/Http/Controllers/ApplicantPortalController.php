@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Admission;
 use App\Models\Course;
+use App\Models\User;
+use App\Notifications\SystemNotification;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -179,17 +182,30 @@ class ApplicantPortalController extends Controller
             ]))->load('course');
         }
 
+        $allDocumentsComplete = $this->hasAllRequiredDocuments($documents);
+        if ($allDocumentsComplete) {
+            $this->notifyAllDocumentsSubmitted($admission, $user);
+        }
+
         if ($request->expectsJson()) {
             return response()->json([
                 'ok' => true,
-                'message' => 'Solicitud de admisión y documentos registrados exitosamente.',
+                'message' => $allDocumentsComplete
+                    ? '¡Todos los documentos han sido enviados! Tu expediente fue notificado a Admisiones para revisión.'
+                    : 'Solicitud de admisión y documentos registrados exitosamente.',
                 'admission_id' => $admission->id,
                 'documents' => $admission->documents ?? [],
                 'document_status' => $admission->document_status ?? [],
+                'all_documents_complete' => $allDocumentsComplete,
             ]);
         }
 
-        return back()->with('success', 'Solicitud de admisión y documentos registrados exitosamente.');
+        return back()->with(
+            'success',
+            $allDocumentsComplete
+                ? '¡Todos los documentos han sido enviados! Tu expediente fue notificado a Admisiones para revisión.'
+                : 'Solicitud de admisión y documentos registrados exitosamente.'
+        );
     }
 
     /**
@@ -259,16 +275,102 @@ class ApplicantPortalController extends Controller
             'document_status' => $docStatus,
         ]);
 
+        $allDocumentsComplete = $this->hasAllRequiredDocuments($documents);
+        if ($allDocumentsComplete) {
+            $this->notifyAllDocumentsSubmitted($admission->fresh('course'), $user);
+        }
+
         if ($request->expectsJson()) {
             return response()->json([
                 'ok' => true,
-                'message' => 'Documento depositado correctamente.',
+                'message' => $allDocumentsComplete
+                    ? '¡Todos los documentos han sido depositados! Tu expediente fue notificado para revisión.'
+                    : 'Documento depositado correctamente.',
                 'admission_id' => $admission->id,
                 'documents' => $admission->documents,
                 'document_status' => $admission->document_status,
+                'all_documents_complete' => $allDocumentsComplete,
             ]);
         }
 
-        return back()->with('success', 'Documento depositado correctamente.');
+        return back()->with(
+            'success',
+            $allDocumentsComplete
+                ? '¡Todos los documentos han sido depositados! Tu expediente fue notificado para revisión.'
+                : 'Documento depositado correctamente.'
+        );
+    }
+
+    /**
+     * Check whether all 4 required admission documents have been uploaded.
+     */
+    private function hasAllRequiredDocuments(array $documents): bool
+    {
+        foreach (array_keys(self::STORAGE_FOLDERS) as $requiredKey) {
+            if (empty($documents[$requiredKey])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Dispatch in-app notifications when an applicant finishes submitting all required documents.
+     */
+    private function notifyAllDocumentsSubmitted(Admission $admission, $applicantUser = null): void
+    {
+        try {
+            $admission->loadMissing('course');
+            $fullName = trim($admission->first_name . ' ' . $admission->last_name) ?: ($applicantUser?->name ?? 'Aspirante');
+            $admissionCode = 'ADM-' . str_pad((string) $admission->id, 5, '0', STR_PAD_LEFT);
+            $courseName = $admission->course?->name ?? 'Programa Académico';
+
+            $staffUsers = User::whereHas('roles', function ($q) {
+                $q->whereIn('name', ['Admin', 'SuperAdmin', 'Registro']);
+            })->get();
+
+            foreach ($staffUsers as $staffUser) {
+                $staffUser->unreadNotifications()
+                    ->where('data->event', 'all_documents_submitted')
+                    ->where('data->admission_id', $admission->id)
+                    ->delete();
+
+                $staffUser->notify(new SystemNotification(
+                    'Expediente de Admisión Completo',
+                    "El aspirante {$fullName} ({$admissionCode}) completó el envío de los 4 documentos requeridos para {$courseName}. Listo para validación.",
+                    'info',
+                    '/admin/admissions?search=' . urlencode($admission->identification_id ?: $admission->email ?: $fullName),
+                    [
+                        'event' => 'all_documents_submitted',
+                        'admission_id' => $admission->id,
+                        'actor' => [
+                            'name' => $fullName,
+                        ],
+                    ]
+                ));
+            }
+
+            $targetApplicant = $applicantUser ?: ($admission->user_id ? User::find($admission->user_id) : null);
+            if ($targetApplicant) {
+                $targetApplicant->unreadNotifications()
+                    ->where('data->event', 'applicant_all_documents_submitted')
+                    ->where('data->admission_id', $admission->id)
+                    ->delete();
+
+                $targetApplicant->notify(new SystemNotification(
+                    'Documentación Completa Enviada',
+                    "Hemos recibido tus 4 documentos requeridos para {$courseName} ({$admissionCode}). Tu expediente pasó a revisión por el departamento de Admisiones.",
+                    'success',
+                    '/portal-aspirante',
+                    [
+                        'event' => 'applicant_all_documents_submitted',
+                        'admission_id' => $admission->id,
+                    ]
+                ));
+            }
+        } catch (\Throwable $e) {
+            Log::warning('No se pudo emitir la notificación de expediente completo: ' . $e->getMessage());
+        }
     }
 }
