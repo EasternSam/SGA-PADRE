@@ -60,7 +60,7 @@ class HandleInertiaRequests extends Middleware
                 'message' => fn () => $request->session()->get('message'),
                 'status' => fn () => $request->session()->get('status'),
             ],
-            'notifications' => fn () => $user ? $user->notifications()->take(30)->get()->map(function ($n) {
+            'notifications' => fn () => $user ? $user->notifications()->take(30)->get()->map(function ($n) use ($user) {
                 $data = $n->data ?? [];
                 $tone = match ($data['type'] ?? 'info') {
                     'success' => 'success',
@@ -75,7 +75,7 @@ class HandleInertiaRequests extends Middleware
                     'time' => $n->created_at ? $n->created_at->diffForHumans() : '',
                     'read' => !is_null($n->read_at),
                     'tone' => $tone,
-                    'url' => $data['url'] ?? null,
+                    'url' => $this->normalizeNotificationUrl($data['url'] ?? null, $user),
                     'actor' => isset($data['actor']) ? $data['actor'] : null,
                 ];
             }) : [],
@@ -85,5 +85,50 @@ class HandleInertiaRequests extends Middleware
                 'location' => $request->url(),
             ],
         ];
+    }
+
+    /**
+     * Normalize legacy or full-domain notification URLs to valid relative paths.
+     */
+    private function normalizeNotificationUrl(?string $rawUrl, $user): ?string
+    {
+        if (empty($rawUrl)) {
+            return null;
+        }
+
+        $url = trim($rawUrl);
+
+        // Convert absolute URLs (e.g. https://atest.gridbase.com.do/...) to relative path + query
+        if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
+            $path = parse_url($url, PHP_URL_PATH) ?: '/';
+            $query = parse_url($url, PHP_URL_QUERY);
+            $url = $path . ($query ? '?' . $query : '');
+        }
+
+        if ($url === '/portal') {
+            if ($user && method_exists($user, 'hasRole')) {
+                if ($user->hasRole('Estudiante')) {
+                    return '/student/dashboard';
+                }
+                if ($user->hasRole('Solicitante')) {
+                    return '/portal-aspirante';
+                }
+            }
+            return '/dashboard';
+        }
+
+        if ($url === '/applicant/portal') {
+            return '/portal-aspirante';
+        }
+
+        if (str_starts_with($url, '/admin/students/profile/')) {
+            $studentId = trim(substr($url, strlen('/admin/students/profile/')), '/');
+            if ($studentId !== '') {
+                return "/admin/students/{$studentId}/profile";
+            }
+            return '/admin/students';
+        }
+
+        return $url;
     }
 }

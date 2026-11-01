@@ -314,6 +314,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/portal-aspirante/solicitud', [\App\Http\Controllers\ApplicantPortalController::class, 'index'])->name('applicant.admission-form');
     });
 
+    Route::get('/portal', function () {
+        $user = auth()->user();
+        if ($user && $user->hasRole('Estudiante')) {
+            return redirect()->route('student.dashboard');
+        }
+        if ($user && $user->hasRole('Solicitante')) {
+            return redirect()->route('applicant.portal');
+        }
+        return redirect()->route('dashboard');
+    })->name('portal.redirect');
+
+    Route::get('/admin/students/profile/{studentId}', function ($studentId) {
+        if (\App\Models\Student::where('id', $studentId)->exists()) {
+            return redirect("/admin/students/{$studentId}/profile");
+        }
+        return redirect('/admin/students');
+    })->name('admin.students.profile.legacy');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::get('/notifications', \App\Livewire\NotificationsList::class)->name('notifications.index');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
