@@ -471,7 +471,7 @@ export default function AdmissionsPipeline({
                                 <div className="space-y-2.5">
                                     {Object.entries(selectedAdmission.documents).map(([key, path]) => {
                                         const docStatus = tempDocStatus[key] || 'pending';
-                                        const label = ucwords(key.replace(/_/g, ' '));
+                                        const label = getDocumentLabel(key);
 
                                         return (
                                             <div
@@ -586,6 +586,20 @@ export default function AdmissionsPipeline({
             )}
         </AuthenticatedLayout>
     );
+}
+
+const DOCUMENT_LABELS = {
+    birth_certificate: 'Acta de Nacimiento',
+    id_card: 'Cédula / Identidad',
+    high_school_record: 'Récord de Bachillerato',
+    photo: 'Fotografía 2x2',
+    medical_certificate: 'Certificado Médico',
+    payment_receipt: 'Recibo de Pago',
+    bachelor_certificate: 'Certificado de Bachiller',
+};
+
+function getDocumentLabel(key) {
+    return DOCUMENT_LABELS[key] || ucwords(String(key || '').replace(/_/g, ' '));
 }
 
 function ucwords(str) {

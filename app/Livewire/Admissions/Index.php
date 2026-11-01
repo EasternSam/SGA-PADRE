@@ -234,10 +234,19 @@ class Index extends Component
             
             // --- NOTIFICAR RECHAZO DE DOCUMENTOS ---
             // Identificar qué documentos fallaron para ser específicos
+            $docLabels = [
+                'birth_certificate' => 'Acta de Nacimiento',
+                'id_card' => 'Cédula / Identidad',
+                'high_school_record' => 'Récord de Bachillerato',
+                'photo' => 'Fotografía 2x2',
+                'medical_certificate' => 'Certificado Médico',
+                'payment_receipt' => 'Recibo de Pago',
+                'bachelor_certificate' => 'Certificado de Bachiller',
+            ];
             $rejectedDocs = [];
             foreach($this->tempDocStatus as $key => $status) {
                 if($status === 'rejected') {
-                    $rejectedDocs[] = ucwords(str_replace('_', ' ', $key));
+                    $rejectedDocs[] = $docLabels[$key] ?? ucwords(str_replace('_', ' ', $key));
                 }
             }
             $listaDocs = implode(', ', $rejectedDocs);

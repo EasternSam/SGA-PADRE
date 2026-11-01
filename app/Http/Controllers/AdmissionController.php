@@ -107,10 +107,19 @@ class AdmissionController extends Controller
             $admission->save();
 
             // Notificar rechazo
+            $docLabels = [
+                'birth_certificate' => 'Acta de Nacimiento',
+                'id_card' => 'Cédula / Identidad',
+                'high_school_record' => 'Récord de Bachillerato',
+                'photo' => 'Fotografía 2x2',
+                'medical_certificate' => 'Certificado Médico',
+                'payment_receipt' => 'Recibo de Pago',
+                'bachelor_certificate' => 'Certificado de Bachiller',
+            ];
             $rejectedDocs = [];
             foreach ($docStatus as $key => $st) {
                 if ($st === 'rejected') {
-                    $rejectedDocs[] = ucwords(str_replace('_', ' ', $key));
+                    $rejectedDocs[] = $docLabels[$key] ?? ucwords(str_replace('_', ' ', $key));
                 }
             }
             $listaDocs = implode(', ', $rejectedDocs);
