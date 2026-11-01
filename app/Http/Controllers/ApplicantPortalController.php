@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Admission;
 use App\Models\Course;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -16,6 +19,28 @@ class ApplicantPortalController extends Controller
         'high_school_record' => 'admissions/records',
         'photo' => 'admissions/photos',
     ];
+
+    private const ALLOWED_EXTENSIONS = [
+        'pdf', 'jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'gif', 'bmp', 'doc', 'docx',
+    ];
+
+    /**
+     * Store an uploaded admission document with clean extension validation.
+     */
+    private function storeUploadedDocument(UploadedFile $file, string $key): string
+    {
+        $ext = strtolower($file->getClientOriginalExtension() ?: $file->guessExtension() ?: 'pdf');
+        if (!in_array($ext, self::ALLOWED_EXTENSIONS, true)) {
+            throw ValidationException::withMessages([
+                $key => 'Formato de archivo no permitido. Usa PDF, JPG, PNG, WEBP o HEIC (máx. 25 MB).',
+            ]);
+        }
+
+        $folder = self::STORAGE_FOLDERS[$key];
+        $filename = Str::uuid()->toString() . '.' . $ext;
+
+        return $file->storeAs($folder, $filename, 'local');
+    }
 
     /**
      * Resolve the active admission record for the authenticated user.
@@ -109,10 +134,10 @@ class ApplicantPortalController extends Controller
             'course_id' => 'required|exists:courses,id',
             'previous_school' => 'required|string|max:255',
             'previous_gpa' => 'nullable|numeric|between:0,100',
-            'birth_certificate' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp,heic|max:10240',
-            'id_card' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp,heic|max:10240',
-            'high_school_record' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp,heic|max:10240',
-            'photo' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf,heic|max:10240',
+            'birth_certificate' => 'nullable|file|max:25600',
+            'id_card' => 'nullable|file|max:25600',
+            'high_school_record' => 'nullable|file|max:25600',
+            'photo' => 'nullable|file|max:25600',
         ]);
 
         $user = auth()->user();
@@ -126,9 +151,9 @@ class ApplicantPortalController extends Controller
             'photo' => 'pending',
         ];
 
-        foreach (self::STORAGE_FOLDERS as $key => $folder) {
-            if ($request->hasFile($key)) {
-                $documents[$key] = $request->file($key)->store($folder, 'local');
+        foreach (array_keys(self::STORAGE_FOLDERS) as $key) {
+            if ($request->hasFile($key) && $request->file($key)->isValid()) {
+                $documents[$key] = $this->storeUploadedDocument($request->file($key), $key);
                 $docStatus[$key] = 'pending';
             }
         }
@@ -143,41 +168,81 @@ class ApplicantPortalController extends Controller
                 'documents' => $documents,
                 'document_status' => $docStatus,
             ]));
+            $admission = $existingAdmission->fresh('course');
         } else {
-            Admission::create(array_merge($payload, [
+            $admission = Admission::create(array_merge($payload, [
                 'user_id' => $user->id,
                 'email' => $user->email,
                 'status' => 'pending',
                 'documents' => $documents,
                 'document_status' => $docStatus,
-            ]));
+            ]))->load('course');
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'Solicitud de admisión y documentos registrados exitosamente.',
+                'admission_id' => $admission->id,
+                'documents' => $admission->documents ?? [],
+                'document_status' => $admission->document_status ?? [],
+            ]);
         }
 
         return back()->with('success', 'Solicitud de admisión y documentos registrados exitosamente.');
     }
 
     /**
-     * Direct single-document upload or replacement from the status checklist.
+     * Direct single-document upload or replacement from the status checklist or form.
      */
     public function uploadDocument(Request $request)
     {
         $validated = $request->validate([
             'key' => 'required|string|in:birth_certificate,id_card,high_school_record,photo',
-            'file' => 'required|file|mimes:pdf,jpg,jpeg,png,webp,heic|max:10240',
+            'file' => 'required|file|max:25600',
         ]);
 
         $user = auth()->user();
         $admission = $this->resolveAdmission($user);
 
         if (!$admission) {
-            return back()->withErrors([
-                'file' => 'Primero debes completar y registrar el formulario de admisión.',
+            $nameParts = preg_split('/\s+/', trim((string) $user->name), 2);
+            $firstName = $request->input('first_name') ?: ($nameParts[0] ?? 'Aspirante');
+            $lastName = $request->input('last_name') ?: ($nameParts[1] ?? 'Pendiente');
+            $courseId = $request->input('course_id')
+                ?: Course::where('program_type', 'degree')->where('status', 'Activo')->value('id')
+                ?: Course::value('id');
+
+            if (!$courseId) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'ok' => false,
+                        'message' => 'No hay programas académicos activos para asociar la solicitud.',
+                    ], 422);
+                }
+                return back()->withErrors([
+                    'file' => 'No hay programas académicos activos para asociar la solicitud.',
+                ]);
+            }
+
+            $admission = Admission::create([
+                'user_id' => $user->id,
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'email' => $user->email,
+                'course_id' => $courseId,
+                'status' => 'pending',
+                'documents' => [],
+                'document_status' => [
+                    'birth_certificate' => 'pending',
+                    'id_card' => 'pending',
+                    'high_school_record' => 'pending',
+                    'photo' => 'pending',
+                ],
             ]);
         }
 
         $key = $validated['key'];
-        $folder = self::STORAGE_FOLDERS[$key];
-
         $documents = is_array($admission->documents) ? $admission->documents : [];
         $docStatus = is_array($admission->document_status) ? $admission->document_status : [
             'birth_certificate' => 'pending',
@@ -186,13 +251,23 @@ class ApplicantPortalController extends Controller
             'photo' => 'pending',
         ];
 
-        $documents[$key] = $request->file('file')->store($folder, 'local');
+        $documents[$key] = $this->storeUploadedDocument($request->file('file'), $key);
         $docStatus[$key] = 'pending';
 
         $admission->update([
             'documents' => $documents,
             'document_status' => $docStatus,
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'Documento depositado correctamente.',
+                'admission_id' => $admission->id,
+                'documents' => $admission->documents,
+                'document_status' => $admission->document_status,
+            ]);
+        }
 
         return back()->with('success', 'Documento depositado correctamente.');
     }

@@ -44,8 +44,14 @@ class ApplicantPortalAndLayoutTest extends TestCase
         $routes = file_get_contents($basePath . '/routes/web.php');
 
         $this->assertStringContainsString('public function uploadDocument', $controller);
+        $this->assertStringContainsString('expectsJson()', $controller);
+        $this->assertStringContainsString('response()->json([', $controller);
+        $this->assertStringContainsString('max:25600', $controller);
         $this->assertStringContainsString('/portal-aspirante/documento', $routes);
         $this->assertStringContainsString("label: 'Depositado'", $portalView);
         $this->assertStringContainsString('handleQuickUpload', $portalView);
+        $this->assertStringContainsString('new XMLHttpRequest()', $portalView);
+        $this->assertStringContainsString('new FormData()', $portalView);
+        $this->assertStringContainsString('uploadProgress', $portalView);
     }
 }

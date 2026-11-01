@@ -1,42 +1,57 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { getCsrfHeaders } from '@/components/pos/utils';
 
 const REQUIRED_DOCUMENTS = [
     {
         key: 'birth_certificate',
         title: 'Acta de Nacimiento',
-        hint: 'PDF, JPG o PNG (Máx. 10MB)',
-        accept: '.pdf,.jpg,.jpeg,.png,.webp,.heic',
+        hint: 'PDF, JPG o PNG (Máx. 25MB)',
+        accept: '.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif',
         icon: 'fa-solid fa-file-lines',
     },
     {
         key: 'id_card',
         title: 'Cédula / Identidad',
-        hint: 'PDF, JPG o PNG (Máx. 10MB)',
-        accept: '.pdf,.jpg,.jpeg,.png,.webp,.heic',
+        hint: 'PDF, JPG o PNG (Máx. 25MB)',
+        accept: '.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif',
         icon: 'fa-solid fa-id-card',
     },
     {
         key: 'high_school_record',
         title: 'Récord de Bachillerato',
-        hint: 'PDF, JPG o PNG (Máx. 10MB)',
-        accept: '.pdf,.jpg,.jpeg,.png,.webp,.heic',
+        hint: 'PDF, JPG o PNG (Máx. 25MB)',
+        accept: '.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif',
         icon: 'fa-solid fa-scroll',
     },
     {
         key: 'photo',
         title: 'Fotografía 2x2',
-        hint: 'JPG o PNG (Máx. 10MB)',
-        accept: '.jpg,.jpeg,.png,.webp,.pdf,.heic',
+        hint: 'JPG, PNG o PDF (Máx. 25MB)',
+        accept: '.jpg,.jpeg,.png,.webp,.pdf,.heic,.heif',
         icon: 'fa-solid fa-image',
     },
 ];
 
 export default function Portal({ applicant, admission, courses = [] }) {
-    const { flash = {} } = usePage().props;
+    const { flash = {}, csrf_token: pageCsrfToken, errors: pageErrors = {} } = usePage().props;
     const [step, setStep] = useState(admission ? 'status' : 'form');
     const [uploadingKey, setUploadingKey] = useState(null);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [uploadError, setUploadError] = useState(null);
+    const [uploadSuccess, setUploadSuccess] = useState(null);
+    const [currentAdmissionId, setCurrentAdmissionId] = useState(admission?.id || null);
+    const [uploadedDocs, setUploadedDocs] = useState(admission?.documents || {});
+    const [docStatuses, setDocStatuses] = useState(admission?.document_status || {});
+
+    useEffect(() => {
+        if (admission) {
+            setCurrentAdmissionId(admission.id || null);
+            setUploadedDocs(admission.documents || {});
+            setDocStatuses(admission.document_status || {});
+        }
+    }, [admission]);
 
     const { data, setData, post, processing, errors } = useForm({
         first_name: admission?.first_name || '',
@@ -56,6 +71,7 @@ export default function Portal({ applicant, admission, courses = [] }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        setUploadError(null);
         post('/portal-aspirante', {
             forceFormData: true,
             preserveScroll: true,
@@ -72,18 +88,84 @@ export default function Portal({ applicant, admission, courses = [] }) {
         });
     };
 
-    const handleQuickUpload = (docKey, file) => {
+    const handleQuickUpload = (docKey, file, inputEl = null) => {
         if (!file) return;
         setUploadingKey(docKey);
-        router.post(
-            '/portal-aspirante/documento',
-            { key: docKey, file },
-            {
-                forceFormData: true,
-                preserveScroll: true,
-                onFinish: () => setUploadingKey(null),
+        setUploadProgress(1);
+        setUploadError(null);
+        setUploadSuccess(null);
+
+        const formData = new FormData();
+        formData.append('key', docKey);
+        formData.append('file', file, file.name);
+        if (data.first_name) formData.append('first_name', data.first_name);
+        if (data.last_name) formData.append('last_name', data.last_name);
+        if (data.course_id) formData.append('course_id', String(data.course_id));
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/portal-aspirante/documento', true);
+
+        const csrfHeaders = getCsrfHeaders(pageCsrfToken);
+        Object.entries(csrfHeaders).forEach(([headerName, headerVal]) => {
+            if (headerVal) {
+                xhr.setRequestHeader(headerName, headerVal);
             }
-        );
+        });
+        xhr.setRequestHeader('Accept', 'application/json');
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+        xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable && event.total > 0) {
+                const pct = Math.max(1, Math.min(99, Math.round((event.loaded / event.total) * 100)));
+                setUploadProgress(pct);
+            }
+        };
+
+        xhr.onload = () => {
+            let parsed = null;
+            try {
+                parsed = JSON.parse(xhr.responseText);
+            } catch {
+                parsed = null;
+            }
+
+            if (xhr.status >= 200 && xhr.status < 300 && parsed?.ok) {
+                setUploadProgress(100);
+                if (parsed.admission_id) {
+                    setCurrentAdmissionId(parsed.admission_id);
+                }
+                if (parsed.documents) {
+                    setUploadedDocs(parsed.documents);
+                }
+                if (parsed.document_status) {
+                    setDocStatuses(parsed.document_status);
+                }
+                setUploadSuccess(parsed.message || 'Documento depositado correctamente.');
+                router.reload({ only: ['admission'], preserveScroll: true, preserveState: true });
+            } else {
+                const firstValidationError =
+                    parsed?.errors && Object.values(parsed.errors).flat()[0];
+                setUploadError(
+                    firstValidationError ||
+                        parsed?.message ||
+                        'No se pudo subir el archivo. Verifica que sea PDF, JPG o PNG (máx. 25 MB).'
+                );
+            }
+        };
+
+        xhr.onerror = () => {
+            setUploadError('Error de red al subir el documento. Por favor intenta de nuevo.');
+        };
+
+        xhr.onloadend = () => {
+            setUploadingKey(null);
+            setUploadProgress(0);
+            if (inputEl) {
+                inputEl.value = '';
+            }
+        };
+
+        xhr.send(formData);
     };
 
     const getStatusBadge = (status) => {
@@ -155,16 +237,22 @@ export default function Portal({ applicant, admission, courses = [] }) {
                     )}
                 </div>
 
-                {flash?.success && (
+                {(uploadSuccess || flash?.success) && (
                     <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-4 py-3 text-xs font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
                         <i className="fa-solid fa-circle-check text-emerald-500"></i>
-                        <span>{flash.success}</span>
+                        <span>{uploadSuccess || flash.success}</span>
                     </div>
                 )}
 
-                {Object.keys(errors || {}).length > 0 && (
+                {(uploadError || Object.keys(errors || {}).length > 0 || Object.keys(pageErrors || {}).length > 0) && (
                     <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-3 text-xs font-semibold text-rose-700 dark:text-rose-300 space-y-1">
-                        {Object.values(errors).map((err, idx) => (
+                        {uploadError && (
+                            <div className="flex items-center gap-2">
+                                <i className="fa-solid fa-circle-exclamation text-rose-500"></i>
+                                <span>{uploadError}</span>
+                            </div>
+                        )}
+                        {Object.values({ ...(pageErrors || {}), ...(errors || {}) }).map((err, idx) => (
                             <div key={idx} className="flex items-center gap-2">
                                 <i className="fa-solid fa-circle-exclamation text-rose-500"></i>
                                 <span>{err}</span>
@@ -199,7 +287,7 @@ export default function Portal({ applicant, admission, courses = [] }) {
                                 <div className="text-right">
                                     <div className="text-xs text-slate-400">ID de Solicitud</div>
                                     <div className="text-lg font-mono font-bold text-slate-800 dark:text-white">
-                                        ADM-{String(admission.id).padStart(5, '0')}
+                                        ADM-{String(currentAdmissionId || admission.id).padStart(5, '0')}
                                     </div>
                                 </div>
                             </div>
@@ -221,9 +309,10 @@ export default function Portal({ applicant, admission, courses = [] }) {
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                                     {REQUIRED_DOCUMENTS.map((doc) => {
-                                        const isUploaded = Boolean(admission.documents?.[doc.key]);
-                                        const rawStatus = admission.document_status?.[doc.key] || 'pending';
+                                        const isUploaded = Boolean(uploadedDocs?.[doc.key]);
+                                        const rawStatus = docStatuses?.[doc.key] || 'pending';
                                         const isUploadingThis = uploadingKey === doc.key;
+                                        const targetAdmissionId = currentAdmissionId || admission.id;
 
                                         const statusInfo = !isUploaded
                                             ? {
@@ -258,14 +347,22 @@ export default function Portal({ applicant, admission, courses = [] }) {
                                                     </div>
                                                     <i className={`${statusInfo.icon} text-sm`}></i>
                                                 </div>
+                                                {isUploadingThis && (
+                                                    <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-sga-primary transition-all duration-150"
+                                                            style={{ width: `${uploadProgress || 10}%` }}
+                                                        />
+                                                    </div>
+                                                )}
                                                 <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-white/5 text-[11px]">
                                                     <span className={`font-semibold ${statusInfo.badge}`}>
-                                                        {isUploadingThis ? 'Subiendo...' : statusInfo.label}
+                                                        {isUploadingThis ? `Subiendo ${uploadProgress}%...` : statusInfo.label}
                                                     </span>
                                                     <div className="flex items-center gap-2">
-                                                        {isUploaded && (
+                                                        {isUploaded && targetAdmissionId && (
                                                             <a
-                                                                href={`/admissions/document/${admission.id}/${doc.key}`}
+                                                                href={`/admissions/document/${targetAdmissionId}/${doc.key}`}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
                                                                 className="font-semibold text-sga-primary dark:text-blue-400 hover:underline"
@@ -288,8 +385,7 @@ export default function Portal({ applicant, admission, courses = [] }) {
                                                                 onChange={(e) => {
                                                                     const file = e.target.files?.[0];
                                                                     if (file) {
-                                                                        handleQuickUpload(doc.key, file);
-                                                                        e.target.value = '';
+                                                                        handleQuickUpload(doc.key, file, e.target);
                                                                     }
                                                                 }}
                                                                 className="hidden"
@@ -476,15 +572,17 @@ export default function Portal({ applicant, admission, courses = [] }) {
                                     Depósito de Documentos de Admisión
                                 </h4>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                    Adjunta cada documento requerido en formato PDF, JPG o PNG (máximo 10 MB por archivo).
+                                    Adjunta cada documento requerido en formato PDF, JPG o PNG (máximo 25 MB por archivo). Se depositan automáticamente al seleccionarlos.
                                 </p>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {REQUIRED_DOCUMENTS.map((doc) => {
                                     const selectedFile = data[doc.key];
-                                    const alreadyUploaded = Boolean(admission?.documents?.[doc.key]);
-                                    const fieldError = errors?.[doc.key];
+                                    const alreadyUploaded = Boolean(uploadedDocs?.[doc.key]);
+                                    const isUploadingThis = uploadingKey === doc.key;
+                                    const targetAdmissionId = currentAdmissionId || admission?.id;
+                                    const fieldError = errors?.[doc.key] || pageErrors?.[doc.key];
 
                                     return (
                                         <div
@@ -506,9 +604,9 @@ export default function Portal({ applicant, admission, courses = [] }) {
                                                     </div>
                                                 </div>
 
-                                                {alreadyUploaded && !selectedFile && (
+                                                {alreadyUploaded && targetAdmissionId && (
                                                     <a
-                                                        href={`/admissions/document/${admission.id}/${doc.key}`}
+                                                        href={`/admissions/document/${targetAdmissionId}/${doc.key}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
@@ -519,21 +617,44 @@ export default function Portal({ applicant, admission, courses = [] }) {
                                                 )}
                                             </div>
 
+                                            {isUploadingThis && (
+                                                <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-sga-primary transition-all duration-150"
+                                                        style={{ width: `${uploadProgress || 10}%` }}
+                                                    />
+                                                </div>
+                                            )}
+
                                             <label className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-slate-300 dark:border-white/15 bg-white dark:bg-[#11111a] px-3.5 py-2.5 cursor-pointer hover:border-sga-primary dark:hover:border-blue-400 transition">
                                                 <span className="text-xs text-slate-600 dark:text-slate-300 truncate">
-                                                    {selectedFile
-                                                        ? selectedFile.name
-                                                        : alreadyUploaded
-                                                            ? 'Reemplazar archivo actual...'
-                                                            : 'Seleccionar archivo...'}
+                                                    {isUploadingThis
+                                                        ? `Subiendo archivo (${uploadProgress}%)...`
+                                                        : selectedFile
+                                                            ? selectedFile.name
+                                                            : alreadyUploaded
+                                                                ? 'Archivo depositado • Clic para reemplazar...'
+                                                                : 'Seleccionar archivo...'}
                                                 </span>
                                                 <span className="shrink-0 rounded-lg bg-slate-100 dark:bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200">
-                                                    Examinar
+                                                    {isUploadingThis ? (
+                                                        <i className="fa-solid fa-circle-notch fa-spin"></i>
+                                                    ) : alreadyUploaded ? (
+                                                        'Cambiar'
+                                                    ) : (
+                                                        'Examinar'
+                                                    )}
                                                 </span>
                                                 <input
                                                     type="file"
                                                     accept={doc.accept}
-                                                    onChange={(e) => setData(doc.key, e.target.files?.[0] || null)}
+                                                    disabled={isUploadingThis}
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            handleQuickUpload(doc.key, file, e.target);
+                                                        }
+                                                    }}
                                                     className="hidden"
                                                 />
                                             </label>
