@@ -100,13 +100,9 @@ class AdmissionController extends Controller
         $admission->document_status = $docStatus;
         $admission->notes = $validated['notes'] ?? $admission->notes;
 
-        // Si todos están aprobados, podemos proceder a aprobar
-        $allApproved = !empty($docStatus) && !in_array('pending', $docStatus) && !in_array('rejected', $docStatus);
-        $hasRejection = in_array('rejected', $docStatus);
+        $hasRejection = in_array('rejected', $docStatus, true);
 
-        if ($allApproved) {
-            return $this->approve($request, $admission);
-        } elseif ($hasRejection) {
+        if ($hasRejection) {
             $admission->status = 'rejected';
             $admission->save();
 
@@ -129,6 +125,10 @@ class AdmissionController extends Controller
             }
 
             return redirect()->back()->with('success', 'Solicitud marcada con observaciones y aspirante notificado.');
+        }
+
+        if ($admission->status === 'rejected') {
+            $admission->status = 'pending';
         }
 
         $admission->save();

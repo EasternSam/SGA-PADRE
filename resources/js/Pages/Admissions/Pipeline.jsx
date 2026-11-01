@@ -69,6 +69,7 @@ export default function AdmissionsPipeline({
         if (!selectedAdmission) return;
         if (confirm(`¿Confirmas la admisión oficial de ${selectedAdmission.first_name} ${selectedAdmission.last_name}? Se formalizará su cuenta de estudiante y orden de pago.`)) {
             router.post(`/admin/admissions/${selectedAdmission.id}/approve`, {
+                document_status: tempDocStatus,
                 notes: reviewNotes,
             }, {
                 onSuccess: () => {

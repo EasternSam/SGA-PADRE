@@ -226,13 +226,9 @@ class Index extends Component
         $admission->notes = $this->admissionNotes;
 
         // 2. Lógica de estado y Notificaciones
-        $allApproved = !in_array('pending', $this->tempDocStatus) && !in_array('rejected', $this->tempDocStatus);
-        $hasRejection = in_array('rejected', $this->tempDocStatus);
+        $hasRejection = in_array('rejected', $this->tempDocStatus, true);
 
-        if ($allApproved) {
-            $this->approveAdmission();
-            return;
-        } elseif ($hasRejection) {
+        if ($hasRejection) {
             $admission->status = 'rejected';
             $admission->save();
             
@@ -260,9 +256,11 @@ class Index extends Component
             session()->flash('message', 'Solicitud marcada para correcciones y aspirante notificado.');
 
         } else {
-            $admission->status = 'pending';
+            if ($admission->status === 'rejected') {
+                $admission->status = 'pending';
+            }
             $admission->save();
-            session()->flash('message', 'Revisión guardada (Parcial).');
+            session()->flash('message', 'Revisión de documentos guardada exitosamente.');
         }
 
         $this->closeProcessModal();
