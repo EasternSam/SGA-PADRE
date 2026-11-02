@@ -1,5 +1,6 @@
 @import './mobile.css';
 @import './dark-mode.css';
+@import './bills-design-system.css';
 
 @tailwind base;
 @tailwind components;

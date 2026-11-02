@@ -1,29 +1,56 @@
-import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState } from 'react';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PoweredByBills from '@/components/bills/PoweredByBills';
+
+const EXPENSE_TYPE_LABELS = {
+    '01': '01 - Gastos de Personal',
+    '02': '02 - Trabajos, Suministros y Servicios',
+    '03': '03 - Arrendamientos',
+    '04': '04 - Gastos de Activos Fijos',
+    '05': '05 - Gastos de Representación',
+    '06': '06 - Otras Deducciones Admitidas',
+    '07': '07 - Gastos Financieros',
+    '08': '08 - Gastos Extraordinarios',
+    '09': '09 - Costo de Venta (Compras)',
+    '10': '10 - Adquisiciones de Activos',
+    '11': '11 - Gastos de Seguros',
+};
+
+const PAYMENT_METHODS_606 = [
+    { code: '01', label: '01 - Efectivo' },
+    { code: '02', label: '02 - Cheques / Transferencias / Depósito' },
+    { code: '03', label: '03 - Tarjeta Crédito / Débito' },
+    { code: '04', label: '04 - Compra a Crédito (Cuentas por Pagar)' },
+    { code: '05', label: '05 - Permuta' },
+    { code: '06', label: '06 - Nota de Crédito' },
+    { code: '07', label: '07 - Mixto' },
+];
+
+function formatCurrency(val) {
+    const num = Number(val || 0);
+    return `RD$ ${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
 export default function ExpensesIndex({
     expenses,
     kpis,
     filters,
-    expenseAccounts,
-    paymentAccounts,
-    assetAccounts,
-    journals,
-    expenseTypes606,
+    expenseAccounts = [],
+    paymentAccounts = [],
+    assetAccounts = [],
+    journals = [],
 }) {
+    const [view, setView] = useState('list'); // 'list' | 'form'
     const [search, setSearch] = useState(filters?.search || '');
     const [statusFilter, setStatusFilter] = useState(filters?.status_filter || '');
     const [ncfFilter, setNcfFilter] = useState(filters?.ncf_filter || '');
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isPayModalOpen, setIsPayModalOpen] = useState(false);
     const [expenseToPay, setExpenseToPay] = useState(null);
     const [isLookingUpRnc, setIsLookingUpRnc] = useState(false);
-    const [rncError, setRncError] = useState('');
+    const [rncStatus, setRncStatus] = useState(null);
+    const [paymentMethod606, setPaymentMethod606] = useState('02');
 
-    // Formulario de Creación de Gasto
     const createForm = useForm({
         supplier_rnc: '',
         supplier_name: '',
@@ -36,15 +63,14 @@ export default function ExpensesIndex({
         expense_account_id: expenseAccounts?.[0]?.id || '',
         payment_account_id: paymentAccounts?.[0]?.id || '',
         subtotal: '',
-        itbis_amount: '',
-        itbis_retained: '',
-        isr_retained: '',
+        itbis_amount: '0',
+        itbis_retained: '0',
+        isr_retained: '0',
         status: 'paid',
         selected_journal_id: journals?.[0]?.id || '',
         description: '',
     });
 
-    // Formulario para Saldar Factura (Pay Modal)
     const payForm = useForm({
         expense_id: '',
         pay_account_origin_id: assetAccounts?.[0]?.id || '',
@@ -52,45 +78,54 @@ export default function ExpensesIndex({
     });
 
     const handleFilter = (newSearch, newStatus, newNcfFilter = ncfFilter) => {
-        router.get('/admin/finance/expenses', {
-            search: newSearch ?? search,
-            status_filter: newStatus ?? statusFilter,
-            ncf_filter: newNcfFilter,
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-        });
+        router.get(
+            '/admin/finance/expenses',
+            {
+                search: newSearch ?? search,
+                status_filter: newStatus ?? statusFilter,
+                ncf_filter: newNcfFilter,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+            }
+        );
     };
 
-    // Cálculo automático del neto en el formulario
     const sub = parseFloat(createForm.data.subtotal) || 0;
     const itbis = parseFloat(createForm.data.itbis_amount) || 0;
     const retItbis = parseFloat(createForm.data.itbis_retained) || 0;
     const retIsr = parseFloat(createForm.data.isr_retained) || 0;
     const calculatedTotal = Math.max(0, sub + itbis - retItbis - retIsr);
 
-    const handleRncLookup = async () => {
-        setRncError('');
-        const cleanRnc = createForm.data.supplier_rnc.replace(/[^0-9]/g, '');
-        if (cleanRnc.length < 9) {
-            setRncError('El RNC o Cédula debe tener al menos 9 dígitos.');
+    const handleRncLookup = async (rawVal) => {
+        const val = (rawVal ?? createForm.data.supplier_rnc).replace(/[^0-9]/g, '');
+        if (val.length !== 9 && val.length !== 11) {
+            setRncStatus(null);
             return;
         }
-
         setIsLookingUpRnc(true);
+        setRncStatus({ color: 'var(--color-text-muted)', text: 'Consultando padrón DGII...' });
         try {
-            const res = await fetch(`/admin/finance/expenses/lookup-rnc?rnc=${cleanRnc}`);
+            const res = await fetch(`/admin/finance/expenses/lookup-rnc?rnc=${val}`);
             const data = await res.json();
             if (data.found && data.name) {
                 createForm.setData((prev) => ({
                     ...prev,
                     supplier_name: data.name,
                 }));
+                setRncStatus({
+                    color: '#16a34a',
+                    text: `✓ ${data.name} (${data.status || 'ACTIVO'})`,
+                });
             } else {
-                setRncError(data.message || 'RNC no encontrado.');
+                setRncStatus({
+                    color: '#d97706',
+                    text: 'RNC no encontrado en padrón local',
+                });
             }
         } catch (err) {
-            setRncError('No se pudo verificar el RNC en el servicio de la DGII.');
+            setRncStatus(null);
         } finally {
             setIsLookingUpRnc(false);
         }
@@ -101,8 +136,9 @@ export default function ExpensesIndex({
         createForm.post('/admin/finance/expenses', {
             preserveScroll: true,
             onSuccess: () => {
-                setIsCreateModalOpen(false);
+                setView('list');
                 createForm.reset();
+                setRncStatus(null);
             },
         });
     };
@@ -128,883 +164,650 @@ export default function ExpensesIndex({
         });
     };
 
+    const handleVoidExpense = (expense) => {
+        if (!window.confirm('¿Está seguro de eliminar/anular este registro de gasto?')) return;
+        router.post(`/admin/finance/expenses/${expense.id}/void`, {}, { preserveScroll: true });
+    };
+
+    const listRows = expenses?.data || [];
+
     return (
-        <AuthenticatedLayout title="Cuentas por Pagar & Gastos">
-            <Head title="Cuentas por Pagar & Gastos - SGA" />
+        <AuthenticatedLayout title="Control de Gastos y Egresos">
+            <Head title="Control de Gastos y Egresos" />
 
-            <div className="space-y-6">
-                {/* ── ENCABEZADO SUPERIOR ── */}
-                <header className="bg-white dark:bg-[#161622] rounded-2xl shadow-xs border border-gray-100 dark:border-gray-800 p-4 sm:p-6 transition-colors">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div>
-                            <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
-                                <Link href="/admin/dashboard" className="hover:text-brand-primary dark:hover:text-blue-400">Inicio</Link>
-                                <span>/</span>
-                                <Link href="/admin/finance/dashboard" className="hover:text-brand-primary dark:hover:text-blue-400">Finanzas</Link>
-                                <span>/</span>
-                                <span className="text-gray-600 dark:text-gray-300">Cuentas por Pagar</span>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2.5">
-                                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-2.5">
-                                    <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
-                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
-                                        </svg>
+            <div className="bills-scope">
+                <div className="workspace-panel">
+                    {view === 'list' ? (
+                        <>
+                            {/* 1:1 Gridbase Bills Header (`expenses.js` line 23) */}
+                            <div className="page-header">
+                                <div className="page-header-left">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                                        <h1 className="page-title">Control de Gastos y Egresos</h1>
+                                        <PoweredByBills variant="badge" />
                                     </div>
-                                    Cuentas por Pagar & Gastos Operativos
-                                </h1>
-                                <PoweredByBills variant="badge" />
-                            </div>
-                            
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setIsCreateModalOpen(true)}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-brand-primary hover:bg-brand-dark text-white rounded-xl font-bold text-xs shadow-sm transition active:scale-95"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
-                                </svg>
-                                Nuevo Gasto
-                            </button>
-                        </div>
-                    </div>
-                </header>
-
-                {/* ── TARJETAS DE KPIS (1:1 Gridbase Bills) ── */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div className="bg-white dark:bg-[#161622] rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-gray-800 shadow-xs">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Total Egresado</span>
-                            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-brand-primary dark:text-blue-400">
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                </svg>
-                            </div>
-                        </div>
-                        <div className="mt-3">
-                            <span className="text-lg sm:text-xl font-bold font-mono text-gray-900 dark:text-white">
-                                RD$ {(kpis?.totalExpenses || 0).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                            <p className="text-[11px] text-gray-400 mt-0.5">Gastos del Mes: RD$ {(kpis?.thisMonthExpenses || 0).toLocaleString('es-DO', { minimumFractionDigits: 2 })}</p>
-                        </div>
-                    </div>
-
-                    <div className="bg-white dark:bg-[#161622] rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-gray-800 shadow-xs">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">ITBIS Adelantado (606)</span>
-                            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
-                                </svg>
-                            </div>
-                        </div>
-                        <div className="mt-3">
-                            <span className="text-lg sm:text-xl font-bold font-mono text-indigo-600 dark:text-indigo-400">
-                                RD$ {(kpis?.totalItbis || 0).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                            <p className="text-[11px] text-gray-400 mt-0.5">Deducible en declaración IT-1</p>
-                        </div>
-                    </div>
-
-                    <div className="bg-white dark:bg-[#161622] rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-gray-800 shadow-xs">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Pagado / Contado</span>
-                            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                        </div>
-                        <div className="mt-3">
-                            <span className="text-lg sm:text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                                RD$ {(kpis?.totalPaid || 0).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                            <p className="text-[11px] text-gray-400 mt-0.5">Egresos desembolsados</p>
-                        </div>
-                    </div>
-
-                    <div className="bg-white dark:bg-[#161622] rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-gray-800 shadow-xs">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Pendiente (CxP)</span>
-                            <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400">
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                        </div>
-                        <div className="mt-3">
-                            <span className="text-lg sm:text-xl font-bold font-mono text-amber-600 dark:text-amber-400">
-                                RD$ {(kpis?.totalPending || 0).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                            <p className="text-[11px] text-gray-400 mt-0.5">{kpis?.pendingCount || 0} facturas por saldar</p>
-                        </div>
-                    </div>
-
-                    <div className="bg-white dark:bg-[#161622] rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-gray-800 shadow-xs">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Emitidos E41 / E43</span>
-                            <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400">
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                                </svg>
-                            </div>
-                        </div>
-                        <div className="mt-3">
-                            <span className="text-lg sm:text-xl font-bold font-mono text-purple-600 dark:text-purple-400">
-                                {(kpis?.e41Count || 0) + (kpis?.e43Count || 0)}
-                            </span>
-                            <p className="text-[11px] text-gray-400 mt-0.5">
-                                {kpis?.e41Count || 0} Compras E41 · {kpis?.e43Count || 0} Gasto Menor E43
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ── BARRA DE BÚSQUEDA Y FILTRO ── */}
-                <div className="bg-white dark:bg-[#161622] rounded-2xl shadow-xs border border-gray-100 dark:border-gray-800 p-4">
-                    <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-                        <div className="relative w-full sm:max-w-md">
-                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                            </div>
-                            <input
-                                type="text"
-                                value={search}
-                                onChange={(e) => {
-                                    setSearch(e.target.value);
-                                    handleFilter(e.target.value, statusFilter);
-                                }}
-                                placeholder="Buscar por Proveedor, RNC, NCF o descripción..."
-                                className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl focus:bg-white dark:focus:bg-[#161622] focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary text-gray-900 dark:text-gray-100 placeholder-gray-400 transition"
-                            />
-                            {search && (
+                                    <p className="page-subtitle">Monitorea compras locales y egresos compatibles con reporte fiscal 606</p>
+                                </div>
                                 <button
                                     type="button"
-                                    onClick={() => {
-                                        setSearch('');
-                                        handleFilter('', statusFilter);
-                                    }}
-                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                    className="btn btn-primary"
+                                    id="btn-new-expense"
+                                    onClick={() => setView('form')}
                                 >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <line x1="12" y1="5" x2="12" y2="19" />
+                                        <line x1="5" y1="12" x2="19" y2="12" />
                                     </svg>
+                                    Registrar Gasto
                                 </button>
-                            )}
-                        </div>
+                            </div>
 
-                        <div className="w-full sm:w-auto flex flex-wrap items-center gap-2.5">
-                            <select
-                                value={ncfFilter}
-                                onChange={(e) => {
-                                    setNcfFilter(e.target.value);
-                                    handleFilter(search, statusFilter, e.target.value);
-                                }}
-                                className="px-3 py-2 text-xs bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary text-gray-800 dark:text-gray-200 font-medium"
-                            >
-                                <option value="">Todos los Comprobantes</option>
-                                <option value="e41">Compras Informal (E41 / B11)</option>
-                                <option value="e43">Gastos Menores (E43 / B13)</option>
-                            </select>
+                            {/* 1:1 Gridbase Bills 3 Stat Cards (`expenses.js` line 34) */}
+                            <div className="grid-3" style={{ marginBottom: '24px' }}>
+                                <div className="stat-card">
+                                    <div className="stat-icon" style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--color-danger)' }}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <line x1="12" y1="1" x2="12" y2="23" />
+                                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                        </svg>
+                                    </div>
+                                    <div className="stat-info">
+                                        <span className="stat-label">Total Egresado</span>
+                                        <h3 className="stat-value" id="stat-total-expenses">
+                                            {formatCurrency(kpis?.totalExpenses || 0)}
+                                        </h3>
+                                    </div>
+                                </div>
 
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => {
-                                    setStatusFilter(e.target.value);
-                                    handleFilter(search, e.target.value, ncfFilter);
-                                }}
-                                className="px-3 py-2 text-xs bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary text-gray-800 dark:text-gray-200 font-medium"
-                            >
-                                <option value="">Todos los Estados</option>
-                                <option value="paid">Pagados / Contado</option>
-                                <option value="pending">Pendientes de Pago (Crédito)</option>
-                                <option value="void">Anulados</option>
-                            </select>
+                                <div className="stat-card">
+                                    <div className="stat-icon" style={{ background: 'rgba(245,158,11,0.1)', color: 'var(--color-warning)' }}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <rect x="2" y="4" width="20" height="16" rx="2" />
+                                            <path d="M7 15h0M2 9.5h20" />
+                                        </svg>
+                                    </div>
+                                    <div className="stat-info">
+                                        <span className="stat-label">ITBIS Adelantado</span>
+                                        <h3 className="stat-value" id="stat-total-itbis">
+                                            {formatCurrency(kpis?.totalItbis || 0)}
+                                        </h3>
+                                    </div>
+                                </div>
 
-                            <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                                Total: <strong className="text-gray-900 dark:text-white">{expenses?.total || 0}</strong>
-                            </span>
-                        </div>
-                    </div>
-                </div>
+                                <div className="stat-card">
+                                    <div className="stat-icon" style={{ background: 'rgba(59,130,246,0.1)', color: 'var(--color-primary)' }}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                            <polyline points="14 2 14 8 20 8" />
+                                        </svg>
+                                    </div>
+                                    <div className="stat-info">
+                                        <span className="stat-label">Gastos del Mes</span>
+                                        <h3 className="stat-value" id="stat-month-expenses">
+                                            {formatCurrency(kpis?.thisMonthExpenses || 0)}
+                                        </h3>
+                                    </div>
+                                </div>
+                            </div>
 
-                {/* ── TABLA DE GASTOS ── */}
-                <div className="bg-white dark:bg-[#161622] rounded-2xl shadow-xs border border-gray-100 dark:border-gray-800 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-xs text-left">
-                            <thead className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider bg-gray-50/70 dark:bg-gray-900/30 border-b border-gray-100 dark:border-gray-800">
-                                <tr>
-                                    <th className="px-6 py-3.5">Proveedor / Detalle</th>
-                                    <th className="px-6 py-3.5">NCF / Ref</th>
-                                    <th className="px-6 py-3.5">Cuentas Contables</th>
-                                    <th className="px-6 py-3.5">Fecha / Vence</th>
-                                    <th className="px-6 py-3.5 text-right">Monto Neto</th>
-                                    <th className="px-6 py-3.5 text-center">Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
-                                {expenses?.data && expenses.data.length > 0 ? (
-                                    expenses.data.map((expense) => (
-                                        <tr key={expense.id} className="hover:bg-gray-50/60 dark:hover:bg-gray-800/20 transition-colors">
-                                            {/* Proveedor / Detalle */}
-                                            <td className="px-6 py-4">
-                                                <div className="font-bold text-gray-900 dark:text-white text-sm">
-                                                    {expense.supplier_name}
-                                                </div>
-                                                <div className="flex items-center gap-2 mt-0.5">
-                                                    {expense.supplier_rnc && (
-                                                        <span className="text-[11px] font-mono text-gray-400">
-                                                            RNC: {expense.supplier_rnc}
-                                                        </span>
-                                                    )}
-                                                    {expense.description && (
-                                                        <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate max-w-xs">
-                                                            • {expense.description}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </td>
-
-                                            {/* NCF / Ref */}
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="font-mono font-bold text-gray-900 dark:text-gray-100 text-xs">
-                                                        {expense.ncf || <span className="text-gray-400 font-normal">Sin NCF</span>}
-                                                    </span>
-                                                    {expense.is_self_issued_ecf && (
-                                                        <a
-                                                            href={`/admin/finance/expenses/${expense.id}/xml`}
-                                                            title="Descargar XML e-CF Emitido (E41/E43)"
-                                                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 hover:bg-purple-200 transition"
-                                                        >
-                                                            XML
-                                                        </a>
-                                                    )}
-                                                </div>
-                                                <div className="font-mono text-[10px] text-gray-400 mt-0.5">
-                                                    Ref: {expense.reference_number || 'N/A'} • Tipo {expense.expense_type_606}
-                                                </div>
-                                            </td>
-
-                                            {/* Cuentas Contables */}
-                                            <td className="px-6 py-4">
-                                                <div className="flex flex-col gap-1 text-[11px]">
-                                                    <span className="inline-flex items-center gap-1 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-900/40">
-                                                        <strong className="text-blue-500">Db:</strong> {expense.expense_account_name}
-                                                    </span>
-                                                    <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-100 dark:border-amber-900/40">
-                                                        <strong className="text-amber-500">Cr:</strong> {expense.payment_account_name}
-                                                    </span>
-                                                </div>
-                                            </td>
-
-                                            {/* Fecha / Vence */}
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="font-medium text-gray-900 dark:text-white">
-                                                    {expense.expense_date_formatted}
-                                                </div>
-                                                {expense.due_date_formatted && (
-                                                    <div className="text-[10px] text-red-500 font-semibold flex items-center gap-1 mt-0.5">
-                                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                        </svg>
-                                                        Vence: {expense.due_date_formatted}
-                                                    </div>
-                                                )}
-                                            </td>
-
-                                            {/* Monto Neto */}
-                                            <td className="px-6 py-4 text-right whitespace-nowrap">
-                                                <div className="font-bold text-gray-900 dark:text-white text-sm">
-                                                    RD$ {expense.total_amount.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                </div>
-                                                {expense.itbis_amount > 0 && (
-                                                    <div className="text-[10px] text-gray-400 mt-0.5">
-                                                        ITBIS: RD$ {expense.itbis_amount.toFixed(2)}
-                                                    </div>
-                                                )}
-                                            </td>
-
-                                            {/* Estado & Acción */}
-                                            <td className="px-6 py-4 text-center whitespace-nowrap">
-                                                {expense.status === 'paid' && (
-                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-50 dark:bg-green-950/60 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800/40">
-                                                        Pagado
-                                                    </span>
-                                                )}
-
-                                                {expense.status === 'pending' && (
-                                                    <div className="flex flex-col items-center gap-1.5">
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40">
-                                                            Pendiente
-                                                        </span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => openPayModal(expense)}
-                                                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-brand-primary hover:bg-brand-dark text-white rounded-lg font-bold text-[10px] shadow-xs transition active:scale-95"
-                                                        >
-                                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                                            </svg>
-                                                            Saldar
-                                                        </button>
-                                                    </div>
-                                                )}
-
-                                                {expense.status === 'void' && (
-                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/40">
-                                                        Anulado
-                                                    </span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan="6" className="px-6 py-12 text-center text-gray-400">
-                                            <div className="flex flex-col items-center justify-center">
-                                                <svg className="h-10 w-10 text-gray-300 dark:text-gray-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
-                                                </svg>
-                                                <p className="font-semibold text-gray-600 dark:text-gray-300">No se encontraron gastos registrados.</p>
-                                                <p className="text-xs text-gray-400 mt-1">Registra facturas de compras con el botón superior.</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* ── PAGINACIÓN ── */}
-                    {expenses?.links && expenses.links.length > 3 && (
-                        <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-4">
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                                Página {expenses.current_page} de {expenses.last_page}
-                            </span>
-                            <div className="flex items-center gap-1">
-                                {expenses.links.map((link, idx) => {
-                                    if (!link.url) {
-                                        return (
-                                            <span
-                                                key={idx}
-                                                dangerouslySetInnerHTML={{ __html: link.label }}
-                                                className="px-3 py-1.5 text-xs text-gray-300 dark:text-gray-600 rounded-lg cursor-not-allowed"
-                                            />
-                                        );
-                                    }
-                                    return (
-                                        <Link
-                                            key={idx}
-                                            href={link.url}
-                                            dangerouslySetInnerHTML={{ __html: link.label }}
-                                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition ${
-                                                link.active
-                                                    ? 'bg-brand-primary text-white shadow-xs'
-                                                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                                            }`}
-                                            preserveScroll
+                            {/* 1:1 Gridbase Bills Table Outer (`expenses.js` line 58) */}
+                            <div className="table-outer">
+                                <div className="table-toolbar" style={{ padding: '16px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                                    <div className="search-wrapper" style={{ width: '320px', maxWidth: '100%' }}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <circle cx="11" cy="11" r="8" />
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                        </svg>
+                                        <input
+                                            type="text"
+                                            id="expense-search"
+                                            className="search-input"
+                                            placeholder="Buscar por proveedor o NCF..."
+                                            value={search}
+                                            onChange={(e) => {
+                                                setSearch(e.target.value);
+                                                handleFilter(e.target.value, statusFilter);
+                                            }}
                                         />
-                                    );
-                                })}
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                        <select
+                                            className="form-control"
+                                            style={{ width: 'auto', height: '36px', padding: '0 28px 0 12px', fontSize: '12.5px' }}
+                                            value={ncfFilter}
+                                            onChange={(e) => {
+                                                setNcfFilter(e.target.value);
+                                                handleFilter(search, statusFilter, e.target.value);
+                                            }}
+                                        >
+                                            <option value="">Todos los Comprobantes</option>
+                                            <option value="e41">Compras Informal (E41 / B11)</option>
+                                            <option value="e43">Gastos Menores (E43 / B13)</option>
+                                        </select>
+
+                                        <select
+                                            className="form-control"
+                                            style={{ width: 'auto', height: '36px', padding: '0 28px 0 12px', fontSize: '12.5px' }}
+                                            value={statusFilter}
+                                            onChange={(e) => {
+                                                setStatusFilter(e.target.value);
+                                                handleFilter(search, e.target.value, ncfFilter);
+                                            }}
+                                        >
+                                            <option value="">Todos los Estados</option>
+                                            <option value="paid">Pagados / Contado</option>
+                                            <option value="pending">Pendientes (CxP)</option>
+                                            <option value="void">Anulados</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="table-wrapper">
+                                    <table className="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>NCF</th>
+                                                <th>RNC</th>
+                                                <th>Proveedor</th>
+                                                <th>Tipo de Gasto</th>
+                                                <th className="text-right">Subtotal</th>
+                                                <th className="text-right">ITBIS</th>
+                                                <th className="text-right">Total</th>
+                                                <th className="text-right">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="expenses-tbody">
+                                            {listRows.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={9} className="text-center text-muted py-24">
+                                                        No hay gastos registrados que coincidan
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                listRows.map((e) => {
+                                                    const subtotalVal = Number(e.subtotal ?? (Number(e.total_amount || 0) - Number(e.itbis_amount || 0)));
+                                                    const itbisVal = Number(e.itbis_amount || 0);
+                                                    const totalVal = Number(e.total_amount || 0);
+                                                    return (
+                                                        <tr key={e.id}>
+                                                            <td>{e.expense_date_formatted || e.expense_date}</td>
+                                                            <td>
+                                                                {e.ncf ? (
+                                                                    <strong style={{ fontFamily: 'monospace' }}>{e.ncf}</strong>
+                                                                ) : (
+                                                                    <span className="text-muted">N/A</span>
+                                                                )}
+                                                            </td>
+                                                            <td>{e.supplier_rnc || <span className="text-muted">—</span>}</td>
+                                                            <td className="font-semibold">
+                                                                <div>{e.supplier_name}</div>
+                                                                {e.status === 'pending' && (
+                                                                    <span className="badge badge-pending" style={{ marginTop: '4px', fontSize: '10px', padding: '2px 8px' }}>
+                                                                        Pendiente CxP
+                                                                    </span>
+                                                                )}
+                                                                {e.status === 'void' && (
+                                                                    <span className="badge badge-cancelled" style={{ marginTop: '4px', fontSize: '10px', padding: '2px 8px' }}>
+                                                                        Anulado
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td>
+                                                                <span className="badge badge-draft" style={{ fontSize: '11px' }}>
+                                                                    {EXPENSE_TYPE_LABELS[e.expense_type_606] || `${e.expense_type_606 || '02'} - Gastos`}
+                                                                </span>
+                                                            </td>
+                                                            <td className="text-right">{formatCurrency(subtotalVal)}</td>
+                                                            <td className="text-right">{formatCurrency(itbisVal)}</td>
+                                                            <td className="text-right font-semibold">{formatCurrency(totalVal)}</td>
+                                                            <td className="text-right">
+                                                                <div className="row-actions" style={{ opacity: 1 }}>
+                                                                    {e.status === 'pending' && (
+                                                                        <button
+                                                                            type="button"
+                                                                            className="btn btn-sm btn-primary"
+                                                                            style={{ height: '28px', padding: '0 10px', fontSize: '11px' }}
+                                                                            onClick={() => openPayModal(e)}
+                                                                            title="Saldar Cuenta por Pagar"
+                                                                        >
+                                                                            Saldar
+                                                                        </button>
+                                                                    )}
+                                                                    {e.is_self_issued_ecf && (
+                                                                        <a
+                                                                            href={`/admin/finance/expenses/${e.id}/xml`}
+                                                                            className="row-action-btn"
+                                                                            title="Descargar XML e-CF (E41/E43)"
+                                                                        >
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                                                                <polyline points="7 10 12 15 17 10" />
+                                                                                <line x1="12" y1="15" x2="12" y2="3" />
+                                                                            </svg>
+                                                                        </a>
+                                                                    )}
+                                                                    {e.status !== 'void' && (
+                                                                        <button
+                                                                            type="button"
+                                                                            className="row-action-btn danger"
+                                                                            title="Eliminar / Anular"
+                                                                            onClick={() => handleVoidExpense(e)}
+                                                                        >
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                                <polyline points="3 6 5 6 21 6" />
+                                                                                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                                                            </svg>
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {expenses?.links && expenses.links.length > 3 && (
+                                    <div style={{ padding: '14px 24px', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                                        <span className="text-muted" style={{ fontSize: '12px' }}>
+                                            Página {expenses.current_page} de {expenses.last_page} (Total: {expenses.total})
+                                        </span>
+                                        <div style={{ display: 'flex', gap: '6px' }}>
+                                            {expenses.links.map((link, idx) =>
+                                                link.url ? (
+                                                    <Link
+                                                        key={idx}
+                                                        href={link.url}
+                                                        className={`btn btn-sm ${link.active ? 'btn-primary' : 'btn-secondary'}`}
+                                                        dangerouslySetInnerHTML={{ __html: link.label }}
+                                                        preserveScroll
+                                                    />
+                                                ) : null
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    ) : (
+                        /* 1:1 Gridbase Bills Form View (`expenses.js` line 183 `renderForm`) */
+                        <>
+                            <div style={{ marginBottom: '20px' }}>
+                                <button
+                                    type="button"
+                                    className="btn btn-ghost btn-sm"
+                                    id="btn-back-expenses"
+                                    onClick={() => setView('list')}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <line x1="19" y1="12" x2="5" y2="12" />
+                                        <polyline points="12 19 5 12 12 5" />
+                                    </svg>
+                                    Control de Gastos
+                                </button>
+                            </div>
+
+                            <div className="page-header">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                                    <h1 className="page-title">Registrar Gasto (Egreso)</h1>
+                                    <PoweredByBills variant="badge" />
+                                </div>
+                                <div className="btn-group">
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary"
+                                        id="btn-cancel-expense"
+                                        onClick={() => setView('list')}
+                                    >
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <form id="expense-form" className="form-card" onSubmit={handleCreateSubmit}>
+                                <div className="grid-2">
+                                    <div className="form-group">
+                                        <label className="form-label">Razón Social / Proveedor *</label>
+                                        <input
+                                            type="text"
+                                            id="e_supplier_name"
+                                            className="form-control"
+                                            required
+                                            placeholder="Ej. Edesur Dominicana, Altice..."
+                                            value={createForm.data.supplier_name}
+                                            onChange={(e) => createForm.setData('supplier_name', e.target.value)}
+                                        />
+                                        {createForm.errors.supplier_name && (
+                                            <small style={{ color: '#dc2626', fontSize: '11px' }}>{createForm.errors.supplier_name}</small>
+                                        )}
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span>RNC / Cédula Proveedor</span>
+                                            {rncStatus && (
+                                                <span style={{ fontSize: '11px', fontWeight: 600, color: rncStatus.color }}>
+                                                    {rncStatus.text}
+                                                </span>
+                                            )}
+                                        </label>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <input
+                                                type="text"
+                                                id="e_supplier_rnc"
+                                                className="form-control"
+                                                placeholder="Escribe el RNC para autocompletar..."
+                                                maxLength={11}
+                                                value={createForm.data.supplier_rnc}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    createForm.setData('supplier_rnc', val);
+                                                    const clean = val.replace(/[^0-9]/g, '');
+                                                    if (clean.length === 9 || clean.length === 11) {
+                                                        handleRncLookup(clean);
+                                                    } else {
+                                                        setRncStatus(null);
+                                                    }
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="btn btn-secondary"
+                                                onClick={() => handleRncLookup()}
+                                                disabled={isLookingUpRnc}
+                                                style={{ flexShrink: 0 }}
+                                            >
+                                                {isLookingUpRnc ? '...' : 'DGII'}
+                                            </button>
+                                        </div>
+                                        <small className="text-muted">Requerido para deducción fiscal en el 606</small>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span>NCF / e-NCF del Gasto</span>
+                                            <div className="segmented-control" style={{ padding: '2px' }}>
+                                                <button
+                                                    type="button"
+                                                    className={`segment-item ${createForm.data.ncf_mode === 'supplier' ? 'active' : ''}`}
+                                                    style={{ padding: '2px 8px', fontSize: '11px' }}
+                                                    onClick={() => createForm.setData('ncf_mode', 'supplier')}
+                                                >
+                                                    Suplidor
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={`segment-item ${createForm.data.ncf_mode === 'e41' ? 'active' : ''}`}
+                                                    style={{ padding: '2px 8px', fontSize: '11px' }}
+                                                    onClick={() => createForm.setData('ncf_mode', 'e41')}
+                                                >
+                                                    Emitir E41
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={`segment-item ${createForm.data.ncf_mode === 'e43' ? 'active' : ''}`}
+                                                    style={{ padding: '2px 8px', fontSize: '11px' }}
+                                                    onClick={() => createForm.setData('ncf_mode', 'e43')}
+                                                >
+                                                    Emitir E43
+                                                </button>
+                                            </div>
+                                        </label>
+                                        {createForm.data.ncf_mode === 'supplier' ? (
+                                            <input
+                                                type="text"
+                                                id="e_ncf"
+                                                className="form-control"
+                                                placeholder="Ej. B0100000005 o E310000000001"
+                                                maxLength={13}
+                                                style={{ textTransform: 'uppercase', fontFamily: 'monospace' }}
+                                                value={createForm.data.ncf}
+                                                onChange={(e) => createForm.setData('ncf', e.target.value.toUpperCase())}
+                                            />
+                                        ) : (
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                readOnly
+                                                style={{ background: 'var(--bg-hover)', fontFamily: 'monospace', fontWeight: 700, color: '#6366f1' }}
+                                                value={
+                                                    createForm.data.ncf_mode === 'e41'
+                                                        ? 'Auto-Emisión e-CF E41 (Compras Proveedor Informal)'
+                                                        : 'Auto-Emisión e-CF E43 (Gasto Menor Caja Chica)'
+                                                }
+                                            />
+                                        )}
+                                        <small className="text-muted">B01 (11 caracteres) o E31/E41/E43 (13 caracteres)</small>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Fecha de Compra *</label>
+                                        <input
+                                            type="date"
+                                            id="e_expense_date"
+                                            className="form-control"
+                                            required
+                                            value={createForm.data.expense_date}
+                                            onChange={(e) => createForm.setData('expense_date', e.target.value)}
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Tipo de Gasto (DGII 606) *</label>
+                                        <select
+                                            id="e_expense_type"
+                                            className="form-control"
+                                            required
+                                            value={createForm.data.expense_type_606}
+                                            onChange={(e) => createForm.setData('expense_type_606', e.target.value)}
+                                        >
+                                            {Object.entries(EXPENSE_TYPE_LABELS).map(([code, label]) => (
+                                                <option key={code} value={code}>{label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Forma de Pago (DGII 606) *</label>
+                                        <select
+                                            id="e_payment_method"
+                                            className="form-control"
+                                            required
+                                            value={paymentMethod606}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setPaymentMethod606(val);
+                                                createForm.setData('status', val === '04' ? 'pending' : 'paid');
+                                            }}
+                                        >
+                                            {PAYMENT_METHODS_606.map((pm) => (
+                                                <option key={pm.code} value={pm.code}>{pm.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Monto Subtotal (Neto) *</label>
+                                        <input
+                                            type="number"
+                                            id="e_amount"
+                                            className="form-control"
+                                            step="0.01"
+                                            min="0"
+                                            required
+                                            placeholder="0.00"
+                                            value={createForm.data.subtotal}
+                                            onChange={(e) => createForm.setData('subtotal', e.target.value)}
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span>Monto ITBIS (Impuesto) *</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => createForm.setData('itbis_amount', (sub * 0.18).toFixed(2))}
+                                                style={{ fontSize: '11px', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                                            >
+                                                Calcular 18%
+                                            </button>
+                                        </label>
+                                        <input
+                                            type="number"
+                                            id="e_tax_amount"
+                                            className="form-control"
+                                            step="0.01"
+                                            min="0"
+                                            required
+                                            value={createForm.data.itbis_amount}
+                                            onChange={(e) => createForm.setData('itbis_amount', e.target.value)}
+                                        />
+                                        <small className="text-muted">Coloca 0 si fue exento de ITBIS</small>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Cuenta Contable de Gasto (Débito)</label>
+                                        <select
+                                            className="form-control"
+                                            value={createForm.data.expense_account_id}
+                                            onChange={(e) => createForm.setData('expense_account_id', e.target.value)}
+                                        >
+                                            {expenseAccounts.map((acc) => (
+                                                <option key={acc.id} value={acc.id}>
+                                                    {acc.code} - {acc.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Cuenta de Pago / Pasivo (Crédito)</label>
+                                        <select
+                                            className="form-control"
+                                            value={createForm.data.payment_account_id}
+                                            onChange={(e) => createForm.setData('payment_account_id', e.target.value)}
+                                        >
+                                            {paymentAccounts.map((acc) => (
+                                                <option key={acc.id} value={acc.id}>
+                                                    {acc.code} - {acc.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                                        <label className="form-label">Monto Total Compra (Cálculo Automático)</label>
+                                        <input
+                                            type="text"
+                                            id="e_total_display"
+                                            className="form-control"
+                                            readOnly
+                                            style={{ background: 'var(--bg-hover)', fontWeight: 700, fontSize: '16px' }}
+                                            value={formatCurrency(calculatedTotal)}
+                                        />
+                                    </div>
+
+                                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                                        <label className="form-label">Notas / Concepto</label>
+                                        <textarea
+                                            id="e_notes"
+                                            className="form-control"
+                                            rows={2}
+                                            placeholder="Detalle adicional sobre esta compra..."
+                                            value={createForm.data.description}
+                                            onChange={(e) => createForm.setData('description', e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                                    <button
+                                        type="submit"
+                                        className="btn btn-primary"
+                                        disabled={createForm.processing}
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                                            <polyline points="17 21 17 13 7 13 7 21" />
+                                            <polyline points="7 3 7 8 15 8" />
+                                        </svg>
+                                        {createForm.processing ? 'Guardando...' : 'Registrar Gasto'}
+                                    </button>
+                                </div>
+                            </form>
+                        </>
+                    )}
+
+                    {/* Modal para Saldar Cuenta por Pagar */}
+                    {isPayModalOpen && expenseToPay && (
+                        <div className="modal-overlay" onClick={() => setIsPayModalOpen(false)}>
+                            <div className="modal" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <h3>Saldar Cuenta por Pagar</h3>
+                                    <button type="button" className="modal-close" onClick={() => setIsPayModalOpen(false)}>✕</button>
+                                </div>
+                                <form onSubmit={handlePaySubmit}>
+                                    <div className="modal-body">
+                                        <div style={{ padding: '14px', background: 'var(--bg-hover)', borderRadius: '8px', marginBottom: '16px' }}>
+                                            <div className="font-semibold">{expenseToPay.supplier_name}</div>
+                                            <div className="text-muted" style={{ fontSize: '12px', marginTop: '2px' }}>
+                                                NCF: {expenseToPay.ncf || 'S/N'} &bull; Monto a Saldar:{' '}
+                                                <strong style={{ color: 'var(--color-primary)' }}>
+                                                    {formatCurrency(expenseToPay.total_amount)}
+                                                </strong>
+                                            </div>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="form-label">Cuenta de Banco / Caja Origen *</label>
+                                            <select
+                                                className="form-control"
+                                                required
+                                                value={payForm.data.pay_account_origin_id}
+                                                onChange={(e) => payForm.setData('pay_account_origin_id', e.target.value)}
+                                            >
+                                                {assetAccounts.map((acc) => (
+                                                    <option key={acc.id} value={acc.id}>
+                                                        {acc.code} - {acc.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="form-group" style={{ marginBottom: 0 }}>
+                                            <label className="form-label">Diario Contable *</label>
+                                            <select
+                                                className="form-control"
+                                                required
+                                                value={payForm.data.selected_journal_id}
+                                                onChange={(e) => payForm.setData('selected_journal_id', e.target.value)}
+                                            >
+                                                {journals.map((j) => (
+                                                    <option key={j.id} value={j.id}>
+                                                        {j.code} - {j.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="modal-footer">
+                                        <button type="button" className="btn btn-secondary" onClick={() => setIsPayModalOpen(false)}>
+                                            Cancelar
+                                        </button>
+                                        <button type="submit" className="btn btn-primary" disabled={payForm.processing}>
+                                            {payForm.processing ? 'Procesando...' : 'Confirmar Pago'}
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     )}
                 </div>
             </div>
-
-            {/* ── MODAL: REGISTRAR NUEVO GASTO / FACTURA ── */}
-            {isCreateModalOpen && (
-                createPortal(<div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-[#161622] rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 max-w-2xl w-full p-6 transition-all my-8 max-h-[90vh] overflow-y-auto">
-                        <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-800 mb-5">
-                            <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                <span className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                                    </svg>
-                                </span>
-                                Registrar Factura / Gasto Operativo
-                            </h3>
-                            <button
-                                type="button"
-                                onClick={() => setIsCreateModalOpen(false)}
-                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
-                            >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleCreateSubmit} className="space-y-4">
-                            {/* RNC y Nombre del Proveedor */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                        RNC o Cédula (Suplidor) <span className="text-red-500">*</span>
-                                    </label>
-                                    <div className="flex gap-1.5">
-                                        <input
-                                            type="text"
-                                            required
-                                            value={createForm.data.supplier_rnc}
-                                            onChange={(e) => createForm.setData('supplier_rnc', e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault();
-                                                    handleRncLookup();
-                                                }
-                                            }}
-                                            placeholder="Ej: 101000000"
-                                            className="w-full px-3 py-2 text-xs sm:text-sm bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl focus:bg-white dark:focus:bg-[#161622] focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary text-gray-900 dark:text-gray-100"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={handleRncLookup}
-                                            disabled={isLookingUpRnc}
-                                            className="px-3 py-2 bg-brand-primary hover:bg-brand-dark text-white rounded-xl text-xs font-bold shrink-0 transition disabled:opacity-50"
-                                            title="Buscar en padrón DGII"
-                                        >
-                                            {isLookingUpRnc ? '...' : 'DGII'}
-                                        </button>
-                                    </div>
-                                    {rncError && <p className="text-red-500 text-[11px] mt-1">{rncError}</p>}
-                                    {createForm.errors.supplier_rnc && <p className="text-red-500 text-[11px] mt-1">{createForm.errors.supplier_rnc}</p>}
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                        Nombre / Razón Social <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={createForm.data.supplier_name}
-                                        onChange={(e) => createForm.setData('supplier_name', e.target.value)}
-                                        placeholder="Ej: Suplidora Dominicana SRL"
-                                        className="w-full px-3 py-2 text-xs sm:text-sm bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl focus:bg-white dark:focus:bg-[#161622] focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary text-gray-900 dark:text-gray-100"
-                                    />
-                                    {createForm.errors.supplier_name && <p className="text-red-500 text-[11px] mt-1">{createForm.errors.supplier_name}</p>}
-                                </div>
-                            </div>
-
-                            {/* Modo de Comprobante Fiscal (Suplidor vs Auto-Emisión E41 / E43) */}
-                            <div className="p-3 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 space-y-2.5">
-                                <label className="block text-[11px] font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-300">
-                                    Modalidad de Comprobante Fiscal (DGII 606 / e-CF)
-                                </label>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                    {[
-                                        { id: 'supplier', title: 'NCF del Suplidor', sub: 'Digitar B01 / E31 recibido' },
-                                        { id: 'e41', title: 'Auto-Emitir E41', sub: 'Proveedor Informal (B11/E41)' },
-                                        { id: 'e43', title: 'Auto-Emitir E43', sub: 'Gasto Menor Caja Chica (B13/E43)' },
-                                    ].map((m) => {
-                                        const active = createForm.data.ncf_mode === m.id;
-                                        return (
-                                            <button
-                                                key={m.id}
-                                                type="button"
-                                                onClick={() => createForm.setData('ncf_mode', m.id)}
-                                                className={`text-left p-2.5 rounded-xl border transition ${
-                                                    active
-                                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                                                        : 'bg-white dark:bg-[#161622] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-indigo-400'
-                                                }`}
-                                            >
-                                                <div className="text-xs font-bold">{m.title}</div>
-                                                <div className={`text-[10px] ${active ? 'text-indigo-100' : 'text-gray-400'}`}>
-                                                    {m.sub}
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* NCF, Tipo 606 y Factura Ref */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                        NCF (Comprobante Fiscal)
-                                    </label>
-                                    {createForm.data.ncf_mode === 'supplier' ? (
-                                        <input
-                                            type="text"
-                                            value={createForm.data.ncf}
-                                            onChange={(e) => createForm.setData('ncf', e.target.value.toUpperCase())}
-                                            placeholder="Ej: E310000000001 o B0100000001"
-                                            className="w-full px-3 py-2 text-xs sm:text-sm bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary text-gray-900 dark:text-gray-100 font-mono"
-                                        />
-                                    ) : (
-                                        <div className="w-full px-3 py-2 text-xs bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-xl font-mono font-bold text-purple-700 dark:text-purple-300">
-                                            {createForm.data.ncf_mode === 'e41'
-                                                ? '⚡ Se asignará secuencia E41 / B11'
-                                                : '⚡ Se asignará secuencia E43 / B13'}
-                                        </div>
-                                    )}
-                                    {createForm.errors.ncf && <p className="text-red-500 text-[11px] mt-1">{createForm.errors.ncf}</p>}
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                        Tipo 606 (DGII) <span className="text-red-500">*</span>
-                                    </label>
-                                    <select
-                                        value={createForm.data.expense_type_606}
-                                        onChange={(e) => createForm.setData('expense_type_606', e.target.value)}
-                                        className="w-full px-3 py-2 text-xs bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary text-gray-900 dark:text-gray-100"
-                                    >
-                                        {Object.entries(expenseTypes606 || {}).map(([code, label]) => (
-                                            <option key={code} value={code}>
-                                                {code} - {label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                        Factura # Interna / Ref
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={createForm.data.reference_number}
-                                        onChange={(e) => createForm.setData('reference_number', e.target.value)}
-                                        placeholder="Ej: F-1025"
-                                        className="w-full px-3 py-2 text-xs sm:text-sm bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary text-gray-900 dark:text-gray-100 font-mono"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Desglose Impositivo DGII */}
-                            <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-xl border border-gray-200/70 dark:border-gray-700/50 space-y-3">
-                                <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                                    Desglose Impositivo & Retenciones
-                                </div>
-
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                            Subtotal <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            required
-                                            value={createForm.data.subtotal}
-                                            onChange={(e) => createForm.setData('subtotal', e.target.value)}
-                                            placeholder="0.00"
-                                            className="w-full px-3 py-1.5 text-xs bg-white dark:bg-[#161622] border border-gray-200 dark:border-gray-700/60 rounded-lg text-right font-bold text-gray-900 dark:text-white"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                            ITBIS Facturado
-                                        </label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            value={createForm.data.itbis_amount}
-                                            onChange={(e) => createForm.setData('itbis_amount', e.target.value)}
-                                            placeholder="0.00"
-                                            className="w-full px-3 py-1.5 text-xs bg-white dark:bg-[#161622] border border-gray-200 dark:border-gray-700/60 rounded-lg text-right font-bold text-gray-900 dark:text-white"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-semibold text-orange-700 dark:text-orange-400 mb-1">
-                                            Ret. ITBIS
-                                        </label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            value={createForm.data.itbis_retained}
-                                            onChange={(e) => createForm.setData('itbis_retained', e.target.value)}
-                                            placeholder="0.00"
-                                            className="w-full px-3 py-1.5 text-xs bg-orange-50/50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800/40 rounded-lg text-right font-bold text-orange-900 dark:text-orange-300"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-semibold text-orange-700 dark:text-orange-400 mb-1">
-                                            Ret. ISR
-                                        </label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            value={createForm.data.isr_retained}
-                                            onChange={(e) => createForm.setData('isr_retained', e.target.value)}
-                                            placeholder="0.00"
-                                            className="w-full px-3 py-1.5 text-xs bg-orange-50/50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800/40 rounded-lg text-right font-bold text-orange-900 dark:text-orange-300"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="p-3 bg-white dark:bg-[#161622] rounded-lg border border-gray-100 dark:border-gray-700/60 flex items-center justify-between">
-                                    <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                                        Monto Neto a Desembolsar:
-                                    </span>
-                                    <span className="text-base font-black text-brand-primary dark:text-blue-400">
-                                        RD$ {calculatedTotal.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Cuentas Contables y Diario */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                        Cuenta de Gasto (Débito) <span className="text-red-500">*</span>
-                                    </label>
-                                    <select
-                                        required
-                                        value={createForm.data.expense_account_id}
-                                        onChange={(e) => createForm.setData('expense_account_id', e.target.value)}
-                                        className="w-full px-3 py-2 text-xs bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary text-gray-900 dark:text-gray-100 font-medium"
-                                    >
-                                        {expenseAccounts?.map((acc) => (
-                                            <option key={acc.id} value={acc.id}>
-                                                {acc.code} - {acc.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                        Cuenta de Pago / CxP (Crédito) <span className="text-red-500">*</span>
-                                    </label>
-                                    <select
-                                        required
-                                        value={createForm.data.payment_account_id}
-                                        onChange={(e) => createForm.setData('payment_account_id', e.target.value)}
-                                        className="w-full px-3 py-2 text-xs bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary text-gray-900 dark:text-gray-100 font-medium"
-                                    >
-                                        {paymentAccounts?.map((acc) => (
-                                            <option key={acc.id} value={acc.id}>
-                                                {acc.code} - {acc.name} ({acc.type === 'asset' ? 'Caja/Banco' : 'Pasivo/CxP'})
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Fechas y Diario */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                        Fecha de Emisión <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="date"
-                                        required
-                                        value={createForm.data.expense_date}
-                                        onChange={(e) => createForm.setData('expense_date', e.target.value)}
-                                        className="w-full px-3 py-2 text-xs bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl text-gray-900 dark:text-gray-100"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                        Fecha Vencimiento (CxP)
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={createForm.data.due_date}
-                                        onChange={(e) => createForm.setData('due_date', e.target.value)}
-                                        className="w-full px-3 py-2 text-xs bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl text-gray-900 dark:text-gray-100"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                        Estado Inicial <span className="text-red-500">*</span>
-                                    </label>
-                                    <select
-                                        value={createForm.data.status}
-                                        onChange={(e) => createForm.setData('status', e.target.value)}
-                                        className="w-full px-3 py-2 text-xs bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl text-gray-900 dark:text-gray-100 font-semibold"
-                                    >
-                                        <option value="paid">Pagado (Al Contado)</option>
-                                        <option value="pending">Pendiente (A Crédito / CxP)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Diario Contable */}
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    Diario Contable <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    required
-                                    value={createForm.data.selected_journal_id}
-                                    onChange={(e) => createForm.setData('selected_journal_id', e.target.value)}
-                                    className="w-full px-3 py-2 text-xs bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl text-gray-900 dark:text-gray-100"
-                                >
-                                    {journals?.map((j) => (
-                                        <option key={j.id} value={j.id}>
-                                            {j.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Descripción */}
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    Descripción o Justificación del Gasto
-                                </label>
-                                <textarea
-                                    rows="2"
-                                    value={createForm.data.description}
-                                    onChange={(e) => createForm.setData('description', e.target.value)}
-                                    placeholder="Detalles sobre el gasto o personal que lo autorizó..."
-                                    className="w-full px-3 py-2 text-xs sm:text-sm bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl text-gray-900 dark:text-gray-100"
-                                />
-                            </div>
-
-                            <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsCreateModalOpen(false)}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={createForm.processing}
-                                    className="px-5 py-2 text-xs font-bold bg-brand-primary hover:bg-brand-dark text-white rounded-xl shadow-xs transition active:scale-95 disabled:opacity-50"
-                                >
-                                    {createForm.processing ? 'Registrando...' : 'Registrar Gasto y Cuadrar Póliza'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>, document.body)
-            )}
-
-            {/* ── MODAL: SALDAR FACTURA (PAGAR CXP) ── */}
-            {isPayModalOpen && expenseToPay && (
-                createPortal(<div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-[#161622] rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 max-w-lg w-full p-6 transition-all">
-                        <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-800 mb-5">
-                            <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                <span className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                </span>
-                                Saldar Factura / Cuenta por Pagar
-                            </h3>
-                            <button
-                                type="button"
-                                onClick={() => setIsPayModalOpen(false)}
-                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
-                            >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {/* Detalle de la Deuda */}
-                        <div className="mb-5 rounded-xl bg-gray-50 dark:bg-gray-800/40 p-4 border border-gray-100 dark:border-gray-800 space-y-2">
-                            <div className="flex justify-between text-xs">
-                                <span className="text-gray-400">Proveedor:</span>
-                                <strong className="text-gray-900 dark:text-white">{expenseToPay.supplier_name}</strong>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                                <span className="text-gray-400">NCF / Factura:</span>
-                                <span className="font-mono font-semibold text-gray-800 dark:text-gray-200">
-                                    {expenseToPay.ncf || expenseToPay.reference_number || 'N/A'}
-                                </span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                                <span className="text-gray-400">Cuenta Pasivo a Debitar:</span>
-                                <span className="font-medium text-amber-700 dark:text-amber-400">
-                                    {expenseToPay.payment_account_name}
-                                </span>
-                            </div>
-                            <div className="pt-2 border-t border-gray-200 dark:border-gray-700/60 flex justify-between items-center">
-                                <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Total a Saldar:</span>
-                                <span className="text-lg font-black text-brand-primary dark:text-blue-400">
-                                    RD$ {expenseToPay.total_amount.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
-                            </div>
-                        </div>
-
-                        <form onSubmit={handlePaySubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    Cuenta de Origen de Fondos (Caja o Banco - Activo) <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    required
-                                    value={payForm.data.pay_account_origin_id}
-                                    onChange={(e) => payForm.setData('pay_account_origin_id', e.target.value)}
-                                    className="w-full px-3 py-2 text-xs bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary text-gray-900 dark:text-gray-100 font-medium"
-                                >
-                                    {assetAccounts?.map((acc) => (
-                                        <option key={acc.id} value={acc.id}>
-                                            {acc.code} - {acc.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                {payForm.errors.pay_account_origin_id && <p className="text-red-500 text-[11px] mt-1">{payForm.errors.pay_account_origin_id}</p>}
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    Diario Contable <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    required
-                                    value={payForm.data.selected_journal_id}
-                                    onChange={(e) => payForm.setData('selected_journal_id', e.target.value)}
-                                    className="w-full px-3 py-2 text-xs bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary text-gray-900 dark:text-gray-100 font-medium"
-                                >
-                                    {journals?.map((j) => (
-                                        <option key={j.id} value={j.id}>
-                                            {j.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                {payForm.errors.selected_journal_id && <p className="text-red-500 text-[11px] mt-1">{payForm.errors.selected_journal_id}</p>}
-                            </div>
-
-                            <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsPayModalOpen(false)}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={payForm.processing}
-                                    className="px-5 py-2 text-xs font-bold bg-brand-primary hover:bg-brand-dark text-white rounded-xl shadow-xs transition active:scale-95 disabled:opacity-50"
-                                >
-                                    {payForm.processing ? 'Procesando Pago...' : 'Procesar Asiento y Saldar Factura'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>, document.body)
-            )}
         </AuthenticatedLayout>
     );
 }

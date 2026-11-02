@@ -1251,431 +1251,361 @@ export default function Index({
                     )}
 
                     {/* ══════════════════════════════════════════════════════════════
-                        TAB 4: PASARELAS & DGII (GRIDBASE BILLS CORE)
+                        TAB 4: PASARELAS & DGII (1:1 GRIDBASE BILLS CORE `settings.js`)
                     ══════════════════════════════════════════════════════════════ */}
                     {activeTab === 'finance' && (
-                        <div className="bg-white dark:bg-[#161622] rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-white/5 shadow-xs space-y-6">
-                            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-white/5">
-                                <h2 className="text-lg font-bold text-slate-800 dark:text-white">
-                                    Pasarelas de Pago & Facturación Electrónica (DGII)
-                                </h2>
-                                <PoweredByBills variant="badge" />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
-                                        Cardnet Merchant ID
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={data.cardnet_merchant_id}
-                                        onChange={e => setData('cardnet_merchant_id', e.target.value)}
-                                        placeholder="349000000"
-                                        className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white text-sm font-mono"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
-                                        Cardnet Terminal ID
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={data.cardnet_terminal_id}
-                                        onChange={e => setData('cardnet_terminal_id', e.target.value)}
-                                        placeholder="58585858"
-                                        className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white text-sm font-mono"
-                                    />
-                                </div>
-
-                                <div className="md:col-span-2 pt-4 border-t border-slate-100 dark:border-white/5 space-y-6">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <span className="text-sm font-bold text-slate-800 dark:text-white">
-                                                Motor de Facturación Electrónica (e-CF / NCF DGII)
-                                            </span>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                Datos fiscales del emisor, certificado digital .p12 y secuencias autorizadas para emisión de comprobantes.
-                                            </p>
+                        <div className="bills-scope">
+                            {/* 1. Preset de Certificación DGII (`settings.js` line 509) */}
+                            <div className="form-card" style={{ marginBottom: '20px', borderLeft: '4px solid #6366f1', background: 'linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(16,185,129,0.04) 100%)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                            <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: '#6366f1' }}>
+                                                ⚡ Preset de Certificación DGII (Facturación Electrónica e-CF)
+                                            </h3>
+                                            <PoweredByBills variant="badge" />
                                         </div>
-                                        <label className="relative inline-flex items-center cursor-pointer">
+                                        <p className="text-muted" style={{ fontSize: '12px', margin: '4px 0 0' }}>
+                                            Pre-llena los datos fiscales del emisor, secuencias e-NCF (E31–E47) y entorno de certificación con un clic.
+                                        </p>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
                                             <input
                                                 type="checkbox"
-                                                checked={data.enable_electronic_billing}
-                                                onChange={e => setData('enable_electronic_billing', e.target.checked)}
-                                                className="sr-only peer"
+                                                checked={!!data.enable_electronic_billing}
+                                                onChange={(e) => setData('enable_electronic_billing', e.target.checked)}
+                                                style={{ width: '16px', height: '16px' }}
                                             />
-                                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                            Motor e-CF Activo
                                         </label>
                                     </div>
+                                </div>
+                            </div>
 
-                                    {data.enable_electronic_billing && (
-                                        <div className="space-y-6">
-                                            {/* Banner de Entorno DGII (1:1 Gridbase Bills) */}
-                                            {(() => {
-                                                const env = data.ecf_environment || 'testing';
-                                                const envMap = {
-                                                    production: {
-                                                        bg: 'rgba(34,197,94,0.1)',
-                                                        border: '#22c55e',
-                                                        dot: '#22c55e',
-                                                        label: '🟢 PRODUCCIÓN ACTIVA (ecf.dgii.gov.do)',
-                                                        sublabel: 'Los comprobantes electrónicos se emiten en el ambiente oficial de la DGII con plena validez fiscal.',
-                                                        textColor: '#16a34a',
-                                                    },
-                                                    certification: {
-                                                        bg: 'rgba(249,115,22,0.1)',
-                                                        border: '#f97316',
-                                                        dot: '#f97316',
-                                                        label: '🟠 CERTIFICACIÓN (certecf)',
-                                                        sublabel: 'Ambiente formal de certificación DGII. Los comprobantes emitidos aquí son para validación del set de pruebas.',
-                                                        textColor: '#ea580c',
-                                                    },
-                                                    testing: {
-                                                        bg: 'rgba(239,68,68,0.08)',
-                                                        border: '#ef4444',
-                                                        dot: '#ef4444',
-                                                        label: '🔴 PRE-CERTIFICACIÓN / PRUEBAS (testecf)',
-                                                        sublabel: 'Ambiente de pruebas y contingencia local. Cambia a Producción cuando el certificado .p12 esté activo.',
-                                                        textColor: '#dc2626',
-                                                    },
-                                                };
-                                                const cfg = envMap[env] || envMap.testing;
-                                                return (
-                                                    <div
-                                                        style={{
-                                                            background: cfg.bg,
-                                                            border: `1.5px solid ${cfg.border}`,
-                                                            borderRadius: '12px',
-                                                            padding: '14px 16px',
-                                                            display: 'flex',
-                                                            alignItems: 'flex-start',
-                                                            gap: '12px',
-                                                        }}
-                                                    >
-                                                        <div
-                                                            style={{
-                                                                width: '10px',
-                                                                height: '10px',
-                                                                borderRadius: '50%',
-                                                                background: cfg.dot,
-                                                                marginTop: '4px',
-                                                                flexShrink: 0,
-                                                                boxShadow: `0 0 6px ${cfg.dot}`,
-                                                            }}
-                                                        />
-                                                        <div>
-                                                            <div style={{ fontSize: '13px', fontWeight: 700, color: cfg.textColor }}>
-                                                                {cfg.label}
-                                                            </div>
-                                                            <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                                                                {cfg.sublabel}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })()}
+                            {/* 2. Datos Fiscales del Emisor (`settings.js` line 521) */}
+                            <div className="form-card" style={{ marginBottom: '20px' }}>
+                                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>Datos Fiscales del Emisor</h3>
+                                <p className="text-muted" style={{ fontSize: '13px', marginBottom: '20px' }}>
+                                    Información registrada ante la DGII para la emisión de Comprobantes Fiscales Electrónicos (e-CF) y formatos 606/607/608/IT-1.
+                                </p>
+                                <div className="grid-2">
+                                    <div className="form-group">
+                                        <label className="form-label">RNC del Emisor *</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={data.ecf_rnc_emisor}
+                                            onChange={(e) => setData('ecf_rnc_emisor', e.target.value)}
+                                            placeholder="Ej. 101142456"
+                                            maxLength={11}
+                                        />
+                                        <small className="text-muted" style={{ fontSize: '11px' }}>Sin guiones, 9 o 11 dígitos</small>
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Razón Social (según DGII) *</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={data.ecf_razon_social}
+                                            onChange={(e) => setData('ecf_razon_social', e.target.value)}
+                                            placeholder="Nombre legal registrado en DGII"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Nombre Comercial</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={data.ecf_nombre_comercial}
+                                            onChange={(e) => setData('ecf_nombre_comercial', e.target.value)}
+                                            placeholder="Nombre comercial"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Código Municipio (DGII)</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            maxLength={6}
+                                            value={data.ecf_municipio}
+                                            onChange={(e) => setData('ecf_municipio', e.target.value)}
+                                            placeholder="010100 (Distrito Nacional)"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Código Provincia (DGII)</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            maxLength={6}
+                                            value={data.ecf_provincia}
+                                            onChange={(e) => setData('ecf_provincia', e.target.value)}
+                                            placeholder="010000 (Distrito Nacional)"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Entorno DGII</label>
+                                        <select
+                                            className="form-control"
+                                            value={data.ecf_environment}
+                                            onChange={(e) => setData('ecf_environment', e.target.value)}
+                                        >
+                                            <option value="testing">Pre-Certificación (testecf) — PRUEBAS</option>
+                                            <option value="certification">Certificación (certecf) — SET DE PRUEBAS</option>
+                                            <option value="production">Producción (ecf) — FACTURAS REALES ✓</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
 
-                                            {/* Bloque 1: Datos Fiscales del Emisor */}
-                                            <div className="p-5 rounded-xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 space-y-4">
-                                                <div>
-                                                    <h4 className="text-sm font-bold text-slate-800 dark:text-white">
-                                                        Datos Fiscales del Emisor (XML e-CF & Reportes DGII)
-                                                    </h4>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        Estos campos alimentan el nodo Emisor del XML electrónico y los encabezados de los formatos 606, 607, 608 e IT-1.
-                                                    </p>
-                                                </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
-                                                            RNC Emisor Institucional
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            value={data.ecf_rnc_emisor}
-                                                            onChange={e => setData('ecf_rnc_emisor', e.target.value)}
-                                                            placeholder="101142456"
-                                                            className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#0e0f11] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white text-sm font-mono"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
-                                                            Razón Social (DGII)
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            value={data.ecf_razon_social}
-                                                            onChange={e => setData('ecf_razon_social', e.target.value)}
-                                                            placeholder="UNIVERSIDAD NACIONAL..."
-                                                            className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#0e0f11] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white text-sm"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
-                                                            Nombre Comercial
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            value={data.ecf_nombre_comercial}
-                                                            onChange={e => setData('ecf_nombre_comercial', e.target.value)}
-                                                            placeholder="Nombre Comercial"
-                                                            className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#0e0f11] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white text-sm"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
-                                                            Código Municipio DGII (6 dígitos)
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            maxLength={6}
-                                                            value={data.ecf_municipio}
-                                                            onChange={e => setData('ecf_municipio', e.target.value)}
-                                                            placeholder="010100"
-                                                            className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#0e0f11] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white text-sm font-mono"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
-                                                            Código Provincia DGII (6 dígitos)
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            maxLength={6}
-                                                            value={data.ecf_provincia}
-                                                            onChange={e => setData('ecf_provincia', e.target.value)}
-                                                            placeholder="010000"
-                                                            className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#0e0f11] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white text-sm font-mono"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
-                                                            Entorno DGII
-                                                        </label>
-                                                        <select
-                                                            value={data.ecf_environment}
-                                                            onChange={e => setData('ecf_environment', e.target.value)}
-                                                            className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#0e0f11] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white text-sm"
-                                                        >
-                                                            <option value="testing">Pre-Certificación (testecf) — PRUEBAS</option>
-                                                            <option value="certification">Certificación (certecf)</option>
-                                                            <option value="production">Producción (ecf) — FACTURAS REALES ✓</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                            </div>
+                            {/* 3. Certificado Digital y Entorno (`settings.js` line 567) */}
+                            <div className="form-card" style={{ marginBottom: '20px' }}>
+                                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>Certificado Digital y Entorno</h3>
+                                <p className="text-muted" style={{ fontSize: '13px', marginBottom: '16px' }}>
+                                    Configura tu certificado digital (.p12 / .pfx) para firma RSA-SHA256 XMLDSig de comprobantes electrónicos.
+                                </p>
 
-                                            {/* Bloque 2: Certificado Digital .p12 / .pfx */}
-                                            <div className="p-5 rounded-xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 space-y-4">
-                                                <div>
-                                                    <h4 className="text-sm font-bold text-slate-800 dark:text-white">
-                                                        Certificado Digital de Firma Electrónica (.p12 / .pfx)
-                                                    </h4>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        Requerido para firma RSA-SHA256 XMLDSig de comprobantes electrónicos. Almacenado de forma segura en <code>storage/app/secure/</code>.
-                                                    </p>
-                                                </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
-                                                            Archivo de Certificado (.p12 / .pfx)
-                                                        </label>
-                                                        <div className="flex gap-2">
-                                                            <input
-                                                                type="text"
-                                                                value={data.ecf_certificate_path}
-                                                                onChange={e => setData('ecf_certificate_path', e.target.value)}
-                                                                placeholder="certificado.p12"
-                                                                className="flex-1 px-3.5 py-2 rounded-xl bg-white dark:bg-[#0e0f11] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white text-sm font-mono"
-                                                            />
-                                                            <label className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold cursor-pointer inline-flex items-center gap-1.5 shrink-0 hover:opacity-90 transition">
-                                                                {isUploadingCert ? 'Subiendo...' : 'Subir .p12'}
-                                                                <input
-                                                                    type="file"
-                                                                    accept=".p12,.pfx"
-                                                                    className="hidden"
-                                                                    onChange={async (e) => {
-                                                                        const file = e.target.files?.[0];
-                                                                        if (!file) return;
-                                                                        setIsUploadingCert(true);
-                                                                        setCertUploadStatus(null);
-                                                                        try {
-                                                                            const fd = new FormData();
-                                                                            fd.append('certificate', file);
-                                                                            if (data.ecf_certificate_password) {
-                                                                                fd.append('password', data.ecf_certificate_password);
-                                                                            }
-                                                                            const res = await fetch('/admin/settings/upload-ecf-cert', {
-                                                                                method: 'POST',
-                                                                                headers: {
-                                                                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                                                                                    'Accept': 'application/json',
-                                                                                },
-                                                                                body: fd,
-                                                                            });
-                                                                            const json = await res.json();
-                                                                            if (res.ok && json.success) {
-                                                                                setData('ecf_certificate_path', json.filename);
-                                                                                setCertUploadStatus({ ok: true, msg: json.message });
-                                                                            } else {
-                                                                                setCertUploadStatus({ ok: false, msg: json.message || 'Error al subir certificado.' });
-                                                                            }
-                                                                        } catch (err) {
-                                                                            setCertUploadStatus({ ok: false, msg: err.message });
-                                                                        } finally {
-                                                                            setIsUploadingCert(false);
-                                                                        }
-                                                                    }}
-                                                                />
-                                                            </label>
-                                                        </div>
-                                                        {certUploadStatus && (
-                                                            <div className={`mt-2 text-xs font-semibold ${certUploadStatus.ok ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                                                                {certUploadStatus.msg}
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                {(() => {
+                                    const env = data.ecf_environment || 'testing';
+                                    const envInfo = {
+                                        testing: { color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: '#ef4444', label: '🔴 MODO PRUEBAS (Pre-Certificación / testecf)', desc: 'Las facturas emitidas NO tienen validez fiscal en este entorno. Cambia a "Producción" cuando tengas tu certificado activo.' },
+                                        certification: { color: '#f97316', bg: 'rgba(249,115,22,0.08)', border: '#f97316', label: '🟠 MODO CERTIFICACIÓN (certecf)', desc: 'Entorno de pruebas formales con la DGII para validar el set de pruebas.' },
+                                        production: { color: '#22c55e', bg: 'rgba(34,197,94,0.08)', border: '#22c55e', label: '🟢 PRODUCCIÓN ACTIVA (ecf)', desc: 'Las facturas electrónicas se envían al entorno real de la DGII y tienen plena validez fiscal.' },
+                                    }[env] || { color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: '#ef4444', label: 'MODO PRUEBAS', desc: '' };
 
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
-                                                            Contraseña del Certificado
-                                                        </label>
-                                                        <div className="relative">
-                                                            <input
-                                                                type={showCertPassword ? 'text' : 'password'}
-                                                                value={data.ecf_certificate_password}
-                                                                onChange={e => setData('ecf_certificate_password', e.target.value)}
-                                                                placeholder="••••••••••••"
-                                                                className="w-full px-3.5 py-2 pr-10 rounded-xl bg-white dark:bg-[#0e0f11] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white text-sm font-mono"
-                                                            />
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setShowCertPassword(!showCertPassword)}
-                                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                                                            >
-                                                                {showCertPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Bloque 3: Secuencias Autorizadas e-NCF / NCF (1:1 Gridbase Bills) */}
-                                            <div className="p-5 rounded-xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 space-y-4">
-                                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                                    <div>
-                                                        <h4 className="text-sm font-bold text-slate-800 dark:text-white">
-                                                            Secuencias de Comprobantes Fiscales (e-NCF / NCF)
-                                                        </h4>
-                                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                            Administra la serie (<code>E</code> electrónica o <code>B</code> tradicional), el último número emitido, el límite autorizado y la fecha de vencimiento por tipo.
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0e0f11]">
-                                                    <table className="w-full text-xs text-left">
-                                                        <thead className="bg-slate-100/80 dark:bg-white/[0.04] text-slate-500 dark:text-slate-400 uppercase font-bold border-b border-slate-200 dark:border-white/10">
-                                                            <tr>
-                                                                <th className="px-4 py-3">Tipo</th>
-                                                                <th className="px-4 py-3">Serie</th>
-                                                                <th className="px-4 py-3">Último Emitido</th>
-                                                                <th className="px-4 py-3">Límite Autorizado</th>
-                                                                <th className="px-4 py-3">Vencimiento</th>
-                                                                <th className="px-4 py-3">Próximo NCF</th>
-                                                                <th className="px-4 py-3 text-center">Activo</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-slate-200/70 dark:divide-white/5">
-                                                            {(data.ncf_sequences || []).map((seq, idx) => {
-                                                                const padLen = String(seq.series || 'E').toUpperCase() === 'B' ? 8 : 10;
-                                                                const nextPreview = `${String(seq.series || 'E').toUpperCase()}${seq.type_code}${String((Number(seq.current_sequence) || 0) + 1).padStart(padLen, '0')}`;
-                                                                return (
-                                                                    <tr key={seq.id || idx}>
-                                                                        <td className="px-4 py-2.5 font-semibold text-slate-800 dark:text-white">
-                                                                            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 mr-1.5">
-                                                                                [{seq.type_code}]
-                                                                            </span>
-                                                                            {seq.name}
-                                                                        </td>
-                                                                        <td className="px-4 py-2.5">
-                                                                            <select
-                                                                                value={seq.series || 'E'}
-                                                                                onChange={e => {
-                                                                                    const updated = [...data.ncf_sequences];
-                                                                                    updated[idx] = { ...updated[idx], series: e.target.value };
-                                                                                    setData('ncf_sequences', updated);
-                                                                                }}
-                                                                                className="px-2 py-1 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 font-mono font-bold text-slate-800 dark:text-white"
-                                                                            >
-                                                                                <option value="E">E (e-CF)</option>
-                                                                                <option value="B">B (NCF)</option>
-                                                                            </select>
-                                                                        </td>
-                                                                        <td className="px-4 py-2.5">
-                                                                            <input
-                                                                                type="number"
-                                                                                min={0}
-                                                                                value={seq.current_sequence}
-                                                                                onChange={e => {
-                                                                                    const updated = [...data.ncf_sequences];
-                                                                                    updated[idx] = { ...updated[idx], current_sequence: Number(e.target.value) };
-                                                                                    setData('ncf_sequences', updated);
-                                                                                }}
-                                                                                className="w-24 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 font-mono text-slate-800 dark:text-white"
-                                                                            />
-                                                                        </td>
-                                                                        <td className="px-4 py-2.5">
-                                                                            <input
-                                                                                type="number"
-                                                                                min={1}
-                                                                                value={seq.limit_sequence}
-                                                                                onChange={e => {
-                                                                                    const updated = [...data.ncf_sequences];
-                                                                                    updated[idx] = { ...updated[idx], limit_sequence: Number(e.target.value) };
-                                                                                    setData('ncf_sequences', updated);
-                                                                                }}
-                                                                                className="w-28 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 font-mono text-slate-800 dark:text-white"
-                                                                            />
-                                                                        </td>
-                                                                        <td className="px-4 py-2.5">
-                                                                            <input
-                                                                                type="date"
-                                                                                value={seq.expiration_date || '2028-12-31'}
-                                                                                onChange={e => {
-                                                                                    const updated = [...data.ncf_sequences];
-                                                                                    updated[idx] = { ...updated[idx], expiration_date: e.target.value };
-                                                                                    setData('ncf_sequences', updated);
-                                                                                }}
-                                                                                className="px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 font-mono text-slate-800 dark:text-white"
-                                                                            />
-                                                                        </td>
-                                                                        <td className="px-4 py-2.5 font-mono font-bold text-slate-700 dark:text-slate-300">
-                                                                            {nextPreview}
-                                                                        </td>
-                                                                        <td className="px-4 py-2.5 text-center">
-                                                                            <input
-                                                                                type="checkbox"
-                                                                                checked={!!seq.is_active}
-                                                                                onChange={e => {
-                                                                                    const updated = [...data.ncf_sequences];
-                                                                                    updated[idx] = { ...updated[idx], is_active: e.target.checked };
-                                                                                    setData('ncf_sequences', updated);
-                                                                                }}
-                                                                                className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
-                                                                            />
-                                                                        </td>
-                                                                    </tr>
-                                                                );
-                                                            })}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
+                                    return (
+                                        <div style={{ background: envInfo.bg, border: `1.5px solid ${envInfo.border}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '20px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ fontWeight: 700, fontSize: '13px', color: envInfo.color, marginBottom: '3px' }}>{envInfo.label}</div>
+                                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>{envInfo.desc}</div>
                                             </div>
                                         </div>
-                                    )}
+                                    );
+                                })()}
+
+                                <div className="grid-2">
+                                    <div className="form-group">
+                                        <label className="form-label">Archivo de Certificado (.p12 / .pfx)</label>
+                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                value={data.ecf_certificate_path}
+                                                onChange={(e) => setData('ecf_certificate_path', e.target.value)}
+                                                placeholder="certificado.p12"
+                                                style={{ flex: 1 }}
+                                            />
+                                            <label className="btn btn-secondary" style={{ cursor: 'pointer', whiteSpace: 'nowrap', margin: 0 }}>
+                                                {isUploadingCert ? 'Subiendo...' : 'Subir .p12'}
+                                                <input
+                                                    type="file"
+                                                    accept=".p12,.pfx"
+                                                    style={{ display: 'none' }}
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (!file) return;
+                                                        setIsUploadingCert(true);
+                                                        setCertUploadStatus(null);
+                                                        try {
+                                                            const fd = new FormData();
+                                                            fd.append('certificate', file);
+                                                            if (data.ecf_certificate_password) {
+                                                                fd.append('password', data.ecf_certificate_password);
+                                                            }
+                                                            const res = await fetch('/admin/settings/upload-ecf-cert', {
+                                                                method: 'POST',
+                                                                headers: {
+                                                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                                                                    Accept: 'application/json',
+                                                                },
+                                                                body: fd,
+                                                            });
+                                                            const json = await res.json();
+                                                            if (res.ok && json.success) {
+                                                                setData('ecf_certificate_path', json.filename);
+                                                                setCertUploadStatus({ ok: true, msg: json.message });
+                                                            } else {
+                                                                setCertUploadStatus({ ok: false, msg: json.message || 'Error al subir certificado.' });
+                                                            }
+                                                        } catch (err) {
+                                                            setCertUploadStatus({ ok: false, msg: err.message });
+                                                        } finally {
+                                                            setIsUploadingCert(false);
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
+                                        </div>
+                                        {certUploadStatus && (
+                                            <small style={{ fontSize: '11px', fontWeight: 600, color: certUploadStatus.ok ? '#16a34a' : '#dc2626', display: 'block', marginTop: '4px' }}>
+                                                {certUploadStatus.msg}
+                                            </small>
+                                        )}
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Contraseña del Certificado</label>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <input
+                                                type={showCertPassword ? 'text' : 'password'}
+                                                className="form-control"
+                                                value={data.ecf_certificate_password}
+                                                onChange={(e) => setData('ecf_certificate_password', e.target.value)}
+                                                placeholder="••••••••••••"
+                                            />
+                                            <button
+                                                type="button"
+                                                className="btn btn-secondary"
+                                                onClick={() => setShowCertPassword(!showCertPassword)}
+                                            >
+                                                {showCertPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 4. Secuencias e-NCF (`settings.js` line 623) */}
+                            <div className="form-card" style={{ marginBottom: '20px' }}>
+                                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>Secuencias e-NCF (Próximo Número Autorizado)</h3>
+                                <p className="text-muted" style={{ fontSize: '13px', marginBottom: '20px' }}>
+                                    Secuencia actual para cada tipo de comprobante fiscal. El formato generado es Serie + Tipo (2 dígitos) + Secuencia.
+                                </p>
+
+                                <div className="table-outer">
+                                    <div className="table-wrapper">
+                                        <table className="data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Tipo Fiscal</th>
+                                                    <th>Serie</th>
+                                                    <th>Último Emitido</th>
+                                                    <th>Límite Autorizado</th>
+                                                    <th>Vencimiento</th>
+                                                    <th>Próximo Comprobante</th>
+                                                    <th className="text-center">Activo</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {(data.ncf_sequences || []).map((seq, idx) => {
+                                                    const padLen = String(seq.series || 'E').toUpperCase() === 'B' ? 8 : 10;
+                                                    const nextPreview = `${String(seq.series || 'E').toUpperCase()}${seq.type_code}${String((Number(seq.current_sequence) || 0) + 1).padStart(padLen, '0')}`;
+                                                    return (
+                                                        <tr key={seq.id || idx}>
+                                                            <td className="font-semibold">
+                                                                <span className="badge-ecf" style={{ marginRight: '8px' }}>
+                                                                    {seq.series || 'E'}{seq.type_code}
+                                                                </span>
+                                                                {seq.name}
+                                                            </td>
+                                                            <td>
+                                                                <select
+                                                                    className="form-control"
+                                                                    style={{ width: '105px', height: '32px', padding: '2px 8px', fontSize: '12px' }}
+                                                                    value={seq.series || 'E'}
+                                                                    onChange={(e) => {
+                                                                        const updated = [...data.ncf_sequences];
+                                                                        updated[idx] = { ...updated[idx], series: e.target.value };
+                                                                        setData('ncf_sequences', updated);
+                                                                    }}
+                                                                >
+                                                                    <option value="E">E (e-CF)</option>
+                                                                    <option value="B">B (NCF)</option>
+                                                                </select>
+                                                            </td>
+                                                            <td>
+                                                                <input
+                                                                    type="number"
+                                                                    min={0}
+                                                                    className="form-control"
+                                                                    style={{ width: '110px', height: '32px', padding: '4px 8px', fontSize: '12px' }}
+                                                                    value={seq.current_sequence}
+                                                                    onChange={(e) => {
+                                                                        const updated = [...data.ncf_sequences];
+                                                                        updated[idx] = { ...updated[idx], current_sequence: Number(e.target.value) };
+                                                                        setData('ncf_sequences', updated);
+                                                                    }}
+                                                                />
+                                                            </td>
+                                                            <td>
+                                                                <input
+                                                                    type="number"
+                                                                    min={1}
+                                                                    className="form-control"
+                                                                    style={{ width: '125px', height: '32px', padding: '4px 8px', fontSize: '12px' }}
+                                                                    value={seq.limit_sequence}
+                                                                    onChange={(e) => {
+                                                                        const updated = [...data.ncf_sequences];
+                                                                        updated[idx] = { ...updated[idx], limit_sequence: Number(e.target.value) };
+                                                                        setData('ncf_sequences', updated);
+                                                                    }}
+                                                                />
+                                                            </td>
+                                                            <td>
+                                                                <input
+                                                                    type="date"
+                                                                    className="form-control"
+                                                                    style={{ width: '145px', height: '32px', padding: '4px 8px', fontSize: '12px' }}
+                                                                    value={seq.expiration_date || '2028-12-31'}
+                                                                    onChange={(e) => {
+                                                                        const updated = [...data.ncf_sequences];
+                                                                        updated[idx] = { ...updated[idx], expiration_date: e.target.value };
+                                                                        setData('ncf_sequences', updated);
+                                                                    }}
+                                                                />
+                                                            </td>
+                                                            <td>
+                                                                <span className="badge-ecf">{nextPreview}</span>
+                                                            </td>
+                                                            <td className="text-center">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={!!seq.is_active}
+                                                                    onChange={(e) => {
+                                                                        const updated = [...data.ncf_sequences];
+                                                                        updated[idx] = { ...updated[idx], is_active: e.target.checked };
+                                                                        setData('ncf_sequences', updated);
+                                                                    }}
+                                                                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                                                />
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 5. Integración de POS / Verifone / Cardnet (`settings.js` line 662) */}
+                            <div className="form-card">
+                                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>Integración de POS / Cardnet / Verifone</h3>
+                                <p className="text-muted" style={{ fontSize: '13px', marginBottom: '20px' }}>
+                                    Parámetros de conexión con terminales físicos de cobro con tarjeta y pasarela institucional.
+                                </p>
+                                <div className="grid-2">
+                                    <div className="form-group">
+                                        <label className="form-label">Cardnet / POS Merchant ID</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={data.cardnet_merchant_id}
+                                            onChange={(e) => setData('cardnet_merchant_id', e.target.value)}
+                                            placeholder="349000000"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Cardnet / POS Terminal ID</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={data.cardnet_terminal_id}
+                                            onChange={(e) => setData('cardnet_terminal_id', e.target.value)}
+                                            placeholder="58585858"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>

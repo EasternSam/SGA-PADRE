@@ -1684,6 +1684,8 @@ export default function FinanceDashboard({
                 }
             `}</style>
 
+            <div className="bills-scope">
+            <div className="workspace-panel">
             <div className="db">
                 {/* ── Header (1:1 Gridbase Bills) ── */}
                 <div className="db-header">
@@ -1711,25 +1713,27 @@ export default function FinanceDashboard({
                         <div className="db-kpi-top">
                             <span className="db-kpi-label">Ganancia Este Mes</span>
                             <div className="db-kpi-quick-actions">
-                                <a href="/admin/pos" className="db-kpi-action-pill" title="Ir a Terminal de Caja POS">
+                                <a href="/admin/finance/invoices" className="db-kpi-action-pill" title="Nueva Factura">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                                         <polyline points="14 2 14 8 20 8" />
+                                        <line x1="12" y1="18" x2="12" y2="12" />
+                                        <line x1="9" y1="15" x2="15" y2="15" />
+                                    </svg>
+                                    <span>Factura</span>
+                                </a>
+                                <a href="/admin/finance/expenses" className="db-kpi-action-pill" title="Registrar Gasto">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                                    </svg>
+                                    <span>Gasto</span>
+                                </a>
+                                <a href="/admin/pos" className="db-kpi-action-pill" title="Terminal de Caja POS">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="2" y="5" width="20" height="14" rx="2" />
+                                        <line x1="2" y1="10" x2="22" y2="10" />
                                     </svg>
                                     <span>Caja POS</span>
-                                </a>
-                                <a href="/admin/finance/dgii-reports" className="db-kpi-action-pill" title="Reportes DGII">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" />
-                                    </svg>
-                                    <span>Reportes</span>
-                                </a>
-                                <a href="/admin/students" className="db-kpi-action-pill" title="Ver Estudiantes">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                                        <circle cx="9" cy="7" r="4" />
-                                    </svg>
-                                    <span>Estudiantes</span>
                                 </a>
                             </div>
                         </div>
@@ -2231,6 +2235,8 @@ export default function FinanceDashboard({
                         </div>
                     </div>
                 </div>
+            </div>
+            </div>
             </div>
         </AuthenticatedLayout>
     );

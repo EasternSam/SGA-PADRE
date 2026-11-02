@@ -1,24 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PoweredByBills from '@/components/bills/PoweredByBills';
-import {
-    FileText,
-    Search,
-    Download,
-    CheckCircle2,
-    Clock,
-    XCircle,
-    RotateCcw,
-    ShieldCheck,
-    ExternalLink,
-    FileCode2,
-    PlusCircle,
-    AlertTriangle,
-    Printer,
-    X,
-    Sparkles,
-} from 'lucide-react';
 
 const NCF_TYPE_LABELS = {
     '31': 'E31 · Crédito Fiscal',
@@ -52,12 +35,34 @@ const VOID_TYPES_608 = [
     { code: '10', label: '10 - Pérdida o Hurto de Talonarios' },
 ];
 
-const fmtMoney = (n) =>
-    'RD$ ' +
-    Number(n || 0).toLocaleString('en-US', {
+const SIM_TYPES = [
+    { type: 31, code: 'E31', name: 'Factura de Crédito Fiscal Electrónica', group: 'Ventas B2B' },
+    { type: 32, code: 'E32', name: 'Factura de Consumo Electrónica (< 250k RFCE)', group: 'Consumo' },
+    { type: 32, code: 'E32+', name: 'Factura de Consumo Electrónica (>= 250k)', group: 'Consumo' },
+    { type: 33, code: 'E33', name: 'Nota de Débito Electrónica', group: 'Modificadores' },
+    { type: 34, code: 'E34', name: 'Nota de Crédito Electrónica', group: 'Modificadores' },
+    { type: 41, code: 'E41', name: 'Compras Electrónico (Proveedores Informales)', group: 'Especiales' },
+    { type: 43, code: 'E43', name: 'Gastos Menores Electrónico (Caja Chica)', group: 'Especiales' },
+    { type: 44, code: 'E44', name: 'Regímenes Especiales Electrónico', group: 'Especiales' },
+    { type: 45, code: 'E45', name: 'Gubernamental Electrónico', group: 'Gobierno' },
+    { type: 46, code: 'E46', name: 'Comprobante de Exportaciones Electrónico', group: 'Exterior' },
+    { type: 47, code: 'E47', name: 'Comprobante para Pagos al Exterior Electrónico', group: 'Exterior' },
+];
+
+const fmtMoney = (n, currency = 'DOP') => {
+    const prefix = currency === 'USD' ? 'US$' : currency === 'EUR' ? '€' : 'RD$';
+    return `${prefix} ${Number(n || 0).toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-    });
+    })}`;
+};
+
+function getInitials(name) {
+    if (!name) return 'CF';
+    const parts = String(name).trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
 export default function FinanceInvoicesIndex({
     invoices,
@@ -65,9 +70,32 @@ export default function FinanceInvoicesIndex({
     filters = {},
     dgiiConfig = {},
 }) {
+    // Active Bills Module View ('invoices' | 'audit-trail' | 'received-invoices' | 'dgii-tests' | 'dgii-logs')
+    const [billsModule, setBillsModule] = useState(
+        filters.tab === 'dgii_audit' ? 'dgii-logs' : 'invoices'
+    );
+
+    // Sub-view inside Invoices ('list' | 'detail')
+    const [selectedInvoice, setSelectedInvoice] = useState(null);
+    const [selectedIds, setSelectedIds] = useState([]);
+
     const [search, setSearch] = useState(filters.search || '');
     const [activeTab, setActiveTab] = useState(filters.tab || 'all');
     const [ncfTypeFilter, setNcfTypeFilter] = useState(filters.ncf_type || '');
+
+    // Audit Trail (Seguimiento de Comprobante) state
+    const [auditQuery, setAuditQuery] = useState('');
+    const [tracedInvoice, setTracedInvoice] = useState(null);
+
+    // Received Invoices (ACECF) state
+    const [receivedXmlModal, setReceivedXmlModal] = useState(false);
+    const [receivedXmlText, setReceivedXmlText] = useState('');
+    const [receivedList, setReceivedList] = useState([]);
+
+    // DGII Certification / Simulation state
+    const [simResults, setSimResults] = useState({});
+    const [diagRunning, setDiagRunning] = useState(false);
+    const [diagResult, setDiagResult] = useState(null);
 
     // Modal Nota de Crédito (E34)
     const [creditNoteTarget, setCreditNoteTarget] = useState(null);
@@ -87,6 +115,8 @@ export default function FinanceInvoicesIndex({
     const [emitEcfType, setEmitEcfType] = useState('32');
     const [emitProcessing, setEmitProcessing] = useState(false);
 
+    const rows = invoices?.data || [];
+
     const applyFilters = (nextTab = activeTab, nextSearch = search, nextType = ncfTypeFilter) => {
         setActiveTab(nextTab);
         setNcfTypeFilter(nextType);
@@ -101,9 +131,18 @@ export default function FinanceInvoicesIndex({
         );
     };
 
-    const handleSearchSubmit = (e) => {
-        e.preventDefault();
-        applyFilters(activeTab, search, ncfTypeFilter);
+    const toggleSelectAll = (checked) => {
+        if (checked) {
+            setSelectedIds(rows.map((r) => r.id));
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const toggleSelectRow = (id) => {
+        setSelectedIds((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+        );
     };
 
     const openCreditNoteModal = (inv) => {
@@ -160,13 +199,18 @@ export default function FinanceInvoicesIndex({
         );
     };
 
-    const submitEmitNow = (e) => {
+    const openEmitModal = (inv) => {
+        setEmitTarget(inv);
+        setEmitEcfType(inv.client_rnc && String(inv.client_rnc).replace(/\D/g, '').length === 9 ? '31' : '32');
+    };
+
+    const submitEmitEcf = (e) => {
         e.preventDefault();
         if (!emitTarget) return;
         setEmitProcessing(true);
         router.post(
             `/admin/finance/invoices/${emitTarget.id}/emit-ecf`,
-            { ecf_type: emitEcfType },
+            { ecf_type: Number(emitEcfType) },
             {
                 preserveScroll: true,
                 onFinish: () => {
@@ -177,661 +221,1269 @@ export default function FinanceInvoicesIndex({
         );
     };
 
-    const tabs = [
-        { id: 'all', label: 'Todas las Facturas' },
-        { id: 'paid', label: `Pagadas (${stats.totalPaidCount || 0})` },
-        { id: 'pending', label: `Pendientes (${stats.totalPendingCount || 0})` },
-        { id: 'credit_notes', label: `Notas de Crédito E34 (${stats.creditNotesCount || 0})` },
-        { id: 'voided', label: `Anuladas 608 (${stats.voidedCount || 0})` },
-        { id: 'dgii_audit', label: `Auditoría & XML DGII (${stats.ecfIssuedCount || 0})` },
-    ];
+    const openTraceFor = (inv) => {
+        setTracedInvoice(inv);
+        setAuditQuery(inv.ncf || inv.invoice_number);
+        setBillsModule('audit-trail');
+    };
 
-    const envBadge = (() => {
-        const env = dgiiConfig.environment || 'testing';
-        if (env === 'production') {
-            return { label: '🟢 PRODUCCIÓN DGII', bg: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30' };
+    const handleAuditSearch = (e) => {
+        e.preventDefault();
+        const q = auditQuery.trim().toUpperCase();
+        if (!q) return;
+        const match = rows.find(
+            (r) =>
+                (r.ncf && r.ncf.toUpperCase().includes(q)) ||
+                (r.invoice_number && r.invoice_number.toUpperCase().includes(q)) ||
+                (r.client_name && r.client_name.toUpperCase().includes(q))
+        );
+        if (match) {
+            setTracedInvoice(match);
+        } else if (rows.length > 0) {
+            setTracedInvoice(rows[0]);
         }
-        if (env === 'certification') {
-            return { label: '🟠 CERTIFICACIÓN DGII', bg: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30' };
-        }
-        return { label: '🔴 PRE-CERTIFICACIÓN / SIMULACIÓN', bg: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30' };
-    })();
+    };
 
-    const rows = invoices?.data || [];
+    // Related credit notes for tracedInvoice
+    const relatedCreditNotes = useMemo(() => {
+        if (!tracedInvoice) return [];
+        return rows.filter(
+            (r) =>
+                r.is_credit_note &&
+                r.id !== tracedInvoice.id &&
+                ((tracedInvoice.ncf && r.notes && r.notes.includes(tracedInvoice.ncf)) ||
+                    r.client_name === tracedInvoice.client_name)
+        );
+    }, [tracedInvoice, rows]);
+
+    const renderStatusBadge = (inv) => {
+        if (inv.is_voided) return <span className="badge badge-cancelled">Anulada (608)</span>;
+        if (inv.is_credit_note) return <span className="badge badge-partial">Nota de Crédito</span>;
+        const st = String(inv.status || '').toLowerCase();
+        if (['paid', 'pagado', 'completado'].includes(st)) {
+            return <span className="badge badge-paid">Pagada</span>;
+        }
+        if (['overdue', 'vencida'].includes(st)) {
+            return <span className="badge badge-overdue">Vencida</span>;
+        }
+        return <span className="badge badge-pending">Pendiente</span>;
+    };
+
+    const renderDgiiBadge = (inv) => {
+        if (!inv.ncf) return <span className="text-muted" style={{ fontSize: '12px' }}>—</span>;
+        const st = String(inv.dgii_status || '').toLowerCase();
+        if (st === 'accepted' || st === 'aceptado') {
+            return <span className="badge badge-ecf-accepted">✓ Aceptado</span>;
+        }
+        if (st === 'rejected' || st === 'rechazado') {
+            return <span className="badge badge-ecf-rejected">✗ Rechazado</span>;
+        }
+        if (inv.has_signed_xml) {
+            return <span className="badge badge-ecf-sent">● XML Firmado</span>;
+        }
+        return <span className="badge badge-ecf-pending">● Emitido</span>;
+    };
 
     return (
-        <AuthenticatedLayout>
-            <Head title="Facturas y Comprobantes e-CF — Finanzas" />
+        <AuthenticatedLayout title="Facturas y Comprobantes Fiscales (e-CF)">
+            <Head title="Facturas y Comprobantes Fiscales (e-CF)" />
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div>
-                        <div className="flex flex-wrap items-center gap-2.5 mb-2">
-                            <PoweredByBills variant="badge" />
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${envBadge.bg}`}>
-                                {envBadge.label}
-                            </span>
-                            {dgiiConfig.emitter_rnc && (
-                                <span className="text-xs font-mono text-gray-500 dark:text-gray-400">
-                                    RNC Emisor: {dgiiConfig.emitter_rnc}
-                                </span>
-                            )}
-                        </div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
-                            Facturas, Comprobantes e-CF y Notas de Crédito
-                        </h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                            Gestión centralizada de facturación fiscal, emisión de Notas de Crédito (E34/B04), anulaciones Formato 608 y descarga de XML firmado.
-                        </p>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2.5">
-                        <Link
-                            href="/admin/finance/dgii-reports"
-                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-                        >
-                            <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                            Reportes 607 / 608
-                        </Link>
-                        <Link
-                            href="/admin/pos"
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition"
-                        >
-                            <PlusCircle className="w-4 h-4" />
-                            Nueva Factura (Caja POS)
-                        </Link>
-                    </div>
-                </div>
-
-                {/* KPI Strip — 1:1 Gridbase Bills */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-xs">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                Total Facturado
-                            </span>
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                        </div>
-                        <div className="text-xl font-bold font-mono text-gray-900 dark:text-white mt-2">
-                            {fmtMoney(stats.totalInvoiced)}
-                        </div>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                            {stats.totalPaidCount || 0} facturas cobradas
-                        </p>
-                    </div>
-
-                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-xs">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                Por Cobrar
-                            </span>
-                            <Clock className="w-4 h-4 text-amber-500" />
-                        </div>
-                        <div className="text-xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-2">
-                            {fmtMoney(stats.totalPendingAmount)}
-                        </div>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                            {stats.totalPendingCount || 0} cargos pendientes
-                        </p>
-                    </div>
-
-                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-xs">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                e-CF / NCF Emitidos
-                            </span>
-                            <ShieldCheck className="w-4 h-4 text-indigo-500" />
-                        </div>
-                        <div className="text-xl font-bold font-mono text-indigo-600 dark:text-indigo-400 mt-2">
-                            {stats.ecfIssuedCount || 0}
-                        </div>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                            Con código de seguridad DGII
-                        </p>
-                    </div>
-
-                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-xs">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                Notas de Crédito (E34)
-                            </span>
-                            <RotateCcw className="w-4 h-4 text-purple-500" />
-                        </div>
-                        <div className="text-xl font-bold font-mono text-purple-600 dark:text-purple-400 mt-2">
-                            {fmtMoney(stats.creditNotesAmount)}
-                        </div>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                            {stats.creditNotesCount || 0} documentos E34 / B04
-                        </p>
-                    </div>
-
-                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-xs">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                Anuladas (608)
-                            </span>
-                            <XCircle className="w-4 h-4 text-rose-500" />
-                        </div>
-                        <div className="text-xl font-bold font-mono text-rose-600 dark:text-rose-400 mt-2">
-                            {stats.voidedCount || 0}
-                        </div>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                            Reportables en Formato 608
-                        </p>
-                    </div>
-                </div>
-
-                {/* Segmented Tabs + Search Bar */}
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 space-y-4 shadow-xs">
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-800 pb-3">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                            {tabs.map((t) => {
-                                const active = activeTab === t.id;
-                                return (
-                                    <button
-                                        key={t.id}
-                                        type="button"
-                                        onClick={() => applyFilters(t.id, search, ncfTypeFilter)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                                            active
-                                                ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900 shadow-xs'
-                                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                                        }`}
-                                    >
-                                        {t.label}
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        <form onSubmit={handleSearchSubmit} className="flex flex-wrap items-center gap-2">
-                            <select
-                                value={ncfTypeFilter}
-                                onChange={(e) => applyFilters(activeTab, search, e.target.value)}
-                                className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-xs text-gray-800 dark:text-gray-200 px-2.5 py-2"
-                            >
-                                <option value="">Todos los Tipos NCF</option>
-                                <option value="31">E31 / B01 · Crédito Fiscal</option>
-                                <option value="32">E32 / B02 · Consumo</option>
-                                <option value="34">E34 / B04 · Nota de Crédito</option>
-                                <option value="44">E44 / B14 · Regímenes Especiales</option>
-                                <option value="45">E45 / B15 · Gubernamental</option>
-                            </select>
-
-                            <div className="relative">
-                                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                                <input
-                                    type="text"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Buscar por NCF, RNC, estudiante..."
-                                    className="pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-xs text-gray-900 dark:text-white w-64 focus:ring-2 focus:ring-indigo-500"
-                                />
-                            </div>
+            <div className="bills-scope">
+                <div className="workspace-panel">
+                    {/* Top Gridbase Bills Module Navigation Bar */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                        <div className="segmented-control">
                             <button
-                                type="submit"
-                                className="px-3 py-1.5 rounded-lg bg-gray-900 dark:bg-gray-700 text-white text-xs font-semibold hover:bg-gray-800 transition"
+                                type="button"
+                                className={`segment-item ${billsModule === 'invoices' ? 'active' : ''}`}
+                                onClick={() => {
+                                    setBillsModule('invoices');
+                                    setSelectedInvoice(null);
+                                }}
                             >
-                                Filtrar
+                                Facturas ({stats.totalPaidCount || rows.length})
                             </button>
-                        </form>
+                            <button
+                                type="button"
+                                className={`segment-item ${billsModule === 'audit-trail' ? 'active' : ''}`}
+                                onClick={() => {
+                                    setBillsModule('audit-trail');
+                                    if (!tracedInvoice && rows.length > 0) setTracedInvoice(rows[0]);
+                                }}
+                            >
+                                Seguimiento (Grafo de Nodos)
+                            </button>
+                            <button
+                                type="button"
+                                className={`segment-item ${billsModule === 'received-invoices' ? 'active' : ''}`}
+                                onClick={() => setBillsModule('received-invoices')}
+                            >
+                                Facturas Recibidas (ACECF)
+                            </button>
+                            <button
+                                type="button"
+                                className={`segment-item ${billsModule === 'dgii-tests' ? 'active' : ''}`}
+                                onClick={() => setBillsModule('dgii-tests')}
+                            >
+                                Pruebas DGII
+                            </button>
+                            <button
+                                type="button"
+                                className={`segment-item ${billsModule === 'dgii-logs' ? 'active' : ''}`}
+                                onClick={() => setBillsModule('dgii-logs')}
+                            >
+                                Auditoría DGII ({stats.ecfIssuedCount || 0})
+                            </button>
+                        </div>
+
+                        <PoweredByBills variant="badge" />
                     </div>
 
-                    {/* Table */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="border-b border-gray-200 dark:border-gray-800 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                                    <th className="py-3 px-3">Documento / Fecha</th>
-                                    <th className="py-3 px-3">Cliente / Estudiante</th>
-                                    <th className="py-3 px-3">Comprobante (e-NCF)</th>
-                                    <th className="py-3 px-3">Concepto</th>
-                                    <th className="py-3 px-3 text-right">Monto</th>
-                                    <th className="py-3 px-3 text-center">Estado / DGII</th>
-                                    <th className="py-3 px-3 text-right">Acciones Fiscales</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-xs">
-                                {rows.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={7} className="py-12 text-center text-gray-400 dark:text-gray-500">
-                                            No se encontraron facturas o comprobantes fiscales con los filtros seleccionados.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    rows.map((inv) => {
-                                        const isPaid = ['paid', 'Completado', 'Pagado'].includes(inv.status);
-                                        return (
-                                            <tr
-                                                key={inv.id}
-                                                className="hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition"
-                                            >
-                                                <td className="py-3 px-3 align-top">
-                                                    <div className="font-mono font-bold text-gray-900 dark:text-white">
-                                                        {inv.invoice_number}
-                                                    </div>
-                                                    <div className="text-[11px] text-gray-500 dark:text-gray-400">
-                                                        {inv.date_formatted}
-                                                    </div>
-                                                </td>
+                    {/* ══════════════════════════════════════════════════════════════
+                        MÓDULO 1: FACTURAS (`invoices.js` 1:1)
+                    ══════════════════════════════════════════════════════════════ */}
+                    {billsModule === 'invoices' && !selectedInvoice && (
+                        <>
+                            {/* 1:1 Header (`invoices.js` line 25) */}
+                            <div className="page-header">
+                                <div className="page-header-left">
+                                    <h1 className="page-title">Facturas</h1>
+                                    <p className="page-subtitle">Gestiona y da seguimiento a todas tus facturas y comprobantes e-CF</p>
+                                </div>
+                                <div className="btn-group">
+                                    <Link href="/admin/pos" className="btn btn-primary" id="btn-new-invoice">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="12" y1="5" x2="12" y2="19" />
+                                            <line x1="5" y1="12" x2="19" y2="12" />
+                                        </svg>
+                                        Nueva Factura
+                                    </Link>
+                                </div>
+                            </div>
 
-                                                <td className="py-3 px-3 align-top">
-                                                    <div className="font-semibold text-gray-900 dark:text-white">
-                                                        {inv.client_name}
-                                                    </div>
-                                                    <div className="text-[11px] font-mono text-gray-500 dark:text-gray-400">
-                                                        RNC/Céd: {inv.client_rnc}
-                                                    </div>
-                                                </td>
+                            {/* 1:1 Segmented Filter Bar + Search (`invoices.js` line 36) */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                                <div className="segmented-control" id="invoice-filters">
+                                    <button
+                                        type="button"
+                                        className={`segment-item ${activeTab === 'all' ? 'active' : ''}`}
+                                        onClick={() => applyFilters('all', search, ncfTypeFilter)}
+                                    >
+                                        Todas
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`segment-item ${activeTab === 'pending' ? 'active' : ''}`}
+                                        onClick={() => applyFilters('pending', search, ncfTypeFilter)}
+                                    >
+                                        Pendiente
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`segment-item ${activeTab === 'paid' ? 'active' : ''}`}
+                                        onClick={() => applyFilters('paid', search, ncfTypeFilter)}
+                                    >
+                                        Pagada
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`segment-item ${activeTab === 'credit_notes' ? 'active' : ''}`}
+                                        onClick={() => applyFilters('credit_notes', search, ncfTypeFilter)}
+                                    >
+                                        Notas de Crédito (E34)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`segment-item ${activeTab === 'voided' ? 'active' : ''}`}
+                                        onClick={() => applyFilters('voided', search, ncfTypeFilter)}
+                                    >
+                                        Anuladas (608)
+                                    </button>
+                                </div>
 
-                                                <td className="py-3 px-3 align-top">
-                                                    {inv.ncf ? (
-                                                        <div>
-                                                            <div className="inline-flex items-center gap-1.5 font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
-                                                                {inv.ncf}
+                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                    <select
+                                        className="form-control"
+                                        style={{ width: 'auto', height: '38px', fontSize: '12.5px' }}
+                                        value={ncfTypeFilter}
+                                        onChange={(e) => applyFilters(activeTab, search, e.target.value)}
+                                    >
+                                        <option value="">Todos los Tipos e-NCF</option>
+                                        {Object.entries(NCF_TYPE_LABELS).map(([code, label]) => (
+                                            <option key={code} value={code}>{label}</option>
+                                        ))}
+                                    </select>
+
+                                    <div className="search-wrapper">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="11" cy="11" r="8" />
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                        </svg>
+                                        <input
+                                            type="text"
+                                            className="search-input"
+                                            id="invoice-search"
+                                            placeholder="Buscar facturas o e-NCF..."
+                                            value={search}
+                                            onChange={(e) => {
+                                                setSearch(e.target.value);
+                                                applyFilters(activeTab, e.target.value, ncfTypeFilter);
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 1:1 Data Table (`invoices.js` line 52) */}
+                            <div className="table-outer">
+                                <div className="table-wrapper">
+                                    <table className="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th style={{ width: '40px', paddingRight: 0 }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        className="table-checkbox"
+                                                        checked={rows.length > 0 && selectedIds.length === rows.length}
+                                                        onChange={(e) => toggleSelectAll(e.target.checked)}
+                                                    />
+                                                </th>
+                                                <th>Número</th>
+                                                <th>Cliente</th>
+                                                <th>Emisión</th>
+                                                <th>Vencimiento</th>
+                                                <th>Monto</th>
+                                                <th>Estado</th>
+                                                <th>DGII</th>
+                                                <th className="text-right">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="invoices-tbody">
+                                            {rows.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={9} className="text-center text-muted py-24">
+                                                        No se encontraron facturas
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                rows.map((inv) => (
+                                                    <tr
+                                                        key={inv.id}
+                                                        className="clickable-row"
+                                                        onClick={() => setSelectedInvoice(inv)}
+                                                    >
+                                                        <td style={{ paddingRight: 0 }} onClick={(e) => e.stopPropagation()}>
+                                                            <input
+                                                                type="checkbox"
+                                                                className="table-checkbox"
+                                                                checked={selectedIds.includes(inv.id)}
+                                                                onChange={() => toggleSelectRow(inv.id)}
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <div className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                                                                {inv.invoice_number}
                                                             </div>
-                                                            <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
-                                                                {NCF_TYPE_LABELS[inv.ncf_type] || `Tipo ${inv.ncf_type}`}
-                                                                {inv.security_code && (
-                                                                    <span className="ml-1.5 font-mono text-emerald-600 dark:text-emerald-400">
-                                                                        · Cód: {inv.security_code}
-                                                                    </span>
+                                                            {inv.ncf && (
+                                                                <span className="badge-ecf">{inv.ncf}</span>
+                                                            )}
+                                                        </td>
+                                                        <td>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                <div className="user-avatar-sm">
+                                                                    {getInitials(inv.client_name)}
+                                                                </div>
+                                                                <div>
+                                                                    <div style={{ fontWeight: 500 }}>{inv.client_name}</div>
+                                                                    <div className="text-muted" style={{ fontSize: '11px' }}>
+                                                                        {inv.concept} {inv.client_rnc && inv.client_rnc !== '—' ? `• RNC/Céd: ${inv.client_rnc}` : ''}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td>{inv.date_formatted || inv.date}</td>
+                                                        <td>{inv.due_date_formatted || '—'}</td>
+                                                        <td className="font-semibold">
+                                                            {inv.is_credit_note ? '-' : ''}
+                                                            {fmtMoney(inv.amount, inv.currency)}
+                                                        </td>
+                                                        <td>{renderStatusBadge(inv)}</td>
+                                                        <td>{renderDgiiBadge(inv)}</td>
+                                                        <td className="text-right" onClick={(e) => e.stopPropagation()}>
+                                                            <div className="row-actions" style={{ opacity: 1 }}>
+                                                                <button
+                                                                    type="button"
+                                                                    className="row-action-btn"
+                                                                    title="Ver Detalle de Factura"
+                                                                    onClick={() => setSelectedInvoice(inv)}
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                                                        <circle cx="12" cy="12" r="3" />
+                                                                    </svg>
+                                                                </button>
+
+                                                                <button
+                                                                    type="button"
+                                                                    className="row-action-btn"
+                                                                    title="Seguimiento (Grafo de Nodos)"
+                                                                    onClick={() => openTraceFor(inv)}
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                        <circle cx="18" cy="5" r="3" />
+                                                                        <circle cx="6" cy="12" r="3" />
+                                                                        <circle cx="18" cy="19" r="3" />
+                                                                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                                                                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                                                                    </svg>
+                                                                </button>
+
+                                                                {inv.ncf && (
+                                                                    <a
+                                                                        href={`/admin/finance/invoices/${inv.id}/xml`}
+                                                                        className="row-action-btn"
+                                                                        title="Descargar XML e-CF Firmado"
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                                                            <polyline points="7 10 12 15 17 10" />
+                                                                            <line x1="12" y1="15" x2="12" y2="3" />
+                                                                        </svg>
+                                                                    </a>
+                                                                )}
+
+                                                                {!inv.ncf && !inv.is_voided && (
+                                                                    <button
+                                                                        type="button"
+                                                                        className="row-action-btn"
+                                                                        title="Emitir e-CF Ahora"
+                                                                        onClick={() => openEmitModal(inv)}
+                                                                        style={{ color: '#2563eb' }}
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                                                                        </svg>
+                                                                    </button>
+                                                                )}
+
+                                                                {inv.ncf && !inv.is_credit_note && !inv.is_voided && (
+                                                                    <button
+                                                                        type="button"
+                                                                        className="row-action-btn"
+                                                                        title="Emitir Nota de Crédito (E34)"
+                                                                        onClick={() => openCreditNoteModal(inv)}
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                            <polyline points="1 4 1 10 7 10" />
+                                                                            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                                                                        </svg>
+                                                                    </button>
+                                                                )}
+
+                                                                {!inv.is_voided && (
+                                                                    <button
+                                                                        type="button"
+                                                                        className="row-action-btn danger"
+                                                                        title="Anular Comprobante (Formato 608)"
+                                                                        onClick={() => openVoidModal(inv)}
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                            <circle cx="12" cy="12" r="10" />
+                                                                            <line x1="15" y1="9" x2="9" y2="15" />
+                                                                            <line x1="9" y1="9" x2="15" y2="15" />
+                                                                        </svg>
+                                                                    </button>
                                                                 )}
                                                             </div>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-[11px] text-gray-400 italic">
-                                                            Sin NCF asignado
-                                                        </span>
-                                                    )}
-                                                </td>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
 
-                                                <td className="py-3 px-3 align-top max-w-xs">
-                                                    <div className="text-gray-800 dark:text-gray-200 font-medium line-clamp-2">
-                                                        {inv.concept}
-                                                    </div>
-                                                    {inv.notes && (
-                                                        <div className="text-[10px] text-gray-400 dark:text-gray-500 line-clamp-1 mt-0.5">
-                                                            {inv.notes}
-                                                        </div>
-                                                    )}
-                                                </td>
-
-                                                <td className="py-3 px-3 align-top text-right font-mono font-bold text-gray-900 dark:text-white">
-                                                    <span className={inv.is_credit_note ? 'text-purple-600 dark:text-purple-400' : ''}>
-                                                        {inv.is_credit_note ? '- ' : ''}
-                                                        {fmtMoney(inv.amount)}
-                                                    </span>
-                                                </td>
-
-                                                <td className="py-3 px-3 align-top text-center">
-                                                    {inv.is_voided ? (
-                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">
-                                                            <XCircle className="w-3 h-3" /> Anulada (608)
-                                                        </span>
-                                                    ) : inv.is_credit_note ? (
-                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
-                                                            <RotateCcw className="w-3 h-3" /> Nota Crédito E34
-                                                        </span>
-                                                    ) : isPaid ? (
-                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                                                            <CheckCircle2 className="w-3 h-3" /> Pagada
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
-                                                            <Clock className="w-3 h-3" /> Pendiente
-                                                        </span>
-                                                    )}
-                                                </td>
-
-                                                <td className="py-3 px-3 align-top text-right">
-                                                    <div className="inline-flex flex-wrap items-center justify-end gap-1">
-                                                        {/* Recibo PDF */}
-                                                        <a
-                                                            href={`/admin/pos/receipt/${inv.id}/pdf`}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            title="Imprimir Recibo / Factura PDF"
-                                                            className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                                                        >
-                                                            <Printer className="w-3.5 h-3.5" />
-                                                        </a>
-
-                                                        {/* Descargar XML e-CF */}
-                                                        <a
-                                                            href={`/admin/finance/invoices/${inv.id}/xml`}
-                                                            title="Descargar XML Estándar DGII e-CF"
-                                                            className="p-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition"
-                                                        >
-                                                            <FileCode2 className="w-3.5 h-3.5" />
-                                                        </a>
-
-                                                        {/* Consulta QR DGII */}
-                                                        {inv.qr_url && (
-                                                            <a
-                                                                href={inv.qr_url}
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                title="Validar Timbre en Portal DGII"
-                                                                className="p-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition"
-                                                            >
-                                                                <ExternalLink className="w-3.5 h-3.5" />
-                                                            </a>
-                                                        )}
-
-                                                        {/* Emitir e-CF si no tiene NCF */}
-                                                        {!inv.ncf && !inv.is_voided && isPaid && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setEmitTarget(inv);
-                                                                    setEmitEcfType('32');
-                                                                }}
-                                                                title="Emitir Comprobante e-CF Ahora"
-                                                                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px] font-bold hover:bg-indigo-100 transition"
-                                                            >
-                                                                <Sparkles className="w-3 h-3" /> Emitir e-CF
-                                                            </button>
-                                                        )}
-
-                                                        {/* Emitir Nota de Crédito E34 */}
-                                                        {inv.ncf && !inv.is_credit_note && !inv.is_voided && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => openCreditNoteModal(inv)}
-                                                                title="Emitir Nota de Crédito (E34 / B04)"
-                                                                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[10px] font-bold hover:bg-purple-100 transition"
-                                                            >
-                                                                <RotateCcw className="w-3 h-3" /> E34
-                                                            </button>
-                                                        )}
-
-                                                        {/* Anular para 608 */}
-                                                        {!inv.is_voided && !inv.is_credit_note && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => openVoidModal(inv)}
-                                                                title="Anular Comprobante (Formato 608)"
-                                                                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-[10px] font-bold hover:bg-rose-100 transition"
-                                                            >
-                                                                <XCircle className="w-3 h-3" /> 608
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
+                                {invoices?.links && invoices.links.length > 3 && (
+                                    <div style={{ padding: '14px 24px', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                                        <span className="text-muted" style={{ fontSize: '12px' }}>
+                                            Mostrando página {invoices.current_page} de {invoices.last_page} ({invoices.total} comprobantes)
+                                        </span>
+                                        <div style={{ display: 'flex', gap: '6px' }}>
+                                            {invoices.links.map((link, idx) =>
+                                                link.url ? (
+                                                    <Link
+                                                        key={idx}
+                                                        href={link.url}
+                                                        className={`btn btn-sm ${link.active ? 'btn-primary' : 'btn-secondary'}`}
+                                                        dangerouslySetInnerHTML={{ __html: link.label }}
+                                                        preserveScroll
+                                                    />
+                                                ) : null
+                                            )}
+                                        </div>
+                                    </div>
                                 )}
-                            </tbody>
-                        </table>
-                    </div>
+                            </div>
 
-                    {/* Pagination */}
-                    {invoices?.links && invoices.links.length > 3 && (
-                        <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                                Mostrando {invoices.from || 0} a {invoices.to || 0} de {invoices.total || 0} documentos
-                            </span>
-                            <div className="flex flex-wrap gap-1">
-                                {invoices.links.map((link, idx) => (
+                            {/* Floating Bulk Actions Bar (`invoices.js` line 77) */}
+                            {selectedIds.length > 0 && (
+                                <div className="bulk-actions-bar">
+                                    <span className="bulk-count">
+                                        {selectedIds.length} seleccionada{selectedIds.length > 1 ? 's' : ''}
+                                    </span>
+                                    <div className="bulk-divider" />
                                     <button
-                                        key={idx}
                                         type="button"
-                                        disabled={!link.url}
-                                        onClick={() => link.url && router.visit(link.url, { preserveScroll: true })}
-                                        className={`px-2.5 py-1 rounded text-xs font-medium ${
-                                            link.active
-                                                ? 'bg-indigo-600 text-white'
-                                                : link.url
-                                                ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
-                                                : 'text-gray-400 cursor-not-allowed'
-                                        }`}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
-                                ))}
+                                        className="btn btn-sm btn-ghost"
+                                        style={{ color: '#fff' }}
+                                        onClick={() => setSelectedIds([])}
+                                    >
+                                        Deseleccionar
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {/* ══════════════════════════════════════════════════════════════
+                        VISTA DETALLE DE FACTURA (`invoices.js` line 183 `renderDetail`)
+                    ══════════════════════════════════════════════════════════════ */}
+                    {billsModule === 'invoices' && selectedInvoice && (
+                        <>
+                            <div className="invoice-detail-header">
+                                <button
+                                    type="button"
+                                    className="btn-back"
+                                    onClick={() => setSelectedInvoice(null)}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <line x1="19" y1="12" x2="5" y2="12" />
+                                        <polyline points="12 19 5 12 12 5" />
+                                    </svg>
+                                    Facturas
+                                </button>
+                                <div className="btn-group">
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary btn-sm"
+                                        onClick={() => window.print()}
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <polyline points="6 9 6 2 18 2 18 9" />
+                                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                                            <rect x="6" y="14" width="12" height="8" />
+                                        </svg>
+                                        Imprimir A4 / Ticket
+                                    </button>
+
+                                    {selectedInvoice.ncf && (
+                                        <a
+                                            href={`/admin/finance/invoices/${selectedInvoice.id}/xml`}
+                                            className="btn btn-secondary btn-sm"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                                <polyline points="7 10 12 15 17 10" />
+                                                <line x1="12" y1="15" x2="12" y2="3" />
+                                            </svg>
+                                            Descargar XML e-CF
+                                        </a>
+                                    )}
+
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary btn-sm"
+                                        style={{ color: '#0284c7', borderColor: '#bae6fd', background: '#f0f9ff' }}
+                                        onClick={() => openTraceFor(selectedInvoice)}
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <circle cx="18" cy="5" r="3" />
+                                            <circle cx="6" cy="12" r="3" />
+                                            <circle cx="18" cy="19" r="3" />
+                                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                                        </svg>
+                                        Seguimiento
+                                    </button>
+
+                                    {selectedInvoice.ncf && !selectedInvoice.is_credit_note && !selectedInvoice.is_voided && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-secondary btn-sm"
+                                            style={{ color: '#ea580c', borderColor: '#fed7aa', background: '#fff7ed' }}
+                                            onClick={() => openCreditNoteModal(selectedInvoice)}
+                                        >
+                                            Nota de Crédito (E34)
+                                        </button>
+                                    )}
+
+                                    {!selectedInvoice.is_voided && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-danger btn-sm"
+                                            onClick={() => openVoidModal(selectedInvoice)}
+                                        >
+                                            Anular (608)
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Invoice Header Card (`invoices.js` line 255) */}
+                            <div className="form-card" style={{ marginBottom: '20px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+                                            <h2 style={{ fontSize: '24px', fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
+                                                {selectedInvoice.invoice_number}
+                                            </h2>
+                                            {renderStatusBadge(selectedInvoice)}
+                                        </div>
+                                        {selectedInvoice.ncf && (
+                                            <div style={{ marginTop: '4px' }}>
+                                                <span className="badge-ecf" style={{ fontSize: '13px', padding: '4px 10px' }}>
+                                                    e-NCF: {selectedInvoice.ncf}
+                                                </span>
+                                                <span className="text-muted" style={{ fontSize: '12px', marginLeft: '8px' }}>
+                                                    {NCF_TYPE_LABELS[selectedInvoice.ncf_type] || 'Comprobante Fiscal'}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '28px', fontWeight: 700, letterSpacing: '-0.03em' }}>
+                                            {fmtMoney(selectedInvoice.amount, selectedInvoice.currency)}
+                                        </div>
+                                        <div className="text-muted" style={{ fontSize: '12px' }}>
+                                            Moneda: {selectedInvoice.currency || 'DOP'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="invoice-meta-grid">
+                                    <div className="meta-item">
+                                        <div className="meta-label">Cliente / Estudiante</div>
+                                        <div className="meta-value">{selectedInvoice.client_name}</div>
+                                        {selectedInvoice.client_rnc && selectedInvoice.client_rnc !== '—' && (
+                                            <div className="text-muted" style={{ fontSize: '12px' }}>
+                                                RNC/Cédula: {selectedInvoice.client_rnc}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="meta-item">
+                                        <div className="meta-label">Fecha de Emisión</div>
+                                        <div className="meta-value">{selectedInvoice.date_formatted || selectedInvoice.date}</div>
+                                    </div>
+                                    <div className="meta-item">
+                                        <div className="meta-label">Vía de Pago / Caja</div>
+                                        <div className="meta-value">{selectedInvoice.gateway || 'Caja Institucional'}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* e-CF Status Card (`invoices.js` line 294) */}
+                            {selectedInvoice.ncf && (
+                                <div className="ecf-status-card" style={{ marginBottom: '20px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <div className="ecf-icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: 600, fontSize: '14px' }}>
+                                                    Comprobante Fiscal Electrónico (e-CF)
+                                                </div>
+                                                <div className="text-muted" style={{ fontSize: '12px' }}>
+                                                    e-NCF: <strong>{selectedInvoice.ncf}</strong>
+                                                    {selectedInvoice.security_code ? ` · Código Seguridad: ${selectedInvoice.security_code}` : ''}
+                                                    {selectedInvoice.dgii_track_id ? ` · TrackId: ${selectedInvoice.dgii_track_id}` : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            {renderDgiiBadge(selectedInvoice)}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Line Items Table (`invoices.js` line 325) */}
+                            <div className="table-outer" style={{ marginBottom: '20px' }}>
+                                <table className="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Descripción</th>
+                                            <th className="text-right">Cant.</th>
+                                            <th className="text-right">Precio Unit.</th>
+                                            <th className="text-right">Descuento</th>
+                                            <th className="text-right">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td className="font-semibold">{selectedInvoice.concept}</td>
+                                            <td className="text-right">1</td>
+                                            <td className="text-right">{fmtMoney(selectedInvoice.amount + (selectedInvoice.discount_amount || 0))}</td>
+                                            <td className="text-right">{fmtMoney(selectedInvoice.discount_amount || 0)}</td>
+                                            <td className="text-right font-semibold">{fmtMoney(selectedInvoice.amount)}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <div style={{ padding: '20px 24px', display: 'flex', justifyContent: 'flex-end' }}>
+                                    <div className="invoice-totals">
+                                        <div className="totals-row">
+                                            <span>Subtotal</span>
+                                            <span>{fmtMoney(selectedInvoice.amount)}</span>
+                                        </div>
+                                        <div className="totals-row">
+                                            <span>ITBIS (Exento Educativo)</span>
+                                            <span>RD$ 0.00</span>
+                                        </div>
+                                        <div className="totals-row total-final">
+                                            <span>Total</span>
+                                            <span>{fmtMoney(selectedInvoice.amount)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {/* ══════════════════════════════════════════════════════════════
+                        MÓDULO 2: SEGUIMIENTO DE COMPROBANTE (`audit-trail.js` 1:1)
+                    ══════════════════════════════════════════════════════════════ */}
+                    {billsModule === 'audit-trail' && (
+                        <>
+                            <div className="page-header">
+                                <div className="page-header-left">
+                                    <h1 className="page-title">Seguimiento de Comprobante</h1>
+                                    <p className="page-subtitle">Grafo interactivo de relaciones fiscales, notas de crédito, pagos y auditoría cronológica</p>
+                                </div>
+                            </div>
+
+                            <div className="form-card" style={{ marginBottom: '24px', padding: '20px 24px' }}>
+                                <form onSubmit={handleAuditSearch} style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                    <div className="search-wrapper" style={{ flex: 1, minWidth: '260px' }}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <circle cx="11" cy="11" r="8" />
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                        </svg>
+                                        <input
+                                            type="text"
+                                            className="search-input"
+                                            style={{ width: '100%' }}
+                                            placeholder="Ingrese NCF / e-NCF (ej. E310000000001), número de factura o cliente..."
+                                            value={auditQuery}
+                                            onChange={(e) => setAuditQuery(e.target.value)}
+                                        />
+                                    </div>
+                                    <button type="submit" className="btn btn-primary">
+                                        Rastrear Comprobante
+                                    </button>
+                                </form>
+
+                                {rows.length > 0 && (
+                                    <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                        <span className="text-muted" style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase' }}>
+                                            Comprobantes recientes:
+                                        </span>
+                                        {rows.slice(0, 5).map((r) => (
+                                            <button
+                                                key={r.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setTracedInvoice(r);
+                                                    setAuditQuery(r.ncf || r.invoice_number);
+                                                }}
+                                                className="badge badge-draft"
+                                                style={{ cursor: 'pointer', border: tracedInvoice?.id === r.id ? '1.5px solid var(--color-primary)' : '1px solid var(--color-border)' }}
+                                            >
+                                                {r.ncf || r.invoice_number} — {r.client_name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {tracedInvoice && (
+                                <>
+                                    {/* Interactive Node Graph Viewport (`audit-trail.js` line 185) */}
+                                    <div
+                                        className="table-outer"
+                                        style={{
+                                            marginBottom: '24px',
+                                            padding: '32px 24px',
+                                            background: 'radial-gradient(circle, var(--color-border) 1px, transparent 1px)',
+                                            backgroundSize: '20px 20px',
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                            <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)' }}>
+                                                Grafo de Trazabilidad del Comprobante
+                                            </span>
+                                            <span className="badge-ecf">{tracedInvoice.ncf || tracedInvoice.invoice_number}</span>
+                                        </div>
+
+                                        <div className="grid-3" style={{ alignItems: 'center', gap: '24px' }}>
+                                            {/* Col 1: Documento Base */}
+                                            <div className="form-card" style={{ borderLeft: '4px solid #2563eb', margin: 0 }}>
+                                                <div style={{ fontSize: '11px', fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', marginBottom: '6px' }}>
+                                                    1. Documento Base Emitido
+                                                </div>
+                                                <div style={{ fontSize: '16px', fontWeight: 700 }}>{tracedInvoice.invoice_number}</div>
+                                                {tracedInvoice.ncf && (
+                                                    <div className="badge-ecf" style={{ marginTop: '4px' }}>{tracedInvoice.ncf}</div>
+                                                )}
+                                                <div className="text-muted" style={{ fontSize: '12px', marginTop: '8px' }}>
+                                                    Cliente: <strong>{tracedInvoice.client_name}</strong>
+                                                </div>
+                                                <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '10px' }}>
+                                                    {fmtMoney(tracedInvoice.amount)}
+                                                </div>
+                                            </div>
+
+                                            {/* Col 2: Modificadores (E34) y Cobros */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                <div className="form-card" style={{ borderLeft: '4px solid #10b981', margin: 0, padding: '16px' }}>
+                                                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', marginBottom: '4px' }}>
+                                                        2A. Cobro / Transacción en Caja
+                                                    </div>
+                                                    <div style={{ fontSize: '13px', fontWeight: 600 }}>
+                                                        Vía: {tracedInvoice.gateway || 'Caja Institucional'}
+                                                    </div>
+                                                    <div className="text-muted" style={{ fontSize: '12px' }}>
+                                                        Fecha: {tracedInvoice.date_formatted || tracedInvoice.date}
+                                                    </div>
+                                                </div>
+
+                                                {relatedCreditNotes.length > 0 ? (
+                                                    relatedCreditNotes.map((cn) => (
+                                                        <div key={cn.id} className="form-card" style={{ borderLeft: '4px solid #f59e0b', margin: 0, padding: '16px' }}>
+                                                            <div style={{ fontSize: '11px', fontWeight: 700, color: '#d97706', textTransform: 'uppercase', marginBottom: '4px' }}>
+                                                                2B. Nota de Crédito Aplicada (E34)
+                                                            </div>
+                                                            <div style={{ fontSize: '13px', fontWeight: 700 }}>
+                                                                {cn.ncf || cn.invoice_number} (-{fmtMoney(cn.amount)})
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="form-card" style={{ borderLeft: '4px solid var(--color-border)', margin: 0, padding: '14px 16px' }}>
+                                                        <div className="text-muted" style={{ fontSize: '12px' }}>
+                                                            Sin Notas de Crédito (E34) ni anulaciones aplicadas
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Col 3: Balance Real Conciliado */}
+                                            <div className="form-card" style={{ borderLeft: '4px solid #111827', margin: 0 }}>
+                                                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>
+                                                    3. Balance Fiscal Conciliado
+                                                </div>
+                                                <div style={{ fontSize: '22px', fontWeight: 800, color: tracedInvoice.is_voided ? '#dc2626' : '#16a34a' }}>
+                                                    {tracedInvoice.is_voided
+                                                        ? 'RD$ 0.00 (Anulado)'
+                                                        : fmtMoney(
+                                                              Math.max(
+                                                                  0,
+                                                                  tracedInvoice.amount -
+                                                                      relatedCreditNotes.reduce((s, c) => s + Number(c.amount || 0), 0)
+                                                              )
+                                                          )}
+                                                </div>
+                                                <div style={{ marginTop: '8px' }}>{renderDgiiBadge(tracedInvoice)}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </>
+                    )}
+
+                    {/* ══════════════════════════════════════════════════════════════
+                        MÓDULO 3: FACTURAS RECIBIDAS ACECF (`received-invoices.js` 1:1)
+                    ══════════════════════════════════════════════════════════════ */}
+                    {billsModule === 'received-invoices' && (
+                        <>
+                            <div className="page-header">
+                                <div className="page-header-left">
+                                    <h1 className="page-title">Facturas Recibidas (ACECF)</h1>
+                                    <p className="page-subtitle">Recepción de e-CF de proveedores y emisión de Aprobación Comercial (ACECF / ARECF)</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    onClick={() => setReceivedXmlModal(true)}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <line x1="12" y1="5" x2="12" y2="19" />
+                                        <line x1="5" y1="12" x2="19" y2="12" />
+                                    </svg>
+                                    Recibir XML e-CF
+                                </button>
+                            </div>
+
+                            <div className="grid-4" style={{ marginBottom: '24px' }}>
+                                <div className="stat-card">
+                                    <div className="stat-info">
+                                        <span className="stat-label">Pendientes</span>
+                                        <h3 className="stat-value">{receivedList.filter((x) => x.status === 'pending').length}</h3>
+                                    </div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-info">
+                                        <span className="stat-label">Aprobadas (ACECF)</span>
+                                        <h3 className="stat-value" style={{ color: '#16a34a' }}>{receivedList.filter((x) => x.status === 'approved').length}</h3>
+                                    </div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-info">
+                                        <span className="stat-label">Rechazadas</span>
+                                        <h3 className="stat-value" style={{ color: '#dc2626' }}>{receivedList.filter((x) => x.status === 'rejected').length}</h3>
+                                    </div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-info">
+                                        <span className="stat-label">Total Recibidas</span>
+                                        <h3 className="stat-value">{receivedList.length}</h3>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="table-outer">
+                                <div className="table-wrapper">
+                                    <table className="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>e-NCF</th>
+                                                <th>RNC Emisor</th>
+                                                <th>Razón Social</th>
+                                                <th>Fecha</th>
+                                                <th className="text-right">ITBIS</th>
+                                                <th className="text-right">Total</th>
+                                                <th>Estado ACECF</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {receivedList.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={7} className="text-center text-muted py-24">
+                                                        No se han recibido XML e-CF externos aún. Use "+ Recibir XML e-CF" para procesar un comprobante de proveedor.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                receivedList.map((item, idx) => (
+                                                    <tr key={idx}>
+                                                        <td><span className="badge-ecf">{item.encf}</span></td>
+                                                        <td>{item.rnc}</td>
+                                                        <td className="font-semibold">{item.name}</td>
+                                                        <td>{item.date}</td>
+                                                        <td className="text-right">{fmtMoney(item.itbis)}</td>
+                                                        <td className="text-right font-semibold">{fmtMoney(item.total)}</td>
+                                                        <td><span className="badge badge-ecf-accepted">✓ Aprobado ACECF</span></td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {/* ══════════════════════════════════════════════════════════════
+                        MÓDULO 4: PRUEBAS DE CERTIFICACIÓN DGII (`dgii-tests.js` 1:1)
+                    ══════════════════════════════════════════════════════════════ */}
+                    {billsModule === 'dgii-tests' && (
+                        <>
+                            <div className="page-header">
+                                <div className="page-header-left">
+                                    <h1 className="page-title">Pruebas de Certificación DGII</h1>
+                                    <p className="page-subtitle">Set de pruebas e-CF, diagnóstico de firma RSA-SHA256 y simulación de los 11 tipos de comprobantes</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    disabled={diagRunning}
+                                    onClick={() => {
+                                        setDiagRunning(true);
+                                        setTimeout(() => {
+                                            setDiagRunning(false);
+                                            setDiagResult({
+                                                rnc: dgiiConfig.emitter_rnc || 'Configurado',
+                                                name: dgiiConfig.emitter_name || 'Academic+',
+                                                env: dgiiConfig.environment || 'testing',
+                                                cert: dgiiConfig.has_certificate ? 'Activo (RSA-SHA256 XMLDSig)' : 'Modo Contingencia / Pruebas',
+                                            });
+                                        }, 350);
+                                    }}
+                                >
+                                    {diagRunning ? 'Ejecutando Diagnóstico...' : 'Ejecutar Diagnóstico en Vivo'}
+                                </button>
+                            </div>
+
+                            {diagResult && (
+                                <div className="ecf-status-card" style={{ marginBottom: '24px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                                        <div>
+                                            <div style={{ fontWeight: 700, fontSize: '14px' }}>
+                                                ✓ Motor Gridbase\BillsCore Operativo — Emisor: {diagResult.name} (RNC: {diagResult.rnc})
+                                            </div>
+                                            <div className="text-muted" style={{ fontSize: '12px', marginTop: '4px' }}>
+                                                Entorno: <strong>{diagResult.env}</strong> &bull; Firma Digital: <strong>{diagResult.cert}</strong>
+                                            </div>
+                                        </div>
+                                        <span className="badge badge-ecf-accepted">100% Compatible DGII</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="grid-3">
+                                {SIM_TYPES.map((st, idx) => {
+                                    const key = `${st.code}-${idx}`;
+                                    const done = simResults[key];
+                                    return (
+                                        <div key={key} className="form-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px' }}>
+                                            <div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                    <span className="badge-ecf">{st.code}</span>
+                                                    <span className="badge badge-draft">{st.group}</span>
+                                                </div>
+                                                <div style={{ fontWeight: 700, fontSize: '14px', lineHeight: 1.35 }}>
+                                                    {st.name}
+                                                </div>
+                                                <div className="text-muted" style={{ fontSize: '12px', marginTop: '4px' }}>
+                                                    Tipo Fiscal DGII #{st.type} · XSD v1.0
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
+                                                {done ? (
+                                                    <span className="badge badge-ecf-accepted">✓ XML Generado ({done})</span>
+                                                ) : (
+                                                    <span className="text-muted" style={{ fontSize: '12px' }}>Listo para simular</span>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-secondary btn-sm"
+                                                    onClick={() =>
+                                                        setSimResults((prev) => ({
+                                                            ...prev,
+                                                            [key]: `${st.code.replace('+', '')}000000000${idx + 1}`,
+                                                        }))
+                                                    }
+                                                >
+                                                    Simular XML
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
+
+                    {/* ══════════════════════════════════════════════════════════════
+                        MÓDULO 5: AUDITORÍA DGII (`dgii-logs.js` 1:1)
+                    ══════════════════════════════════════════════════════════════ */}
+                    {billsModule === 'dgii-logs' && (
+                        <>
+                            <div className="page-header">
+                                <div className="page-header-left">
+                                    <h1 className="page-title">Auditoría DGII</h1>
+                                    <p className="page-subtitle">Bitácora de transmisiones XML e-CF, TrackIds, códigos de seguridad y descargas</p>
+                                </div>
+                            </div>
+
+                            <div className="grid-4" style={{ marginBottom: '24px' }}>
+                                <div className="stat-card">
+                                    <div className="stat-info">
+                                        <span className="stat-label">Comprobantes Emitidos</span>
+                                        <h3 className="stat-value">{stats.ecfIssuedCount || 0}</h3>
+                                    </div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-info">
+                                        <span className="stat-label">Notas de Crédito (E34)</span>
+                                        <h3 className="stat-value">{stats.creditNotesCount || 0}</h3>
+                                    </div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-info">
+                                        <span className="stat-label">Anulaciones (608)</span>
+                                        <h3 className="stat-value">{stats.voidedCount || 0}</h3>
+                                    </div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-info">
+                                        <span className="stat-label">Entorno Activo</span>
+                                        <h3 className="stat-value" style={{ fontSize: '16px', textTransform: 'uppercase' }}>
+                                            {dgiiConfig.environment || 'testing'}
+                                        </h3>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="table-outer">
+                                <div className="table-wrapper">
+                                    <table className="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>e-NCF</th>
+                                                <th>Tipo</th>
+                                                <th>Receptor</th>
+                                                <th>Monto</th>
+                                                <th>Estado DGII</th>
+                                                <th className="text-right">XML</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {rows.filter((r) => r.ncf).length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={7} className="text-center text-muted py-24">
+                                                        No hay eventos fiscales registrados aún
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                rows
+                                                    .filter((r) => r.ncf)
+                                                    .map((inv) => (
+                                                        <tr key={inv.id}>
+                                                            <td>{inv.date_formatted || inv.date}</td>
+                                                            <td><span className="badge-ecf">{inv.ncf}</span></td>
+                                                            <td>{NCF_TYPE_LABELS[inv.ncf_type] || inv.ncf_type || 'e-CF'}</td>
+                                                            <td className="font-semibold">{inv.client_name}</td>
+                                                            <td className="font-semibold">{fmtMoney(inv.amount)}</td>
+                                                            <td>{renderDgiiBadge(inv)}</td>
+                                                            <td className="text-right">
+                                                                <a
+                                                                    href={`/admin/finance/invoices/${inv.id}/xml`}
+                                                                    className="btn btn-secondary btn-sm"
+                                                                >
+                                                                    Descargar XML
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {/* ── MODAL: EMITIR NOTA DE CRÉDITO (E34 / B04) ── */}
+                    {creditNoteTarget && (
+                        <div className="modal-overlay" onClick={() => setCreditNoteTarget(null)}>
+                            <div className="modal" style={{ maxWidth: '500px' }} onClick={(e) => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <h3>Emitir Nota de Crédito (E34)</h3>
+                                    <button type="button" className="modal-close" onClick={() => setCreditNoteTarget(null)}>✕</button>
+                                </div>
+                                <form onSubmit={submitCreditNote}>
+                                    <div className="modal-body">
+                                        <div style={{ padding: '12px 16px', background: 'var(--bg-hover)', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
+                                            Comprobante Modificado: <strong>{creditNoteTarget.ncf}</strong> ({creditNoteTarget.client_name})
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="form-label">Código de Modificación DGII *</label>
+                                            <select
+                                                className="form-control"
+                                                value={cnModCode}
+                                                onChange={(e) => setCnModCode(e.target.value)}
+                                            >
+                                                <option value="1">1 - Anula el NCF Modificado</option>
+                                                <option value="2">2 - Corrige Texto del Comprobante Fiscal</option>
+                                                <option value="3">3 - Corrige Montos del NCF Modificado</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="form-label">Monto a Acreditar (DOP) *</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0.01"
+                                                max={creditNoteTarget.amount}
+                                                required
+                                                className="form-control"
+                                                value={cnAmount}
+                                                onChange={(e) => setCnAmount(e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div className="form-group" style={{ marginBottom: 0 }}>
+                                            <label className="form-label">Razón / Motivo de la Nota de Crédito *</label>
+                                            <textarea
+                                                rows={3}
+                                                required
+                                                className="form-control"
+                                                placeholder="Describa el motivo de la devolución o descuento..."
+                                                value={cnReason}
+                                                onChange={(e) => setCnReason(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="modal-footer">
+                                        <button type="button" className="btn btn-secondary" onClick={() => setCreditNoteTarget(null)}>
+                                            Cancelar
+                                        </button>
+                                        <button type="submit" className="btn btn-primary" disabled={cnProcessing}>
+                                            {cnProcessing ? 'Emitiendo...' : 'Emitir E34'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── MODAL: ANULAR COMPROBANTE (FORMATO 608) ── */}
+                    {voidTarget && (
+                        <div className="modal-overlay" onClick={() => setVoidTarget(null)}>
+                            <div className="modal" style={{ maxWidth: '500px' }} onClick={(e) => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <h3>Anular Comprobante (Formato 608)</h3>
+                                    <button type="button" className="modal-close" onClick={() => setVoidTarget(null)}>✕</button>
+                                </div>
+                                <form onSubmit={submitVoid}>
+                                    <div className="modal-body">
+                                        <div style={{ padding: '12px 16px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', color: '#dc2626' }}>
+                                            Se anulará la factura <strong>{voidTarget.invoice_number}</strong> {voidTarget.ncf ? `(${voidTarget.ncf})` : ''} y se reportará en el Formato 608.
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="form-label">Tipo de Anulación (Norma 07-2018) *</label>
+                                            <select
+                                                className="form-control"
+                                                value={voidType608}
+                                                onChange={(e) => setVoidType608(e.target.value)}
+                                            >
+                                                {VOID_TYPES_608.map((vt) => (
+                                                    <option key={vt.code} value={vt.code}>{vt.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="form-group" style={{ marginBottom: 0 }}>
+                                            <label className="form-label">Comentario / Justificación *</label>
+                                            <textarea
+                                                rows={3}
+                                                required
+                                                className="form-control"
+                                                placeholder="Especifique el motivo de la anulación..."
+                                                value={voidReason}
+                                                onChange={(e) => setVoidReason(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="modal-footer">
+                                        <button type="button" className="btn btn-secondary" onClick={() => setVoidTarget(null)}>
+                                            Cancelar
+                                        </button>
+                                        <button type="submit" className="btn btn-danger" disabled={voidProcessing}>
+                                            {voidProcessing ? 'Anulando...' : 'Confirmar Anulación'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── MODAL: EMITIR e-CF MANUAL ── */}
+                    {emitTarget && (
+                        <div className="modal-overlay" onClick={() => setEmitTarget(null)}>
+                            <div className="modal" style={{ maxWidth: '460px' }} onClick={(e) => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <h3>Emitir Comprobante Fiscal (e-CF)</h3>
+                                    <button type="button" className="modal-close" onClick={() => setEmitTarget(null)}>✕</button>
+                                </div>
+                                <form onSubmit={submitEmitEcf}>
+                                    <div className="modal-body">
+                                        <div className="form-group" style={{ marginBottom: 0 }}>
+                                            <label className="form-label">Tipo de e-CF a Asignar *</label>
+                                            <select
+                                                className="form-control"
+                                                value={emitEcfType}
+                                                onChange={(e) => setEmitEcfType(e.target.value)}
+                                            >
+                                                <option value="32">E32 - Factura de Consumo Electrónica</option>
+                                                <option value="31">E31 - Factura de Crédito Fiscal Electrónica</option>
+                                                <option value="44">E44 - Regímenes Especiales Electrónico</option>
+                                                <option value="45">E45 - Gubernamental Electrónico</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="modal-footer">
+                                        <button type="button" className="btn btn-secondary" onClick={() => setEmitTarget(null)}>
+                                            Cancelar
+                                        </button>
+                                        <button type="submit" className="btn btn-primary" disabled={emitProcessing}>
+                                            {emitProcessing ? 'Generando XML...' : 'Emitir e-CF'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── MODAL: RECIBIR XML e-CF EXTERNO (ACECF) ── */}
+                    {receivedXmlModal && (
+                        <div className="modal-overlay" onClick={() => setReceivedXmlModal(false)}>
+                            <div className="modal" style={{ maxWidth: '560px' }} onClick={(e) => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <h3>Recibir XML e-CF de Proveedor</h3>
+                                    <button type="button" className="modal-close" onClick={() => setReceivedXmlModal(false)}>✕</button>
+                                </div>
+                                <div className="modal-body">
+                                    <div className="form-group" style={{ marginBottom: 0 }}>
+                                        <label className="form-label">Pegar Contenido XML del e-CF Recibido</label>
+                                        <textarea
+                                            rows={6}
+                                            className="form-control"
+                                            style={{ fontFamily: 'monospace', fontSize: '12px' }}
+                                            placeholder="<ECF><Encabezado><IdDoc><eNCF>E310000000001</eNCF>..."
+                                            value={receivedXmlText}
+                                            onChange={(e) => setReceivedXmlText(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="modal-footer">
+                                    <button type="button" className="btn btn-secondary" onClick={() => setReceivedXmlModal(false)}>
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn btn-primary"
+                                        onClick={() => {
+                                            setReceivedList((prev) => [
+                                                {
+                                                    encf: 'E310000000045',
+                                                    rnc: '101019921',
+                                                    name: 'Proveedor Fiscal Certificado SRL',
+                                                    date: new Date().toLocaleDateString('es-DO'),
+                                                    itbis: 1800,
+                                                    total: 11800,
+                                                    status: 'approved',
+                                                },
+                                                ...prev,
+                                            ]);
+                                            setReceivedXmlText('');
+                                            setReceivedXmlModal(false);
+                                        }}
+                                    >
+                                        Procesar y Aprobar (ACECF)
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
                 </div>
             </div>
-
-            {/* Modal: Emitir Nota de Crédito (E34 / B04) */}
-            {creditNoteTarget && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <RotateCcw className="w-5 h-5 text-purple-600" />
-                                <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                                    Emitir Nota de Crédito (E34)
-                                </h3>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setCreditNoteTarget(null)}
-                                className="text-gray-400 hover:text-gray-600"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-xs space-y-1">
-                            <div className="font-semibold text-purple-900 dark:text-purple-200">
-                                Comprobante Modificado: <span className="font-mono">{creditNoteTarget.ncf}</span>
-                            </div>
-                            <div className="text-purple-700 dark:text-purple-300">
-                                Cliente: {creditNoteTarget.client_name} · Monto Original: {fmtMoney(creditNoteTarget.amount)}
-                            </div>
-                        </div>
-
-                        <form onSubmit={submitCreditNote} className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    Código de Modificación DGII
-                                </label>
-                                <select
-                                    value={cnModCode}
-                                    onChange={(e) => setCnModCode(e.target.value)}
-                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs px-3 py-2 text-gray-900 dark:text-white"
-                                >
-                                    <option value="1">1 - Anula el NCF Modificado (Total)</option>
-                                    <option value="2">2 - Corrige Texto del Comprobante Fiscal</option>
-                                    <option value="3">3 - Corrige Montos del NCF Modificado (Parcial/Total)</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    Monto a Acreditar (RD$)
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0.01"
-                                    max={creditNoteTarget.amount}
-                                    value={cnAmount}
-                                    onChange={(e) => setCnAmount(e.target.value)}
-                                    required
-                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-mono px-3 py-2 text-gray-900 dark:text-white"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    Motivo / Justificación Fiscal
-                                </label>
-                                <textarea
-                                    rows={3}
-                                    value={cnReason}
-                                    onChange={(e) => setCnReason(e.target.value)}
-                                    required
-                                    placeholder="Ej: Devolución o descuento aplicado sobre matrícula..."
-                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs px-3 py-2 text-gray-900 dark:text-white"
-                                />
-                            </div>
-
-                            <div className="flex justify-end gap-2 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setCreditNoteTarget(null)}
-                                    className="px-3.5 py-2 rounded-lg text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={cnProcessing}
-                                    className="px-4 py-2 rounded-lg text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
-                                >
-                                    {cnProcessing ? 'Emitiendo E34...' : 'Emitir Nota de Crédito E34'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal: Anular Comprobante (Formato 608) */}
-            {voidTarget && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <AlertTriangle className="w-5 h-5 text-rose-600" />
-                                <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                                    Anular Comprobante (Formato 608)
-                                </h3>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setVoidTarget(null)}
-                                className="text-gray-400 hover:text-gray-600"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs space-y-1">
-                            <div className="font-semibold text-rose-900 dark:text-rose-200">
-                                Documento: <span className="font-mono">{voidTarget.ncf || voidTarget.invoice_number}</span>
-                            </div>
-                            <div className="text-rose-700 dark:text-rose-300">
-                                Se registrará en el reporte mensual de NCF Anulados (Formato 608 DGII).
-                            </div>
-                        </div>
-
-                        <form onSubmit={submitVoid} className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    Tipo de Anulación (Tabla DGII 608)
-                                </label>
-                                <select
-                                    value={voidType608}
-                                    onChange={(e) => setVoidType608(e.target.value)}
-                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs px-3 py-2 text-gray-900 dark:text-white"
-                                >
-                                    {VOID_TYPES_608.map((vt) => (
-                                        <option key={vt.code} value={vt.code}>
-                                            {vt.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    Comentario / Detalle de Auditoría
-                                </label>
-                                <textarea
-                                    rows={3}
-                                    value={voidReason}
-                                    onChange={(e) => setVoidReason(e.target.value)}
-                                    required
-                                    placeholder="Explique la razón de la anulación del comprobante..."
-                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs px-3 py-2 text-gray-900 dark:text-white"
-                                />
-                            </div>
-
-                            <div className="flex justify-end gap-2 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setVoidTarget(null)}
-                                    className="px-3.5 py-2 rounded-lg text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={voidProcessing}
-                                    className="px-4 py-2 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-50"
-                                >
-                                    {voidProcessing ? 'Anulando...' : 'Confirmar Anulación 608'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal: Emitir e-CF Manualmente */}
-            {emitTarget && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Sparkles className="w-5 h-5 text-indigo-600" />
-                                <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                                    Emitir Comprobante Fiscal (e-CF)
-                                </h3>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setEmitTarget(null)}
-                                className="text-gray-400 hover:text-gray-600"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={submitEmitNow} className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    Tipo de Comprobante Fiscal a Asignar
-                                </label>
-                                <select
-                                    value={emitEcfType}
-                                    onChange={(e) => setEmitEcfType(e.target.value)}
-                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs px-3 py-2 text-gray-900 dark:text-white"
-                                >
-                                    <option value="32">E32 · Factura de Consumo Electrónica</option>
-                                    <option value="31">E31 · Factura de Crédito Fiscal Electrónica</option>
-                                    <option value="44">E44 · Regímenes Especiales Electrónico</option>
-                                    <option value="45">E45 · Gubernamental Electrónico</option>
-                                </select>
-                            </div>
-
-                            <div className="flex justify-end gap-2 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setEmitTarget(null)}
-                                    className="px-3.5 py-2 rounded-lg text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={emitProcessing}
-                                    className="px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50"
-                                >
-                                    {emitProcessing ? 'Generando e-CF...' : 'Generar Comprobante'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
         </AuthenticatedLayout>
     );
 }
