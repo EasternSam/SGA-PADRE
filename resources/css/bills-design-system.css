@@ -455,7 +455,7 @@ html.dark body .bills-scope .segment-item.active {
 .bills-scope .data-table th,
 html.dark .bills-scope .data-table th {
   background-color: var(--bg-card) !important;
-  padding: var(--spacing-md) var(--spacing-xl) !important;
+  padding: 12px 18px !important;
   font-size: 11px !important;
   font-weight: 600 !important;
   color: var(--color-text-muted) !important;
@@ -463,14 +463,16 @@ html.dark .bills-scope .data-table th {
   letter-spacing: 0.05em;
   border-bottom: 1px solid var(--color-border) !important;
   user-select: none;
+  white-space: nowrap !important;
 }
 .bills-scope .data-table td,
 html.dark .bills-scope .data-table td {
-  padding: var(--spacing-md) var(--spacing-xl) !important;
+  padding: 14px 18px !important;
   border-bottom: 1px solid var(--color-border) !important;
   color: var(--color-text-secondary);
   font-size: 13px !important;
   vertical-align: middle;
+  white-space: nowrap;
 }
 .bills-scope .data-table tbody tr,
 html.dark .bills-scope .data-table tbody tr {
@@ -487,8 +489,10 @@ html.dark .bills-scope .data-table tbody tr:hover {
   width: 16px !important;
   height: 16px !important;
   cursor: pointer;
-  accent-color: #111827;
-  border-radius: 4px;
+  accent-color: var(--color-primary);
+  border-radius: 4px !important;
+  background-color: var(--bg-card) !important;
+  border: 1px solid var(--color-border-hover) !important;
 }
 
 .bills-scope .user-cell { display: flex; align-items: center; gap: var(--spacing-md); }

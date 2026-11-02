@@ -259,7 +259,7 @@ export default function ExpensesIndex({
                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                                         <select
                                             className="form-control"
-                                            style={{ width: 'auto', height: '36px', padding: '0 28px 0 12px', fontSize: '12.5px' }}
+                                            style={{ width: 'auto', height: '36px', padding: '0 36px 0 12px', fontSize: '12.5px' }}
                                             value={ncfFilter}
                                             onChange={(e) => {
                                                 setNcfFilter(e.target.value);
@@ -273,7 +273,7 @@ export default function ExpensesIndex({
 
                                         <select
                                             className="form-control"
-                                            style={{ width: 'auto', height: '36px', padding: '0 28px 0 12px', fontSize: '12.5px' }}
+                                            style={{ width: 'auto', height: '36px', padding: '0 36px 0 12px', fontSize: '12.5px' }}
                                             value={statusFilter}
                                             onChange={(e) => {
                                                 setStatusFilter(e.target.value);
