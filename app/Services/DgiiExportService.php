@@ -4,55 +4,34 @@ namespace App\Services;
 
 use App\Models\Expense;
 use App\Models\Payment;
-use App\Models\Setting;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Storage;
+use Gridbase\BillsCore\Contracts\IssuerConfigInterface;
+use Gridbase\BillsCore\Services\DgiiPrevalidatorService;
+use Gridbase\BillsCore\Services\DgiiReportBuilderService;
 
+/**
+ * DgiiExportService — Powered by Gridbase Bills Core
+ *
+ * Construye los datasets 606, 607 y 608 de Academic+ y los procesa con
+ * DgiiReportBuilderService y DgiiPrevalidatorService del core de Gridbase Bills.
+ */
 class DgiiExportService
 {
-    /**
-     * Genera el archivo TXT para el Formato 606 (Compras y Gastos).
-     *
-     * Estructura requerida DGII:
-     * 1. RNC o Cédula
-     * 2. Tipo de Identificación (1 = RNC, 2 = Cédula, 3 = Pasaporte)
-     * 3. Tipo Bien o Servicio Comprado (01 - 11)
-     * 4. NCF
-     * 5. NCF o Documento Modificado
-     * 6. Fecha Comprobante (YYYYMMDD)
-     * 7. Fecha Pago (YYYYMMDD)
-     * 8. Monto Facturado en Servicios
-     * 9. Monto Facturado en Bienes
-     * 10. Total Monto Facturado
-     * 11. ITBIS Facturado
-     * 12. ITBIS Retenido
-     * 13. ITBIS Sujeto a Proporcionalidad (Dejar 0.00)
-     * 14. ITBIS Llevado al Costo (Dejar 0.00)
-     * 15. ITBIS por Adelantar (ITBIS Facturado - ITBIS Retenido)
-     * 16. ITBIS Percibido en Compras (0.00)
-     * 17. Tipo de Retención en ISR
-     * 18. Monto Retención Renta
-     * 19. ISR Percibido en Compras (0.00)
-     * 20. Impuesto Selectivo al Consumo (0.00)
-     * 21. Otros Impuestos / Tasas (0.00)
-     * 22. Monto Propina Legal (0.00)
-     * 23. Forma de Pago (01 = Efectivo, 02 = Cheque/Transferencia, 03 = Tarjeta)
-     */
-    public function generate606(string $yearMonth)
-    {
-        // Verificar si la facturación electrónica está habilitada
-        if (!$this->isElectronicBillingEnabled()) {
-            return [
-                'filename' => "DGII_606_DISABLED.txt",
-                'content'  => "# Facturación Electrónica Deshabilitada\n# Active esta funcionalidad en Configuración del Sistema para generar reportes DGII.",
-                'count'    => 0
-            ];
-        }
+    public function __construct(
+        protected DgiiReportBuilderService $reportBuilder,
+        protected DgiiPrevalidatorService $prevalidator,
+        protected IssuerConfigInterface $issuer,
+    ) {
+    }
 
+    /**
+     * Obtiene los registros normalizados de Formato 606 para un período YYYY-MM.
+     */
+    public function getRecords606(string $yearMonth): array
+    {
         $startDate = Carbon::createFromFormat('Y-m', $yearMonth)->startOfMonth();
         $endDate = Carbon::createFromFormat('Y-m', $yearMonth)->endOfMonth();
 
-        // Obtener solo gastos pagados con NCF en el período
         $expenses = Expense::with('supplier')
             ->whereNotNull('ncf')
             ->whereNotNull('supplier_id')
@@ -60,183 +39,242 @@ class DgiiExportService
             ->whereBetween('expense_date', [$startDate, $endDate])
             ->get();
 
-        $lines = [];
-
+        $records = [];
         foreach ($expenses as $expense) {
             $rnc = preg_replace('/[^0-9]/', '', $expense->supplier->rnc_cedula ?? '');
-            $tipoId = (strlen($rnc) === 9) ? '1' : '2'; // 1=RNC, 2=Cedula
-            
-            // Si el NCF es B15 (Comprobante de Compras), el RNC es nuestro, no del suplidor,
-            // pero para simplificar, asumimos que todos son B01 reportados por el proveedor.
-            
-            // Asumiendo que todos son servicios en un colegio, ajusta según necesidad
-            $montoServicios = number_format($expense->subtotal, 2, '.', '');
-            $montoBienes = '0.00';
-            $totalMonto = number_format($expense->subtotal, 2, '.', '');
-            
-            $itbisFacturado = number_format($expense->itbis_amount, 2, '.', '');
-            $itbisRetenido = number_format($expense->itbis_retained, 2, '.', '');
-            
-            $itbisPorAdelantar = number_format((float)$expense->itbis_amount - (float)$expense->itbis_retained, 2, '.', '');
-            if ($itbisPorAdelantar < 0) $itbisPorAdelantar = '0.00';
+            $tipoId = (strlen($rnc) === 9) ? '1' : '2';
 
-            // Tipo Retención ISR (01 = Alquileres, 02 = Honorarios Profesionales, 08 = Otras)
-            // Simplificado a '08' (Otras retenciones) si hay ISR, o vacío si no hay
-            $tipoRetIsr = ($expense->isr_retained > 0) ? '08' : '';
-            $montoRetRenta = ($expense->isr_retained > 0) ? number_format($expense->isr_retained, 2, '.', '') : '0.00';
+            $subtotal = (float) $expense->subtotal;
+            $itbisFacturado = (float) $expense->itbis_amount;
+            $itbisRetenido = (float) $expense->itbis_retained;
+            $itbisPorAdelantar = max(0.0, $itbisFacturado - $itbisRetenido);
+            $isrRetenido = (float) $expense->isr_retained;
 
-            // Forma de pago: 02 = Transferencia/Cheque (asumido por defecto para colegios)
-            $formaPago = '02';
-
-            $line = implode('|', [
-                $rnc,                                               // 1
-                $tipoId,                                            // 2
-                $expense->expense_type_606 ?? '02',                 // 3
-                $expense->ncf,                                      // 4
-                '',                                                 // 5 NCF Modificado
-                $expense->expense_date->format('Ymd'),              // 6
-                $expense->expense_date->format('Ymd'),              // 7 Fecha Pago
-                $montoServicios,                                    // 8
-                $montoBienes,                                       // 9
-                $totalMonto,                                        // 10
-                $itbisFacturado,                                    // 11
-                $itbisRetenido,                                     // 12
-                '0.00',                                             // 13 ITBIS Proporcionalidad
-                '0.00',                                             // 14 ITBIS al Costo
-                $itbisPorAdelantar,                                 // 15
-                '0.00',                                             // 16 ITBIS Percibido
-                $tipoRetIsr,                                        // 17 Tipo Ret ISR
-                $montoRetRenta,                                     // 18 Monto Ret ISR
-                '0.00',                                             // 19 ISR Percibido
-                '0.00',                                             // 20 ISC
-                '0.00',                                             // 21 Otros Impuestos
-                '0.00',                                             // 22 Propina
-                $formaPago                                          // 23
-            ]);
-
-            $lines[] = $line;
-        }
-
-        // Crear el archivo
-        $rncEmpresa = config('app.rnc_empresa', '101000000'); // Debería salir de Settings si es multi-tenant
-        $cantidadRegistros = count($lines);
-        $fileName = "DGII_606_{$rncEmpresa}_{$yearMonth}.txt";
-        
-        // Cabecera No estándar pero requerida por OFV a veces, 
-        // normalmente la DGII Ofv permite solo el cuerpo para carga txt.
-        $content = implode("\r\n", $lines);
-
-        return [
-            'filename' => $fileName,
-            'content'  => $content,
-            'count'    => $cantidadRegistros
-        ];
-    }
-
-    /**
-     * Genera el archivo TXT para el Formato 607 (Ventas e Ingresos).
-     */
-    public function generate607(string $yearMonth)
-    {
-        // Verificar si la facturación electrónica está habilitada
-        if (!$this->isElectronicBillingEnabled()) {
-            return [
-                'filename' => "DGII_607_DISABLED.txt",
-                'content'  => "# Facturación Electrónica Deshabilitada\n# Active esta funcionalidad en Configuración del Sistema para generar reportes DGII.",
-                'count'    => 0
+            $records[] = [
+                'id' => $expense->id,
+                'supplier_name' => $expense->supplier->name ?? 'Suplidor',
+                'rnc_proveedor' => $rnc,
+                'tipo_id' => $tipoId,
+                'tipo_identificacion' => $tipoId,
+                'tipo_bienes' => $expense->expense_type_606 ?: '02',
+                'ncf' => trim((string) $expense->ncf),
+                'ncf_modificado' => '',
+                'fecha_comprobante' => $expense->expense_date ? $expense->expense_date->format('Ymd') : $startDate->format('Ymd'),
+                'fecha_pago' => $expense->expense_date ? $expense->expense_date->format('Ymd') : $startDate->format('Ymd'),
+                'monto_servicios' => $subtotal,
+                'monto_bienes' => 0.00,
+                'total_monto_facturado' => $subtotal,
+                'itbis_facturado' => $itbisFacturado,
+                'itbis_retenido' => $itbisRetenido,
+                'itbis_proporcionalidad' => 0.00,
+                'itbis_costo' => 0.00,
+                'itbis_adelantar' => $itbisPorAdelantar,
+                'itbis_percibido' => '',
+                'tipo_retencion_isr' => $isrRetenido > 0 ? '08' : '',
+                'monto_retencion_renta' => $isrRetenido,
+                'isr_percibido' => '',
+                'impuesto_selectivo_consumo' => 0.00,
+                'otros_impuestos' => 0.00,
+                'monto_propina_legal' => 0.00,
+                'forma_pago' => '02',
             ];
         }
 
+        return $records;
+    }
+
+    /**
+     * Obtiene los registros normalizados de Formato 607 para un período YYYY-MM.
+     */
+    public function getRecords607(string $yearMonth): array
+    {
         $startDate = Carbon::createFromFormat('Y-m', $yearMonth)->startOfMonth();
         $endDate = Carbon::createFromFormat('Y-m', $yearMonth)->endOfMonth();
 
-        // Obtener solo ingresos facturados (pagos completados con NCF emitido)
-        $payments = Payment::whereIn('status', ['paid', 'Completado'])
+        $payments = Payment::with('student')
+            ->whereIn('status', ['paid', 'Completado'])
             ->whereNotNull('ncf')
             ->whereBetween('created_at', [$startDate, $endDate])
             ->get();
 
-        $lines = [];
-
+        $records = [];
         foreach ($payments as $payment) {
-            // RNC del Cliente (si es B01), sino en blanco para Consumo (B02)
-            $rncCliente = '';
-            $tipoId = '';
+            $ncf = trim((string) $payment->ncf);
+            $rncCliente = preg_replace('/[^0-9]/', '', (string) ($payment->rnc_client ?: ($payment->student->cedula ?? '')));
+            $tipoId = $rncCliente === '' ? '3' : (strlen($rncCliente) === 9 ? '1' : '2');
 
-            if ($payment->ncf_type === '31' || str_starts_with($payment->ncf, 'B01') || str_starts_with($payment->ncf, 'E31')) {
-                $rncCliente = preg_replace('/[^0-9]/', '', $payment->rnc_client ?? '');
-                $tipoId = (strlen($rncCliente) === 9) ? '1' : '2';
+            $monto = (float) $payment->amount;
+            $gateway = strtolower((string) $payment->gateway);
+
+            $efectivo = 0.0;
+            $bancos = 0.0;
+            $tarjeta = 0.0;
+
+            if (in_array($gateway, ['cash', 'efectivo', 'manual'], true)) {
+                $efectivo = $monto;
+            } elseif (in_array($gateway, ['transfer', 'transferencia', 'bank', 'check', 'cheque'], true)) {
+                $bancos = $monto;
+            } else {
+                $tarjeta = $monto;
             }
 
-            // Pagos de colegio suelen estar Exentos de ITBIS. (Subtotal = Total Facturado)
-            $montoFacturado = number_format($payment->amount, 2, '.', '');
-            $itbisFacturado = '0.00'; 
-            
-            // Forma de Pago (01 = Efectivo, 02 = Transf/Cheque, 03 = Tarjeta)
-            $formaPago = '03'; // Asumiendo Tarjeta como default de pasarela
-            if ($payment->gateway === 'manual' || $payment->gateway === 'cash') {
-                $formaPago = '01';
-            }
-
-            $line = implode('|', [
-                $rncCliente,                                    // 1. RNC/Cédula Parcial
-                $tipoId,                                        // 2. Tipo Identificación
-                $payment->ncf,                                  // 3. NCF Emitido
-                '',                                             // 4. NCF Modificado
-                '03',                                           // 5. Tipo de Ingreso (03 = Ingresos por Servicios)
-                $payment->created_at->format('Ymd'),            // 6. Fecha Comprobante
-                '',                                             // 7. Fecha Retención
-                $itbisFacturado,                                // 8. ITBIS Retenido
-                '0.00',                                         // 9. ITBIS Retenido por Terceros
-                '0.00',                                         // 10. ITBIS Percibido
-                '0.00',                                         // 11. Retención Renta
-                '0.00',                                         // 12. ISR Percibido
-                '0.00',                                         // 13. Impuesto Selectivo al Consumo
-                '0.00',                                         // 14. Otros Impuestos
-                '0.00',                                         // 15. Monto Propina
-                $montoFacturado,                                // 16. Monto Efectivo
-                '0.00',                                         // 17. Monto Cheque / Transf
-                '0.00',                                         // 18. Monto Tarjeta Débito/Crédito
-                '0.00',                                         // 19. Monto Venta a Crédito
-                '0.00',                                         // 20. Bonos
-                '0.00',                                         // 21. Permuta
-                '0.00',                                         // 22. Otras Formas de Pago
-            ]);
-
-            // Distribución de montos según la forma real cobrada
-            $lineArray = explode('|', $line);
-            if ($formaPago === '01') {
-                $lineArray[15] = $montoFacturado; // Efectivo
-            } elseif ($formaPago === '02') {
-                $lineArray[16] = $montoFacturado; // Cheque/Transf
-                $lineArray[15] = '0.00';
-            } elseif ($formaPago === '03') {
-                $lineArray[17] = $montoFacturado; // Tarjeta
-                $lineArray[15] = '0.00';
-            }
-            $line = implode('|', $lineArray);
-
-            $lines[] = $line;
+            $records[] = [
+                'id' => $payment->id,
+                'client_name' => $payment->company_name ?: ($payment->student ? trim($payment->student->first_name . ' ' . $payment->student->last_name) : 'Estudiante'),
+                'rnc_cliente' => $rncCliente,
+                'tipo_id' => $tipoId,
+                'tipo_identificacion' => $tipoId,
+                'ncf' => $ncf,
+                'ncf_modificado' => '',
+                'tipo_ingreso' => '01',
+                'fecha_comprobante' => $payment->created_at ? $payment->created_at->format('Ymd') : $startDate->format('Ymd'),
+                'fecha_retencion' => '',
+                'monto_facturado' => $monto,
+                'itbis_facturado' => 0.00,
+                'itbis_retenido' => 0.00,
+                'itbis_percibido' => '',
+                'retencion_isr' => 0.00,
+                'isr_percibido' => '',
+                'isc' => 0.00,
+                'otros_impuestos' => 0.00,
+                'propina_legal' => 0.00,
+                'efectivo' => $efectivo,
+                'bancos' => $bancos,
+                'tarjeta' => $tarjeta,
+                'credito' => 0.00,
+                'bonos' => 0.00,
+                'permuta' => 0.00,
+                'otras_formas' => 0.00,
+            ];
         }
 
-        $rncEmpresa = config('app.rnc_empresa', '101000000');
-        $cantidadRegistros = count($lines);
-        $fileName = "DGII_607_{$rncEmpresa}_{$yearMonth}.txt";
-        
-        $content = implode("\r\n", $lines);
+        return $records;
+    }
+
+    /**
+     * Obtiene los registros normalizados de Formato 608 (Comprobantes Anulados) para un período YYYY-MM.
+     */
+    public function getRecords608(string $yearMonth): array
+    {
+        $startDate = Carbon::createFromFormat('Y-m', $yearMonth)->startOfMonth();
+        $endDate = Carbon::createFromFormat('Y-m', $yearMonth)->endOfMonth();
+
+        $voidedPayments = Payment::whereIn('status', ['cancelled', 'void', 'Anulado', 'refunded'])
+            ->whereNotNull('ncf')
+            ->whereBetween('updated_at', [$startDate, $endDate])
+            ->get();
+
+        $records = [];
+        foreach ($voidedPayments as $payment) {
+            $records[] = [
+                'id' => $payment->id,
+                'ncf' => trim((string) $payment->ncf),
+                'fecha_comprobante' => $payment->created_at ? $payment->created_at->format('Ymd') : $startDate->format('Ymd'),
+                'tipo_anulacion' => '04', // Corrección de la Información / Anulación
+            ];
+        }
+
+        return $records;
+    }
+
+    /**
+     * Genera el archivo TXT oficial de 23 columnas para el Formato 606 (Compras y Gastos).
+     */
+    public function generate606(string $yearMonth): array
+    {
+        if (!$this->issuer->isElectronicBillingEnabled()) {
+            return [
+                'filename' => 'DGII_606_DISABLED.txt',
+                'content' => "# Facturación Electrónica Deshabilitada\n",
+                'count' => 0,
+            ];
+        }
+
+        $records = $this->getRecords606($yearMonth);
+        $rncEmpresa = $this->issuer->getEmitterRnc();
+        $periodYm = str_replace('-', '', $yearMonth);
+
+        $content = $this->reportBuilder->build606Txt($rncEmpresa, $periodYm, $records);
 
         return [
-            'filename' => $fileName,
-            'content'  => $content,
-            'count'    => $cantidadRegistros
+            'filename' => "DGII_F_606_{$rncEmpresa}_{$periodYm}.txt",
+            'content' => $content,
+            'count' => count($records),
         ];
     }
 
     /**
-     * Verifica si la facturación electrónica está habilitada en la configuración.
+     * Genera el archivo TXT oficial de 23 columnas para el Formato 607 (Ventas e Ingresos).
      */
-    private function isElectronicBillingEnabled(): bool
+    public function generate607(string $yearMonth): array
     {
-        return Setting::get('enable_electronic_billing', 'true') === 'true';
+        if (!$this->issuer->isElectronicBillingEnabled()) {
+            return [
+                'filename' => 'DGII_607_DISABLED.txt',
+                'content' => "# Facturación Electrónica Deshabilitada\n",
+                'count' => 0,
+            ];
+        }
+
+        $records = $this->getRecords607($yearMonth);
+        $rncEmpresa = $this->issuer->getEmitterRnc();
+        $periodYm = str_replace('-', '', $yearMonth);
+
+        $content = $this->reportBuilder->build607Txt($rncEmpresa, $periodYm, $records);
+
+        return [
+            'filename' => "DGII_F_607_{$rncEmpresa}_{$periodYm}.txt",
+            'content' => $content,
+            'count' => count($records),
+        ];
+    }
+
+    /**
+     * Genera el archivo TXT oficial para el Formato 608 (Comprobantes Anulados).
+     */
+    public function generate608(string $yearMonth): array
+    {
+        if (!$this->issuer->isElectronicBillingEnabled()) {
+            return [
+                'filename' => 'DGII_608_DISABLED.txt',
+                'content' => "# Facturación Electrónica Deshabilitada\n",
+                'count' => 0,
+            ];
+        }
+
+        $records = $this->getRecords608($yearMonth);
+        $rncEmpresa = $this->issuer->getEmitterRnc();
+        $periodYm = str_replace('-', '', $yearMonth);
+
+        $content = $this->reportBuilder->build608Txt($rncEmpresa, $periodYm, $records);
+
+        return [
+            'filename' => "DGII_F_608_{$rncEmpresa}_{$periodYm}.txt",
+            'content' => $content,
+            'count' => count($records),
+        ];
+    }
+
+    /**
+     * Ejecuta el Pre-validador DGII y calcula la simulación de Declaración Jurada IT-1.
+     */
+    public function getFullTaxAnalysis(string $yearMonth): array
+    {
+        $records606 = $this->getRecords606($yearMonth);
+        $records607 = $this->getRecords607($yearMonth);
+        $records608 = $this->getRecords608($yearMonth);
+
+        return [
+            'records606' => $records606,
+            'records607' => $records607,
+            'records608' => $records608,
+            'validation606' => $this->prevalidator->validateData('606', $records606),
+            'validation607' => $this->prevalidator->validateData('607', $records607),
+            'validation608' => $this->prevalidator->validateData('608', $records608),
+            'it1Summary' => $this->reportBuilder->calculateIt1Summary($records606, $records607),
+            'emitterRnc' => $this->issuer->getEmitterRnc(),
+            'emitterName' => $this->issuer->getEmitterName(),
+            'environment' => $this->issuer->getEnvironment(),
+        ];
     }
 }

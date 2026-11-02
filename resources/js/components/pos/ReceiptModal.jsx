@@ -2,6 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { X, Printer, CheckCircle2, AlertTriangle, Check, ArrowRight } from 'lucide-react';
 import { formatMoney } from './utils';
+import PoweredByBills from '@/components/bills/PoweredByBills';
 
 export default function ReceiptModal({
     isOpen,
@@ -184,13 +185,14 @@ export default function ReceiptModal({
                     </div>
 
                     {/* Pie de Recibo */}
-                    <div className="border-t border-dashed border-neutral-300 dark:border-[#333333] pt-4 text-center space-y-1">
+                    <div className="border-t border-dashed border-neutral-300 dark:border-[#333333] pt-4 text-center space-y-2">
                         <p className="text-[11px] font-semibold text-neutral-600 dark:text-neutral-400">
                             ¡Gracias por su pago!
                         </p>
                         <p className="text-[10px] text-neutral-400">
                             Conserve este comprobante para sus registros.
                         </p>
+                        <PoweredByBills variant="receipt" className="mt-2" />
                     </div>
                 </div>
 

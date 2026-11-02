@@ -7,6 +7,7 @@ import ConceptCatalog from '@/components/pos/ConceptCatalog';
 import TicketPanel from '@/components/pos/TicketPanel';
 import ReceiptModal from '@/components/pos/ReceiptModal';
 import ShiftDrawer from '@/components/pos/ShiftDrawer';
+import PoweredByBills from '@/components/bills/PoweredByBills';
 import { formatMoney, getCsrfHeaders } from '@/components/pos/utils';
 
 export default function PosIndex({
@@ -206,13 +207,14 @@ export default function PosIndex({
                 {/* Barra de Encabezado Superior */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-neutral-200 dark:border-[#262626] pb-3">
                     <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2.5">
                             <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
                                 Terminal de Caja
                             </h1>
                             <span className="rounded-md bg-brand-primary/10 text-brand-primary px-2 py-0.5 text-xs font-semibold">
                                 POS
                             </span>
+                            <PoweredByBills variant="badge" />
                         </div>
                     </div>
 

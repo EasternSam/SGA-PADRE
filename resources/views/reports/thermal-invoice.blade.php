@@ -273,6 +273,7 @@
         <p style="margin-top:10px">¡Gracias por preferirnos!</p>
         <p style="margin-top: 5px; font-size: 8px;">Copia Cliente</p>
         <div style="font-size: 8px; margin-top: 5px;">Generado: {{ now()->format('d/m/Y h:i A') }}</div>
+        <div style="font-size: 8px; margin-top: 4px; font-weight: bold;">Powered by Gridbase Bills</div>
     </div>
 
 </body>

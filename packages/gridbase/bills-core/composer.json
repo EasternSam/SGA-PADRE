@@ -1,0 +1,19 @@
+{
+    "name": "gridbase/bills-core",
+    "description": "Gridbase Bills Core — Motor Transaccional, Facturación Electrónica (e-CF) y Cumplimiento Tributario DGII",
+    "type": "library",
+    "license": "proprietary",
+    "autoload": {
+        "psr-4": {
+            "Gridbase\\BillsCore\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Gridbase\\BillsCore\\BillsCoreServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable"
+}

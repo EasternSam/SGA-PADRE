@@ -198,6 +198,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
             Route::get('/finance/dgii-reports', [DgiiReportController::class, 'index'])->name('admin.finance.dgii-reports');
             Route::get('/finance/dgii-reports/download-606', [DgiiReportController::class, 'download606'])->name('admin.finance.dgii-reports.download-606');
             Route::get('/finance/dgii-reports/download-607', [DgiiReportController::class, 'download607'])->name('admin.finance.dgii-reports.download-607');
+            Route::get('/finance/dgii-reports/download-608', [DgiiReportController::class, 'download608'])->name('admin.finance.dgii-reports.download-608');
             Route::get('/finance/statements', [AccountingController::class, 'statements'])->name('admin.finance.statements');
             Route::get('/finance/statements/pdf', [AccountingController::class, 'exportStatementsPdf'])->name('admin.finance.statements.pdf');
             Route::get('/finance/ledger', [AccountingController::class, 'ledger'])->name('admin.finance.ledger');

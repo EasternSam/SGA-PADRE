@@ -248,7 +248,8 @@
     <div class="footer">
         <div class="divider"></div>
         ¡Gracias por su pago!<br>
-        Comprobante oficial generado por {{ $issuer['name'] ?? 'Academic+' }}
+        Comprobante oficial generado por {{ $issuer['name'] ?? 'Academic+' }}<br>
+        <strong>Powered by Gridbase Bills</strong>
     </div>
 </body>
 </html>

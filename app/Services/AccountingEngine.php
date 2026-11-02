@@ -164,47 +164,47 @@ class AccountingEngine
 
         // 2. Débito a ITBIS Pagado por Adelantado (Activo)
         if ($expense->itbis_amount > 0) {
-            $itbisAdelantado = \App\Models\AccountingAccount::where('code', \App\Models\Setting::val('account_itbis_advance', '1.1.4.0'))->first();
-            if ($itbisAdelantado) {
-                $lines[] = [
-                    'account_id' => $itbisAdelantado->id,
-                    'debit' => $expense->itbis_amount,
-                    'credit' => 0,
-                    'desc' => "ITBIS en Compras (NCF: {$expense->ncf})"
-                ];
-            } else {
-                throw new Exception("Configuración faltante: No se encontró la cuenta contable para el ITBIS Pagado por Adelantado (1.1.4.0).");
-            }
+            $code = \App\Models\Setting::val('account_itbis_advance', '1.1.4.0');
+            $itbisAdelantado = \App\Models\AccountingAccount::firstOrCreate(
+                ['code' => $code],
+                ['name' => 'ITBIS Pagado por Adelantado', 'type' => 'asset', 'is_active' => true]
+            );
+            $lines[] = [
+                'account_id' => $itbisAdelantado->id,
+                'debit' => $expense->itbis_amount,
+                'credit' => 0,
+                'desc' => "ITBIS en Compras (NCF: {$expense->ncf})"
+            ];
         }
 
         // 3. Crédito a ITBIS Retenido por Pagar (Pasivo)
         if ($expense->itbis_retained > 0) {
-            $itbisRetenido = \App\Models\AccountingAccount::where('code', \App\Models\Setting::val('account_itbis_retained', '2.1.4.0'))->first();
-            if ($itbisRetenido) {
-                $lines[] = [
-                    'account_id' => $itbisRetenido->id,
-                    'debit' => 0,
-                    'credit' => $expense->itbis_retained,
-                    'desc' => "Retención ITBIS (NCF: {$expense->ncf})"
-                ];
-            } else {
-                throw new Exception("Configuración faltante: No se encontró la cuenta contable de pasivo para ITBIS Retenido (2.1.4.0).");
-            }
+            $code = \App\Models\Setting::val('account_itbis_retained', '2.1.4.0');
+            $itbisRetenido = \App\Models\AccountingAccount::firstOrCreate(
+                ['code' => $code],
+                ['name' => 'ITBIS Retenido por Pagar (DGII)', 'type' => 'liability', 'is_active' => true]
+            );
+            $lines[] = [
+                'account_id' => $itbisRetenido->id,
+                'debit' => 0,
+                'credit' => $expense->itbis_retained,
+                'desc' => "Retención ITBIS (NCF: {$expense->ncf})"
+            ];
         }
 
         // 4. Crédito a ISR Retenido por Pagar (Pasivo)
         if ($expense->isr_retained > 0) {
-            $isrRetenido = \App\Models\AccountingAccount::where('code', \App\Models\Setting::val('account_isr_retained', '2.1.5.0'))->first();
-            if ($isrRetenido) {
-                $lines[] = [
-                    'account_id' => $isrRetenido->id,
-                    'debit' => 0,
-                    'credit' => $expense->isr_retained,
-                    'desc' => "Retención ISR (NCF: {$expense->ncf})"
-                ];
-            } else {
-                throw new Exception("Configuración faltante: No se encontró la cuenta contable de pasivo para ISR Retenido (2.1.5.0).");
-            }
+            $code = \App\Models\Setting::val('account_isr_retained', '2.1.5.0');
+            $isrRetenido = \App\Models\AccountingAccount::firstOrCreate(
+                ['code' => $code],
+                ['name' => 'ISR Retenido por Pagar (DGII)', 'type' => 'liability', 'is_active' => true]
+            );
+            $lines[] = [
+                'account_id' => $isrRetenido->id,
+                'debit' => 0,
+                'credit' => $expense->isr_retained,
+                'desc' => "Retención ISR (NCF: {$expense->ncf})"
+            ];
         }
 
         // 5. Crédito a Cuenta de Pago o CxP (Monto Total Neto Pagado/Por Pagar)

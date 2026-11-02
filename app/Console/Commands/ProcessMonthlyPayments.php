@@ -7,6 +7,7 @@ use App\Models\Enrollment;
 use App\Models\Payment;
 use App\Models\PaymentConcept;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ProcessMonthlyPayments extends Command

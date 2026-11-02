@@ -131,6 +131,14 @@ class FinancialPdfController extends Controller
 
     public function ticket(Payment $payment)
     {
+        $user = auth()->user();
+        if ($user && $user->hasRole('Estudiante')) {
+            $loggedStudent = $user->student;
+            if (!$loggedStudent || (int) $loggedStudent->id !== (int) $payment->student_id) {
+                abort(403, 'No autorizado para ver este comprobante.');
+            }
+        }
+
         // Si la facturación por Bills está activa y el pago tiene ID de factura en Bills
         if (Setting::get('enable_bills_invoicing', 'false') === 'true' && !empty($payment->bills_invoice_id)) {
             try {

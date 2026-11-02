@@ -324,7 +324,7 @@
         @if(auth()->check())
             · Generado por: {{ auth()->user()->name }}
         @endif
-        · {{ $institutionName }} (Documento Oficial)
+        · {{ $institutionName }} (Documento Oficial) · <strong>Powered by Gridbase Bills</strong>
         <span class="page-number"></span>
     </div>
 

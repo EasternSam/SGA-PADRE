@@ -11,6 +11,7 @@ import {
     Loader2,
 } from 'lucide-react';
 import { formatMoney } from './utils';
+import PoweredByBills from '@/components/bills/PoweredByBills';
 
 export default function TicketPanel({
     selectedConcept,
@@ -361,6 +362,8 @@ export default function TicketPanel({
                         </>
                     )}
                 </button>
+
+                <PoweredByBills variant="receipt" />
             </div>
         </div>
     );
