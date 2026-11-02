@@ -27,6 +27,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
 export default function StudentProfile({
     student,
+    kioskPin = null,
     enrollments,
     payments,
     financialSummary,
@@ -283,7 +284,7 @@ export default function StudentProfile({
                                             </span>
                                         )}
                                         <div className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-2.5 py-1 text-xs text-white backdrop-blur-sm">
-                                            <span>PIN Kiosco: <strong className="font-mono text-amber-300">{student.user?.kiosk_pin || '0000'}</strong></span>
+                                            <span>PIN Kiosco: <strong className="font-mono text-amber-300">{kioskPin || 'Sin asignar'}</strong></span>
                                             <button
                                                 type="button"
                                                 onClick={handleResetKioskPin}
@@ -863,7 +864,7 @@ export default function StudentProfile({
                                     </div>
                                     <div>
                                         <dt className="text-gray-400">PIN Kiosco Táctil</dt>
-                                        <dd className="font-mono font-bold text-amber-500 mt-0.5">{student.user?.kiosk_pin || '0000'}</dd>
+                                        <dd className="font-mono font-bold text-amber-500 mt-0.5">{kioskPin || 'Sin asignar'}</dd>
                                     </div>
                                     <div>
                                         <dt className="text-gray-400">Fecha de Registro</dt>

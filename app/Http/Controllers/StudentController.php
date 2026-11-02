@@ -348,6 +348,20 @@ class StudentController extends Controller
     }
 
     /**
+     * Devuelve el PIN de kiosco mostrable, o null si no existe o está almacenado como hash.
+     */
+    private function resolveDisplayableKioskPin(?string $rawPin): ?string
+    {
+        if ($rawPin === null || $rawPin === '') {
+            return null;
+        }
+
+        // Los PIN numéricos de estudiantes se guardan en texto plano (4-6 dígitos);
+        // un valor hasheado (p. ej. bcrypt de empleados) no es recuperable.
+        return preg_match('/^\d{4,6}$/', $rawPin) ? $rawPin : null;
+    }
+
+    /**
      * Regeneración instantánea del PIN de Kiosco.
      */
     public function resetKioskPin(Student $student)
@@ -428,6 +442,8 @@ class StudentController extends Controller
 
         return Inertia::render('Students/Profile', [
             'student' => $student,
+            // kiosk_pin está en User::$hidden (credencial); se envía explícitamente solo a esta vista administrativa
+            'kioskPin' => $this->resolveDisplayableKioskPin($student->user?->getRawOriginal('kiosk_pin')),
             'enrollments' => [
                 'all' => $allEnrollments,
                 'pending' => $pendingEnrollments,
