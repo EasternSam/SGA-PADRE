@@ -202,59 +202,44 @@ export default function ExpensesIndex({
                                 </button>
                             </div>
 
-                            {/* 1:1 Gridbase Bills 3 Stat Cards (`expenses.js` line 34) */}
-                            <div className="grid-3" style={{ marginBottom: '24px' }}>
+                            {/* 1:1 Gridbase Bills 3 Stat Cards (`expenses.js` line 71) */}
+                            <div className="grid-3" style={{ marginBottom: 'var(--spacing-xl)' }}>
                                 <div className="stat-card">
-                                    <div className="stat-icon" style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--color-danger)' }}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <line x1="12" y1="1" x2="12" y2="23" />
-                                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                                        </svg>
+                                    <div className="stat-card-title">Total Egresado</div>
+                                    <div className="stat-card-value" id="stat-total-expenses">
+                                        {formatCurrency(kpis?.totalExpenses || 0)}
                                     </div>
-                                    <div className="stat-info">
-                                        <span className="stat-label">Total Egresado</span>
-                                        <h3 className="stat-value" id="stat-total-expenses">
-                                            {formatCurrency(kpis?.totalExpenses || 0)}
-                                        </h3>
+                                    <div className="stat-card-sub" style={{ color: 'var(--color-text-muted)' }}>
+                                        Histórico acumulado
                                     </div>
                                 </div>
 
                                 <div className="stat-card">
-                                    <div className="stat-icon" style={{ background: 'rgba(245,158,11,0.1)', color: 'var(--color-warning)' }}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <rect x="2" y="4" width="20" height="16" rx="2" />
-                                            <path d="M7 15h0M2 9.5h20" />
-                                        </svg>
+                                    <div className="stat-card-title">ITBIS Adelantado</div>
+                                    <div className="stat-card-value" id="stat-total-itbis" style={{ color: 'var(--color-primary)' }}>
+                                        {formatCurrency(kpis?.totalItbis || 0)}
                                     </div>
-                                    <div className="stat-info">
-                                        <span className="stat-label">ITBIS Adelantado</span>
-                                        <h3 className="stat-value" id="stat-total-itbis">
-                                            {formatCurrency(kpis?.totalItbis || 0)}
-                                        </h3>
+                                    <div className="stat-card-sub">
+                                        Compensable en reporte 606
                                     </div>
                                 </div>
 
                                 <div className="stat-card">
-                                    <div className="stat-icon" style={{ background: 'rgba(59,130,246,0.1)', color: 'var(--color-primary)' }}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                            <polyline points="14 2 14 8 20 8" />
-                                        </svg>
+                                    <div className="stat-card-title">Gastos del Mes</div>
+                                    <div className="stat-card-value" id="stat-month-expenses" style={{ color: 'var(--color-text-primary)' }}>
+                                        {formatCurrency(kpis?.thisMonthExpenses || 0)}
                                     </div>
-                                    <div className="stat-info">
-                                        <span className="stat-label">Gastos del Mes</span>
-                                        <h3 className="stat-value" id="stat-month-expenses">
-                                            {formatCurrency(kpis?.thisMonthExpenses || 0)}
-                                        </h3>
+                                    <div className="stat-card-sub">
+                                        Mes en curso
                                     </div>
                                 </div>
                             </div>
 
-                            {/* 1:1 Gridbase Bills Table Outer (`expenses.js` line 58) */}
+                            {/* 1:1 Gridbase Bills Table Outer (`expenses.js` line 89) */}
                             <div className="table-outer">
-                                <div className="table-toolbar" style={{ padding: '16px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                                    <div className="search-wrapper" style={{ width: '320px', maxWidth: '100%' }}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <div className="table-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                                    <div className="search-wrapper" style={{ maxWidth: '320px', display: 'flex', width: '100%' }}>
+                                        <svg className="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                             <circle cx="11" cy="11" r="8" />
                                             <line x1="21" y1="21" x2="16.65" y2="16.65" />
                                         </svg>
@@ -262,7 +247,7 @@ export default function ExpensesIndex({
                                             type="text"
                                             id="expense-search"
                                             className="search-input"
-                                            placeholder="Buscar por proveedor o NCF..."
+                                            placeholder="Buscar proveedor, RNC o NCF..."
                                             value={search}
                                             onChange={(e) => {
                                                 setSearch(e.target.value);

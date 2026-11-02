@@ -981,13 +981,76 @@ function AuthenticatedContent({ title, children }) {
                                 <SidebarMenuItem>
                                     <SidebarMenuButton 
                                         href="/admin/finance/invoices" 
-                                        isActive={isActive('/admin/finance/invoices')}
-                                        tooltip="Facturas / e-CF"
+                                        isActive={url === '/admin/finance/invoices' || (url.startsWith('/admin/finance/invoices?') && !url.includes('module='))}
+                                        tooltip="Facturas"
                                     >
                                         <Receipt className="h-[18px] w-[18px] shrink-0 text-white/80" />
-                                        <span>Facturas / e-CF</span>
+                                        <span>Facturas</span>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
+
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton 
+                                        href="/admin/finance/invoices?module=audit-trail" 
+                                        isActive={url.includes('module=audit-trail')}
+                                        tooltip="Seguimiento de Comprobante"
+                                    >
+                                        <svg className="h-[18px] w-[18px] shrink-0 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                            <circle cx="18" cy="5" r="3" />
+                                            <circle cx="6" cy="12" r="3" />
+                                            <circle cx="18" cy="19" r="3" />
+                                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                                        </svg>
+                                        <span>Seguimiento e-CF</span>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+
+                                {hasAnyRole(['Admin', 'Contabilidad']) && (
+                                    <>
+                                        <SidebarMenuItem>
+                                            <SidebarMenuButton 
+                                                href="/admin/finance/invoices?module=received-invoices" 
+                                                isActive={url.includes('module=received-invoices')}
+                                                tooltip="Facturas Recibidas (ACECF)"
+                                            >
+                                                <svg className="h-[18px] w-[18px] shrink-0 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                                    <polyline points="14 2 14 8 20 8" />
+                                                    <path d="M9 15l2 2 4-4" />
+                                                </svg>
+                                                <span>Facturas Recibidas</span>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+
+                                        <SidebarMenuItem>
+                                            <SidebarMenuButton 
+                                                href="/admin/finance/invoices?module=dgii-tests" 
+                                                isActive={url.includes('module=dgii-tests')}
+                                                tooltip="Set de Pruebas DGII"
+                                            >
+                                                <svg className="h-[18px] w-[18px] shrink-0 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                                    <path d="M9 11l3 3L22 4" />
+                                                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                                                </svg>
+                                                <span>Pruebas DGII</span>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+
+                                        <SidebarMenuItem>
+                                            <SidebarMenuButton 
+                                                href="/admin/finance/invoices?module=dgii-logs" 
+                                                isActive={url.includes('module=dgii-logs')}
+                                                tooltip="Auditoría DGII"
+                                            >
+                                                <svg className="h-[18px] w-[18px] shrink-0 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                                </svg>
+                                                <span>Auditoría DGII</span>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    </>
+                                )}
 
                                 {hasAnyRole(['Admin', 'Contabilidad']) && (
                                     <>
@@ -1561,8 +1624,8 @@ function AuthenticatedContent({ title, children }) {
                     )}
                 </nav>
 
-                {/* ── MENÚ CONTEXTUAL UNIVERSAL DINÁMICO (GodUI TabBar) (oculto en dashboard principal para evitar sobrecarga y obstrucción) ── */}
-                {!url.startsWith('/admin/dashboard') && !url.startsWith('/admin/pos') && !isApplicant && (
+                {/* ── MENÚ CONTEXTUAL UNIVERSAL DINÁMICO (GodUI TabBar) (oculto en dashboard principal y vistas Bills Finance para evitar sobrecarga y obstrucción) ── */}
+                {!url.startsWith('/admin/dashboard') && !url.startsWith('/admin/pos') && !url.startsWith('/admin/finance') && !isApplicant && (
                     <aside 
                         aria-label="Acciones contextuales dinámicas"
                         className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-30 pointer-events-auto"

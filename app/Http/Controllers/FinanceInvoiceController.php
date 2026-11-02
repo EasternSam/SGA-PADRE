@@ -110,8 +110,11 @@ class FinanceInvoiceController extends Controller
                 'has_signed_xml' => $signedXmlPath && file_exists($signedXmlPath),
                 'notes' => $p->notes,
                 'date' => $p->created_at ? $p->created_at->format('Y-m-d') : '',
-                'date_formatted' => $p->created_at ? $p->created_at->format('d/m/Y h:i A') : '',
-                'due_date_formatted' => $p->due_date ? $p->due_date->format('d/m/Y') : '—',
+                'date_formatted' => $p->created_at ? $p->created_at->format('d/m/Y') : '',
+                'datetime_formatted' => $p->created_at ? $p->created_at->format('d/m/Y h:i A') : '',
+                'due_date_formatted' => $p->due_date
+                    ? $p->due_date->format('d/m/Y')
+                    : ($p->created_at ? $p->created_at->format('d/m/Y') : '—'),
             ];
         });
 
@@ -139,10 +142,35 @@ class FinanceInvoiceController extends Controller
             'ecfIssuedCount' => (int) Payment::whereNotNull('ncf')->where('ncf', '!=', '')->count(),
         ];
 
+        $students = \App\Models\Student::query()
+            ->select(['id', 'first_name', 'last_name', 'cedula', 'matricula'])
+            ->latest('id')
+            ->limit(250)
+            ->get()
+            ->map(fn ($s) => [
+                'id' => $s->id,
+                'name' => trim($s->first_name . ' ' . $s->last_name),
+                'rnc' => $s->cedula ?: $s->matricula ?: '',
+            ]);
+
+        $concepts = \App\Models\PaymentConcept::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'default_amount', 'description'])
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'price' => (float) $c->default_amount,
+                'description' => $c->description,
+            ]);
+
         return Inertia::render('Finance/Invoices/Index', [
             'invoices' => $invoices,
             'stats' => $stats,
+            'students' => $students,
+            'concepts' => $concepts,
             'filters' => [
+                'module' => $request->input('module', 'invoices'),
                 'tab' => $tab,
                 'search' => $search,
                 'ncf_type' => $ncfType,
@@ -155,6 +183,137 @@ class FinanceInvoiceController extends Controller
                 'has_certificate' => $issuer->hasActiveCertificate(),
             ],
         ]);
+    }
+
+    /**
+     * Crea una nueva factura / comprobante fiscal desde el formulario 1:1 de Bills.
+     */
+    public function store(
+        Request $request,
+        EcfManagerService $ecfManager,
+        IssuerConfigInterface $issuer
+    ): RedirectResponse {
+        $validated = $request->validate([
+            'student_id' => 'nullable|integer|exists:students,id',
+            'client_name' => 'nullable|string|max:255',
+            'client_rnc' => 'nullable|string|max:30',
+            'issue_date' => 'required|date',
+            'due_date' => 'nullable|date',
+            'status' => 'required|string|in:paid,pending,draft',
+            'ecf_type' => 'nullable|string',
+            'notes' => 'nullable|string|max:1000',
+            'discount' => 'nullable|numeric|min:0',
+            'items' => 'required|array|min:1',
+            'items.*.description' => 'required|string|max:255',
+            'items.*.quantity' => 'required|numeric|min:0.01',
+            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.tax_rate' => 'nullable|numeric|min:0',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $subtotal = 0.0;
+            $taxAmount = 0.0;
+            $descriptions = [];
+            $totalQty = 0;
+
+            foreach ($validated['items'] as $item) {
+                $qty = (float) $item['quantity'];
+                $price = (float) $item['unit_price'];
+                $rate = (float) ($item['tax_rate'] ?? 0);
+                $lineSub = $qty * $price;
+                $lineTax = $lineSub * ($rate / 100.0);
+                $subtotal += $lineSub;
+                $taxAmount += $lineTax;
+                $totalQty += (int) max(1, round($qty));
+                $descriptions[] = trim($item['description']);
+            }
+
+            $discount = (float) ($validated['discount'] ?? 0);
+            $total = max(0.01, ($subtotal - $discount) + $taxAmount);
+            $conceptLabel = implode(', ', array_slice($descriptions, 0, 3));
+
+            $student = !empty($validated['student_id'])
+                ? \App\Models\Student::find($validated['student_id'])
+                : null;
+
+            $buyerName = $validated['client_name']
+                ?: ($student ? trim($student->first_name . ' ' . $student->last_name) : 'Consumidor Final');
+            $buyerRnc = $validated['client_rnc']
+                ?: ($student ? ($student->cedula ?? '') : '');
+
+            $statusMap = [
+                'paid' => 'Pagado',
+                'pending' => 'Pendiente',
+                'draft' => 'Pendiente',
+            ];
+
+            $ncf = null;
+            $ncfType = null;
+            $securityCode = null;
+            $ncfExpiration = null;
+            $dgiiStatus = null;
+
+            if (!empty($validated['ecf_type'])) {
+                $typeInt = (int) preg_replace('/\D/', '', (string) $validated['ecf_type']) ?: 32;
+                $issued = $ecfManager->issueDocument([
+                    'ecf_type' => $typeInt,
+                    'issue_date' => $validated['issue_date'],
+                    'subtotal' => $subtotal,
+                    'discount_amount' => $discount,
+                    'tax_amount' => $taxAmount,
+                    'total' => $total,
+                    'buyer_rnc' => (string) $buyerRnc,
+                    'buyer_name' => (string) $buyerName,
+                    'items' => array_map(fn ($it) => [
+                        'description' => $it['description'],
+                        'quantity' => (float) $it['quantity'],
+                        'unit_price' => (float) $it['unit_price'],
+                        'amount' => (float) $it['quantity'] * (float) $it['unit_price'],
+                        'is_exempt' => ((float) ($it['tax_rate'] ?? 0)) <= 0,
+                        'tax_rate' => (float) ($it['tax_rate'] ?? 0),
+                    ], $validated['items']),
+                ], $issuer, false);
+
+                $ncf = $issued['ncf'];
+                $ncfType = $issued['ncf_type'];
+                $securityCode = $issued['security_code'];
+                $ncfExpiration = $issued['ncf_expiration'];
+                $dgiiStatus = $issued['dgii_status'] ?? 'issued_local';
+            }
+
+            $payment = new Payment([
+                'student_id' => $student?->id,
+                'user_id' => auth()->id(),
+                'amount' => $total,
+                'original_amount' => $subtotal,
+                'discount_amount' => $discount,
+                'currency' => 'DOP',
+                'status' => $statusMap[$validated['status']] ?? 'Pagado',
+                'gateway' => 'Facturación Bills',
+                'transaction_id' => $ncf ?: ('FAC-' . strtoupper(substr(uniqid(), -6))),
+                'ncf' => $ncf,
+                'ncf_type' => $ncfType,
+                'security_code' => $securityCode,
+                'ncf_expiration' => $ncfExpiration,
+                'dgii_status' => $dgiiStatus,
+                'rnc_client' => $buyerRnc,
+                'company_name' => $buyerName,
+                'quantity' => max(1, $totalQty),
+                'concept_label' => $conceptLabel,
+                'notes' => $validated['notes'] ?? null,
+                'due_date' => $validated['due_date'] ?? $validated['issue_date'],
+            ]);
+            $payment->saveQuietly();
+
+            DB::commit();
+
+            return redirect('/admin/finance/invoices')->with('success', 'Factura ' . ($ncf ?: $payment->transaction_id) . ' creada exitosamente.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Error al crear la factura: ' . $e->getMessage());
+        }
     }
 
     /**

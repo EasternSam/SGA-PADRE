@@ -179,6 +179,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
             Route::redirect('/accounting', '/admin/finance/chart-of-accounts');
             Route::get('/finance/dashboard', [FinanceDashboardController::class, 'index'])->name('admin.finance.dashboard');
             Route::get('/finance/invoices', [FinanceInvoiceController::class, 'index'])->name('admin.finance.invoices');
+            Route::post('/finance/invoices', [FinanceInvoiceController::class, 'store'])->name('admin.finance.invoices.store');
             Route::post('/finance/invoices/{payment}/credit-note', [FinanceInvoiceController::class, 'issueCreditNote'])->name('admin.finance.invoices.credit-note');
             Route::post('/finance/invoices/{payment}/void', [FinanceInvoiceController::class, 'voidInvoice'])->name('admin.finance.invoices.void');
             Route::post('/finance/invoices/{payment}/emit-ecf', [FinanceInvoiceController::class, 'emitFiscalNow'])->name('admin.finance.invoices.emit-ecf');

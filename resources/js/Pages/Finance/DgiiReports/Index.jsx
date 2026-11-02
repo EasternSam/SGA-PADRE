@@ -102,7 +102,7 @@ export default function Index({
     const handleLoadPeriod = () => {
         const ym = `${selectedYear}-${selectedMonth}`;
         router.get(
-            route('admin.finance.dgii-reports'),
+            '/admin/finance/dgii-reports',
             { yearMonth: ym },
             { preserveState: true, preserveScroll: true }
         );
@@ -143,7 +143,7 @@ export default function Index({
         try {
             const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             const response = await fetch(
-                route('admin.finance.dgii-reports.prevalidate', { type: currentTab }),
+                `/admin/finance/dgii-reports/${currentTab}/prevalidate`,
                 {
                     method: 'POST',
                     headers: {
@@ -176,17 +176,17 @@ export default function Index({
 
     const handleExportExcel = () => {
         const ym = `${selectedYear}-${selectedMonth}`;
-        window.location.href = `${route('admin.finance.dgii-reports.export-excel', { type: currentTab })}?yearMonth=${ym}`;
+        window.location.href = `/admin/finance/dgii-reports/${currentTab}/export-excel?yearMonth=${ym}`;
     };
 
     const handleExportTxt = () => {
         const ym = `${selectedYear}-${selectedMonth}`;
         if (currentTab === '607') {
-            window.location.href = `${route('admin.finance.dgii-reports.download-607')}?yearMonth=${ym}`;
+            window.location.href = `/admin/finance/dgii-reports/download-607?yearMonth=${ym}`;
         } else if (currentTab === '606') {
-            window.location.href = `${route('admin.finance.dgii-reports.download-606')}?yearMonth=${ym}`;
+            window.location.href = `/admin/finance/dgii-reports/download-606?yearMonth=${ym}`;
         } else if (currentTab === '608') {
-            window.location.href = `${route('admin.finance.dgii-reports.download-608')}?yearMonth=${ym}`;
+            window.location.href = `/admin/finance/dgii-reports/download-608?yearMonth=${ym}`;
         }
     };
 
@@ -510,13 +510,13 @@ export default function Index({
                                     <tbody id="report-tbody">
                                         <tr>
                                             <td colSpan={10} style={{ padding: '0 16px', border: 'none' }}>
-                                                <div style={{ background: 'linear-gradient(135deg,#eff6ff,#dbeafe)', border: '1px solid #93c5fd', borderRadius: '8px', padding: '16px 20px', margin: '12px 0', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                <div className="dgii-info-banner" style={{ borderRadius: '8px', padding: '16px 20px', margin: '12px 0', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
                                                         <circle cx="12" cy="12" r="10" />
                                                         <line x1="12" y1="16" x2="12" y2="12" />
                                                         <line x1="12" y1="8" x2="12.01" y2="8" />
                                                     </svg>
-                                                    <div style={{ fontSize: '13px', color: '#1e40af', lineHeight: 1.5 }}>
+                                                    <div style={{ fontSize: '13px', lineHeight: 1.5 }}>
                                                         <strong>Formato 607 - Ventas de Bienes y Servicios (Norma 07-2018)</strong><br />
                                                         Los emisores electrónicos (e-CF) reportan sus ventas en tiempo real a la DGII. Esta plantilla prellenada en Excel refleja los 23 campos oficiales requeridos por la DGII, incluyendo el desglose de formas de pago.
                                                     </div>

@@ -31,16 +31,16 @@ class SecurityHeaders
         // Prevenir clickjacking (pero permitir iframes de Cardnet)
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
 
-        // CSP: permitir scripts/frames de Cardnet
+        // CSP: permitir scripts/frames de Cardnet, Google Fonts (Inter para Bills) y Cloudflare Insights
         $cardnetDomain = parse_url(config('services.cardnet.base_uri', ''), PHP_URL_HOST) ?: 'lab.cardnet.com.do';
         $response->headers->set(
             'Content-Security-Policy',
             "frame-src 'self' https://*.cardnet.com.do https://{$cardnetDomain}; " .
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.cardnet.com.do https://{$cardnetDomain} https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.bunny.net; " .
-            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://cdnjs.cloudflare.com; " .
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.cardnet.com.do https://{$cardnetDomain} https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.bunny.net https://static.cloudflareinsights.com; " .
+            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://fonts.googleapis.com https://cdnjs.cloudflare.com; " .
             "img-src 'self' data: https: blob:; " .
-            "font-src 'self' https://fonts.bunny.net https://cdnjs.cloudflare.com; " .
-            "connect-src 'self' https://*.cardnet.com.do https://{$cardnetDomain};"
+            "font-src 'self' data: https://fonts.bunny.net https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
+            "connect-src 'self' https://*.cardnet.com.do https://{$cardnetDomain} https://cloudflareinsights.com https://*.cloudflareinsights.com;"
         );
 
         // Prevenir MIME-sniffing
