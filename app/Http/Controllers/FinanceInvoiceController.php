@@ -154,13 +154,12 @@ class FinanceInvoiceController extends Controller
             ]);
 
         $concepts = \App\Models\PaymentConcept::query()
-            ->where('is_active', true)
             ->orderBy('name')
-            ->get(['id', 'name', 'default_amount', 'description'])
+            ->get(['id', 'name', 'amount', 'description'])
             ->map(fn ($c) => [
                 'id' => $c->id,
                 'name' => $c->name,
-                'price' => (float) $c->default_amount,
+                'price' => (float) ($c->amount ?? 0),
                 'description' => $c->description,
             ]);
 
