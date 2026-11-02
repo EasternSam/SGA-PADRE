@@ -65,11 +65,22 @@ class DgiiPrevalidatorService
      * @param iterable $data
      * @return array{isValid: bool, errorsCount: int, warningsCount: int, totalLines: int, issues: array}
      */
-    public function validateData(string $type, iterable $data): array
+    public function validateData(string $type, iterable|string $dataOrRnc, ?string $period = null, ?iterable $records = null): array
     {
+        if ($records !== null) {
+            $rncEmpresa = (string) $dataOrRnc;
+            $periodStr = (string) $period;
+            $data = $records;
+        } else {
+            $rncEmpresa = '101142456';
+            $periodStr = date('Ym');
+            $data = is_iterable($dataOrRnc) ? $dataOrRnc : [];
+        }
+
         $rows = $data instanceof Collection ? $data->values()->all() : array_values((array) $data);
-        $errors = [];
-        $warnings = [];
+        $issues = [];
+        $flatErrors = [];
+        $flatWarnings = [];
         $lineNumber = 1;
 
         foreach ($rows as $row) {
@@ -85,8 +96,15 @@ class DgiiPrevalidatorService
                 $this->validate608Row($row, $lineErrors, $lineWarnings);
             }
 
+            foreach ($lineErrors as $err) {
+                $flatErrors[] = "Línea #{$lineNumber} (NCF: " . ($row['ncf'] ?? 'S/N') . "): {$err}";
+            }
+            foreach ($lineWarnings as $warn) {
+                $flatWarnings[] = "Línea #{$lineNumber} (NCF: " . ($row['ncf'] ?? 'S/N') . "): {$warn}";
+            }
+
             if (!empty($lineErrors) || !empty($lineWarnings)) {
-                $errors[] = [
+                $issues[] = [
                     'line' => $lineNumber,
                     'ncf' => $row['ncf'] ?? 'N/A',
                     'identifier' => $row['rnc_proveedor'] ?? $row['rnc_cliente'] ?? 'N/A',
@@ -99,19 +117,22 @@ class DgiiPrevalidatorService
             $lineNumber++;
         }
 
-        $totalErrors = 0;
-        $totalWarnings = 0;
-        foreach ($errors as $item) {
-            $totalErrors += count($item['errors']);
-            $totalWarnings += count($item['warnings']);
-        }
+        $totalErrors = count($flatErrors);
+        $totalWarnings = count($flatWarnings);
 
         return [
+            'valid' => $totalErrors === 0,
             'isValid' => $totalErrors === 0,
+            'format' => $type,
+            'rnc' => $rncEmpresa,
+            'period' => $periodStr,
+            'record_count' => count($rows),
             'errorsCount' => $totalErrors,
             'warningsCount' => $totalWarnings,
             'totalLines' => count($rows),
-            'issues' => $errors,
+            'errors' => $flatErrors,
+            'warnings' => $flatWarnings,
+            'issues' => $issues,
         ];
     }
 

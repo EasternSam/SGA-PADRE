@@ -196,6 +196,8 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
             Route::get('/finance/period-closing', [AccountingController::class, 'periodClosing'])->name('admin.finance.period-closing');
             Route::post('/finance/period-closing', [AccountingController::class, 'storePeriodClosing'])->name('admin.finance.period-closing.store');
             Route::get('/finance/dgii-reports', [DgiiReportController::class, 'index'])->name('admin.finance.dgii-reports');
+            Route::post('/finance/dgii-reports/{type}/prevalidate', [DgiiReportController::class, 'prevalidate'])->name('admin.finance.dgii-reports.prevalidate');
+            Route::get('/finance/dgii-reports/{type}/export-excel', [DgiiReportController::class, 'exportExcel'])->name('admin.finance.dgii-reports.export-excel');
             Route::get('/finance/dgii-reports/download-606', [DgiiReportController::class, 'download606'])->name('admin.finance.dgii-reports.download-606');
             Route::get('/finance/dgii-reports/download-607', [DgiiReportController::class, 'download607'])->name('admin.finance.dgii-reports.download-607');
             Route::get('/finance/dgii-reports/download-608', [DgiiReportController::class, 'download608'])->name('admin.finance.dgii-reports.download-608');
