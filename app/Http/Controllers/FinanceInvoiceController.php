@@ -143,14 +143,14 @@ class FinanceInvoiceController extends Controller
         ];
 
         $students = \App\Models\Student::query()
-            ->select(['id', 'first_name', 'last_name', 'cedula', 'matricula'])
+            ->select(['id', 'first_name', 'last_name', 'cedula', 'rnc', 'student_code'])
             ->latest('id')
             ->limit(250)
             ->get()
             ->map(fn ($s) => [
                 'id' => $s->id,
                 'name' => trim($s->first_name . ' ' . $s->last_name),
-                'rnc' => $s->cedula ?: $s->matricula ?: '',
+                'rnc' => $s->rnc ?: $s->cedula ?: $s->student_code ?: '',
             ]);
 
         $concepts = \App\Models\PaymentConcept::query()
