@@ -16,6 +16,7 @@ export default function ExpensesIndex({
 }) {
     const [search, setSearch] = useState(filters?.search || '');
     const [statusFilter, setStatusFilter] = useState(filters?.status_filter || '');
+    const [ncfFilter, setNcfFilter] = useState(filters?.ncf_filter || '');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isPayModalOpen, setIsPayModalOpen] = useState(false);
     const [expenseToPay, setExpenseToPay] = useState(null);
@@ -27,6 +28,7 @@ export default function ExpensesIndex({
         supplier_rnc: '',
         supplier_name: '',
         reference_number: '',
+        ncf_mode: 'supplier',
         ncf: '',
         expense_type_606: '02',
         expense_date: new Date().toISOString().split('T')[0],
@@ -49,10 +51,11 @@ export default function ExpensesIndex({
         selected_journal_id: journals?.[0]?.id || '',
     });
 
-    const handleFilter = (newSearch, newStatus) => {
+    const handleFilter = (newSearch, newStatus, newNcfFilter = ncfFilter) => {
         router.get('/admin/finance/expenses', {
             search: newSearch ?? search,
             status_filter: newStatus ?? statusFilter,
+            ncf_filter: newNcfFilter,
         }, {
             preserveState: true,
             preserveScroll: true,
@@ -170,11 +173,11 @@ export default function ExpensesIndex({
                     </div>
                 </header>
 
-                {/* ── TARJETAS DE KPIS ── */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* ── TARJETAS DE KPIS (1:1 Gridbase Bills) ── */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     <div className="bg-white dark:bg-[#161622] rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-gray-800 shadow-xs">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Total Facturado</span>
+                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Total Egresado</span>
                             <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-brand-primary dark:text-blue-400">
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -182,10 +185,27 @@ export default function ExpensesIndex({
                             </div>
                         </div>
                         <div className="mt-3">
-                            <span className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                            <span className="text-lg sm:text-xl font-bold font-mono text-gray-900 dark:text-white">
                                 RD$ {(kpis?.totalExpenses || 0).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
-                            <p className="text-[11px] text-gray-400 mt-0.5">Histórico global de egresos</p>
+                            <p className="text-[11px] text-gray-400 mt-0.5">Gastos del Mes: RD$ {(kpis?.thisMonthExpenses || 0).toLocaleString('es-DO', { minimumFractionDigits: 2 })}</p>
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-[#161622] rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-gray-800 shadow-xs">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">ITBIS Adelantado (606)</span>
+                            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div className="mt-3">
+                            <span className="text-lg sm:text-xl font-bold font-mono text-indigo-600 dark:text-indigo-400">
+                                RD$ {(kpis?.totalItbis || 0).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                            <p className="text-[11px] text-gray-400 mt-0.5">Deducible en declaración IT-1</p>
                         </div>
                     </div>
 
@@ -199,7 +219,7 @@ export default function ExpensesIndex({
                             </div>
                         </div>
                         <div className="mt-3">
-                            <span className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                            <span className="text-lg sm:text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
                                 RD$ {(kpis?.totalPaid || 0).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                             <p className="text-[11px] text-gray-400 mt-0.5">Egresos desembolsados</p>
@@ -216,16 +236,16 @@ export default function ExpensesIndex({
                             </div>
                         </div>
                         <div className="mt-3">
-                            <span className="text-xl sm:text-2xl font-bold text-amber-600 dark:text-amber-400">
+                            <span className="text-lg sm:text-xl font-bold font-mono text-amber-600 dark:text-amber-400">
                                 RD$ {(kpis?.totalPending || 0).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
-                            <p className="text-[11px] text-gray-400 mt-0.5">Deuda por saldar a suplidores</p>
+                            <p className="text-[11px] text-gray-400 mt-0.5">{kpis?.pendingCount || 0} facturas por saldar</p>
                         </div>
                     </div>
 
                     <div className="bg-white dark:bg-[#161622] rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-gray-800 shadow-xs">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Facturas Pendientes</span>
+                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Emitidos E41 / E43</span>
                             <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400">
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -233,10 +253,12 @@ export default function ExpensesIndex({
                             </div>
                         </div>
                         <div className="mt-3">
-                            <span className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                                {kpis?.pendingCount || 0}
+                            <span className="text-lg sm:text-xl font-bold font-mono text-purple-600 dark:text-purple-400">
+                                {(kpis?.e41Count || 0) + (kpis?.e43Count || 0)}
                             </span>
-                            <p className="text-[11px] text-gray-400 mt-0.5">Por procesar en tesorería</p>
+                            <p className="text-[11px] text-gray-400 mt-0.5">
+                                {kpis?.e41Count || 0} Compras E41 · {kpis?.e43Count || 0} Gasto Menor E43
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -276,12 +298,25 @@ export default function ExpensesIndex({
                             )}
                         </div>
 
-                        <div className="w-full sm:w-auto flex items-center gap-3">
+                        <div className="w-full sm:w-auto flex flex-wrap items-center gap-2.5">
+                            <select
+                                value={ncfFilter}
+                                onChange={(e) => {
+                                    setNcfFilter(e.target.value);
+                                    handleFilter(search, statusFilter, e.target.value);
+                                }}
+                                className="px-3 py-2 text-xs bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary text-gray-800 dark:text-gray-200 font-medium"
+                            >
+                                <option value="">Todos los Comprobantes</option>
+                                <option value="e41">Compras Informal (E41 / B11)</option>
+                                <option value="e43">Gastos Menores (E43 / B13)</option>
+                            </select>
+
                             <select
                                 value={statusFilter}
                                 onChange={(e) => {
                                     setStatusFilter(e.target.value);
-                                    handleFilter(search, e.target.value);
+                                    handleFilter(search, e.target.value, ncfFilter);
                                 }}
                                 className="px-3 py-2 text-xs bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary text-gray-800 dark:text-gray-200 font-medium"
                             >
@@ -337,11 +372,22 @@ export default function ExpensesIndex({
 
                                             {/* NCF / Ref */}
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="font-mono font-bold text-gray-900 dark:text-gray-100 text-xs">
-                                                    {expense.ncf || <span className="text-gray-400 font-normal">Sin NCF</span>}
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="font-mono font-bold text-gray-900 dark:text-gray-100 text-xs">
+                                                        {expense.ncf || <span className="text-gray-400 font-normal">Sin NCF</span>}
+                                                    </span>
+                                                    {expense.is_self_issued_ecf && (
+                                                        <a
+                                                            href={`/admin/finance/expenses/${expense.id}/xml`}
+                                                            title="Descargar XML e-CF Emitido (E41/E43)"
+                                                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 hover:bg-purple-200 transition"
+                                                        >
+                                                            XML
+                                                        </a>
+                                                    )}
                                                 </div>
                                                 <div className="font-mono text-[10px] text-gray-400 mt-0.5">
-                                                    Ref: {expense.reference_number || 'N/A'}
+                                                    Ref: {expense.reference_number || 'N/A'} • Tipo {expense.expense_type_606}
                                                 </div>
                                             </td>
 
@@ -548,19 +594,60 @@ export default function ExpensesIndex({
                                 </div>
                             </div>
 
+                            {/* Modo de Comprobante Fiscal (Suplidor vs Auto-Emisión E41 / E43) */}
+                            <div className="p-3 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 space-y-2.5">
+                                <label className="block text-[11px] font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-300">
+                                    Modalidad de Comprobante Fiscal (DGII 606 / e-CF)
+                                </label>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    {[
+                                        { id: 'supplier', title: 'NCF del Suplidor', sub: 'Digitar B01 / E31 recibido' },
+                                        { id: 'e41', title: 'Auto-Emitir E41', sub: 'Proveedor Informal (B11/E41)' },
+                                        { id: 'e43', title: 'Auto-Emitir E43', sub: 'Gasto Menor Caja Chica (B13/E43)' },
+                                    ].map((m) => {
+                                        const active = createForm.data.ncf_mode === m.id;
+                                        return (
+                                            <button
+                                                key={m.id}
+                                                type="button"
+                                                onClick={() => createForm.setData('ncf_mode', m.id)}
+                                                className={`text-left p-2.5 rounded-xl border transition ${
+                                                    active
+                                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                                                        : 'bg-white dark:bg-[#161622] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-indigo-400'
+                                                }`}
+                                            >
+                                                <div className="text-xs font-bold">{m.title}</div>
+                                                <div className={`text-[10px] ${active ? 'text-indigo-100' : 'text-gray-400'}`}>
+                                                    {m.sub}
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
                             {/* NCF, Tipo 606 y Factura Ref */}
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                                         NCF (Comprobante Fiscal)
                                     </label>
-                                    <input
-                                        type="text"
-                                        value={createForm.data.ncf}
-                                        onChange={(e) => createForm.setData('ncf', e.target.value.toUpperCase())}
-                                        placeholder="Ej: B0100000001"
-                                        className="w-full px-3 py-2 text-xs sm:text-sm bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary text-gray-900 dark:text-gray-100 font-mono"
-                                    />
+                                    {createForm.data.ncf_mode === 'supplier' ? (
+                                        <input
+                                            type="text"
+                                            value={createForm.data.ncf}
+                                            onChange={(e) => createForm.setData('ncf', e.target.value.toUpperCase())}
+                                            placeholder="Ej: E310000000001 o B0100000001"
+                                            className="w-full px-3 py-2 text-xs sm:text-sm bg-gray-50/70 dark:bg-[#1a1a2e] border border-gray-200 dark:border-gray-700/60 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary text-gray-900 dark:text-gray-100 font-mono"
+                                        />
+                                    ) : (
+                                        <div className="w-full px-3 py-2 text-xs bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-xl font-mono font-bold text-purple-700 dark:text-purple-300">
+                                            {createForm.data.ncf_mode === 'e41'
+                                                ? '⚡ Se asignará secuencia E41 / B11'
+                                                : '⚡ Se asignará secuencia E43 / B13'}
+                                        </div>
+                                    )}
                                     {createForm.errors.ncf && <p className="text-red-500 text-[11px] mt-1">{createForm.errors.ncf}</p>}
                                 </div>
 

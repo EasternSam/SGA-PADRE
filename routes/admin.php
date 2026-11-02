@@ -17,6 +17,7 @@ use App\Livewire\Admin\DatabaseImport;
 use App\Livewire\Admin\EmailTester;
 use App\Livewire\Admin\FinanceDashboard;
 use App\Http\Controllers\FinanceDashboardController;
+use App\Http\Controllers\FinanceInvoiceController;
 use App\Http\Controllers\PaymentConceptController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\DgiiReportController;
@@ -177,6 +178,11 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
             Route::redirect('/finance', '/admin/finance/dashboard');
             Route::redirect('/accounting', '/admin/finance/chart-of-accounts');
             Route::get('/finance/dashboard', [FinanceDashboardController::class, 'index'])->name('admin.finance.dashboard');
+            Route::get('/finance/invoices', [FinanceInvoiceController::class, 'index'])->name('admin.finance.invoices');
+            Route::post('/finance/invoices/{payment}/credit-note', [FinanceInvoiceController::class, 'issueCreditNote'])->name('admin.finance.invoices.credit-note');
+            Route::post('/finance/invoices/{payment}/void', [FinanceInvoiceController::class, 'voidInvoice'])->name('admin.finance.invoices.void');
+            Route::post('/finance/invoices/{payment}/emit-ecf', [FinanceInvoiceController::class, 'emitFiscalNow'])->name('admin.finance.invoices.emit-ecf');
+            Route::get('/finance/invoices/{payment}/xml', [FinanceInvoiceController::class, 'downloadXml'])->name('admin.finance.invoices.xml');
         });
 
         Route::middleware(['role:Admin|Contabilidad'])->group(function () {
@@ -193,6 +199,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
             Route::post('/finance/expenses', [ExpenseController::class, 'store'])->name('admin.finance.expenses.store');
             Route::post('/finance/expenses/pay', [ExpenseController::class, 'pay'])->name('admin.finance.expenses.pay');
             Route::get('/finance/expenses/lookup-rnc', [ExpenseController::class, 'lookupRnc'])->name('admin.finance.expenses.lookup-rnc');
+            Route::get('/finance/expenses/{expense}/xml', [ExpenseController::class, 'downloadXml'])->name('admin.finance.expenses.xml');
             Route::get('/finance/period-closing', [AccountingController::class, 'periodClosing'])->name('admin.finance.period-closing');
             Route::post('/finance/period-closing', [AccountingController::class, 'storePeriodClosing'])->name('admin.finance.period-closing.store');
             Route::get('/finance/dgii-reports', [DgiiReportController::class, 'index'])->name('admin.finance.dgii-reports');
@@ -267,6 +274,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
         Route::post('/settings/test-wp', [\App\Http\Controllers\AdminSettingsController::class, 'testWordpress'])->name('admin.settings.test-wp');
         Route::post('/settings/test-moodle', [\App\Http\Controllers\AdminSettingsController::class, 'testMoodle'])->name('admin.settings.test-moodle');
         Route::post('/settings/test-bills', [\App\Http\Controllers\AdminSettingsController::class, 'testBills'])->name('admin.settings.test-bills');
+        Route::post('/settings/upload-ecf-cert', [\App\Http\Controllers\AdminSettingsController::class, 'uploadEcfCertificate'])->name('admin.settings.upload-ecf-cert');
     });
 
         // --- PILOTO INERTIA + REACT: TERMINAL DE CAJA (POS) ---

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Models\NcfSequence;
 use App\Models\ActivityLog;
 use App\Support\BrandingDefaults;
 use App\Services\WordpressApiService;
@@ -87,11 +88,19 @@ class AdminSettingsController extends Controller
             'bills_api_token' => $allSettings['bills_api_token'] ?? '',
             'bills_default_tax_rate' => $allSettings['bills_default_tax_rate'] ?? '18',
 
-            // Pasarelas & DGII
+            // Pasarelas & DGII (Gridbase Bills Core)
             'cardnet_merchant_id' => $allSettings['cardnet_merchant_id'] ?? env('CARDNET_MERCHANT_ID', ''),
             'cardnet_terminal_id' => $allSettings['cardnet_terminal_id'] ?? env('CARDNET_TERMINAL_ID', ''),
-            'enable_electronic_billing' => ($allSettings['enable_electronic_billing'] ?? 'false') === 'true' || ($allSettings['enable_electronic_billing'] ?? '') === '1',
-            'ecf_rnc_emisor' => $allSettings['ecf_rnc_emisor'] ?? '101000000',
+            'enable_electronic_billing' => ($allSettings['enable_electronic_billing'] ?? 'true') === 'true' || ($allSettings['enable_electronic_billing'] ?? '') === '1',
+            'ecf_rnc_emisor' => $allSettings['ecf_rnc_emisor'] ?? '101142456',
+            'ecf_razon_social' => $allSettings['ecf_razon_social'] ?? ($branding['name'] ?? ''),
+            'ecf_nombre_comercial' => $allSettings['ecf_nombre_comercial'] ?? ($branding['name'] ?? ''),
+            'ecf_municipio' => $allSettings['ecf_municipio'] ?? '010100',
+            'ecf_provincia' => $allSettings['ecf_provincia'] ?? '010000',
+            'ecf_environment' => $allSettings['ecf_environment'] ?? 'testing',
+            'ecf_certificate_path' => $allSettings['ecf_certificate_path'] ?? '',
+            'ecf_certificate_password' => $allSettings['ecf_certificate_password'] ?? '',
+            'ecf_ncf_expiry_date' => $allSettings['ecf_ncf_expiry_date'] ?? '2028-12-31',
 
             // Servidor SMTP
             'smtp_host' => $allSettings['smtp_host'] ?? env('MAIL_HOST', ''),
@@ -102,8 +111,26 @@ class AdminSettingsController extends Controller
             'smtp_from_address' => $allSettings['smtp_from_address'] ?? env('MAIL_FROM_ADDRESS', 'no-reply@institucion.edu'),
         ];
 
+        NcfSequence::ensureDefaults();
+        $ncfSequences = NcfSequence::orderBy('type_code')->get()->map(function ($seq) {
+            $padLen = strtoupper((string) $seq->series) === 'B' ? 8 : 10;
+            $nextNum = $seq->current_sequence + 1;
+            return [
+                'id' => $seq->id,
+                'name' => $seq->name,
+                'type_code' => $seq->type_code,
+                'series' => $seq->series,
+                'current_sequence' => (int) $seq->current_sequence,
+                'limit_sequence' => (int) $seq->limit_sequence,
+                'expiration_date' => $seq->expiration_date ? $seq->expiration_date->format('Y-m-d') : '2028-12-31',
+                'is_active' => (bool) $seq->is_active,
+                'preview_next' => strtoupper((string) $seq->series) . $seq->type_code . str_pad((string) $nextNum, $padLen, '0', STR_PAD_LEFT),
+            ];
+        });
+
         return Inertia::render('Admin/Settings/Index', [
             'settings' => $settings,
+            'ncfSequences' => $ncfSequences,
             'pairingCode' => $pairingCode,
             'pairingCodeExpiresAt' => $pairingExpiresAt,
             'apiBaseUrl' => url('/api'),
@@ -153,11 +180,20 @@ class AdminSettingsController extends Controller
             'bills_api_token' => 'nullable|string|max:255',
             'bills_default_tax_rate' => 'nullable|string|max:10',
 
-            // Finance / Cardnet / DGII
+            // Finance / Cardnet / DGII (Gridbase Bills Core)
             'cardnet_merchant_id' => 'nullable|string|max:50',
             'cardnet_terminal_id' => 'nullable|string|max:50',
             'enable_electronic_billing' => 'nullable|boolean',
             'ecf_rnc_emisor' => 'nullable|string|max:20',
+            'ecf_razon_social' => 'nullable|string|max:255',
+            'ecf_nombre_comercial' => 'nullable|string|max:255',
+            'ecf_municipio' => 'nullable|string|max:10',
+            'ecf_provincia' => 'nullable|string|max:10',
+            'ecf_environment' => 'nullable|string|in:testing,certification,production',
+            'ecf_certificate_path' => 'nullable|string|max:255',
+            'ecf_certificate_password' => 'nullable|string|max:255',
+            'ecf_ncf_expiry_date' => 'nullable|string|max:20',
+            'ncf_sequences' => 'nullable|array',
 
             // SMTP
             'smtp_host' => 'nullable|string|max:255',
@@ -173,6 +209,9 @@ class AdminSettingsController extends Controller
                 $validated['navbar_gradient_start'] = $validated['brand_primary_color'];
             }
         }
+
+        $sequencesPayload = $validated['ncf_sequences'] ?? null;
+        unset($validated['ncf_sequences']);
 
         foreach ($validated as $key => $value) {
             $group = 'general';
@@ -193,6 +232,23 @@ class AdminSettingsController extends Controller
             }
 
             Setting::set($key, $valStr, $group, $type);
+        }
+
+        if (is_array($sequencesPayload)) {
+            foreach ($sequencesPayload as $seqItem) {
+                if (!empty($seqItem['id'])) {
+                    $seqModel = NcfSequence::find($seqItem['id']);
+                    if ($seqModel) {
+                        $seqModel->update([
+                            'series' => strtoupper(substr(trim((string) ($seqItem['series'] ?? 'E')), 0, 1)) ?: 'E',
+                            'current_sequence' => max(0, (int) ($seqItem['current_sequence'] ?? 0)),
+                            'limit_sequence' => max(1, (int) ($seqItem['limit_sequence'] ?? 5000)),
+                            'expiration_date' => !empty($seqItem['expiration_date']) ? $seqItem['expiration_date'] : '2028-12-31',
+                            'is_active' => isset($seqItem['is_active']) ? (bool) $seqItem['is_active'] : true,
+                        ]);
+                    }
+                }
+            }
         }
 
         // Webhook: sync branding to WordPress if configured
@@ -364,5 +420,45 @@ class AdminSettingsController extends Controller
             Log::error('AdminSettingsController@testBills Error: ' . $e->getMessage());
             return back()->with('error', 'Error de conexión con Gridbase Bills: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Subir certificado digital .p12 / .pfx para firma de e-CF (Gridbase Bills Core).
+     */
+    public function uploadEcfCertificate(Request $request)
+    {
+        $request->validate([
+            'certificate' => 'required|file|max:5120',
+            'password' => 'nullable|string|max:255',
+        ]);
+
+        $file = $request->file('certificate');
+        $ext = strtolower($file->getClientOriginalExtension());
+        if (!in_array($ext, ['p12', 'pfx'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El archivo debe tener extensión .p12 o .pfx.',
+            ], 422);
+        }
+
+        $secureDir = storage_path('app/secure');
+        if (!is_dir($secureDir)) {
+            @mkdir($secureDir, 0755, true);
+        }
+
+        $filename = 'ecf_cert_' . date('Ymd_His') . '.' . $ext;
+        $file->move($secureDir, $filename);
+
+        Setting::set('ecf_certificate_path', $filename, 'finance', 'string');
+        if ($request->filled('password')) {
+            Setting::set('ecf_certificate_password', (string) $request->input('password'), 'finance', 'string');
+        }
+        Cache::flush();
+
+        return response()->json([
+            'success' => true,
+            'filename' => $filename,
+            'message' => "Certificado digital ({$filename}) almacenado exitosamente en storage/app/secure/.",
+        ]);
     }
 }

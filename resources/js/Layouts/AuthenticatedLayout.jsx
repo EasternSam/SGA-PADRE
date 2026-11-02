@@ -283,6 +283,7 @@ function resolveSectionTitle(explicitTitle, rawUrl = '', institutionName = 'Acad
         { prefix: '/admin/attendance', label: 'Pase de Lista y Asistencia' },
         { prefix: '/admin/pos', label: 'Terminal de Caja' },
         { prefix: '/admin/finance/dashboard', label: 'Panel Financiero' },
+        { prefix: '/admin/finance/invoices', label: 'Facturas y Comprobantes e-CF' },
         { prefix: '/admin/finance/payment-concepts', label: 'Conceptos de Pago' },
         { prefix: '/admin/finance/chart-of-accounts', label: 'Catálogo de Cuentas' },
         { prefix: '/admin/finance/manual-entry', label: 'Asiento Contable Manual' },
@@ -974,6 +975,17 @@ function AuthenticatedContent({ title, children }) {
                                             <path d="M2.25 18a.75.75 0 0 0 0 1.5c5.4 0 10.63.722 15.6 2.075 1.19.324 2.4-.558 2.4-1.82V18.75a.75.75 0 0 0-.75-.75H2.25Z" />
                                         </svg>
                                         <span>Panel Financiero</span>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton 
+                                        href="/admin/finance/invoices" 
+                                        isActive={isActive('/admin/finance/invoices')}
+                                        tooltip="Facturas / e-CF"
+                                    >
+                                        <Receipt className="h-[18px] w-[18px] shrink-0 text-white/80" />
+                                        <span>Facturas / e-CF</span>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
 
