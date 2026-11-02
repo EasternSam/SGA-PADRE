@@ -151,7 +151,7 @@ class FinanceInvoiceController extends Controller
                 'enabled' => $issuer->isElectronicBillingEnabled(),
                 'environment' => $issuer->getEnvironment(),
                 'emitter_rnc' => $issuer->getEmitterRnc(),
-                'emitter_name' => $issuer->getEmitterRazonSocial(),
+                'emitter_name' => $issuer->getEmitterName(),
                 'has_certificate' => $issuer->hasActiveCertificate(),
             ],
         ]);
