@@ -121,12 +121,9 @@ class HandleInertiaRequests extends Middleware
             return '/portal-aspirante';
         }
 
-        if (str_starts_with($url, '/admin/students/profile/')) {
-            $studentId = trim(substr($url, strlen('/admin/students/profile/')), '/');
-            if ($studentId !== '') {
-                return "/admin/students/{$studentId}/profile";
-            }
-            return '/admin/students';
+        // Formato legado invertido (/admin/students/{id}/profile) → ruta real /admin/students/profile/{id}
+        if (preg_match('#^/admin/students/(\d+)/profile/?$#', $url, $m)) {
+            return "/admin/students/profile/{$m[1]}";
         }
 
         return $url;

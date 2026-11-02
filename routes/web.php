@@ -325,13 +325,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return redirect()->route('dashboard');
     })->name('portal.redirect');
 
-    Route::get('/admin/students/profile/{studentId}', function ($studentId) {
-        if (\App\Models\Student::where('id', $studentId)->exists()) {
-            return redirect("/admin/students/{$studentId}/profile");
-        }
-        return redirect('/admin/students');
-    })->name('admin.students.profile.legacy');
-
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::get('/notifications', \App\Livewire\NotificationsList::class)->name('notifications.index');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
