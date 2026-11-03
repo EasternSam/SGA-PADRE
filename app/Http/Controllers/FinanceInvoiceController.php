@@ -617,7 +617,7 @@ class FinanceInvoiceController extends Controller
 
         $signedXmlPath = 'signed_ecf/' . $effectiveEncf . '.xml';
 
-        $invoiceObj = (object) [
+        $invoiceObj = new \Illuminate\Support\Fluent([
             'id' => $payment->id,
             'number' => $ncf !== '' ? $ncf : ($payment->transaction_id ?: ('FAC-' . str_pad((string) $payment->id, 6, '0', STR_PAD_LEFT))),
             'is_ecf' => true,
@@ -647,9 +647,9 @@ class FinanceInvoiceController extends Controller
             'change_amount' => (float) ($request->query('change_amount', 0)),
             'gateway' => $payment->gateway ?: 'Efectivo / Caja',
             'cashier' => $payment->user->name ?? 'Caja Institucional',
-        ];
+        ]);
 
-        $companyObj = (object) [
+        $companyObj = new \Illuminate\Support\Fluent([
             'name' => $companyName,
             'rnc' => $companyRnc,
             'address' => $companyAddress,
@@ -657,26 +657,26 @@ class FinanceInvoiceController extends Controller
             'email' => $companyEmail,
             'logo' => $logoBase64,
             'dgii_env' => $dgiiEnv,
-        ];
+        ]);
 
-        $clientObj = (object) [
+        $clientObj = new \Illuminate\Support\Fluent([
             'name' => $buyerName,
             'rnc' => $buyerRnc,
             'tax_id' => $buyerRnc,
             'email' => $payment->student->email ?? '',
             'phone' => $payment->student->mobile_phone ?? ($payment->student->home_phone ?? ''),
             'address' => $payment->student ? ('Matrícula / Código: ' . ($payment->student->student_code ?: $payment->student->id)) : '',
-        ];
+        ]);
 
         $items = [
-            (object) [
+            new \Illuminate\Support\Fluent([
                 'name' => $conceptName,
                 'description' => $conceptName,
                 'quantity' => $quantity,
                 'price' => $unitPrice,
                 'total' => $amount,
                 'tax_Category' => $taxAmount > 0 ? 'ITBIS18' : 'E',
-            ],
+            ]),
         ];
 
         $settings = [
