@@ -20,6 +20,7 @@
         "laravel/sanctum": "^4.1",
         "laravel/tinker": "^2.10.1",
         "livewire/livewire": "^3.6",
+        "phpoffice/phpspreadsheet": "^5.10",
         "spatie/laravel-activitylog": "^4.12",
         "spatie/laravel-permission": "^6.23",
         "tightenco/ziggy": "^2.6"

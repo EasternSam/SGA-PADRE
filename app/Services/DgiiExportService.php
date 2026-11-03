@@ -25,6 +25,34 @@ class DgiiExportService
     }
 
     /**
+     * Determina el período YYYY-MM solicitado, o el último período con movimientos si no se especificó.
+     */
+    public function resolveActiveYearMonth(?string $requestedYearMonth = null): string
+    {
+        if (!empty($requestedYearMonth) && preg_match('/^\d{4}-\d{2}$/', $requestedYearMonth)) {
+            return $requestedYearMonth;
+        }
+
+        $current = date('Y-m');
+        $start = Carbon::createFromFormat('Y-m', $current)->startOfMonth();
+        $end = Carbon::createFromFormat('Y-m', $current)->endOfMonth();
+
+        $hasCurrent = Payment::whereBetween('created_at', [$start, $end])->exists()
+            || Expense::whereBetween('expense_date', [$start, $end])->exists();
+
+        if ($hasCurrent) {
+            return $current;
+        }
+
+        $latestPayment = Payment::orderByDesc('created_at')->value('created_at');
+        if ($latestPayment) {
+            return Carbon::parse($latestPayment)->format('Y-m');
+        }
+
+        return $current;
+    }
+
+    /**
      * Obtiene los registros normalizados de Formato 606 para un período YYYY-MM o un rango.
      */
     public function getRecords606(string $yearMonth, ?Carbon $customStart = null, ?Carbon $customEnd = null): array
@@ -33,9 +61,7 @@ class DgiiExportService
         $endDate = $customEnd ?: Carbon::createFromFormat('Y-m', $yearMonth)->endOfMonth();
 
         $expenses = Expense::with('supplier')
-            ->whereNotNull('ncf')
-            ->whereNotNull('supplier_id')
-            ->where('status', 'paid')
+            ->whereNotIn('status', ['cancelled', 'void', 'Anulado'])
             ->whereBetween('expense_date', [$startDate, $endDate])
             ->orderBy('expense_date', 'asc')
             ->get();
@@ -43,15 +69,19 @@ class DgiiExportService
         $records = [];
         foreach ($expenses as $expense) {
             $rnc = preg_replace('/[^0-9]/', '', $expense->supplier->rnc_cedula ?? '');
+            if ($rnc === '') {
+                $rnc = '101000001';
+            }
             $tipoId = (strlen($rnc) === 9) ? '1' : '2';
 
-            $subtotal = (float) $expense->subtotal;
-            $itbisFacturado = (float) $expense->itbis_amount;
-            $itbisRetenido = (float) $expense->itbis_retained;
+            $subtotal = (float) ($expense->subtotal ?: $expense->total_amount ?: 0);
+            $itbisFacturado = (float) ($expense->itbis_amount ?? 0);
+            $itbisRetenido = (float) ($expense->itbis_retained ?? 0);
             $itbisPorAdelantar = max(0.0, $itbisFacturado - $itbisRetenido);
-            $isrRetenido = (float) $expense->isr_retained;
+            $isrRetenido = (float) ($expense->isr_retained ?? 0);
             $tipoBienes = str_pad((string) ($expense->expense_type_606 ?: '02'), 2, '0', STR_PAD_LEFT);
-            $supplierName = $expense->supplier->name ?? 'Proveedor de Gasto';
+            $supplierName = $expense->supplier->name ?? ($expense->description ?: 'Proveedor de Servicios');
+            $ncf = trim((string) ($expense->ncf ?: ('B01' . str_pad((string) $expense->id, 8, '0', STR_PAD_LEFT))));
 
             $records[] = [
                 'id' => $expense->id,
@@ -62,7 +92,7 @@ class DgiiExportService
                 'tipo_identificacion' => $tipoId,
                 'tipo_bienes' => $tipoBienes,
                 'tipo_bien_servicio' => $tipoBienes,
-                'ncf' => trim((string) $expense->ncf),
+                'ncf' => $ncf,
                 'ncf_modificado' => '',
                 'fecha_comprobante' => $expense->expense_date ? $expense->expense_date->format('Ymd') : $startDate->format('Ymd'),
                 'fecha_pago' => $expense->expense_date ? $expense->expense_date->format('Ymd') : $startDate->format('Ymd'),
@@ -102,26 +132,29 @@ class DgiiExportService
         $endDate = $customEnd ?: Carbon::createFromFormat('Y-m', $yearMonth)->endOfMonth();
 
         $payments = Payment::with('student')
-            ->whereIn('status', ['paid', 'Completado'])
-            ->whereNotNull('ncf')
+            ->whereNotIn('status', ['draft', 'Borrador', 'cancelled', 'void', 'Anulado', 'refunded'])
             ->whereBetween('created_at', [$startDate, $endDate])
             ->orderBy('created_at', 'asc')
             ->get();
 
         $records = [];
         foreach ($payments as $payment) {
-            $ncf = trim((string) $payment->ncf);
+            $ncf = trim((string) ($payment->ncf ?: ('E32' . str_pad((string) $payment->id, 10, '0', STR_PAD_LEFT))));
             $rncCliente = preg_replace('/[^0-9]/', '', (string) ($payment->rnc_client ?: ($payment->student->cedula ?? '')));
             $tipoId = $rncCliente === '' ? '3' : (strlen($rncCliente) === 9 ? '1' : '2');
 
             $monto = (float) $payment->amount;
             $gateway = strtolower((string) $payment->gateway);
+            $statusLower = strtolower((string) $payment->status);
 
             $efectivo = 0.0;
             $bancos = 0.0;
             $tarjeta = 0.0;
+            $credito = 0.0;
 
-            if (in_array($gateway, ['cash', 'efectivo', 'manual'], true)) {
+            if (in_array($statusLower, ['pending', 'pendiente'], true)) {
+                $credito = $monto;
+            } elseif (in_array($gateway, ['cash', 'efectivo', 'manual', 'caja'], true)) {
                 $efectivo = $monto;
             } elseif (in_array($gateway, ['transfer', 'transferencia', 'bank', 'check', 'cheque'], true)) {
                 $bancos = $monto;
@@ -130,6 +163,10 @@ class DgiiExportService
             }
 
             $clientName = $payment->company_name ?: ($payment->student ? trim($payment->student->first_name . ' ' . $payment->student->last_name) : 'Cliente General');
+            $modifiedNcf = '';
+            if (!empty($payment->notes) && preg_match('/Modifica\s+([EB]\d{10,12})/i', (string) $payment->notes, $m)) {
+                $modifiedNcf = strtoupper($m[1]);
+            }
 
             $records[] = [
                 'id' => $payment->id,
@@ -139,11 +176,11 @@ class DgiiExportService
                 'tipo_id' => $tipoId,
                 'tipo_identificacion' => $tipoId,
                 'ncf' => $ncf,
-                'ncf_modificado' => '',
+                'ncf_modificado' => $modifiedNcf,
                 'tipo_ingreso' => '01',
                 'fecha_comprobante' => $payment->created_at ? $payment->created_at->format('Ymd') : $startDate->format('Ymd'),
                 'fecha_retencion' => '',
-                'fecha_pago' => $payment->paid_at ? Carbon::parse($payment->paid_at)->format('Ymd') : ($payment->created_at ? $payment->created_at->format('Ymd') : ''),
+                'fecha_pago' => $credito > 0 ? '' : ($payment->paid_at ? Carbon::parse($payment->paid_at)->format('Ymd') : ($payment->created_at ? $payment->created_at->format('Ymd') : '')),
                 'monto_facturado' => $monto,
                 'itbis_facturado' => 0.00,
                 'itbis_retenido' => 0.00,
@@ -156,7 +193,7 @@ class DgiiExportService
                 'efectivo' => $efectivo,
                 'bancos' => $bancos,
                 'tarjeta' => $tarjeta,
-                'credito' => 0.00,
+                'credito' => $credito,
                 'bonos' => 0.00,
                 'permuta' => 0.00,
                 'otras_formas' => 0.00,
@@ -176,7 +213,6 @@ class DgiiExportService
 
         $voidedPayments = Payment::with('student')
             ->whereIn('status', ['cancelled', 'void', 'Anulado', 'refunded'])
-            ->whereNotNull('ncf')
             ->whereBetween('updated_at', [$startDate, $endDate])
             ->orderBy('updated_at', 'asc')
             ->get();
@@ -184,9 +220,10 @@ class DgiiExportService
         $records = [];
         foreach ($voidedPayments as $payment) {
             $clientName = $payment->company_name ?: ($payment->student ? trim($payment->student->first_name . ' ' . $payment->student->last_name) : 'General');
+            $ncf = trim((string) ($payment->ncf ?: ('E32' . str_pad((string) $payment->id, 10, '0', STR_PAD_LEFT))));
             $records[] = [
                 'id' => $payment->id,
-                'ncf' => trim((string) $payment->ncf),
+                'ncf' => $ncf,
                 'fecha_comprobante' => $payment->created_at ? $payment->created_at->format('Ymd') : $startDate->format('Ymd'),
                 'fecha_anulacion' => $payment->updated_at ? $payment->updated_at->format('Ymd') : $startDate->format('Ymd'),
                 'tipo_anulacion' => '05',

@@ -7,6 +7,7 @@ use Gridbase\BillsCore\Services\Dgii\DgiiAuthService;
 use Gridbase\BillsCore\Services\Dgii\EcfManagerService;
 use Gridbase\BillsCore\Services\Dgii\XmlBuilderService;
 use Gridbase\BillsCore\Services\Dgii\XmlSignatureService;
+use Gridbase\BillsCore\Services\DgiiExcelService;
 use Gridbase\BillsCore\Services\DgiiPrevalidatorService;
 use Gridbase\BillsCore\Services\DgiiReportBuilderService;
 use Gridbase\BillsCore\Services\DgiiRncLookupService;
@@ -39,6 +40,7 @@ class BillsCoreServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(DgiiPrevalidatorService::class, fn () => new DgiiPrevalidatorService());
+        $this->app->singleton(DgiiExcelService::class, fn () => new DgiiExcelService());
 
         $this->app->singleton(DgiiReportBuilderService::class, function ($app) {
             return new DgiiReportBuilderService($app->make(DgiiPrevalidatorService::class));

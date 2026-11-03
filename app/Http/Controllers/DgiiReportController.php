@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\DgiiExportService;
 use Gridbase\BillsCore\BillsCoreServiceProvider;
 use Gridbase\BillsCore\Contracts\IssuerConfigInterface;
+use Gridbase\BillsCore\Services\DgiiExcelService;
 use Gridbase\BillsCore\Services\DgiiPrevalidatorService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,7 +15,7 @@ class DgiiReportController extends Controller
 {
     public function index(Request $request, DgiiExportService $exporter, IssuerConfigInterface $issuer): Response
     {
-        $yearMonth = $request->input('yearMonth', date('Y-m'));
+        $yearMonth = $exporter->resolveActiveYearMonth($request->input('yearMonth'));
 
         $analysis = $exporter->getFullTaxAnalysis($yearMonth);
 
@@ -71,43 +72,86 @@ class DgiiReportController extends Controller
         return response()->json($result);
     }
 
-    public function exportExcel(Request $request, string $type, IssuerConfigInterface $issuer)
-    {
-        $yearMonth = (string) $request->input('yearMonth', date('Y-m'));
-        $period = str_replace('-', '', $yearMonth);
-        $year = substr($period, 0, 4);
+    public function exportExcel(
+        Request $request,
+        string $type,
+        DgiiExportService $exporter,
+        DgiiExcelService $excelService,
+        IssuerConfigInterface $issuer
+    ) {
+        $yearMonth = $exporter->resolveActiveYearMonth($request->input('yearMonth'));
+        [$year, $month] = array_pad(explode('-', $yearMonth), 2, date('m'));
+        $period = "{$year}{$month}";
         $rnc = preg_replace('/[^0-9]/', '', $issuer->getEmitterRnc());
+        $normType = strtolower($type);
 
-        $templateMap = [
-            '606' => ['file' => 'Formato_DGII_606.xls', 'download' => "DGII_606_{$rnc}_{$period}.xls", 'mime' => 'application/vnd.ms-excel'],
-            '607' => ['file' => 'Formato_DGII_607.xls', 'download' => "DGII_607_{$rnc}_{$period}.xls", 'mime' => 'application/vnd.ms-excel'],
-            '608' => ['file' => 'Formato_DGII_608.xls', 'download' => "DGII_608_{$rnc}_{$period}.xls", 'mime' => 'application/vnd.ms-excel'],
-            'it1' => ['file' => 'IT-1-2020.xls', 'download' => "DGII_IT1_{$rnc}_{$period}.xls", 'mime' => 'application/vnd.ms-excel'],
-            'ir2' => ['file' => 'IR-2-2026.xls', 'download' => "DGII_IR2_{$rnc}_{$year}.xls", 'mime' => 'application/vnd.ms-excel'],
-            'dss' => ['file' => 'DSS-07.xls', 'download' => "DGII_DSS07_{$rnc}_{$period}.xls", 'mime' => 'application/vnd.ms-excel'],
-            'daf' => ['file' => 'DAF.xls', 'download' => "DGII_DAF_{$rnc}_{$year}.xls", 'mime' => 'application/vnd.ms-excel'],
-            'rs1' => ['file' => 'RS1-2021.xlsx', 'download' => "DGII_RS1_{$rnc}_{$year}.xlsx", 'mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
-            'rs2' => ['file' => 'RS2-2021.xlsx', 'download' => "DGII_RS2_{$rnc}_{$year}.xlsx", 'mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
-            'rs3' => ['file' => 'RS3-2021.xlsx', 'download' => "DGII_RS3_{$rnc}_{$year}.xlsx", 'mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
-            'rs4' => ['file' => 'RS4-2021.xlsx', 'download' => "DGII_RS4_{$rnc}_{$year}.xlsx", 'mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
-        ];
+        $analysis = $exporter->getFullTaxAnalysis($yearMonth);
+        $isXlsx = in_array($normType, ['rs1', 'rs2', 'rs3', 'rs4'], true);
 
-        $cfg = $templateMap[strtolower($type)] ?? $templateMap['607'];
-        $templatePath = resource_path('templates/dgii/' . $cfg['file']);
+        switch ($normType) {
+            case '606':
+                $spreadsheet = $excelService->generate606Excel($rnc, $period, $analysis['records606']);
+                $filename = "DGII_606_{$rnc}_{$period}.xls";
+                break;
 
-        if (file_exists($templatePath)) {
-            return response()->download($templatePath, $cfg['download'], [
-                'Content-Type' => $cfg['mime'],
-                'Cache-Control' => 'max-age=0',
-            ]);
+            case '608':
+                $spreadsheet = $excelService->generate608Excel($rnc, $period, $analysis['records608']);
+                $filename = "DGII_608_{$rnc}_{$period}.xls";
+                break;
+
+            case 'it1':
+                $spreadsheet = $excelService->generateIt1Excel($analysis['it1Declaration']);
+                $filename = "DGII_IT1_{$rnc}_{$period}.xls";
+                break;
+
+            case 'ir2':
+                $spreadsheet = $excelService->generateIr2Excel($analysis['ir2Declaration']);
+                $filename = "DGII_IR2_{$rnc}_{$year}.xls";
+                break;
+
+            case 'dss':
+                $spreadsheet = $excelService->generateDssExcel($analysis['otherDeclarations']['dss'] ?? [], $year, $month);
+                $filename = "DGII_DSS07_{$rnc}_{$period}.xls";
+                break;
+
+            case 'daf':
+                $spreadsheet = $excelService->generateDafExcel($analysis['otherDeclarations']['daf'] ?? []);
+                $filename = "DGII_DAF_{$rnc}_{$year}.xls";
+                break;
+
+            case 'rs1':
+            case 'rs2':
+            case 'rs3':
+            case 'rs4':
+                $spreadsheet = $excelService->generateRstExcel($normType, $analysis['otherDeclarations'][$normType] ?? []);
+                $filename = 'DGII_' . strtoupper($normType) . "_{$rnc}_{$year}.xlsx";
+                break;
+
+            case '607':
+            default:
+                $spreadsheet = $excelService->generate607Excel($rnc, $period, $analysis['records607']);
+                $filename = "DGII_607_{$rnc}_{$period}.xls";
+                break;
         }
 
-        return abort(404, 'Plantilla oficial DGII no encontrada.');
+        $mime = $isXlsx
+            ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            : 'application/vnd.ms-excel';
+
+        return response()->streamDownload(function () use ($spreadsheet, $isXlsx) {
+            $writer = $isXlsx
+                ? new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet)
+                : new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => $mime,
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
 
     public function download606(Request $request, DgiiExportService $exporter)
     {
-        $yearMonth = $request->input('yearMonth', date('Y-m'));
+        $yearMonth = $exporter->resolveActiveYearMonth($request->input('yearMonth'));
         $result = $exporter->generate606($yearMonth);
 
         return response()->streamDownload(function () use ($result) {
@@ -117,7 +161,7 @@ class DgiiReportController extends Controller
 
     public function download607(Request $request, DgiiExportService $exporter)
     {
-        $yearMonth = $request->input('yearMonth', date('Y-m'));
+        $yearMonth = $exporter->resolveActiveYearMonth($request->input('yearMonth'));
         $result = $exporter->generate607($yearMonth);
 
         return response()->streamDownload(function () use ($result) {
@@ -127,7 +171,7 @@ class DgiiReportController extends Controller
 
     public function download608(Request $request, DgiiExportService $exporter)
     {
-        $yearMonth = $request->input('yearMonth', date('Y-m'));
+        $yearMonth = $exporter->resolveActiveYearMonth($request->input('yearMonth'));
         $result = $exporter->generate608($yearMonth);
 
         return response()->streamDownload(function () use ($result) {
