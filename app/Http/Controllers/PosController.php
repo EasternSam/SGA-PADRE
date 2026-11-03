@@ -122,7 +122,7 @@ class PosController extends Controller
      * Genera el comprobante térmico de 80mm (o A4 si ?template=normal) en PDF vía DomPDF
      * usando las plantillas oficiales de Gridbase Bills con código QR DGII inyectado.
      */
-    public function receiptPdf(Request $request, Payment $payment, \App\Services\Core\Contracts\IssuerConfigInterface $issuer): HttpResponse
+    public function receiptPdf(Request $request, Payment $payment, \Gridbase\BillsCore\Contracts\IssuerConfigInterface $issuer): HttpResponse
     {
         if (!$request->has('template')) {
             $request->merge(['template' => 'thermal']);

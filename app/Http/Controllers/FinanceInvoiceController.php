@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Payment;
+use App\Models\Setting;
 use Gridbase\BillsCore\Contracts\IssuerConfigInterface;
 use Gridbase\BillsCore\Services\Dgii\EcfManagerService;
 use Gridbase\BillsCore\Services\Dgii\XmlBuilderService;
@@ -575,10 +576,11 @@ class FinanceInvoiceController extends Controller
         $view = $isThermal ? 'pdf.invoice_thermal' : 'pdf.invoice';
 
         $ncf = (string) ($payment->ncf ?? '');
-        $isEcf = $ncf !== '' && str_starts_with(strtoupper($ncf), 'E');
+        $effectiveEncf = $ncf !== '' ? $ncf : ('E32' . str_pad((string) $payment->id, 10, '0', STR_PAD_LEFT));
+        $isEcf = str_starts_with(strtoupper($effectiveEncf), 'E');
         $ecfTypeCode = $payment->ncf_type
             ? (string) $payment->ncf_type
-            : ($isEcf && strlen($ncf) >= 3 ? substr($ncf, 1, 2) : ($ncf !== '' ? substr($ncf, 0, 3) : '32'));
+            : ($isEcf && strlen($effectiveEncf) >= 3 ? substr($effectiveEncf, 1, 2) : ($ncf !== '' ? substr($ncf, 0, 3) : '32'));
 
         $amount = (float) ($payment->amount ?? 0);
         $subtotal = (float) ($payment->original_amount ?: $amount);
@@ -597,7 +599,7 @@ class FinanceInvoiceController extends Controller
             ?: ($payment->notes ?: 'Servicio Educativo');
 
         $securityCode = $payment->security_code
-            ?: ($ncf !== '' ? strtoupper(substr(md5($ncf . '-' . $payment->id), 0, 6)) : null);
+            ?: strtoupper(substr(md5($effectiveEncf . '-' . $payment->id), 0, 6));
 
         $modifiedNcf = null;
         if (!empty($payment->notes) && preg_match('/Modifica\s+([EB]\d{10,12})/i', (string) $payment->notes, $m)) {
@@ -612,15 +614,15 @@ class FinanceInvoiceController extends Controller
         $companyEmail = (string) Setting::get('institution_email', '');
         $dgiiEnv = $issuer->getEnvironment() ?: 'TesteCF';
 
-        $signedXmlPath = $ncf !== '' ? ('signed_ecf/' . $ncf . '.xml') : null;
+        $signedXmlPath = 'signed_ecf/' . $effectiveEncf . '.xml';
 
         $invoiceObj = (object) [
             'id' => $payment->id,
             'number' => $ncf !== '' ? $ncf : ($payment->transaction_id ?: ('FAC-' . str_pad((string) $payment->id, 6, '0', STR_PAD_LEFT))),
-            'is_ecf' => $isEcf || $ncf !== '',
+            'is_ecf' => true,
             'ecf_type' => $ecfTypeCode,
-            'encf' => $ncf !== '' ? $ncf : null,
-            'ncf' => $ncf !== '' ? $ncf : null,
+            'encf' => $effectiveEncf,
+            'ncf' => $effectiveEncf,
             'security_code' => $securityCode,
             'signed_at' => $payment->created_at ?? now(),
             'signed_xml_path' => $signedXmlPath,
