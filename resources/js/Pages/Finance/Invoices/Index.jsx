@@ -571,8 +571,8 @@ export default function FinanceInvoicesIndex({
                                                                     type="button"
                                                                     className="btn-icon"
                                                                     style={{ width: '28px', height: '28px' }}
-                                                                    title="Imprimir Ticket Térmico (2Connect)"
-                                                                    onClick={() => window.open(`/admin/pos/receipt/${inv.id}/pdf`, '_blank')}
+                                                                    title="Imprimir Ticket Térmico (80mm con QR)"
+                                                                    onClick={() => window.open(`/admin/finance/invoices/${inv.id}/pdf?template=thermal`, '_blank')}
                                                                 >
                                                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                                         <path d="M6 9V2h12v7" />
@@ -581,12 +581,12 @@ export default function FinanceInvoicesIndex({
                                                                     </svg>
                                                                 </button>
                                                                 <a
-                                                                    href={`/admin/pos/receipt/${inv.id}/pdf`}
+                                                                    href={`/admin/finance/invoices/${inv.id}/pdf?template=normal&download=1`}
                                                                     target="_blank"
                                                                     rel="noreferrer"
                                                                     className="btn btn-secondary"
                                                                     style={{ padding: '4px 8px', fontSize: '11px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}
-                                                                    title="Descargar PDF"
+                                                                    title="Descargar PDF (Carta/A4 con QR)"
                                                                 >
                                                                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -1081,7 +1081,7 @@ export default function FinanceInvoicesIndex({
                                         <button
                                             type="button"
                                             className="btn btn-primary btn-sm"
-                                            onClick={() => window.open(`/admin/pos/receipt/${selectedInvoice.id}/pdf`, '_blank')}
+                                            onClick={() => window.open(`/admin/finance/invoices/${selectedInvoice.id}/pdf?template=thermal`, '_blank')}
                                             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1094,7 +1094,7 @@ export default function FinanceInvoicesIndex({
                                         <button
                                             type="button"
                                             className="btn btn-secondary btn-sm"
-                                            onClick={() => window.print()}
+                                            onClick={() => window.open(`/admin/finance/invoices/${selectedInvoice.id}/pdf?template=normal`, '_blank')}
                                             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1105,7 +1105,7 @@ export default function FinanceInvoicesIndex({
                                             Imprimir A4
                                         </button>
                                         <a
-                                            href={`/admin/pos/receipt/${selectedInvoice.id}/pdf`}
+                                            href={`/admin/finance/invoices/${selectedInvoice.id}/pdf?template=normal&download=1`}
                                             target="_blank"
                                             rel="noreferrer"
                                             className="btn btn-secondary btn-sm"
@@ -1117,6 +1117,20 @@ export default function FinanceInvoicesIndex({
                                                 <line x1="12" y1="15" x2="12" y2="3" />
                                             </svg>
                                             Descargar PDF
+                                        </a>
+                                        <a
+                                            href={`/admin/finance/invoices/${selectedInvoice.id}/pdf?template=thermal&download=1`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="btn btn-secondary btn-sm"
+                                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                                <polyline points="7 10 12 15 17 10" />
+                                                <line x1="12" y1="15" x2="12" y2="3" />
+                                            </svg>
+                                            Descargar Ticket
                                         </a>
                                         <button
                                             type="button"

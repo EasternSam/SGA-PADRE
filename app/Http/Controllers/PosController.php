@@ -119,18 +119,16 @@ class PosController extends Controller
     }
 
     /**
-     * Genera el comprobante térmico de 80mm en PDF vía DomPDF.
+     * Genera el comprobante térmico de 80mm (o A4 si ?template=normal) en PDF vía DomPDF
+     * usando las plantillas oficiales de Gridbase Bills con código QR DGII inyectado.
      */
-    public function receiptPdf(Payment $payment): HttpResponse
+    public function receiptPdf(Request $request, Payment $payment, \App\Services\Core\Contracts\IssuerConfigInterface $issuer): HttpResponse
     {
-        $payment->load(['student', 'paymentConcept', 'user']);
+        if (!$request->has('template')) {
+            $request->merge(['template' => 'thermal']);
+        }
 
-        $pdf = Pdf::loadView('reports.pos-receipt-pdf', [
-            'receipt' => $this->presenter->present($payment),
-            'issuer' => $this->presenter->issuer(),
-        ])->setPaper([0, 0, 226.77, 560], 'portrait');
-
-        return $pdf->stream('recibo_pos_' . str_pad((string) $payment->id, 6, '0', STR_PAD_LEFT) . '.pdf');
+        return app(FinanceInvoiceController::class)->downloadPdf($request, $payment, $issuer);
     }
 
     private function studentOption(Student $s): array

@@ -12,8 +12,11 @@ export default function ReceiptModal({
 }) {
     if (!isOpen || !receipt) return null;
 
-    const handlePrint = () => {
-        window.open(`/admin/pos/receipt/${receipt.id}/pdf`, '_blank');
+    const handlePrint = (template = 'thermal') => {
+        const params = new URLSearchParams({ template });
+        if (receipt.cash_received) params.set('cash_received', String(receipt.cash_received));
+        if (receipt.change_amount) params.set('change_amount', String(receipt.change_amount));
+        window.open(`/admin/pos/receipt/${receipt.id}/pdf?${params.toString()}`, '_blank');
     };
 
     const isPendingNcf = receipt.ncf_status === 'pending' || !receipt.ncf;
@@ -200,11 +203,19 @@ export default function ReceiptModal({
                 <div className="flex items-center justify-end gap-2 border-t border-neutral-100 dark:border-[#262626] p-4 bg-neutral-50/50 dark:bg-[#1f1f1f]/50 print:hidden">
                     <button
                         type="button"
-                        onClick={handlePrint}
-                        className="flex items-center gap-1.5 rounded-xl border border-neutral-300 dark:border-[#333333] hover:bg-neutral-100 dark:hover:bg-[#262626] px-4 py-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 transition-colors"
+                        onClick={() => handlePrint('normal')}
+                        className="flex items-center gap-1.5 rounded-xl border border-neutral-300 dark:border-[#333333] hover:bg-neutral-100 dark:hover:bg-[#262626] px-3 py-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 transition-colors"
                     >
                         <Printer className="h-4 w-4" />
-                        <span>Imprimir</span>
+                        <span>PDF Carta (QR)</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handlePrint('thermal')}
+                        className="flex items-center gap-1.5 rounded-xl border border-neutral-300 dark:border-[#333333] hover:bg-neutral-100 dark:hover:bg-[#262626] px-3 py-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 transition-colors"
+                    >
+                        <Printer className="h-4 w-4" />
+                        <span>Ticket 80mm (QR)</span>
                     </button>
                     <button
                         type="button"

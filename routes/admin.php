@@ -184,6 +184,7 @@ Route::middleware(['auth', 'role:Admin|Registro|Contabilidad|Caja'])->prefix('ad
             Route::post('/finance/invoices/{payment}/void', [FinanceInvoiceController::class, 'voidInvoice'])->name('admin.finance.invoices.void');
             Route::post('/finance/invoices/{payment}/emit-ecf', [FinanceInvoiceController::class, 'emitFiscalNow'])->name('admin.finance.invoices.emit-ecf');
             Route::get('/finance/invoices/{payment}/xml', [FinanceInvoiceController::class, 'downloadXml'])->name('admin.finance.invoices.xml');
+            Route::get('/finance/invoices/{payment}/pdf', [FinanceInvoiceController::class, 'downloadPdf'])->name('admin.finance.invoices.pdf');
         });
 
         Route::middleware(['role:Admin|Contabilidad'])->group(function () {

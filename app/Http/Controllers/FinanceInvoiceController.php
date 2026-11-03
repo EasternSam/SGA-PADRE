@@ -558,4 +558,180 @@ class FinanceInvoiceController extends Controller
             'Content-Disposition' => 'attachment; filename="' . $ncf . '.xml"',
         ]);
     }
+
+    /**
+     * Genera la Representación Impresa (RI) PDF oficial de Gridbase Bills (Carta/A4 o Ticket Térmico 80mm/58mm)
+     * con inyección de código QR DGII (`ConsultaTimbre` / `ConsultaTimbreFC`), Código de Seguridad y Fecha de Firma.
+     */
+    public function downloadPdf(
+        Request $request,
+        Payment $payment,
+        IssuerConfigInterface $issuer
+    ): HttpResponse {
+        $payment->loadMissing(['student', 'paymentConcept', 'user']);
+
+        $template = (string) $request->query('template', 'normal');
+        $isThermal = str_starts_with($template, 'thermal');
+        $view = $isThermal ? 'pdf.invoice_thermal' : 'pdf.invoice';
+
+        $ncf = (string) ($payment->ncf ?? '');
+        $isEcf = $ncf !== '' && str_starts_with(strtoupper($ncf), 'E');
+        $ecfTypeCode = $payment->ncf_type
+            ? (string) $payment->ncf_type
+            : ($isEcf && strlen($ncf) >= 3 ? substr($ncf, 1, 2) : ($ncf !== '' ? substr($ncf, 0, 3) : '32'));
+
+        $amount = (float) ($payment->amount ?? 0);
+        $subtotal = (float) ($payment->original_amount ?: $amount);
+        $discount = (float) ($payment->discount_amount ?? 0);
+        $taxAmount = max(0.0, round($amount - ($subtotal - $discount), 2));
+        $quantity = max(1, (int) ($payment->quantity ?? 1));
+        $unitPrice = round($subtotal / $quantity, 2);
+
+        $studentName = $payment->student
+            ? trim(($payment->student->first_name ?? '') . ' ' . ($payment->student->last_name ?? ''))
+            : null;
+        $buyerName = $payment->company_name ?: ($studentName ?: 'Consumidor Final');
+        $buyerRnc = $payment->rnc_client ?: ($payment->student->cedula ?? '');
+        $conceptName = $payment->concept_label
+            ?: ($payment->paymentConcept->name ?? null)
+            ?: ($payment->notes ?: 'Servicio Educativo');
+
+        $securityCode = $payment->security_code
+            ?: ($ncf !== '' ? strtoupper(substr(md5($ncf . '-' . $payment->id), 0, 6)) : null);
+
+        $modifiedNcf = null;
+        if (!empty($payment->notes) && preg_match('/Modifica\s+([EB]\d{10,12})/i', (string) $payment->notes, $m)) {
+            $modifiedNcf = strtoupper($m[1]);
+        }
+
+        $logoBase64 = $this->resolveInstitutionLogoBase64();
+        $companyRnc = $issuer->getRnc() ?: (string) Setting::get('institution_rnc', '101000001');
+        $companyName = $issuer->getCompanyName() ?: (string) Setting::get('institution_name', 'ACADEMIC+ INSTITUCIÓN EDUCATIVA');
+        $companyAddress = $issuer->getAddress() ?: (string) Setting::get('institution_address', 'Santo Domingo, República Dominicana');
+        $companyPhone = (string) Setting::get('institution_phone', '');
+        $companyEmail = (string) Setting::get('institution_email', '');
+        $dgiiEnv = $issuer->getEnvironment() ?: 'TesteCF';
+
+        $signedXmlPath = $ncf !== '' ? ('signed_ecf/' . $ncf . '.xml') : null;
+
+        $invoiceObj = (object) [
+            'id' => $payment->id,
+            'number' => $ncf !== '' ? $ncf : ($payment->transaction_id ?: ('FAC-' . str_pad((string) $payment->id, 6, '0', STR_PAD_LEFT))),
+            'is_ecf' => $isEcf || $ncf !== '',
+            'ecf_type' => $ecfTypeCode,
+            'encf' => $ncf !== '' ? $ncf : null,
+            'ncf' => $ncf !== '' ? $ncf : null,
+            'security_code' => $securityCode,
+            'signed_at' => $payment->created_at ?? now(),
+            'signed_xml_path' => $signedXmlPath,
+            'qr_url' => null,
+            'issue_date' => $payment->created_at ? $payment->created_at->format('Y-m-d') : now()->format('Y-m-d'),
+            'due_date' => $payment->due_date
+                ? \Illuminate\Support\Carbon::parse($payment->due_date)->format('Y-m-d')
+                : ($payment->ncf_expiration ? $payment->ncf_expiration->format('Y-m-d') : null),
+            'created_at' => $payment->created_at ?? now(),
+            'currency' => $payment->currency ?: 'DOP',
+            'status' => strtolower((string) ($payment->status ?? 'paid')),
+            'subtotal' => $subtotal,
+            'discount' => 0,
+            'discount_amount' => $discount,
+            'tax_pct' => $subtotal > 0 && $taxAmount > 0 ? round(($taxAmount / $subtotal) * 100, 2) : 0,
+            'tax_amount' => $taxAmount,
+            'total' => $amount,
+            'notes' => $payment->notes,
+            'modified_ncf' => $modifiedNcf,
+            'cash_received' => (float) ($request->query('cash_received', 0)),
+            'change_amount' => (float) ($request->query('change_amount', 0)),
+            'gateway' => $payment->gateway ?: 'Efectivo / Caja',
+            'cashier' => $payment->user->name ?? 'Caja Institucional',
+        ];
+
+        $companyObj = (object) [
+            'name' => $companyName,
+            'rnc' => $companyRnc,
+            'address' => $companyAddress,
+            'phone' => $companyPhone,
+            'email' => $companyEmail,
+            'logo' => $logoBase64,
+            'dgii_env' => $dgiiEnv,
+        ];
+
+        $clientObj = (object) [
+            'name' => $buyerName,
+            'rnc' => $buyerRnc,
+            'tax_id' => $buyerRnc,
+            'email' => $payment->student->email ?? '',
+            'phone' => $payment->student->mobile_phone ?? ($payment->student->home_phone ?? ''),
+            'address' => $payment->student ? ('Matrícula / Código: ' . ($payment->student->student_code ?: $payment->student->id)) : '',
+        ];
+
+        $items = [
+            (object) [
+                'name' => $conceptName,
+                'description' => $conceptName,
+                'quantity' => $quantity,
+                'price' => $unitPrice,
+                'total' => $amount,
+                'tax_Category' => $taxAmount > 0 ? 'ITBIS18' : 'E',
+            ],
+        ];
+
+        $settings = [
+            'invoice_template' => $template,
+            'invoice_footer_text' => (string) Setting::get('receipt_footer_note', 'Gracias por su pago. Representación Impresa generada por Gridbase Bills.'),
+            'terms' => 'Documento emitido conforme a las normativas de Comprobantes Fiscales Electrónicos (e-CF) de la DGII.',
+        ];
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($view, [
+            'invoice' => $invoiceObj,
+            'company' => $companyObj,
+            'client' => $clientObj,
+            'items' => $items,
+            'settings' => $settings,
+        ]);
+
+        if ($isThermal) {
+            $paperWidth = $template === 'thermal_58mm' ? 164.41 : 226.77;
+            $pdf->setPaper([0, 0, $paperWidth, 680], 'portrait');
+        } else {
+            $pdf->setPaper('a4', 'portrait');
+        }
+
+        $docIdentifier = $ncf !== '' ? $ncf : ('FAC-' . str_pad((string) $payment->id, 6, '0', STR_PAD_LEFT));
+        $suffix = $isThermal ? '_ticket' : '';
+        $filename = "Factura_{$docIdentifier}{$suffix}.pdf";
+
+        if ($request->boolean('download')) {
+            return $pdf->download($filename);
+        }
+
+        return $pdf->stream($filename);
+    }
+
+    /**
+     * Obtiene el logo institucional en formato data URI Base64 para incrustarlo de forma segura en DomPDF.
+     */
+    private function resolveInstitutionLogoBase64(): ?string
+    {
+        $candidates = [];
+        $settingLogo = Setting::get('institution_logo');
+        if (!empty($settingLogo)) {
+            $clean = ltrim(preg_replace('#^https?://[^/]+/#', '', (string) $settingLogo), '/');
+            $candidates[] = public_path($clean);
+            $candidates[] = storage_path('app/public/' . preg_replace('#^storage/#', '', $clean));
+        }
+        $candidates[] = public_path('branding/academic-logo.png');
+
+        foreach ($candidates as $path) {
+            if ($path && is_file($path) && is_readable($path)) {
+                $mime = mime_content_type($path) ?: 'image/png';
+                $raw = @file_get_contents($path);
+                if ($raw !== false && $raw !== '') {
+                    return 'data:' . $mime . ';base64,' . base64_encode($raw);
+                }
+            }
+        }
+
+        return null;
+    }
 }
