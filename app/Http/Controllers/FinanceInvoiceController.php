@@ -607,11 +607,12 @@ class FinanceInvoiceController extends Controller
         }
 
         $logoBase64 = $this->resolveInstitutionLogoBase64();
-        $companyRnc = $issuer->getRnc() ?: (string) Setting::get('institution_rnc', '101000001');
-        $companyName = $issuer->getCompanyName() ?: (string) Setting::get('institution_name', 'ACADEMIC+ INSTITUCIÓN EDUCATIVA');
-        $companyAddress = $issuer->getAddress() ?: (string) Setting::get('institution_address', 'Santo Domingo, República Dominicana');
-        $companyPhone = (string) Setting::get('institution_phone', '');
-        $companyEmail = (string) Setting::get('institution_email', '');
+        $issuerCfg = $issuer->toSettingsArray();
+        $companyRnc = $issuer->getEmitterRnc();
+        $companyName = $issuer->getEmitterName();
+        $companyAddress = (string) ($issuerCfg['company_address'] ?? 'Santo Domingo, República Dominicana');
+        $companyPhone = (string) ($issuerCfg['company_phone'] ?? '');
+        $companyEmail = (string) ($issuerCfg['company_email'] ?? '');
         $dgiiEnv = $issuer->getEnvironment() ?: 'TesteCF';
 
         $signedXmlPath = 'signed_ecf/' . $effectiveEncf . '.xml';
