@@ -200,4 +200,56 @@ class PosCheckoutTest extends TestCase
             ->assertOk()
             ->assertJsonCount(0);
     }
+
+    public function test_can_generate_student_debt_from_pos_and_blocks_walk_in_debt(): void
+    {
+        $this->assertRejects('student_id', [
+            'walk_in' => true,
+            'student_id' => null,
+            'operation_type' => 'debt',
+        ]);
+
+        $dueDate = now()->addDays(15)->toDateString();
+        $debt = $this->checkout([
+            'operation_type' => 'debt',
+            'payment_concept_id' => $this->variable->id,
+            'unit_amount' => 2500,
+            'quantity' => 1,
+            'due_date' => $dueDate,
+            'gateway' => null,
+        ]);
+
+        $this->assertSame('Pendiente', $debt->status);
+        $this->assertEquals(2500.00, (float) $debt->amount);
+        $this->assertSame($dueDate, $debt->due_date?->toDateString());
+        $this->assertEquals(2500.00, (float) $this->student->fresh()->balance);
+    }
+
+    public function test_can_settle_existing_pending_debt_from_pos(): void
+    {
+        $debt = $this->checkout([
+            'operation_type' => 'debt',
+            'payment_concept_id' => $this->fixed->id,
+            'quantity' => 1,
+        ]);
+
+        $this->assertSame('Pendiente', $debt->status);
+        $this->assertSame(1, Payment::count());
+
+        $settled = $this->checkout([
+            'operation_type' => 'charge',
+            'pending_payment_id' => $debt->id,
+            'payment_concept_id' => $this->fixed->id,
+            'quantity' => 1,
+            'gateway' => 'Efectivo',
+            'cash_received' => 500,
+            'ncf_type' => 'B02',
+        ]);
+
+        $this->assertSame($debt->id, $settled->id);
+        $this->assertSame(1, Payment::count());
+        $this->assertSame('Completado', $settled->status);
+        $this->assertEquals(100.00, (float) $settled->change_amount);
+        $this->assertEquals(0.00, (float) $this->student->fresh()->balance);
+    }
 }

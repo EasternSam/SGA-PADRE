@@ -6,7 +6,7 @@ use App\Models\Payment;
 use App\Models\Setting;
 
 /**
- * Representación única de un cobro para el POS (recibo, historial, cierre de caja).
+ * Representación única de un cobro o cargo para el POS (recibo, historial, cierre de caja).
  * Nunca fabrica datos fiscales: si no hay NCF, lo reporta como pendiente.
  */
 class PosReceiptPresenter
@@ -16,11 +16,13 @@ class PosReceiptPresenter
         $payment->loadMissing(['student', 'paymentConcept', 'user']);
         $student = $payment->student;
         $isWalkIn = $student?->isWalkIn() ?? false;
+        $isDebt = in_array($payment->status, ['Pendiente', 'pending', 'Vencido', 'Parcial'], true);
 
         return [
             'id' => $payment->id,
             'date' => $payment->created_at?->format('d/m/Y h:i A'),
             'time' => $payment->created_at?->format('h:i A'),
+            'due_date' => $payment->due_date?->format('d/m/Y'),
             'concept' => $payment->concept_label ?: ($payment->paymentConcept?->name ?? 'Cobro'),
             'quantity' => (int) ($payment->quantity ?? 1),
             'subtotal' => (float) ($payment->original_amount ?? $payment->amount),
@@ -30,6 +32,7 @@ class PosReceiptPresenter
             'cash_received' => $payment->cash_received === null ? null : (float) $payment->cash_received,
             'change_amount' => $payment->change_amount === null ? null : (float) $payment->change_amount,
             'status' => $payment->status,
+            'is_debt' => $isDebt,
             'notes' => $payment->notes,
             'ncf' => $payment->ncf ?: null,
             'ncf_status' => $payment->ncf ? 'issued' : 'pending',

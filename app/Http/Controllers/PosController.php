@@ -8,7 +8,6 @@ use App\Models\PaymentConcept;
 use App\Models\Student;
 use App\Services\Pos\PosCheckoutService;
 use App\Services\Pos\PosReceiptPresenter;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -96,7 +95,7 @@ class PosController extends Controller
     }
 
     /**
-     * Registra el cobro. Respuesta siempre JSON: 201 con el recibo, 422 con errores por campo.
+     * Registra el cobro o genera la deuda en cuenta. Respuesta siempre JSON: 201 con el recibo/cargo, 422 con errores por campo.
      */
     public function process(ProcessPosPaymentRequest $request, PosCheckoutService $checkout): JsonResponse
     {
@@ -105,16 +104,24 @@ class PosController extends Controller
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {
-            Log::error('POS: error registrando cobro', ['user_id' => $request->user()?->id, 'exception' => $e]);
+            Log::error('POS: error registrando operación', ['user_id' => $request->user()?->id, 'exception' => $e]);
 
             return response()->json([
-                'message' => 'El cobro no quedó registrado en el sistema. Intente de nuevo o contacte a soporte.',
+                'message' => 'La operación no quedó registrada en el sistema. Intente de nuevo o contacte a soporte.',
             ], 500);
         }
 
+        $isDebt = in_array($payment->status, ['Pendiente', 'pending'], true);
+        $updatedStudent = ($payment->student && !$payment->student->isWalkIn())
+            ? $this->studentOption($payment->student->fresh())
+            : null;
+
         return response()->json([
-            'message' => "Cobro #{$payment->id} registrado.",
+            'message' => $isDebt
+                ? "Deuda #{$payment->id} generada en la cuenta del estudiante."
+                : "Cobro #{$payment->id} registrado.",
             'receipt' => $this->presenter->present($payment),
+            'student' => $updatedStudent,
         ], 201);
     }
 
@@ -133,6 +140,27 @@ class PosController extends Controller
 
     private function studentOption(Student $s): array
     {
+        $pendingPayments = Payment::with('paymentConcept')
+            ->where('student_id', $s->id)
+            ->whereIn('status', ['Pendiente', 'pending', 'Vencido', 'Parcial'])
+            ->orderBy('due_date')
+            ->get()
+            ->map(fn (Payment $p) => [
+                'id' => $p->id,
+                'payment_concept_id' => $p->payment_concept_id,
+                'concept' => $p->concept_label ?: ($p->paymentConcept?->name ?? 'Cargo Académico'),
+                'concept_label' => $p->concept_label,
+                'quantity' => (int) ($p->quantity ?: 1),
+                'amount' => (float) $p->amount,
+                'original_amount' => (float) ($p->original_amount ?: $p->amount),
+                'discount_amount' => (float) ($p->discount_amount ?? 0),
+                'due_date' => $p->due_date?->format('d/m/Y') ?? 'Sin vencimiento',
+                'status' => $p->status,
+                'notes' => $p->notes,
+            ])
+            ->values()
+            ->all();
+
         return [
             'id' => $s->id,
             'name' => $s->full_name,
@@ -140,6 +168,8 @@ class PosController extends Controller
             'cedula' => $s->cedula,
             'email' => $s->email,
             'phone' => $s->mobile_phone ?: $s->home_phone,
+            'balance' => (float) collect($pendingPayments)->sum('amount'),
+            'pending_payments' => $pendingPayments,
         ];
     }
 }
