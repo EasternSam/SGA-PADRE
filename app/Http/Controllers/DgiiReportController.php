@@ -139,10 +139,13 @@ class DgiiReportController extends Controller
             : 'application/vnd.ms-excel';
 
         return response()->streamDownload(function () use ($spreadsheet, $isXlsx) {
+            while (ob_get_level() > 0) {
+                @ob_end_clean();
+            }
             $writer = $isXlsx
                 ? new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet)
                 : new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
-            $writer->save('php://output');
+            @$writer->save('php://output');
         }, $filename, [
             'Content-Type' => $mime,
             'Cache-Control' => 'max-age=0',
