@@ -435,6 +435,7 @@ export default function StudentsIndex({
                             >
                                 <option value="all">Todos los estados</option>
                                 <option value="Activo">Activos</option>
+                                <option value="Prospecto">Prospectos</option>
                                 <option value="Inactivo">Inactivos</option>
                                 <option value="Suspendido">Suspendidos</option>
                             </select>
@@ -571,7 +572,7 @@ export default function StudentsIndex({
                                                 <td className="px-3 py-4">
                                                     <span
                                                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                            student.status === 'Activo'
+                                                            student.status === 'Activo' || student.status === 'Activa'
                                                                 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
                                                                 : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
                                                         }`}

@@ -507,7 +507,7 @@ export default function CoursesIndex({
                                                         {c.name}
                                                     </h4>
                                                     <p className="text-[11px] text-gray-500 mt-1">
-                                                        {c.modules_count || 0} módulos • Inscripción: DOP ${Number(c.registration_fee || 0).toLocaleString()}
+                                                        {c.modules_count || 0} módulos • {c.students_count || 0} inscritos • Inscripción: DOP ${Number(c.registration_fee || 0).toLocaleString()}
                                                     </p>
 
                                                     {/* INSIGNIAS DE INTEGRACIÓN */}
@@ -768,6 +768,28 @@ export default function CoursesIndex({
                                                     <div>Horario: {sch.start_time} - {sch.end_time}</div>
                                                     <div>Aula: {sch.classroom_name} ({sch.modality})</div>
                                                 </div>
+
+                                                {Array.isArray(sch.enrolled_students) && sch.enrolled_students.length > 0 && (
+                                                    <div className="pt-1.5 border-t border-gray-200/60 dark:border-gray-800">
+                                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">
+                                                            Estudiantes Inscritos ({sch.enrolled_students.length}):
+                                                        </p>
+                                                        <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                                                            {sch.enrolled_students.map((st) => (
+                                                                <Link
+                                                                    key={st.id}
+                                                                    href={`/admin/students/profile/${st.id}`}
+                                                                    className="inline-flex items-center gap-1 rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-2 py-0.5 text-[10px] font-medium text-gray-700 dark:text-gray-200 hover:border-brand-primary hover:text-brand-primary transition"
+                                                                >
+                                                                    <span>{st.name}</span>
+                                                                    {st.student_code && (
+                                                                        <span className="font-mono text-[9px] text-gray-400">({st.student_code})</span>
+                                                                    )}
+                                                                </Link>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                                 {/* INSIGNIAS DE INTEGRACIÓN EN SECCIÓN */}
                                                 {(sch.moodle_course_id || sch.mapping) && (

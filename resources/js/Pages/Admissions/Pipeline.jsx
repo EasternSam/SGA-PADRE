@@ -30,10 +30,12 @@ export default function AdmissionsPipeline({
     // Document review local state
     const [tempDocStatus, setTempDocStatus] = useState({});
     const [reviewNotes, setReviewNotes] = useState('');
+    const [selectedCourseId, setSelectedCourseId] = useState('');
 
     const openReviewModal = (admission) => {
         setSelectedAdmission(admission);
         setReviewNotes(admission.notes || '');
+        setSelectedCourseId(admission.course_id ? String(admission.course_id) : '');
 
         const initialDocStatus = { ...(admission.document_status || {}) };
         const docs = admission.documents || {};
@@ -67,8 +69,9 @@ export default function AdmissionsPipeline({
 
     const handleApprove = () => {
         if (!selectedAdmission) return;
-        if (confirm(`¿Confirmas la admisión oficial de ${selectedAdmission.first_name} ${selectedAdmission.last_name}? Se formalizará su cuenta de estudiante y orden de pago.`)) {
+        if (confirm(`¿Confirmas la admisión oficial de ${selectedAdmission.first_name} ${selectedAdmission.last_name}? Se formalizará su cuenta de estudiante Activo y quedará inscrito en el curso o carrera.`)) {
             router.post(`/admin/admissions/${selectedAdmission.id}/approve`, {
+                course_id: selectedCourseId || selectedAdmission.course_id,
                 document_status: tempDocStatus,
                 notes: reviewNotes,
             }, {
@@ -375,13 +378,24 @@ export default function AdmissionsPipeline({
                                                 </td>
 
                                                 <td className="py-3 px-4 text-right">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openReviewModal(item)}
-                                                        className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 text-brand-primary dark:text-blue-300 font-semibold text-xs transition"
-                                                    >
-                                                        Examinar
-                                                    </button>
+                                                    <div className="inline-flex items-center gap-2 justify-end">
+                                                        {item.status === 'approved' && item.user?.student?.id && (
+                                                            <Link
+                                                                href={`/admin/students/profile/${item.user.student.id}`}
+                                                                className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-semibold text-xs transition"
+                                                                title={`Matrícula: ${item.user.student.student_code || 'Activo'}`}
+                                                            >
+                                                                Ver Expediente ({item.user.student.student_code || 'Activo'})
+                                                            </Link>
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openReviewModal(item)}
+                                                            className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 text-brand-primary dark:text-blue-300 font-semibold text-xs transition"
+                                                        >
+                                                            Examinar
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         );
@@ -451,6 +465,23 @@ export default function AdmissionsPipeline({
                                 <div><span className="text-gray-400">Promedio / GPA:</span> <strong>{selectedAdmission.previous_gpa || 'N/A'}</strong></div>
                                 <div><span className="text-gray-400">Lugar de Trabajo:</span> <strong>{selectedAdmission.work_place || 'No indicado'}</strong></div>
                                 <div><span className="text-gray-400">Condición Médica / Salud:</span> <strong>{selectedAdmission.disease || 'Ninguna'}</strong></div>
+                            </div>
+                            <div className="sm:col-span-2 pt-2 border-t border-gray-200/70 dark:border-gray-800">
+                                <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+                                    Curso o Carrera de Inscripción:
+                                </label>
+                                <select
+                                    value={selectedCourseId}
+                                    onChange={e => setSelectedCourseId(e.target.value)}
+                                    className="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-white dark:bg-[#161622] text-xs px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-primary"
+                                >
+                                    <option value="">— Seleccionar Curso / Carrera —</option>
+                                    {courses.map(c => (
+                                        <option key={c.id} value={c.id}>
+                                            {c.name} ({c.code}) — {c.program_type === 'degree' ? 'Carrera Universitaria' : 'Curso Técnico'}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
 

@@ -61,6 +61,25 @@ class Course extends Model
         return $this->hasManyThrough(\App\Models\CourseSchedule::class, \App\Models\Module::class);
     }
 
+    /**
+     * Estudiantes asignados directamente a este curso o carrera.
+     */
+    public function students(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Student::class, 'course_id');
+    }
+
+    /**
+     * Consulta de inscripciones (Enrollments) en las secciones de este curso/carrera.
+     */
+    public function enrollments()
+    {
+        return \App\Models\Enrollment::whereIn(
+            'course_schedule_id',
+            $this->schedules()->select('course_schedules.id')
+        );
+    }
+
 
 
     // ====================================================================

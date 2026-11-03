@@ -57,11 +57,18 @@ class StudentController extends Controller
         }
 
         if ($status !== 'all' && !empty($status)) {
-            $query->where('status', $status);
+            if ($status === 'Activo') {
+                $query->whereIn('status', ['Activo', 'Activa']);
+            } else {
+                $query->where('status', $status);
+            }
         }
 
         if ($courseId !== 'all' && !empty($courseId)) {
-            $query->where('course_id', $courseId);
+            $query->where(function ($q) use ($courseId) {
+                $q->where('course_id', $courseId)
+                  ->orWhereHas('enrollments.courseSchedule.module', fn($mq) => $mq->where('course_id', $courseId));
+            });
         }
 
         $students = $query->orderBy('id', 'desc')->paginate(15)->withQueryString();
@@ -69,7 +76,7 @@ class StudentController extends Controller
         // Métricas clave para los KPI cards
         $metrics = [
             'total' => Student::count(),
-            'active' => Student::where('status', 'Activo')->count(),
+            'active' => Student::whereIn('status', ['Activo', 'Activa'])->count(),
             'scholarships' => Student::whereNotNull('scholarship_id')->count(),
             'with_debt' => Payment::where('status', 'Pendiente')->distinct('student_id')->count('student_id'),
         ];

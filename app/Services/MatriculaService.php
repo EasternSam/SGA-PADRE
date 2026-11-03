@@ -32,8 +32,8 @@ class MatriculaService
         Log::info("{$traceId} INICIO: Procesando generación de matrícula para Pago ID: {$payment->id}");
 
         // Verificación 1: Estado del pago
-        if ($payment->status !== 'Completado') {
-            Log::warning("{$traceId} ABORTADO: El pago no está en estado 'Completado'. Estado actual: {$payment->status}");
+        if (!\App\Enums\PaymentStatus::isPaid($payment->status ?? '')) {
+            Log::warning("{$traceId} ABORTADO: El pago no está en estado pagado/completado. Estado actual: {$payment->status}");
             return;
         }
 
@@ -48,24 +48,34 @@ class MatriculaService
 
         Log::info("{$traceId} DATOS: Estudiante ID: {$student->id}, Usuario ID: " . ($user ? $user->id : 'NULL'));
 
-        // Si el estudiante ya tiene matrícula, solo activamos la inscripción
-        if ($student->student_code) {
+        $hasOfficialCode = !empty($student->student_code)
+            && !str_starts_with((string) $student->student_code, 'PRE-')
+            && !str_starts_with((string) $student->student_code, 'TMP-');
+
+        // Si el estudiante ya tiene matrícula oficial, aseguramos estado Activo y activamos la inscripción
+        if ($hasOfficialCode) {
+            if ($student->status === 'Prospecto' || empty($student->status)) {
+                $student->status = 'Activo';
+                $student->saveQuietly();
+            }
             Log::info("{$traceId} ESTADO: Estudiante ya tiene matrícula ({$student->student_code}). Procediendo a activar inscripción.");
             $this->activarInscripcion($payment, $traceId);
             return;
         }
 
-        // Si es un estudiante nuevo (temporal), procedemos a matricular
+        // Si es un estudiante nuevo o con código temporal (PRE-/TMP-), procedemos a matricular
         try {
-            DB::transaction(function () use ($payment, $student, $user, $traceId) {
+            DB::transaction(function () use ($payment, $student, $user, $traceId, $hasOfficialCode) {
                 
                 Log::info("{$traceId} TRANSACCIÓN: Iniciando transacción de base de datos.");
 
-                if (!$student->student_code) {
+                if (!$hasOfficialCode) {
                     Log::info("{$traceId} GENERACIÓN: Calculando nuevo código de estudiante...");
                     $student->student_code = $this->generateUniqueStudentCode($traceId);
                     Log::info("{$traceId} GENERACIÓN: Código asignado temporalmente: {$student->student_code}");
                 }
+
+                $student->status = 'Activo';
                 
                 if ($user) {
                     $matricula = $student->student_code;
@@ -158,6 +168,25 @@ class MatriculaService
                     Log::info("{$traceId} ACTIVACIÓN: Inscripción individual {$enrollment->id} activada.");
 
                     // Intento de matriculación en Moodle
+                    $this->syncWithMoodle($enrollment, $traceId);
+                }
+            }
+        }
+
+        // ESTRATEGIA 3: Pagos de Inscripción en POS sin enrollment_id explícito
+        if ($activated === 0 && $payment->student_id) {
+            $conceptName = strtolower((string) ($payment->paymentConcept?->name ?? ''));
+            if (str_contains($conceptName, 'inscrip')) {
+                $pendingEnrollments = Enrollment::where('student_id', $payment->student_id)
+                    ->whereIn('status', ['Pendiente', 'Reservado'])
+                    ->get();
+                foreach ($pendingEnrollments as $enrollment) {
+                    $enrollment->status = 'Cursando';
+                    if (!$enrollment->payment_id) {
+                        $enrollment->payment_id = $payment->id;
+                    }
+                    $enrollment->save();
+                    $activated++;
                     $this->syncWithMoodle($enrollment, $traceId);
                 }
             }
@@ -273,7 +302,7 @@ class MatriculaService
         }
     }
 
-    private function generateUniqueStudentCode($traceId = ''): string
+    public function generateUniqueStudentCode($traceId = ''): string
     {
         Log::info("{$traceId} CODE-GEN: Buscando último estudiante para secuencia...");
         

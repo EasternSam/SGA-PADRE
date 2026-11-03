@@ -207,6 +207,15 @@ export default function CareersIndex({
                                             <span className="text-gray-400 text-[11px]">Precio por Crédito</span>
                                             <p className="font-bold text-gray-900 dark:text-white font-mono mt-0.5">DOP ${Number(c.credit_price || 0).toLocaleString()}</p>
                                         </div>
+                                        <div className="col-span-2 pt-2 border-t border-gray-200/70 dark:border-gray-800 flex items-center justify-between">
+                                            <span className="text-gray-400 text-[11px]">Estudiantes Inscritos</span>
+                                            <Link
+                                                href={`/admin/students?course_id=${c.id}`}
+                                                className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                                            >
+                                                {c.students_count || 0} alumnos →
+                                            </Link>
+                                        </div>
                                     </div>
                                 </div>
 

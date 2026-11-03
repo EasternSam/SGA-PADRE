@@ -114,78 +114,45 @@ class Index extends Component
                     $user->assignRole('Estudiante');
                 }
 
-                // 3. CREAR O ACTUALIZAR PERFIL DE ESTUDIANTE
-                // CORRECCIÓN: Evitar disparar eventos al crear estudiante (posible origen de mensualidad fantasma)
+                // 3. CREAR O ACTUALIZAR PERFIL DE ESTUDIANTE (ACTIVO + MATRÍCULA OFICIAL)
                 $student = Student::where('user_id', $user->id)->first();
-                $preMatricula = 'PRE-' . date('y') . '-' . str_pad($user->id, 4, '0', STR_PAD_LEFT);
+                $existingCode = (string) ($student?->student_code ?? '');
+                $hasOfficialCode = $existingCode !== ''
+                    && !str_starts_with($existingCode, 'PRE-')
+                    && !str_starts_with($existingCode, 'TMP-');
+                $studentCode = $hasOfficialCode
+                    ? $existingCode
+                    : app(\App\Services\MatriculaService::class)->generateUniqueStudentCode('[ADM]');
+
+                $studentPayload = [
+                    'user_id' => $user->id,
+                    'first_name' => $admission->first_name,
+                    'last_name' => $admission->last_name,
+                    'email' => $admission->email ?: $user->email,
+                    'cedula' => $admission->identification_id ?: $student?->cedula,
+                    'mobile_phone' => $admission->phone ?: $student?->mobile_phone,
+                    'birth_date' => $admission->birth_date ?: $student?->birth_date,
+                    'address' => $admission->address ?: $student?->address,
+                    'course_id' => $admission->course_id,
+                    'student_code' => $studentCode,
+                    'status' => 'Activo',
+                ];
 
                 if (!$student) {
-                    // Usamos withoutEvents también aquí por seguridad
-                    $student = Student::withoutEvents(function () use ($user, $admission, $preMatricula) {
-                        return Student::create([
-                            'user_id' => $user->id,
-                            'first_name' => $admission->first_name,
-                            'last_name' => $admission->last_name,
-                            'email' => $admission->email,
-                            'cedula' => $admission->identification_id,
-                            'status' => 'Prospecto',
-                            'phone' => $admission->phone,
-                            'birth_date' => $admission->birth_date,
-                            'address' => $admission->address,
-                            'enrollment_date' => now(),
-                            'course_id' => $admission->course_id,
-                            'student_code' => $preMatricula,
-                        ]);
+                    $student = Student::withoutEvents(function () use ($studentPayload) {
+                        return Student::create($studentPayload);
                     });
                 } else {
-                    $student->update([
-                        'course_id' => $admission->course_id,
-                        'status' => 'Prospecto',
-                    ]);
+                    Student::withoutEvents(function () use ($student, $studentPayload) {
+                        $student->update($studentPayload);
+                    });
                 }
 
-                // --- CALCULAR NEXT BILLING DATE BASADO EN EL CURSO ---
-                $nextBillingDate = null;
-                $course = null;
-                $scheduleId = null; // Asumimos que la admisión aún no tiene schedule_id directo en este flujo base, o se asigna después.
-                
+                // 4. INSCRIBIR EN CURSO O CARRERA Y GENERAR DEUDA DE INSCRIPCIÓN
                 if ($admission->course_id) {
-                    $course = Course::find($admission->course_id);
-                    // Si el admission tuviera un schedule_id, lo usaríamos. Como es generico, usamos la fecha de hoy + 1 mes como base temporal 
-                    // hasta que se le asigne la sección real o le cobramos 1 mes desde hoy si no hay schedule.
-                    $nextBillingDate = now()->addMonth(); 
-                }
-
-                // 4. GENERAR DEUDA DE INSCRIPCIÓN (OFICIAL)
-                if ($student && $course) {
-                    
-                    if ($course && $course->registration_fee > 0) {
-                        $concept = PaymentConcept::firstOrCreate(
-                            ['name' => 'Inscripción'],
-                            ['description' => 'Pago único de admisión a la carrera', 'amount' => $course->registration_fee]
-                        );
-
-                        $exists = Payment::where('student_id', $student->id)
-                            ->where('payment_concept_id', $concept->id)
-                            ->where('status', 'Pendiente')
-                            ->exists();
-
-                        if (!$exists) {
-                            // CORRECCIÓN: withoutEvents para asegurar que PaymentObserver no duplique ni haga magia extraña
-                            Payment::withoutEvents(function () use ($user, $student, $concept, $course) {
-                                Payment::create([
-                                    'user_id' => $user->id,
-                                    'student_id' => $student->id,
-                                    'payment_concept_id' => $concept->id,
-                                    'amount' => $course->registration_fee,
-                                    'currency' => 'DOP',
-                                    'status' => 'Pendiente',
-                                    'gateway' => 'Sistema',
-                                    'due_date' => now()->addDays(5),
-                                    'notes' => 'Generado automáticamente al aprobar admisión.',
-                                ]);
-                            });
-                        }
+                    $course = Course::with('modules.schedules')->find($admission->course_id);
+                    if ($course) {
+                        app(\App\Http\Controllers\AdmissionController::class)->enrollStudentInCourse($student, $course, $user);
                     }
                 }
 

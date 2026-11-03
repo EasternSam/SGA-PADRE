@@ -46,7 +46,7 @@ class AcademicCourseController extends Controller
 
         $courses = $coursesQuery
             ->with(['mapping'])
-            ->withCount('modules')
+            ->withCount(['modules', 'students'])
             ->orderBy('id', 'desc')
             ->paginate(15)
             ->withQueryString();
@@ -76,7 +76,7 @@ class AcademicCourseController extends Controller
                         'teacher:id,name,email',
                         'classroom:id,name',
                         'mapping',
-                        'enrollments' => fn($q) => $q->whereIn('status', ['Activo', 'Cursando', 'Pendiente']),
+                        'enrollments' => fn($q) => $q->whereIn('status', ['Activo', 'Cursando', 'Pendiente'])->with('student:id,first_name,last_name,student_code,status'),
                     ])
                     ->orderBy('id', 'desc')
                     ->get()
@@ -97,6 +97,12 @@ class AcademicCourseController extends Controller
                             'end_date' => $sch->end_date ? Carbon::parse($sch->end_date)->format('Y-m-d') : '',
                             'capacity' => $sch->capacity ?? 30,
                             'enrolled_count' => $sch->enrollments->count(),
+                            'enrolled_students' => $sch->enrollments->map(fn($enr) => $enr->student ? [
+                                'id' => $enr->student->id,
+                                'name' => trim("{$enr->student->first_name} {$enr->student->last_name}"),
+                                'student_code' => $enr->student->student_code,
+                                'status' => $enr->status,
+                            ] : null)->filter()->values()->toArray(),
                             'modality' => $sch->modality ?? 'Presencial',
                             'status' => $sch->status ?? 'Activo',
                             'moodle_course_id' => $sch->moodle_course_id,

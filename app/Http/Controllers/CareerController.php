@@ -26,7 +26,7 @@ class CareerController extends Controller
         $search = trim($request->input('search', ''));
 
         $query = Course::where('program_type', 'degree')
-            ->withCount(['modules', 'schedules']);
+            ->withCount(['modules', 'schedules', 'students']);
 
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
