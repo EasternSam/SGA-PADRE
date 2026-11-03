@@ -138,18 +138,16 @@ class DgiiReportController extends Controller
             ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             : 'application/vnd.ms-excel';
 
-        return response()->streamDownload(function () use ($spreadsheet, $isXlsx) {
-            while (ob_get_level() > 0) {
-                @ob_end_clean();
-            }
-            $writer = $isXlsx
-                ? new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet)
-                : new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
-            @$writer->save('php://output');
-        }, $filename, [
+        $tmpFile = tempnam(sys_get_temp_dir(), 'dgii_xls_');
+        $writer = $isXlsx
+            ? new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet)
+            : new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
+        @$writer->save($tmpFile);
+
+        return response()->download($tmpFile, $filename, [
             'Content-Type' => $mime,
             'Cache-Control' => 'max-age=0',
-        ]);
+        ])->deleteFileAfterSend(true);
     }
 
     public function download606(Request $request, DgiiExportService $exporter)
