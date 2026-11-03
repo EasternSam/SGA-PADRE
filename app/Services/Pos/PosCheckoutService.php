@@ -107,7 +107,7 @@ class PosCheckoutService
                     'user_id' => $cashier->id,
                 ]);
 
-                if (!$student->isWalkIn()) {
+                if (!$student->isWalkIn() && \Illuminate\Support\Facades\Schema::hasColumn('students', 'balance')) {
                     $student->increment('balance', (float) $this->fromCents($totalCents));
                 }
 
@@ -160,7 +160,7 @@ class PosCheckoutService
                     'company_name' => $isCreditFiscal ? ($data['company_name'] ?? null) : null,
                 ]);
 
-                if (!$student->isWalkIn()) {
+                if (!$student->isWalkIn() && \Illuminate\Support\Facades\Schema::hasColumn('students', 'balance')) {
                     $newBalance = max(0, (float) $student->balance - $previousDebtAmount);
                     $student->update(['balance' => $newBalance]);
                 }
