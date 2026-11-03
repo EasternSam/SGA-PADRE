@@ -12,13 +12,21 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('kiosk')->group(function () {
+    // Entry point redirect
+    Route::get('/', function () {
+        return Auth::check()
+            ? redirect()->route('kiosk.dashboard')
+            : redirect()->route('kiosk.login');
+    })->name('kiosk.index');
+
     // Touchscreen Auth
     Route::get('/login', [KioskController::class, 'login'])->name('kiosk.login');
     Route::post('/login', [KioskController::class, 'authenticate'])->name('kiosk.authenticate');
 
-    // HR Touch Punch (Accessible without student login)
+    // Public Kiosk Self-Service Modules (accessible with or without student login)
     Route::get('/hr-punch', [KioskController::class, 'hrPunch'])->name('kiosk.hr-punch');
     Route::post('/hr-punch', [KioskController::class, 'processPunch'])->name('kiosk.process-punch');
+    Route::get('/academic-offer', [KioskController::class, 'academicOffer'])->name('kiosk.academic-offer');
 
     // Protected Student Kiosk Routes
     Route::middleware(['auth.kiosk'])->group(function () {
@@ -31,8 +39,8 @@ Route::prefix('kiosk')->group(function () {
 
         Route::get('/dashboard', [KioskController::class, 'dashboard'])->name('kiosk.dashboard');
         Route::get('/finances', [KioskController::class, 'finances'])->name('kiosk.finances');
+        Route::post('/finances/pay', [KioskController::class, 'processPayment'])->name('kiosk.finances.pay');
         Route::get('/schedule', [KioskController::class, 'schedule'])->name('kiosk.schedule');
         Route::get('/grades', [KioskController::class, 'grades'])->name('kiosk.grades');
-        Route::get('/academic-offer', [KioskController::class, 'academicOffer'])->name('kiosk.academic-offer');
     });
 });
