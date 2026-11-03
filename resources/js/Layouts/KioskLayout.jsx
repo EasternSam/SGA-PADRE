@@ -151,6 +151,14 @@ export default function KioskLayout({
                     background-color: var(--kiosk-primary);
                     color: #FFFFFF;
                 }
+                .kiosk-theme-root input.kiosk-bare-input,
+                .kiosk-theme-root input.kiosk-bare-input:focus {
+                    border: none !important;
+                    outline: none !important;
+                    box-shadow: none !important;
+                    background: transparent !important;
+                    padding: 0 !important;
+                }
             `}</style>
 
             {/* Fondo con Imagen de Login y Resplandor Ambiental (Idéntico a /login) */}

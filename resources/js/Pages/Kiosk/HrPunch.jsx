@@ -112,7 +112,7 @@ export default function HrPunch({ student }) {
                                 value={pin}
                                 onChange={(e) => setPin(e.target.value)}
                                 placeholder="••••"
-                                className="w-full bg-transparent text-2xl font-mono font-bold focus:outline-none tracking-widest"
+                                className="kiosk-bare-input w-full bg-transparent text-2xl font-mono font-bold focus:outline-none tracking-widest"
                             />
                         </div>
                     </div>
