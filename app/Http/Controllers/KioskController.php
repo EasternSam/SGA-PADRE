@@ -285,14 +285,18 @@ class KioskController extends Controller
                 'balance' => (float) ($course->registration_fee ?: $course->monthly_fee ?: 0),
             ]);
 
-            $schedule = CourseSchedule::where('course_id', $course->id)->first();
-            Enrollment::create([
-                'student_id' => $student->id,
-                'course_id' => $course->id,
-                'course_schedule_id' => $schedule?->id,
-                'status' => 'Cursando',
-                'enrollment_date' => now(),
-            ]);
+            $schedule = CourseSchedule::whereHas('module', fn($q) => $q->where('course_id', $course->id))->first();
+            if ($schedule) {
+                Enrollment::firstOrCreate(
+                    [
+                        'student_id' => $student->id,
+                        'course_schedule_id' => $schedule->id,
+                    ],
+                    [
+                        'status' => 'Cursando',
+                    ]
+                );
+            }
 
             $feeAmount = (float) ($course->registration_fee ?: $course->monthly_fee ?: 0);
             if ($feeAmount > 0) {
@@ -308,7 +312,8 @@ class KioskController extends Controller
                         'amount' => $feeAmount,
                         'status' => 'Pendiente',
                         'due_date' => now()->addDays(7),
-                        'description' => 'Inscripción — ' . $course->name,
+                        'concept_label' => 'Inscripción — ' . $course->name,
+                        'notes' => 'Inscripción — ' . $course->name,
                     ]);
                 });
             }
@@ -339,9 +344,10 @@ class KioskController extends Controller
 
         $course = Course::findOrFail($validated['course_id']);
 
-        $alreadyEnrolled = Enrollment::where('student_id', $student->id)
-            ->where('course_id', $course->id)
-            ->exists();
+        $alreadyEnrolled = $student->course_id == $course->id
+            && Enrollment::where('student_id', $student->id)
+                ->whereHas('courseSchedule.module', fn($q) => $q->where('course_id', $course->id))
+                ->exists();
 
         if ($alreadyEnrolled) {
             return redirect()->route('kiosk.schedule')
@@ -354,14 +360,18 @@ class KioskController extends Controller
                 'status' => 'Activo',
             ]);
 
-            $schedule = CourseSchedule::where('course_id', $course->id)->first();
-            Enrollment::create([
-                'student_id' => $student->id,
-                'course_id' => $course->id,
-                'course_schedule_id' => $schedule?->id,
-                'status' => 'Cursando',
-                'enrollment_date' => now(),
-            ]);
+            $schedule = CourseSchedule::whereHas('module', fn($q) => $q->where('course_id', $course->id))->first();
+            if ($schedule) {
+                Enrollment::firstOrCreate(
+                    [
+                        'student_id' => $student->id,
+                        'course_schedule_id' => $schedule->id,
+                    ],
+                    [
+                        'status' => 'Cursando',
+                    ]
+                );
+            }
 
             $feeAmount = (float) ($course->registration_fee ?: $course->monthly_fee ?: 0);
             if ($feeAmount > 0) {
@@ -377,7 +387,8 @@ class KioskController extends Controller
                         'amount' => $feeAmount,
                         'status' => 'Pendiente',
                         'due_date' => now()->addDays(7),
-                        'description' => 'Inscripción — ' . $course->name,
+                        'concept_label' => 'Inscripción — ' . $course->name,
+                        'notes' => 'Inscripción — ' . $course->name,
                     ]);
                 });
             }
@@ -421,11 +432,11 @@ class KioskController extends Controller
                 ->get()
                 ->map(fn($p) => [
                     'id' => $p->id,
-                    'concept' => $p->paymentConcept?->name ?? ($p->description ?: 'Cuota Académica'),
-                    'amount' => (float) ($p->amount - ($p->discount_amount ?? 0) + ($p->surcharge ?? 0)),
-                    'base_amount' => (float) $p->amount,
+                    'concept' => $p->concept_label ?: ($p->paymentConcept?->name ?? ($p->notes ?: 'Cuota Académica')),
+                    'amount' => (float) ($p->amount - ($p->discount_amount ?? 0)),
+                    'base_amount' => (float) ($p->original_amount ?: $p->amount),
                     'discount' => (float) ($p->discount_amount ?? 0),
-                    'surcharge' => (float) ($p->surcharge ?? 0),
+                    'surcharge' => 0.0,
                     'due_date' => $p->due_date?->format('d/m/Y') ?? 'Fin de mes',
                     'status' => $p->status,
                     'ncf' => $p->ncf,
@@ -434,15 +445,15 @@ class KioskController extends Controller
             $paidPayments = Payment::with('paymentConcept')
                 ->where('student_id', $student->id)
                 ->whereIn('status', ['Pagado', 'paid', 'Completado'])
-                ->latest('paid_at')
+                ->latest('updated_at')
                 ->take(5)
                 ->get()
                 ->map(fn($p) => [
                     'id' => $p->id,
-                    'concept' => $p->paymentConcept?->name ?? ($p->description ?: 'Cuota Académica'),
+                    'concept' => $p->concept_label ?: ($p->paymentConcept?->name ?? ($p->notes ?: 'Cuota Académica')),
                     'amount' => (float) $p->amount,
-                    'paid_at' => $p->paid_at?->format('d/m/Y H:i') ?? $p->updated_at?->format('d/m/Y'),
-                    'payment_method' => $p->payment_method ?? 'Kiosco',
+                    'paid_at' => $p->updated_at?->format('d/m/Y H:i') ?? '',
+                    'payment_method' => $p->gateway ?? 'Kiosco',
                     'ncf' => $p->ncf ?: sprintf('B02%08d', $p->id),
                 ]);
 
@@ -491,9 +502,8 @@ class KioskController extends Controller
         Payment::withoutEvents(function () use ($payments, $methodLabel) {
             foreach ($payments as $payment) {
                 $payment->update([
-                    'status' => 'Pagado',
-                    'paid_at' => now(),
-                    'payment_method' => $methodLabel,
+                    'status' => 'paid',
+                    'gateway' => $methodLabel,
                     'ncf' => $payment->ncf ?: sprintf('B02%08d', $payment->id),
                 ]);
             }
@@ -511,24 +521,24 @@ class KioskController extends Controller
 
         $schedules = [];
         if ($student) {
-            $enrollments = Enrollment::with(['courseSchedule.module', 'courseSchedule.classroom', 'courseSchedule.teacher', 'course'])
+            $enrollments = Enrollment::with(['courseSchedule.module.course', 'courseSchedule.classroom', 'courseSchedule.teacher'])
                 ->where('student_id', $student->id)
-                ->whereIn('status', ['Cursando', 'Activo', 'enrolled', 'Inscrito'])
+                ->whereIn('status', ['Cursando', 'Activo', 'enrolled', 'Inscrito', 'Pendiente'])
                 ->get();
 
             $schedules = $enrollments->map(fn($e) => [
                 'id' => $e->id,
-                'subject_name' => $e->courseSchedule?->module?->name ?? ($e->course?->name ?? 'Asignatura Regular'),
-                'subject_code' => $e->courseSchedule?->module?->code ?? ($e->course?->code ?? 'ASG-101'),
+                'subject_name' => $e->courseSchedule?->module?->name ?? ($e->courseSchedule?->module?->course?->name ?? ($student->course?->name ?? 'Asignatura Regular')),
+                'subject_code' => $e->courseSchedule?->module?->order_number ? ('MOD-' . $e->courseSchedule->module->order_number) : 'ASG-101',
                 'teacher' => $e->courseSchedule?->teacher?->name ?? 'Docente Titular Asignado',
-                'classroom' => $e->courseSchedule?->classroom?->name ?? ($e->courseSchedule?->classroom_Legacy ?? 'Aula Principal 101'),
-                'days' => is_array($e->courseSchedule?->days)
-                    ? implode(', ', $e->courseSchedule->days)
-                    : ($e->courseSchedule?->days ?? 'Lunes y Miércoles'),
+                'classroom' => $e->courseSchedule?->classroom?->name ?? 'Aula Principal 101',
+                'days' => is_array($e->courseSchedule?->days_of_week)
+                    ? implode(', ', $e->courseSchedule->days_of_week)
+                    : ($e->courseSchedule?->days_of_week ?? 'Lunes y Miércoles'),
                 'time' => ($e->courseSchedule?->start_time ? substr($e->courseSchedule->start_time, 0, 5) : '08:00')
                     . ' - '
                     . ($e->courseSchedule?->end_time ? substr($e->courseSchedule->end_time, 0, 5) : '10:00'),
-                'modality' => $e->courseSchedule?->section_name ?? 'Presencial',
+                'modality' => $e->courseSchedule?->modality ?? ($e->courseSchedule?->section_name ?? 'Presencial'),
             ]);
         }
 
