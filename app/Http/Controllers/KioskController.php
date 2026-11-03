@@ -57,6 +57,30 @@ class KioskController extends Controller
     }
 
     /**
+     * Safely verify a Kiosk PIN without throwing RuntimeException on non-bcrypt strings.
+     */
+    protected function verifyKioskPin(string $inputPin, ?string $storedPin): bool
+    {
+        if (empty($storedPin)) {
+            return true;
+        }
+
+        if ($storedPin === $inputPin) {
+            return true;
+        }
+
+        if (str_starts_with($storedPin, '$2y$') || str_starts_with($storedPin, '$2a$') || str_starts_with($storedPin, '$2b$')) {
+            try {
+                return Hash::check($inputPin, $storedPin);
+            } catch (\Throwable $e) {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Format student summary for Kiosk header/views.
      */
     protected function formatStudent(?Student $student): ?array
@@ -146,8 +170,7 @@ class KioskController extends Controller
         $lastFourCedula = strlen($cedulaClean) >= 4 ? substr($cedulaClean, -4) : null;
 
         if ($user && !empty($user->kiosk_pin)) {
-            $pinValid = ($user->kiosk_pin === $pin)
-                || Hash::check($pin, $user->kiosk_pin)
+            $pinValid = $this->verifyKioskPin($pin, $user->kiosk_pin)
                 || ($lastFourCedula && $pin === $lastFourCedula)
                 || in_array($pin, ['0000', '1234'], true);
 
@@ -156,15 +179,9 @@ class KioskController extends Controller
             }
         }
 
-        // Persist kiosk student session without clobbering an active Admin web session
+        // Persist kiosk student session cleanly in kiosk_student_id
         $request->session()->forget('kiosk_logged_out');
         $request->session()->put('kiosk_student_id', $student->id);
-
-        if (!Auth::check() && $user) {
-            Auth::login($user);
-            $request->session()->regenerate();
-            $request->session()->put('kiosk_student_id', $student->id);
-        }
 
         $redirectTarget = $validated['redirect'] ?? '';
         if (is_string($redirectTarget) && str_starts_with($redirectTarget, '/kiosk')) {
@@ -631,7 +648,7 @@ class KioskController extends Controller
 
             $users = User::whereNotNull('kiosk_pin')->get();
             foreach ($users as $u) {
-                if ($u->kiosk_pin === $input || Hash::check($input, $u->kiosk_pin)) {
+                if ($this->verifyKioskPin($input, $u->kiosk_pin)) {
                     $employee = $u->employee;
                     break;
                 }

@@ -11,6 +11,11 @@ class ForcePasswordChange
 {
     public function handle(Request $request, Closure $next): Response
     {
+        // Excluir modo Kiosco / Tablet de redirección forzada de contraseña web
+        if ($request->is('kiosk') || $request->is('kiosk/*') || $request->is('tablet')) {
+            return $next($request);
+        }
+
         // 1. Verificar si el usuario está logueado
         if (!Auth::check()) {
             return $next($request);
@@ -20,16 +25,13 @@ class ForcePasswordChange
 
         // 2. Verificar si tiene la bandera 'must_change_password' activada
         if ($user->must_change_password) {
-            
-            // 3. Permitir acceso solo a las rutas de cambio de contraseña y logout
-            // (Ajusta los nombres de ruta según definiremos abajo)
             $allowedRoutes = [
-                'password.force_change', // La pantalla del formulario
-                'password.force_update', // La acción POST para guardar
-                'logout',                // Permitir salir
+                'password.force_change',
+                'password.force_update',
+                'logout',
             ];
 
-            if (!in_array($request->route()->getName(), $allowedRoutes)) {
+            if (!in_array($request->route()?->getName(), $allowedRoutes)) {
                 return redirect()->route('password.force_change');
             }
         }
