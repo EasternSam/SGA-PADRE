@@ -312,10 +312,14 @@ class AdmissionController extends Controller
 
         foreach ($otherPendingEnrollments as $oldEnrollment) {
             if (!$oldEnrollment->is_paid) {
-                Payment::where('enrollment_id', $oldEnrollment->id)
-                    ->where('status', 'Pendiente')
-                    ->delete();
-                $oldEnrollment->delete();
+                Payment::withoutEvents(function () use ($oldEnrollment) {
+                    Payment::where('enrollment_id', $oldEnrollment->id)
+                        ->where('status', 'Pendiente')
+                        ->delete();
+                });
+                Enrollment::withoutEvents(function () use ($oldEnrollment) {
+                    $oldEnrollment->delete();
+                });
             }
         }
 
@@ -369,8 +373,7 @@ class AdmissionController extends Controller
                 ]);
             }
 
-            $enrollment = Enrollment::withTrashed()
-                ->where('student_id', $student->id)
+            $enrollment = Enrollment::where('student_id', $student->id)
                 ->where('course_schedule_id', $schedule->id)
                 ->first();
 
@@ -384,14 +387,13 @@ class AdmissionController extends Controller
                     ]);
                 });
             } else {
-                if (method_exists($enrollment, 'trashed') && $enrollment->trashed()) {
-                    $enrollment->restore();
-                }
                 if ($enrollment->status !== 'Completado') {
-                    $enrollment->update([
-                        'status' => 'Cursando',
-                        'next_billing_date' => $enrollment->next_billing_date ?: now()->addMonth(),
-                    ]);
+                    Enrollment::withoutEvents(function () use ($enrollment) {
+                        $enrollment->update([
+                            'status' => 'Cursando',
+                            'next_billing_date' => $enrollment->next_billing_date ?: now()->addMonth(),
+                        ]);
+                    });
                 }
             }
 
