@@ -16,8 +16,13 @@ class RedirectIfUnauthenticatedKiosk
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!Auth::check()) {
-            return redirect()->route('kiosk.login');
+        $hasKioskStudent = $request->session()->has('kiosk_student_id');
+        $hasWebAuth = Auth::check() && !$request->session()->get('kiosk_logged_out', false);
+
+        if (!$hasKioskStudent && !$hasWebAuth) {
+            return redirect()->route('kiosk.login', [
+                'redirect' => $request->getRequestUri(),
+            ]);
         }
 
         return $next($request);

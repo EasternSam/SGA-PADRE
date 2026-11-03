@@ -54,6 +54,7 @@ function KioskQrCodeSvg({ value = 'ACADEMIC-KIOSK-QR' }) {
 export default function Finances({ student, pendingPayments = [] }) {
     const { branding = {} } = usePage().props;
     const primaryColor = branding?.primary_color || '#211170';
+    const secondaryColor = branding?.secondary_color || '#6b289e';
 
     const [selectedIds, setSelectedIds] = useState(() => pendingPayments.map((p) => p.id));
     const [paymentMethod, setPaymentMethod] = useState('qr'); // 'cashier' | 'card' | 'qr'
@@ -112,9 +113,9 @@ export default function Finances({ student, pendingPayments = [] }) {
             <Head title="Autopago - Kiosco" />
 
             <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* Left: Cart & Payment Method (Image 2 left) */}
+                {/* Left: Cart & Payment Method */}
                 <div className="lg:col-span-7 space-y-5">
-                    <div className="rounded-[24px] bg-[#F3F4F6] dark:bg-[#171717] p-6">
+                    <div className="rounded-[24px] kiosk-surface p-6">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-lg font-bold">Cargos Pendientes</h2>
                             {pendingPayments.length > 0 && (
@@ -136,7 +137,7 @@ export default function Finances({ student, pendingPayments = [] }) {
                         </div>
 
                         {pendingPayments.length === 0 ? (
-                            <div className="py-10 text-center rounded-2xl bg-white dark:bg-[#121212]">
+                            <div className="py-10 text-center rounded-2xl kiosk-key">
                                 <div className="text-lg font-bold">Sin cargos pendientes</div>
                             </div>
                         ) : (
@@ -148,8 +149,8 @@ export default function Finances({ student, pendingPayments = [] }) {
                                             key={item.id}
                                             onClick={() => toggleSelect(item.id)}
                                             style={isSelected ? { borderColor: primaryColor } : undefined}
-                                            className={`p-4 rounded-2xl bg-white dark:bg-[#121212] border-2 transition-all cursor-pointer flex items-center justify-between gap-4 ${
-                                                isSelected ? '' : 'border-transparent opacity-70'
+                                            className={`p-4 rounded-2xl kiosk-key border-2 transition-all cursor-pointer flex items-center justify-between gap-4 ${
+                                                isSelected ? '' : 'opacity-70'
                                             }`}
                                         >
                                             <div>
@@ -161,7 +162,7 @@ export default function Finances({ student, pendingPayments = [] }) {
                                             <span
                                                 style={isSelected ? { backgroundColor: primaryColor, color: '#FFFFFF' } : undefined}
                                                 className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
-                                                    isSelected ? '' : 'bg-[#F3F4F6] dark:bg-[#222222] text-transparent'
+                                                    isSelected ? '' : 'kiosk-surface text-transparent'
                                                 }`}
                                             >
                                                 ✓
@@ -173,8 +174,8 @@ export default function Finances({ student, pendingPayments = [] }) {
                         )}
                     </div>
 
-                    {/* Purchase Details + 3 Payment Method Tiles (Image 2 bottom-left) */}
-                    <div className="rounded-[24px] bg-[#F3F4F6] dark:bg-[#171717] p-6 space-y-4">
+                    {/* Purchase Details + 3 Payment Method Tiles */}
+                    <div className="rounded-[24px] kiosk-surface p-6 space-y-4">
                         <div className="space-y-2 text-sm">
                             <div className="flex items-center justify-between">
                                 <span className="opacity-70">Subtotal</span>
@@ -211,8 +212,8 @@ export default function Finances({ student, pendingPayments = [] }) {
                                         type="button"
                                         onClick={() => setPaymentMethod(m.id)}
                                         style={active ? { borderColor: primaryColor, color: primaryColor } : undefined}
-                                        className={`p-3.5 rounded-2xl border-2 text-center font-semibold text-xs sm:text-sm transition-all active:scale-95 bg-white dark:bg-[#121212] ${
-                                            active ? '' : 'border-transparent opacity-75'
+                                        className={`p-3.5 rounded-2xl border-2 text-center font-semibold text-xs sm:text-sm transition-all active:scale-95 kiosk-key ${
+                                            active ? '' : 'opacity-75'
                                         }`}
                                     >
                                         {m.label}
@@ -223,10 +224,12 @@ export default function Finances({ student, pendingPayments = [] }) {
                     </div>
                 </div>
 
-                {/* Right: QR / Terminal Payment Confirmation (Image 2 right) */}
-                <div className="lg:col-span-5 rounded-[24px] bg-[#F3F4F6] dark:bg-[#171717] p-6 space-y-4">
+                {/* Right: QR / Terminal Payment Confirmation */}
+                <div className="lg:col-span-5 rounded-[24px] kiosk-surface p-6 space-y-4">
                     <div
-                        style={{ backgroundColor: primaryColor }}
+                        style={{
+                            background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                        }}
                         className="rounded-2xl p-6 text-white text-center"
                     >
                         <div className="inline-flex items-center gap-1.5 mb-4">
@@ -266,7 +269,7 @@ export default function Finances({ student, pendingPayments = [] }) {
                         </div>
                     </div>
 
-                    <div className="rounded-2xl bg-white dark:bg-[#121212] p-4 text-center">
+                    <div className="rounded-2xl kiosk-key p-4 text-center">
                         <div className="text-xs opacity-60">Total</div>
                         <div style={{ color: primaryColor }} className="text-2xl font-black mt-0.5">
                             RD$ {summary.total.toLocaleString('es-DO', { minimumFractionDigits: 2 })}
@@ -279,13 +282,16 @@ export default function Finances({ student, pendingPayments = [] }) {
                         onClick={handleConfirmPayment}
                         style={
                             selectedIds.length > 0 && !processing
-                                ? { backgroundColor: primaryColor, color: '#FFFFFF' }
+                                ? {
+                                      background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                                      color: '#FFFFFF',
+                                  }
                                 : undefined
                         }
                         className={`w-full py-4 rounded-2xl font-bold text-sm transition-all active:scale-95 ${
                             selectedIds.length > 0 && !processing
                                 ? ''
-                                : 'bg-neutral-200 dark:bg-[#262626] text-neutral-400 cursor-not-allowed'
+                                : 'kiosk-surface opacity-45 cursor-not-allowed'
                         }`}
                     >
                         {processing ? 'Procesando...' : 'Confirmar Pago'}

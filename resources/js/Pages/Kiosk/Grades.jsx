@@ -5,6 +5,7 @@ import KioskLayout from '@/Layouts/KioskLayout';
 export default function Grades({ student, grades = [], gpa = 88.5 }) {
     const { branding = {} } = usePage().props;
     const primaryColor = branding?.primary_color || '#211170';
+    const secondaryColor = branding?.secondary_color || '#6b289e';
 
     const [selectedGradeId, setSelectedGradeId] = useState(grades[0]?.id || null);
 
@@ -23,7 +24,7 @@ export default function Grades({ student, grades = [], gpa = 88.5 }) {
                 </div>
 
                 {grades.length === 0 ? (
-                    <div className="p-12 rounded-[24px] bg-[#F3F4F6] dark:bg-[#171717] text-center text-lg font-semibold">
+                    <div className="p-12 rounded-[24px] kiosk-surface text-center text-lg font-semibold">
                         Sin calificaciones publicadas
                     </div>
                 ) : (
@@ -39,8 +40,8 @@ export default function Grades({ student, grades = [], gpa = 88.5 }) {
                                             ? { borderColor: primaryColor, color: primaryColor }
                                             : undefined
                                     }
-                                    className={`p-5 sm:p-6 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between gap-4 bg-[#F3F4F6] dark:bg-[#171717] ${
-                                        isSelected ? '' : 'border-transparent'
+                                    className={`p-5 sm:p-6 rounded-2xl cursor-pointer transition-all flex items-center justify-between gap-4 kiosk-card-interactive ${
+                                        isSelected ? 'ring-2 ring-[var(--kiosk-primary)]/20' : ''
                                     }`}
                                 >
                                     <span className="text-lg sm:text-xl font-bold">{g.subject}</span>
@@ -53,7 +54,10 @@ export default function Grades({ student, grades = [], gpa = 88.5 }) {
                             <button
                                 type="button"
                                 onClick={() => window.print()}
-                                style={{ backgroundColor: primaryColor, color: '#FFFFFF' }}
+                                style={{
+                                    background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                                    color: '#FFFFFF',
+                                }}
                                 className="px-7 py-4 rounded-xl font-semibold text-base flex items-center gap-3 transition-all active:scale-95"
                             >
                                 <span>Imprimir</span>

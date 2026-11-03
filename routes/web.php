@@ -174,6 +174,10 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+// --- ATAJOS MODO TABLET Y ADMISIONES ---
+Route::redirect('/tablet', '/kiosk')->name('tablet.index');
+Route::redirect('/admisiones', '/kiosk/signup')->name('admissions.public');
+
 // --- LINK DE REGISTRO PARA ESTUDIANTES ---
 Route::middleware(['feature:academic_careers', 'guest'])->group(function () {
     Route::get('/registro-estudiantes', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])

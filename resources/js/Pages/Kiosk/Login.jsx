@@ -2,16 +2,18 @@ import React, { useState } from 'react';
 import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import KioskLayout from '@/Layouts/KioskLayout';
 
-export default function Login() {
+export default function Login({ redirect = '' }) {
     const { branding = {} } = usePage().props;
     const institutionName = branding?.name || branding?.institution_name || 'Academic+';
-    const primaryColor = branding?.primary_color || 'var(--brand-primary, #211170)';
+    const primaryColor = branding?.primary_color || '#211170';
+    const secondaryColor = branding?.secondary_color || '#6b289e';
 
     const [focusedInput, setFocusedInput] = useState('document_id');
 
     const { data, setData, post, processing, errors } = useForm({
         document_id: '',
         pin: '',
+        redirect: redirect || '',
     });
 
     const handleDigit = (digit) => {
@@ -53,7 +55,7 @@ export default function Login() {
     };
 
     return (
-        <KioskLayout showBack={false}>
+        <KioskLayout student={null} showBack={false}>
             <Head title={`Kiosco - ${institutionName}`} />
 
             <div className="w-full max-w-2xl mx-auto flex flex-col justify-center">
@@ -61,19 +63,17 @@ export default function Login() {
                     Ingresa tu identificación
                 </h1>
 
-                <div className="space-y-4">
+                <form onSubmit={handleNextOrSubmit} className="space-y-4">
                     {/* Cédula o Matrícula */}
                     <div>
-                        <label className="block text-xs font-semibold text-neutral-500 mb-1.5">
+                        <label className="block text-xs font-semibold opacity-70 mb-1.5">
                             Cédula o Matrícula
                         </label>
                         <div
                             onClick={() => setFocusedInput('document_id')}
                             style={focusedInput === 'document_id' ? { borderColor: primaryColor } : undefined}
-                            className={`w-full px-4 py-3.5 rounded-xl bg-white dark:bg-[#141414] border-2 transition-all cursor-pointer flex items-center justify-between ${
-                                focusedInput === 'document_id'
-                                    ? ''
-                                    : 'border-neutral-200 dark:border-[#262626]'
+                            className={`w-full px-4 py-3.5 rounded-xl kiosk-surface transition-all cursor-pointer flex items-center justify-between ${
+                                focusedInput === 'document_id' ? 'ring-2 ring-[var(--kiosk-primary)]/20' : ''
                             }`}
                         >
                             <input
@@ -92,16 +92,14 @@ export default function Login() {
 
                     {/* PIN */}
                     <div>
-                        <label className="block text-xs font-semibold text-neutral-500 mb-1.5">
+                        <label className="block text-xs font-semibold opacity-70 mb-1.5">
                             PIN
                         </label>
                         <div
                             onClick={() => setFocusedInput('pin')}
                             style={focusedInput === 'pin' ? { borderColor: primaryColor } : undefined}
-                            className={`w-full px-4 py-3.5 rounded-xl bg-white dark:bg-[#141414] border-2 transition-all cursor-pointer flex items-center justify-between ${
-                                focusedInput === 'pin'
-                                    ? ''
-                                    : 'border-neutral-200 dark:border-[#262626]'
+                            className={`w-full px-4 py-3.5 rounded-xl kiosk-surface transition-all cursor-pointer flex items-center justify-between ${
+                                focusedInput === 'pin' ? 'ring-2 ring-[var(--kiosk-primary)]/20' : ''
                             }`}
                         >
                             <input
@@ -119,30 +117,47 @@ export default function Login() {
                         )}
                     </div>
 
-                    {/* Continue Button (Image 4 style) */}
-                    <div className="pt-2 flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-4 text-sm font-semibold opacity-75">
-                            <Link href="/kiosk/hr-punch" className="hover:opacity-100">
+                    {/* Quick Access Links + Continue Button */}
+                    <div className="pt-2 flex flex-wrap items-center justify-between gap-4">
+                        <div className="flex flex-wrap items-center gap-4 text-sm font-semibold">
+                            <Link
+                                href="/kiosk/hr-punch"
+                                style={{ color: primaryColor }}
+                                className="opacity-85 hover:opacity-100 transition-opacity"
+                            >
                                 Check-in Personal
                             </Link>
-                            <Link href="/kiosk/academic-offer" className="hover:opacity-100">
+                            <Link
+                                href="/kiosk/academic-offer"
+                                style={{ color: secondaryColor }}
+                                className="opacity-85 hover:opacity-100 transition-opacity"
+                            >
                                 Oferta Académica
+                            </Link>
+                            <Link
+                                href="/kiosk/signup"
+                                style={{ color: primaryColor }}
+                                className="opacity-85 hover:opacity-100 transition-opacity"
+                            >
+                                Nuevo Ingreso
                             </Link>
                         </div>
 
                         <button
-                            type="button"
-                            onClick={handleNextOrSubmit}
+                            type="submit"
                             disabled={processing || !data.document_id}
                             style={
                                 data.document_id && !processing
-                                    ? { backgroundColor: primaryColor, color: '#FFFFFF' }
+                                    ? {
+                                          background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                                          color: '#FFFFFF',
+                                      }
                                     : undefined
                             }
                             className={`min-w-[180px] px-6 py-4 rounded-xl font-semibold text-base flex items-center justify-between gap-4 transition-all active:scale-95 ${
                                 data.document_id && !processing
-                                    ? ''
-                                    : 'bg-neutral-200 dark:bg-[#262626] text-neutral-400 cursor-not-allowed'
+                                    ? 'shadow-sm'
+                                    : 'kiosk-surface opacity-45 cursor-not-allowed'
                             }`}
                         >
                             <span>
@@ -157,17 +172,17 @@ export default function Login() {
                             </svg>
                         </button>
                     </div>
-                </div>
+                </form>
 
-                {/* Minimalist Bottom Keypad (Image 4) */}
-                <div className="mt-6 p-3 sm:p-4 rounded-2xl bg-[#F3F4F6] dark:bg-[#171717]">
+                {/* Minimalist Bottom Keypad adapted to Configuration Theme */}
+                <div className="mt-6 p-3 sm:p-4 rounded-2xl kiosk-surface">
                     <div className="grid grid-cols-3 gap-2.5">
                         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                             <button
                                 key={num}
                                 type="button"
                                 onClick={() => handleDigit(num.toString())}
-                                className="h-13 sm:h-14 rounded-xl bg-white dark:bg-[#222222] text-xl sm:text-2xl font-semibold shadow-2xs transition-all active:scale-95 flex items-center justify-center"
+                                className="h-13 sm:h-14 rounded-xl kiosk-key text-xl sm:text-2xl font-semibold shadow-2xs transition-all active:scale-95 flex items-center justify-center"
                             >
                                 {num}
                             </button>
@@ -176,7 +191,8 @@ export default function Login() {
                         <button
                             type="button"
                             onClick={handleClear}
-                            className="h-13 sm:h-14 rounded-xl bg-neutral-200/80 dark:bg-[#262626] text-sm font-semibold transition-all active:scale-95 flex items-center justify-center"
+                            style={{ color: primaryColor }}
+                            className="h-13 sm:h-14 rounded-xl kiosk-icon-btn text-sm font-bold transition-all active:scale-95 flex items-center justify-center"
                         >
                             C
                         </button>
@@ -184,7 +200,7 @@ export default function Login() {
                         <button
                             type="button"
                             onClick={() => handleDigit('0')}
-                            className="h-13 sm:h-14 rounded-xl bg-white dark:bg-[#222222] text-xl sm:text-2xl font-semibold shadow-2xs transition-all active:scale-95 flex items-center justify-center"
+                            className="h-13 sm:h-14 rounded-xl kiosk-key text-xl sm:text-2xl font-semibold shadow-2xs transition-all active:scale-95 flex items-center justify-center"
                         >
                             0
                         </button>
@@ -192,7 +208,8 @@ export default function Login() {
                         <button
                             type="button"
                             onClick={handleDelete}
-                            className="h-13 sm:h-14 rounded-xl bg-neutral-200/80 dark:bg-[#262626] transition-all active:scale-95 flex items-center justify-center"
+                            style={{ color: primaryColor }}
+                            className="h-13 sm:h-14 rounded-xl kiosk-icon-btn transition-all active:scale-95 flex items-center justify-center"
                         >
                             <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM18 9l-6 6M12 9l6 6" strokeLinecap="round" strokeLinejoin="round" />

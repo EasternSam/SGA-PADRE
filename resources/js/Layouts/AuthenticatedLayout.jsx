@@ -227,7 +227,7 @@ function getDynamicContextualTabs(rawUrl = '', admissionsOpen = false) {
                 ...(admissionsOpen ? [{ value: 'student_selection', label: 'Selección', icon: <BookOpen className="size-4" />, action: () => router.visit('/student/selection') }] : []),
                 { value: 'student_projection', label: 'Pensum', icon: <Award className="size-4" />, action: () => router.visit('/student/projection') },
                 { value: 'student_payments', label: 'Mis Pagos', icon: <DollarSign className="size-4" />, action: () => router.visit('/student/payments') },
-                { value: 'student_requests', label: 'Trámites', icon: <FileText className="size-4" />, action: () => router.visit('/student/requests') },
+                { value: 'student_requests', label: 'Trámites', icon: <FileText className="size-4" />, action: () => { window.location.href = '/student/requests'; } },
             ]
         };
     }
@@ -1556,13 +1556,13 @@ function AuthenticatedContent({ title, children }) {
                                 <CreditCard className="h-5 w-5" />
                                 <span className="text-[10px]">Pagos</span>
                             </Link>
-                            <Link href="/student/requests" className={`flex flex-col items-center gap-1 p-1 text-center ${isActive('/student/requests') ? 'text-brand font-bold' : 'text-gray-500 dark:text-gray-400'}`}>
+                            <a href="/student/requests" className={`flex flex-col items-center gap-1 p-1 text-center ${isActive('/student/requests') ? 'text-brand font-bold' : 'text-gray-500 dark:text-gray-400'}`}>
                                 <FileText className="h-5 w-5" />
                                 <span className="text-[10px]">Trámites</span>
-                            </Link>
+                            </a>
                             <button 
                                 type="button" 
-                                onClick={() => setOpenMobile(true)}
+                                onClick={() => (isMobile ? setOpenMobile(true) : toggleSidebar())}
                                 className="flex flex-col items-center gap-1 p-1 text-gray-500 dark:text-gray-400 text-center"
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1579,7 +1579,7 @@ function AuthenticatedContent({ title, children }) {
                             </Link>
                             <button 
                                 type="button" 
-                                onClick={() => setOpenMobile(true)}
+                                onClick={() => (isMobile ? setOpenMobile(true) : toggleSidebar())}
                                 className="flex flex-col items-center gap-1 p-1 text-gray-500 dark:text-gray-400 text-center"
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1612,7 +1612,7 @@ function AuthenticatedContent({ title, children }) {
                             </Link>
                             <button 
                                 type="button" 
-                                onClick={() => setOpenMobile(true)}
+                                onClick={() => (isMobile ? setOpenMobile(true) : toggleSidebar())}
                                 className="flex flex-col items-center gap-1 p-1 text-gray-500 dark:text-gray-400 text-center"
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -5,6 +5,7 @@ import KioskLayout from '@/Layouts/KioskLayout';
 export default function Schedule({ student, schedules = [] }) {
     const { branding = {} } = usePage().props;
     const primaryColor = branding?.primary_color || '#211170';
+    const secondaryColor = branding?.secondary_color || '#6b289e';
 
     const [selectedSubjectId, setSelectedSubjectId] = useState(schedules[0]?.id || null);
     const activeSubject = schedules.find((s) => s.id === selectedSubjectId) || schedules[0] || null;
@@ -19,7 +20,7 @@ export default function Schedule({ student, schedules = [] }) {
                 </h1>
 
                 {schedules.length === 0 ? (
-                    <div className="p-12 rounded-[24px] bg-[#F3F4F6] dark:bg-[#171717] text-center text-lg font-semibold">
+                    <div className="p-12 rounded-[24px] kiosk-surface text-center text-lg font-semibold">
                         Sin asignaturas programadas
                     </div>
                 ) : (
@@ -36,8 +37,8 @@ export default function Schedule({ student, schedules = [] }) {
                                             ? { borderColor: primaryColor, color: primaryColor }
                                             : undefined
                                     }
-                                    className={`w-full p-5 sm:p-6 rounded-2xl border-2 text-left transition-all active:scale-[0.99] flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[#F3F4F6] dark:bg-[#171717] ${
-                                        isSelected ? '' : 'border-transparent'
+                                    className={`w-full p-5 sm:p-6 rounded-2xl text-left transition-all active:scale-[0.99] flex flex-col sm:flex-row sm:items-center justify-between gap-2 kiosk-card-interactive ${
+                                        isSelected ? 'ring-2 ring-[var(--kiosk-primary)]/20' : ''
                                     }`}
                                 >
                                     <span className="text-lg sm:text-xl font-bold">{s.subject_name}</span>
@@ -52,7 +53,10 @@ export default function Schedule({ student, schedules = [] }) {
                             <button
                                 type="button"
                                 onClick={() => window.print()}
-                                style={{ backgroundColor: primaryColor, color: '#FFFFFF' }}
+                                style={{
+                                    background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                                    color: '#FFFFFF',
+                                }}
                                 className="px-7 py-4 rounded-xl font-semibold text-base flex items-center gap-3 transition-all active:scale-95"
                             >
                                 <span>Imprimir</span>
