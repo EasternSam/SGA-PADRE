@@ -7,7 +7,7 @@
 
         <title inertia>{{ config('app.name', 'Academic+') }}</title>
 
-        {{-- Dark mode script to avoid flash --}}
+        {{-- Dark mode script to avoid flash + purge stale SW caches --}}
         <script>
             (function() {
                 var d = localStorage.getItem('darkMode');
@@ -16,6 +16,24 @@
                 } else {
                     document.documentElement.classList.remove('dark');
                 }
+                try {
+                    var swVersion = 'sga-v5-20261103';
+                    if (localStorage.getItem('sga_sw_version') !== swVersion) {
+                        if ('caches' in window) {
+                            caches.keys().then(function(names) {
+                                names.forEach(function(name) {
+                                    if (name !== swVersion) caches.delete(name);
+                                });
+                            });
+                        }
+                        if ('serviceWorker' in navigator) {
+                            navigator.serviceWorker.getRegistrations().then(function(regs) {
+                                regs.forEach(function(reg) { reg.update(); });
+                            });
+                        }
+                        localStorage.setItem('sga_sw_version', swVersion);
+                    }
+                } catch (e) {}
             })();
         </script>
 

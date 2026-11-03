@@ -129,13 +129,8 @@ export default function TicketPanel({
                         <button
                             type="button"
                             onClick={() => onChangeOperationType('debt')}
-                            disabled={isWalkIn}
-                            title={
-                                isWalkIn
-                                    ? 'Seleccione un estudiante para generar una deuda en cuenta'
-                                    : 'Registrar cargo pendiente de pago en la cuenta del estudiante'
-                            }
-                            className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                            title="Registrar cargo pendiente de pago en la cuenta del estudiante"
+                            className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all ${
                                 isDebtMode
                                     ? 'bg-amber-600 text-white shadow-xs'
                                     : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900'

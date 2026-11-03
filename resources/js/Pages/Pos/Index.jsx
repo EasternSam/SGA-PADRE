@@ -281,7 +281,38 @@ export default function PosIndex({
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                        {/* Selector rápido de modo en barra superior */}
+                        <div className="inline-flex items-center rounded-xl border border-neutral-200 dark:border-[#262626] bg-neutral-100/80 dark:bg-[#141414] p-1">
+                            <button
+                                type="button"
+                                onClick={() => setOperationType('charge')}
+                                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                                    operationType !== 'debt'
+                                        ? 'bg-white dark:bg-[#262626] text-brand-primary shadow-xs'
+                                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
+                                }`}
+                            >
+                                <span>Cobro Inmediato</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsWalkIn(false);
+                                    setActivePendingDebt(null);
+                                    setOperationType('debt');
+                                }}
+                                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                                    operationType === 'debt'
+                                        ? 'bg-amber-600 text-white shadow-xs'
+                                        : 'text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+                                }`}
+                            >
+                                <FilePlus2 className="h-3.5 w-3.5" />
+                                <span>Generar Deuda (CxC)</span>
+                            </button>
+                        </div>
+
                         <button
                             type="button"
                             onClick={() => setIsShiftOpen(true)}
@@ -319,29 +350,28 @@ export default function PosIndex({
                     <div className="lg:col-span-7 xl:col-span-8 space-y-4">
                         {/* Selector de Estudiante */}
                         <div className="rounded-2xl border border-neutral-200 dark:border-[#262626] bg-white dark:bg-[#171717] p-4 shadow-xs space-y-3">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between gap-2">
                                 <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                                     Cliente / Estudiante
                                 </label>
-                                {selectedStudent && !isWalkIn && (
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setActivePendingDebt(null);
-                                            setOperationType(operationType === 'debt' ? 'charge' : 'debt');
-                                        }}
-                                        className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
-                                            operationType === 'debt'
-                                                ? 'bg-amber-600 text-white'
-                                                : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 hover:bg-amber-100'
-                                        }`}
-                                    >
-                                        <FilePlus2 className="h-3.5 w-3.5" />
-                                        <span>
-                                            {operationType === 'debt' ? 'Modo Deuda Activo' : '+ Generar Deuda al Estudiante'}
-                                        </span>
-                                    </button>
-                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsWalkIn(false);
+                                        setActivePendingDebt(null);
+                                        setOperationType(operationType === 'debt' ? 'charge' : 'debt');
+                                    }}
+                                    className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+                                        operationType === 'debt'
+                                            ? 'bg-amber-600 text-white'
+                                            : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 hover:bg-amber-100'
+                                    }`}
+                                >
+                                    <FilePlus2 className="h-3.5 w-3.5" />
+                                    <span>
+                                        {operationType === 'debt' ? 'Modo Deuda Activo (CxC)' : '+ Generar Deuda al Estudiante'}
+                                    </span>
+                                </button>
                             </div>
 
                             <StudentPicker
@@ -352,77 +382,85 @@ export default function PosIndex({
                                 walkInAvailable={walkInAvailable}
                             />
 
-                            {/* Panel de Deudas / Cargos Pendientes del Estudiante Seleccionado */}
-                            {selectedStudent && !isWalkIn && (
-                                <div className="pt-2 border-t border-neutral-100 dark:border-[#262626]">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="flex items-center gap-2 text-xs">
-                                            <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                                            <span className="font-semibold text-neutral-800 dark:text-neutral-200">
-                                                Deudas / Cargos Pendientes ({pendingList.length})
-                                            </span>
-                                        </div>
+                            {/* Panel de Deudas / Cargos Pendientes */}
+                            <div className="pt-2 border-t border-neutral-100 dark:border-[#262626]">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2 text-xs">
+                                        <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                                        <span className="font-semibold text-neutral-800 dark:text-neutral-200">
+                                            Deudas / Cargos Pendientes {selectedStudent && !isWalkIn ? `(${pendingList.length})` : ''}
+                                        </span>
+                                    </div>
+                                    {selectedStudent && !isWalkIn && (
                                         <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
                                             Balance Pendiente: {formatMoney(selectedStudent.balance || 0)}
                                         </span>
-                                    </div>
-
-                                    {pendingList.length === 0 ? (
-                                        <div className="rounded-xl bg-neutral-50 dark:bg-[#141414] px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 flex items-center justify-between">
-                                            <span>El estudiante no tiene cargos pendientes de pago.</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => setOperationType('debt')}
-                                                className="text-amber-600 dark:text-amber-400 font-semibold hover:underline"
-                                            >
-                                                Asignar un cargo
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
-                                            {pendingList.map((debt) => {
-                                                const isLoaded = activePendingDebt?.id === debt.id;
-                                                return (
-                                                    <div
-                                                        key={debt.id}
-                                                        className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-xs transition-all ${
-                                                            isLoaded
-                                                                ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/30'
-                                                                : 'border-neutral-200 dark:border-[#262626] bg-neutral-50/60 dark:bg-[#141414]'
-                                                        }`}
-                                                    >
-                                                        <div className="min-w-0">
-                                                            <div className="font-semibold text-neutral-900 dark:text-neutral-100 truncate">
-                                                                {debt.concept}
-                                                            </div>
-                                                            <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                                                                Vence: {debt.due_date} • #{debt.id}
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-2.5 shrink-0">
-                                                            <span className="font-bold text-neutral-900 dark:text-neutral-100">
-                                                                {formatMoney(debt.amount)}
-                                                            </span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleSelectPendingDebtToPay(debt)}
-                                                                className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
-                                                                    isLoaded
-                                                                        ? 'bg-amber-600 text-white'
-                                                                        : 'bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white'
-                                                                }`}
-                                                            >
-                                                                <span>{isLoaded ? 'En Ticket' : 'Cobrar'}</span>
-                                                                <ArrowRight className="h-3 w-3" />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
                                     )}
                                 </div>
-                            )}
+
+                                {!selectedStudent || isWalkIn ? (
+                                    <div className="rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/40 px-3 py-2 text-xs text-amber-800 dark:text-amber-300 flex items-center justify-between gap-2">
+                                        <span>
+                                            {operationType === 'debt'
+                                                ? 'Modo Generar Deuda activo: busque y seleccione un estudiante arriba para asignarle el cargo.'
+                                                : 'Seleccione un estudiante arriba para consultar sus deudas pendientes o generarle un nuevo cargo en cuenta.'}
+                                        </span>
+                                    </div>
+                                ) : pendingList.length === 0 ? (
+                                    <div className="rounded-xl bg-neutral-50 dark:bg-[#141414] px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 flex items-center justify-between">
+                                        <span>El estudiante no tiene cargos pendientes de pago.</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setOperationType('debt')}
+                                            className="text-amber-600 dark:text-amber-400 font-semibold hover:underline"
+                                        >
+                                            + Asignar deuda
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+                                        {pendingList.map((debt) => {
+                                            const isLoaded = activePendingDebt?.id === debt.id;
+                                            return (
+                                                <div
+                                                    key={debt.id}
+                                                    className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-xs transition-all ${
+                                                        isLoaded
+                                                            ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/30'
+                                                            : 'border-neutral-200 dark:border-[#262626] bg-neutral-50/60 dark:bg-[#141414]'
+                                                    }`}
+                                                >
+                                                    <div className="min-w-0">
+                                                        <div className="font-semibold text-neutral-900 dark:text-neutral-100 truncate">
+                                                            {debt.concept}
+                                                        </div>
+                                                        <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                                                            Vence: {debt.due_date} • #{debt.id}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2.5 shrink-0">
+                                                        <span className="font-bold text-neutral-900 dark:text-neutral-100">
+                                                            {formatMoney(debt.amount)}
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleSelectPendingDebtToPay(debt)}
+                                                            className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+                                                                isLoaded
+                                                                    ? 'bg-amber-600 text-white'
+                                                                    : 'bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white'
+                                                            }`}
+                                                        >
+                                                            <span>{isLoaded ? 'En Ticket' : 'Cobrar'}</span>
+                                                            <ArrowRight className="h-3 w-3" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* Catálogo de Conceptos */}
@@ -449,6 +487,7 @@ export default function PosIndex({
                             onChangeOperationType={(mode) => {
                                 setOperationType(mode);
                                 if (mode === 'debt') {
+                                    setIsWalkIn(false);
                                     setActivePendingDebt(null);
                                 }
                             }}
